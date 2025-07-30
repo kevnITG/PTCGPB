@@ -2165,7 +2165,7 @@ LoadSettingsFromIni() {
       IniRead, FriendID, Settings.ini, UserSettings, FriendID, ""
       ;instance settings
       IniRead, Instances, Settings.ini, UserSettings, Instances, 1
-      IniRead, instanceStartDelay, Settings.ini, UserSettings, instanceStartDelay, 0
+      IniRead, instanceStartDelay, Settings.ini, UserSettings, instanceStartDelay, 5
       IniRead, Columns, Settings.ini, UserSettings, Columns, 5
       IniRead, runMain, Settings.ini, UserSettings, runMain, 1
       IniRead, Mains, Settings.ini, UserSettings, Mains, 1
@@ -2182,7 +2182,7 @@ LoadSettingsFromIni() {
       ;system settings
       IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
       IniRead, defaultLanguage, Settings.ini, UserSettings, defaultLanguage, Scale125
-      IniRead, rowGap, Settings.ini, UserSettings, rowGap, 100
+      IniRead, rowGap, Settings.ini, UserSettings, rowGap, 75
       IniRead, folderPath, Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
       IniRead, ocrLanguage, Settings.ini, UserSettings, ocrLanguage, en
       IniRead, clientLanguage, Settings.ini, UserSettings, clientLanguage, en
@@ -2289,7 +2289,7 @@ LoadSettingsFromIni() {
       if (!IsNumeric(Columns) || Columns < 1)
          Columns := 5
       if (!IsNumeric(waitTime))
-         waitTime := 5
+         waitTime := 1
       if (!IsNumeric(Delay) || Delay < 10)
          Delay := 250
       if (s4tWPMinCards < 1 || s4tWPMinCards > 2)
@@ -2341,13 +2341,13 @@ CreateDefaultSettingsFile() {
       iniContent .= "ToolTipImage=" defaultToolTip "`n"
       iniContent .= "FriendID=`n"
       iniContent .= "AccountName=`n"
-      iniContent .= "waitTime=5`n"
+      iniContent .= "waitTime=1`n"
       iniContent .= "Delay=250`n"
       iniContent .= "folderPath=C:\Program Files\Netease`n"
       iniContent .= "Columns=5`n"
       iniContent .= "godPack=Continue`n"
       iniContent .= "Instances=1`n"
-      iniContent .= "instanceStartDelay=0`n"
+      iniContent .= "instanceStartDelay=5`n"
       iniContent .= "defaultLanguage=Scale125`n"
       iniContent .= "SelectedMonitorIndex=1`n"
       iniContent .= "swipeSpeed=250`n"
@@ -2369,7 +2369,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "showcaseLikes=5`n"
       iniContent .= "isDarkTheme=1`n"
       iniContent .= "useBackgroundImage=1`n"
-      iniContent .= "rowGap=100`n"
+      iniContent .= "rowGap=75`n"
       iniContent .= "variablePackCount=15`n"
       iniContent .= "claimSpecialMissions=0`n"
       iniContent .= "spendHourGlass=0`n"
