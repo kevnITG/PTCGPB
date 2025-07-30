@@ -277,10 +277,6 @@ loadAccount() {
     adbShell.StdIn.WriteLine("chmod 664 /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml && chown system:system /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
     Sleep, 200
 
-    ; clear mission cache
-    adbShell.StdIn.WriteLine("rm /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs")
-    waitadb()
-
     ; Clean up and launch app (reduced delay between operations)
     adbShell.StdIn.WriteLine("rm /sdcard/deviceAccount.xml")
 

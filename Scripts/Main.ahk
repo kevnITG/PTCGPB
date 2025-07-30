@@ -198,12 +198,6 @@ Loop {
                 if(FindOrLoseImage(99Leftx, 110, 99Rightx, 127, , 99Path, 0, failSafeTime)) {
                     done := true
                     break
-                } else if(FindOrLoseImage(80, 170, 120, 195, , "player", 0, failSafeTime)) {
-                    if (GPTest)
-                        break
-                    Sleep, %Delay%
-                    adbClick(210, 210)
-                    Sleep, 1000
                 } else if(FindOrLoseImage(225, 195, 250, 220, , "Pending", 0, failSafeTime)) {
                     if (GPTest)
                         break

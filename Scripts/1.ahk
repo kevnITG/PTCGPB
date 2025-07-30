@@ -1431,6 +1431,17 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
 			}
 		}
 
+        if(imageName = "WonderPick") {
+            Path = %imagePath%Update.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 38, 191, 62, 209, searchVariation)
+            if (vRet = 1) {
+                CreateStatusMessage("Update popup found! Clicking to dismiss...")
+                adbClick_wbb(137, 485)
+                Sleep, 1000
+            }
+        }
+
         Gdip_DisposeImage(pBitmap)
         if(imageName = "Points" || imageName = "Home") { ;look for level up ok "button"
             LevelUp()
@@ -4575,6 +4586,7 @@ DoWonderPickOnly() {
     failSafeTime := 0
     Loop {
         adbClick_wbb(80, 460)
+        
         if(FindOrLoseImage(240, 80, 265, 100, , "WonderPick", 1, failSafeTime)) {
             clickButton := FindOrLoseImage(100, 367, 190, 480, 100, "Button", 0, failSafeTime)
             if(clickButton) {
