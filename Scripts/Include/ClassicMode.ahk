@@ -80,6 +80,8 @@ LoadSettingsFromIni() {
     IniRead, Lunala, %A_ScriptDir%\..\..\Settings.ini, UserSettings, Lunala, 0
     IniRead, Buzzwole, %A_ScriptDir%\..\..\Settings.ini, UserSettings, Buzzwole, 0
     IniRead, Eevee, %A_ScriptDir%\..\..\Settings.ini, UserSettings, Eevee, 0
+    IniRead, HoOh, %A_ScriptDir%\..\..\Settings.ini, UserSettings, HoOh, 0
+    IniRead, Lugia, %A_ScriptDir%\..\..\Settings.ini, UserSettings, Lugia, 0
     
     IniRead, CheckShinyPackOnly, %A_ScriptDir%\..\..\Settings.ini, UserSettings, CheckShinyPackOnly, 0
     IniRead, TrainerCheck, %A_ScriptDir%\..\..\Settings.ini, UserSettings, TrainerCheck, 0
@@ -144,7 +146,7 @@ SaveAllSettings() {
   global autoLaunchMonitor, autoUseGPTest, TestTime
   global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
   global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
-  global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, slowMotion, ocrLanguage, clientLanguage
+  global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, slowMotion, ocrLanguage, clientLanguage
   global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, showcaseURL, isDarkTheme
   global useBackgroundImage, tesseractPath, applyRoleFilters, debugMode, tesseractOption, statusMessage
   global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards
@@ -247,6 +249,8 @@ SaveAllSettings() {
   IniWrite, %Lunala%, %A_ScriptDir%\..\..\Settings.ini, UserSettings, Lunala
   IniWrite, %Buzzwole%, %A_ScriptDir%\..\..\Settings.ini, UserSettings, Buzzwole
   IniWrite, %Eevee%, %A_ScriptDir%\..\..\Settings.ini, UserSettings, Eevee
+  IniWrite, %HoOh%, %A_ScriptDir%\..\..\Settings.ini, UserSettings, HoOh
+  IniWrite, %Lugia%, %A_ScriptDir%\..\..\Settings.ini, UserSettings, Lugia
   ; Card Detection
   IniWrite, %CheckShinyPackOnly%, %A_ScriptDir%\..\..\Settings.ini, UserSettings, CheckShinyPackOnly
   IniWrite, %TrainerCheck%, %A_ScriptDir%\..\..\Settings.ini, UserSettings, TrainerCheck
@@ -476,18 +480,21 @@ Gui, Add, Checkbox, % (ImmersiveCheck ? "Checked" : "") " vImmersiveCheck x270 y
 ; ========== Pack Selection Section ==========
 sectionColor := "cFFD700" ; Gold
 Gui, Add, GroupBox, x505 y0 w240 h590 %sectionColor%, Pack Selection
-Gui, Add, Checkbox, % (Eevee ? "Checked" : "") " vEevee x530 y25 " . sectionColor, % currentDictionary.Txt_Eevee
-Gui, Add, Checkbox, % (Buzzwole ? "Checked" : "") " vBuzzwole x530 y50 " . sectionColor, % currentDictionary.Txt_Buzzwole
-Gui, Add, Checkbox, % (Shining ? "Checked" : "") " vShining x530 y75 " . sectionColor, % currentDictionary.Txt_Shining
-Gui, Add, Checkbox, % (Arceus ? "Checked" : "") " vArceus x530 y100 " . sectionColor, % currentDictionary.Txt_Arceus
-Gui, Add, Checkbox, % (Palkia ? "Checked" : "") " vPalkia x530 y125 " . sectionColor, % currentDictionary.Txt_Palkia
-Gui, Add, Checkbox, % (Dialga ? "Checked" : "") " vDialga x530 y150 " . sectionColor, % currentDictionary.Txt_Dialga
-Gui, Add, Checkbox, % (Solgaleo ? "Checked" : "") " vSolgaleo x530 y175 " . sectionColor, % currentDictionary.Txt_Solgaleo
-Gui, Add, Checkbox, % (Lunala ? "Checked" : "") " vLunala x530 y200 " . sectionColor, % currentDictionary.Txt_Lunala
-Gui, Add, Checkbox, % (Pikachu ? "Checked" : "") " vPikachu x530 y225 " . sectionColor, % currentDictionary.Txt_Pikachu
-Gui, Add, Checkbox, % (Charizard ? "Checked" : "") " vCharizard x530 y250 " . sectionColor, % currentDictionary.Txt_Charizard
-Gui, Add, Checkbox, % (Mewtwo ? "Checked" : "") " vMewtwo x530 y275 " . sectionColor, % currentDictionary.Txt_Mewtwo
-Gui, Add, Checkbox, % (Mew ? "Checked" : "") " vMew x530 y300 " . sectionColor, % currentDictionary.Txt_Mew
+
+Gui, Add, Checkbox, % (HoOh ? "Checked" : "") " vHoOh x530 y25 " . sectionColor, % currentDictionary.Txt_HoOh 
+Gui, Add, Checkbox, % (Lugia ? "Checked" : "") " vLugia x530 y50 " . sectionColor, % currentDictionary.Txt_Lugia
+Gui, Add, Checkbox, % (Eevee ? "Checked" : "") " vEevee x530 y75 " . sectionColor, % currentDictionary.Txt_Eevee
+Gui, Add, Checkbox, % (Buzzwole ? "Checked" : "") " vBuzzwole x530 y100 " . sectionColor, % currentDictionary.Txt_Buzzwole
+Gui, Add, Checkbox, % (Shining ? "Checked" : "") " vShining x530 y125 " . sectionColor, % currentDictionary.Txt_Shining
+Gui, Add, Checkbox, % (Arceus ? "Checked" : "") " vArceus x530 y150 " . sectionColor, % currentDictionary.Txt_Arceus
+Gui, Add, Checkbox, % (Palkia ? "Checked" : "") " vPalkia x530 y175 " . sectionColor, % currentDictionary.Txt_Palkia
+Gui, Add, Checkbox, % (Dialga ? "Checked" : "") " vDialga x530 y200 " . sectionColor, % currentDictionary.Txt_Dialga
+Gui, Add, Checkbox, % (Solgaleo ? "Checked" : "") " vSolgaleo x530 y225 " . sectionColor, % currentDictionary.Txt_Solgaleo
+Gui, Add, Checkbox, % (Lunala ? "Checked" : "") " vLunala x530 y250 " . sectionColor, % currentDictionary.Txt_Lunala
+Gui, Add, Checkbox, % (Pikachu ? "Checked" : "") " vPikachu x530 y275 " . sectionColor, % currentDictionary.Txt_Pikachu
+Gui, Add, Checkbox, % (Charizard ? "Checked" : "") " vCharizard x530 y300 " . sectionColor, % currentDictionary.Txt_Charizard
+Gui, Add, Checkbox, % (Mewtwo ? "Checked" : "") " vMewtwo x530 y325 " . sectionColor, % currentDictionary.Txt_Mewtwo
+Gui, Add, Checkbox, % (Mew ? "Checked" : "") " vMew x530 y350 " . sectionColor, % currentDictionary.Txt_Mew
 
 ; ========== Column 4 ==========
 ; ==============================

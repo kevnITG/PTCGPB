@@ -87,6 +87,8 @@
         Lang["Txt_claimSpecialMissions"] := "Claim Special Missions"
         Lang["SortByText"] := "Sort By:"
 
+        Lang["Txt_HoOh"] := "Ho-Oh"
+        Lang["Txt_Lugia"] := "Lugia"
         Lang["Txt_Eevee"] := "Eevee"
         Lang["Txt_Buzzwole"] := "Buzzwole"
         Lang["Txt_Solgaleo"] := "Solgaleo"

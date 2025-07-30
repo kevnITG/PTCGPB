@@ -82,13 +82,13 @@ OnError("ErrorHandler")
 
 ;OnError("ErrorHandler") ; Add this line here
 
-githubUser := "mixman208"
+githubUser := "kevnITG"
    ,repoName := "PTCGPB"
    ,localVersion := "v6.4.21"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
-   ,intro := "Eevee and New GUI!"
+   ,intro := "Wisdom of Sea and Sky"
 
 if not A_IsAdmin
 {
@@ -625,158 +625,197 @@ NextStep:
       ,CheckOptions["textX"] := xPos+35
       ,CheckOptions["textY"] := 405
    AddCheckBox(CheckOptions)
-   ; ========= Page 4 ==========
-   ; ========== Pack Selection ==========
-   xPos := 1125
-   SetHeaderFont()
-   Gui, Add, Text, x%xPos% y110 backgroundtrans, % currentDictionary.btn_pack
-   global Txt_Eevee,Txt_Buzzwole, Txt_Solgaleo, Txt_Lunala, Txt_Shining, Txt_Arceus, Txt_Palkia, Txt_Dialga
-   global Txt_Mewtwo, Txt_Charizard, Txt_Pikachu, Txt_Mew
-   SetNormalFont()
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 151,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Eevee"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Eevee
-      ,CheckOptions["vTextName"] := "Txt_Eevee"
-      ,CheckOptions["text"] := currentDictionary.Txt_Eevee
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 150
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+155,CheckOptions["y"] := 151,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Buzzwole"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Buzzwole
-      ,CheckOptions["vTextName"] := "Txt_Buzzwole"
-      ,CheckOptions["text"] := currentDictionary.Txt_Buzzwole
-      ,CheckOptions["textX"] := xPos+190
-      ,CheckOptions["textY"] := 150
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 176,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Solgaleo"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Solgaleo
-      ,CheckOptions["vTextName"] := "Txt_Solgaleo"
-      ,CheckOptions["text"] := currentDictionary.Txt_Solgaleo
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 175
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+155,CheckOptions["y"] := 176,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Lunala"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Lunala
-      ,CheckOptions["vTextName"] := "Txt_Lunala"
-      ,CheckOptions["text"] := currentDictionary.Txt_Lunala
-      ,CheckOptions["textX"] := xPos+190
-      ,CheckOptions["textY"] := 175
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 201,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Shining"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Shining
-      ,CheckOptions["vTextName"] := "Txt_Shining"
-      ,CheckOptions["text"] := currentDictionary.Txt_Shining
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 200
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+155,CheckOptions["y"] := 201,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Arceus"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Arceus
-      ,CheckOptions["vTextName"] := "Txt_Arceus"
-      ,CheckOptions["text"] := currentDictionary.Txt_Arceus
-      ,CheckOptions["textX"] := xPos+190
-      ,CheckOptions["textY"] := 200
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 226,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Palkia"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Palkia
-      ,CheckOptions["vTextName"] := "Txt_Palkia"
-      ,CheckOptions["text"] := currentDictionary.Txt_Palkia
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 225
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+155,CheckOptions["y"] := 226,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Dialga"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Dialga
-      ,CheckOptions["vTextName"] := "Txt_Dialga"
-      ,CheckOptions["text"] := currentDictionary.Txt_Dialga
-      ,CheckOptions["textX"] := xPos+190
-      ,CheckOptions["textY"] := 225
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 251,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Pikachu"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Pikachu
-      ,CheckOptions["vTextName"] := "Txt_Pikachu"
-      ,CheckOptions["text"] := currentDictionary.Txt_Pikachu
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 250
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+155,CheckOptions["y"] := 251,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Charizard"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Charizard
-      ,CheckOptions["vTextName"] := "Txt_Charizard"
-      ,CheckOptions["text"] := currentDictionary.Txt_Charizard
-      ,CheckOptions["textX"] := xPos+190
-      ,CheckOptions["textY"] := 250
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 276,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Mewtwo"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Mewtwo
-      ,CheckOptions["vTextName"] := "Txt_Mewtwo"
-      ,CheckOptions["text"] := currentDictionary.Txt_Mewtwo
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 275
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+155,CheckOptions["y"] := 276,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "Mew"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := Mew
-      ,CheckOptions["vTextName"] := "Txt_Mew"
-      ,CheckOptions["text"] := currentDictionary.Txt_Mew
-      ,CheckOptions["textX"] := xPos+190
-      ,CheckOptions["textY"] := 275
-   AddCheckBox(CheckOptions)
+   ; ========== Page 4 ==========
+; ========== Pack Selection ==========
+xPos := 1125
+SetHeaderFont()
+Gui, Add, Text, x%xPos% y110 backgroundtrans, % currentDictionary.btn_pack
+global Txt_HoOh, Txt_Lugia, Txt_Eevee,Txt_Buzzwole, Txt_Solgaleo, Txt_Lunala, Txt_Shining, Txt_Arceus, Txt_Palkia, Txt_Dialga
+global Txt_Mewtwo, Txt_Charizard, Txt_Pikachu, Txt_Mew
+SetNormalFont()
+
+CheckOptions := {}
+CheckOptions["x"] := xPos,CheckOptions["y"] := 151,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "HoOh"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := HoOh
+   ,CheckOptions["vTextName"] := "Txt_HoOh"
+   ,CheckOptions["text"] := currentDictionary.Txt_HoOh
+   ,CheckOptions["textX"] := xPos+35
+   ,CheckOptions["textY"] := 150
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos+155,CheckOptions["y"] := 151,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Lugia"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Lugia
+   ,CheckOptions["vTextName"] := "Txt_Lugia"
+   ,CheckOptions["text"] := currentDictionary.Txt_Lugia
+   ,CheckOptions["textX"] := xPos+190
+   ,CheckOptions["textY"] := 150
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos,CheckOptions["y"] := 176,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Eevee"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Eevee
+   ,CheckOptions["vTextName"] := "Txt_Eevee"
+   ,CheckOptions["text"] := currentDictionary.Txt_Eevee
+   ,CheckOptions["textX"] := xPos+35
+   ,CheckOptions["textY"] := 175
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos+155,CheckOptions["y"] := 176,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Buzzwole"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Buzzwole
+   ,CheckOptions["vTextName"] := "Txt_Buzzwole"
+   ,CheckOptions["text"] := currentDictionary.Txt_Buzzwole
+   ,CheckOptions["textX"] := xPos+190
+   ,CheckOptions["textY"] := 175
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos,CheckOptions["y"] := 201,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Solgaleo"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Solgaleo
+   ,CheckOptions["vTextName"] := "Txt_Solgaleo"
+   ,CheckOptions["text"] := currentDictionary.Txt_Solgaleo
+   ,CheckOptions["textX"] := xPos+35
+   ,CheckOptions["textY"] := 200
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos+155,CheckOptions["y"] := 201,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Lunala"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Lunala
+   ,CheckOptions["vTextName"] := "Txt_Lunala"
+   ,CheckOptions["text"] := currentDictionary.Txt_Lunala
+   ,CheckOptions["textX"] := xPos+190
+   ,CheckOptions["textY"] := 200
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos,CheckOptions["y"] := 226,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Shining"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Shining
+   ,CheckOptions["vTextName"] := "Txt_Shining"
+   ,CheckOptions["text"] := currentDictionary.Txt_Shining
+   ,CheckOptions["textX"] := xPos+35
+   ,CheckOptions["textY"] := 225
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos+155,CheckOptions["y"] := 226,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Arceus"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Arceus
+   ,CheckOptions["vTextName"] := "Txt_Arceus"
+   ,CheckOptions["text"] := currentDictionary.Txt_Arceus
+   ,CheckOptions["textX"] := xPos+190
+   ,CheckOptions["textY"] := 225
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos,CheckOptions["y"] := 251,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Palkia"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Palkia
+   ,CheckOptions["vTextName"] := "Txt_Palkia"
+   ,CheckOptions["text"] := currentDictionary.Txt_Palkia
+   ,CheckOptions["textX"] := xPos+35
+   ,CheckOptions["textY"] := 250
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos+155,CheckOptions["y"] := 251,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Dialga"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Dialga
+   ,CheckOptions["vTextName"] := "Txt_Dialga"
+   ,CheckOptions["text"] := currentDictionary.Txt_Dialga
+   ,CheckOptions["textX"] := xPos+190
+   ,CheckOptions["textY"] := 250
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos,CheckOptions["y"] := 276,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Pikachu"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Pikachu
+   ,CheckOptions["vTextName"] := "Txt_Pikachu"
+   ,CheckOptions["text"] := currentDictionary.Txt_Pikachu
+   ,CheckOptions["textX"] := xPos+35
+   ,CheckOptions["textY"] := 275
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos+155,CheckOptions["y"] := 276,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Charizard"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Charizard
+   ,CheckOptions["vTextName"] := "Txt_Charizard"
+   ,CheckOptions["text"] := currentDictionary.Txt_Charizard
+   ,CheckOptions["textX"] := xPos+190
+   ,CheckOptions["textY"] := 275
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos,CheckOptions["y"] := 301,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Mewtwo"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Mewtwo
+   ,CheckOptions["vTextName"] := "Txt_Mewtwo"
+   ,CheckOptions["text"] := currentDictionary.Txt_Mewtwo
+   ,CheckOptions["textX"] := xPos+35
+   ,CheckOptions["textY"] := 300
+AddCheckBox(CheckOptions)
+
+CheckOptions := {}
+CheckOptions["x"] := xPos+155,CheckOptions["y"] := 301,CheckOptions["w"] := 28,CheckOptions["h"] := 13
+   ,CheckOptions["vName"] := "Mew"
+   ,CheckOptions["gName"] := ""
+   ,CheckOptions["checkedImagePath"] := checkedPath
+   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
+   ,CheckOptions["isChecked"] := Mew
+   ,CheckOptions["vTextName"] := "Txt_Mew"
+   ,CheckOptions["text"] := currentDictionary.Txt_Mew
+   ,CheckOptions["textX"] := xPos+190
+   ,CheckOptions["textY"] := 300
+AddCheckBox(CheckOptions)
+
    ; ========== Page 5 ==========
    ; ========== Min Stars ==========
    xPos := 1485
@@ -2136,8 +2175,8 @@ LoadSettingsFromIni() {
       IniRead, TestTime, Settings.ini, UserSettings, TestTime, 3600
       ;Time settings
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
-      IniRead, waitTime, Settings.ini, UserSettings, waitTime, 5
-      IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 300
+      IniRead, waitTime, Settings.ini, UserSettings, waitTime, 1
+      IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 250
       IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 0
       
       ;system settings
@@ -2179,7 +2218,9 @@ LoadSettingsFromIni() {
       IniRead, Solgaleo, Settings.ini, UserSettings, Solgaleo, 0
       IniRead, Lunala, Settings.ini, UserSettings, Lunala, 0
       IniRead, Buzzwole, Settings.ini, UserSettings, Buzzwole, 0
-      IniRead, Eevee, Settings.ini, UserSettings, Eevee, 1
+      IniRead, Eevee, Settings.ini, UserSettings, Eevee, 0
+      IniRead, HoOh, Settings.ini, UserSettings, HoOh, 1
+      IniRead, Lugia, Settings.ini, UserSettings, Lugia, 1
       
       IniRead, CheckShinyPackOnly, Settings.ini, UserSettings, CheckShinyPackOnly, 0
       IniRead, TrainerCheck, Settings.ini, UserSettings, TrainerCheck, 0
@@ -2231,6 +2272,8 @@ LoadSettingsFromIni() {
       IniRead, minStarsA3Lunala, Settings.ini, UserSettings, minStarsA3Lunala, 0
       IniRead, minStarsA3a, Settings.ini, UserSettings, minStarsA3a, 0
       IniRead, minStarsA3b, Settings.ini, UserSettings, minStarsA3b, 0
+      IniRead, minStarsA4HoOh, Settings.ini, UserSettings, minStarsA4HoOh, 0
+      IniRead, minStarsA4Lugia, Settings.ini, UserSettings, minStarsA4Lugia, 0
       
       IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
@@ -2307,9 +2350,9 @@ CreateDefaultSettingsFile() {
       iniContent .= "instanceStartDelay=0`n"
       iniContent .= "defaultLanguage=Scale125`n"
       iniContent .= "SelectedMonitorIndex=1`n"
-      iniContent .= "swipeSpeed=300`n"
-      iniContent .= "runMain=1`n"
-      iniContent .= "Mains=1`n"
+      iniContent .= "swipeSpeed=250`n"
+      iniContent .= "runMain=0`n"
+      iniContent .= "Mains=0`n"
       iniContent .= "autoUseGPTest=0`n"
       iniContent .= "TestTime=3600`n"
       iniContent .= "heartBeat=0`n"
@@ -2352,7 +2395,7 @@ SaveAllSettings() {
    global autoLaunchMonitor, autoUseGPTest, TestTime
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
-   global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, slowMotion, ocrLanguage, clientLanguage
+   global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, slowMotion, ocrLanguage, clientLanguage
    global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, isDarkTheme
    global useBackgroundImage, tesseractPath, applyRoleFilters, debugMode, tesseractOption, statusMessage
    global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards
@@ -2406,6 +2449,8 @@ SaveAllSettings() {
    iniContent .= "Lunala=" Lunala "`n"
    iniContent .= "Buzzwole=" Buzzwole "`n"
    iniContent .= "Eevee=" Eevee "`n"
+   iniContent .= "HoOh=" HoOh "`n"
+   iniContent .= "Lugia=" Lugia "`n"
    iniContent .= "CheckShinyPackOnly=" CheckShinyPackOnly "`n"
    iniContent .= "TrainerCheck=" TrainerCheck "`n"
    iniContent .= "FullArtCheck=" FullArtCheck "`n"
@@ -2498,6 +2543,8 @@ SaveAllSettings() {
    iniContent_Second .= "minStarsA3Lunala=" minStarsA3Lunala "`n"
    iniContent_Second .= "minStarsA3a=" minStarsA3a "`n"
    iniContent_Second .= "minStarsA3b=" minStarsA3b "`n"
+   iniContent_Second .= "minStarsA4HoOh=" minStarsA4HoOh "`n"
+   iniContent_Second .= "minStarsA4Lugia=" minStarsA4Lugia "`n"
    iniContent_Second .= "s4tWPMinCards=" s4tWPMinCards "`n"
    iniContent_Second .= "s4tDiscordUserId=" s4tDiscordUserId "`n"
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"
@@ -3464,6 +3511,10 @@ StartBot:
    confirmMsg := SetUpDictionary.Confirm_SelectedMethod . deleteMethod . "`n"
    
    confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
+   if (HoOh)
+      confirmMsg .= "• " . currentDictionary.Txt_HoOh . "`n"
+   if (Lugia)
+      confirmMsg .= "• " . currentDictionary.Txt_Lugia . "`n"
    if (Eevee) 
       confirmMsg .= "• " . currentDictionary.Txt_Eevee . "`n"
    if (Buzzwole)
@@ -3766,6 +3817,10 @@ StartBot:
       Selected.Push("Buzzwole")
    if(Eevee)
       Selected.Push("Eevee")
+   if(HoOh)
+      Selected.Push("HoOh")
+   if(Lugia)
+      Selected.Push("Lugia")
    
    for index, value in Selected {
       if(index = Selected.MaxIndex())
