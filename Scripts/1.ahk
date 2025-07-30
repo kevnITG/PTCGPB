@@ -1434,7 +1434,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if(imageName = "WonderPick") {
             Path = %imagePath%Update.png
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 38, 191, 62, 209, searchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 15, 187, 62, 209, searchVariation)
             if (vRet = 1) {
                 CreateStatusMessage("Update popup found! Clicking to dismiss...")
                 adbClick_wbb(137, 485)
@@ -3648,14 +3648,14 @@ SelectPack(HG := false) {
 	PackScreenAllPackY := 320
 	
 	SelectExpansionFirstRowY := 275
-	SelectExpansionSecondRowY := 410
+	SelectExpansionSecondRowY := 390
 	
-	SelectExpansionRightCollumnMiddleX := 205
+	SelectExpansionRightCollumnMiddleX := 203
 	SelectExpansionLeftCollumnMiddleX := 73
 	3PackExpansionLeft := -40
 	3PackExpansionRight := 40
 	2PackExpansionLeft := -20
-	2PackExpansionRight := 20
+	2PackExpansionRight := 15 ; avoiding clicking UI elements behind
 	
 	inselectexpansionscreen := 0
 	
@@ -3663,12 +3663,12 @@ SelectPack(HG := false) {
     if (openPack == "HoOh") {
         packx := MiddlePackX
     } else if (openPack == "Eevee") {
-        packx := RightPackX
-    } else {
         packx := LeftPackX
+    } else {
+        packx := RightPackX
     }
 	
-	if(openPack == "Eevee" || openPack == "Buzzwole" || openPack == "HoOh") {
+	if(openPack == "Eevee" || openPack == "HoOh" || openPack == "Lugia") {
 		PackIsInHomeScreen := 1
 	} else {
 		PackIsInHomeScreen := 0
@@ -3702,7 +3702,7 @@ SelectPack(HG := false) {
 				if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0)) {
 					adbClick_wbb(139, 371)
 				}
-                if(FindOrLoseImage(38, 191, 62, 209, , "Update", 0)) {
+                if(FindOrLoseImage(15, 187, 62, 209, , "Update", 0)) {
                     adbClick_wbb(137, 485)
                 }
             }
