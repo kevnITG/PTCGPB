@@ -3742,7 +3742,7 @@ SelectPack(HG := false) {
             adbSwipe("266 770 266 355 160")
             Sleep, 500
 
-            packy := 490
+            packy := 436
 			
 			if (openPack = "Dialga") {
                 packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionLeft
@@ -3758,7 +3758,7 @@ SelectPack(HG := false) {
             adbSwipe("266 770 266 355 160")
             Sleep, 500
 
-            packy := 450
+            packy := 400
 			
 			if (openPack = "Charizard") {
                 packx := SelectExpansionRightCollumnMiddleX + 3PackExpansionLeft
