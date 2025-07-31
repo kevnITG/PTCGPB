@@ -3773,13 +3773,16 @@ SelectPack(HG := false) {
 
             }
         } else if (openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew") {
-            ; Two swipes
+            ; Four swipes to guarantee bottom scroll position; very slightly less efficient than 2 swipes
             adbSwipe("266 770 266 355 160")
             Sleep, 500
             adbSwipe("266 770 266 355 160")
-            Sleep, 500
-
-            packy := 400
+            Sleep, 200
+            adbSwipe("266 770 266 355 160")
+            Sleep, 200            
+            adbSwipe("266 770 266 355 160")
+            Sleep, 100
+            packy := 275
 			
 			if (openPack = "Mew") {
                 packx := SelectExpansionRightCollumnMiddleX
@@ -3789,23 +3792,21 @@ SelectPack(HG := false) {
                 packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
             }
         } else if (openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
-            ; Three swipes
+            ; Four swipes to guarantee bottom scroll position; very slightly less efficient
             adbSwipe("266 770 266 355 160")
             Sleep, 500
             adbSwipe("266 770 266 355 160")
-            Sleep, 500
+            Sleep, 200
             adbSwipe("266 770 266 355 160")
-            Sleep, 500            
+            Sleep, 200            
+            adbSwipe("266 770 266 355 160")
+            Sleep, 100          
 
             packy := 400
 			
 			if (openPack = "Charizard") {
                 packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionLeft
             } else if (openPack = "Mewtwo") {
-                packx := SelectExpansionRightCollumnMiddleX
-            } else if (openPack = "Pikachu") {
-                packx := SelectExpansionRightCollumnMiddleX + 3PackExpansionRight
-            } else if (openPack == "Mew") {
                 packx := SelectExpansionLeftCollumnMiddleX
             } else if (openPack = "Pikachu") {
                 packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionRight

@@ -523,7 +523,7 @@ NextStep:
       ,CheckOptions["gName"] := ""
       ,CheckOptions["checkedImagePath"] := checkedPath
       ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := CardDetectionCheck
+      ,CheckOptions["isChecked"] := FullArtCheck
       ,CheckOptions["vTextName"] := "Txt_FullArtCheck"
       ,CheckOptions["text"] := currentDictionary.Txt_FullArtCheck
       ,CheckOptions["textX"] := xPos+35
