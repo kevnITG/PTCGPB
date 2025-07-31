@@ -3773,15 +3773,17 @@ SelectPack(HG := false) {
 
             }
         } else if (openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew") {
-            ; Four swipes to guarantee bottom scroll position; very slightly less efficient than 2 swipes
+            ; Extra swipes to guarantee page position for weaker PC users
             adbSwipe("266 770 266 355 160")
             Sleep, 500
             adbSwipe("266 770 266 355 160")
+            Sleep, 50
+            adbSwipe("266 770 266 355 160")
+            Sleep, 50   
+            adbSwipe("266 770 266 355 160")
+            Sleep, 50           
+            adbSwipe("266 770 266 355 160")
             Sleep, 200
-            adbSwipe("266 770 266 355 160")
-            Sleep, 200            
-            adbSwipe("266 770 266 355 160")
-            Sleep, 100
             packy := 275
 			
 			if (openPack = "Mew") {
@@ -3792,15 +3794,17 @@ SelectPack(HG := false) {
                 packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
             }
         } else if (openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
-            ; Four swipes to guarantee bottom scroll position; very slightly less efficient
+            ; Extra swipes to guarantee page position for weaker PC users
             adbSwipe("266 770 266 355 160")
             Sleep, 500
             adbSwipe("266 770 266 355 160")
-            Sleep, 200
+            Sleep, 50
             adbSwipe("266 770 266 355 160")
-            Sleep, 200            
+            Sleep, 50   
             adbSwipe("266 770 266 355 160")
-            Sleep, 100          
+            Sleep, 50           
+            adbSwipe("266 770 266 355 160")
+            Sleep, 200      
 
             packy := 400
 			
