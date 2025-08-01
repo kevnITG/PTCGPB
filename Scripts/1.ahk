@@ -1480,6 +1480,12 @@ LevelUp() {
         }
         adbClick_wbb(pos1, pos2)
     }
+    if(FindOrLoseImage(115, 465, 160, 510, , "Privacy", 0)) { ; clicks "X" on Pokemon News pop-up from 7/2025; remove later
+        adbClick_wbb(137, 485)
+    }
+    if(FindOrLoseImage(15, 180, 53, 228, , "Update", 0)) { ; back-up option, clicks "X" on Pokemon News pop-up from 7/2025; remove later
+        adbClick_wbb(137, 485)
+    }
     Delay(1)
 }
 
@@ -3698,13 +3704,16 @@ SelectPack(HG := false) {
 			if(FindOrLoseImage(233, 400, 264, 428, , "Points", 0, failSafeTime)) {
 				break
 			}
+            if(FindOrLoseImage(115, 465, 160, 510, , "Privacy", 0)) { ; clicks "X" on Pokemon News pop-up from 7/2025; remove later
+                adbClick_wbb(137, 485)
+            }
+            if(FindOrLoseImage(15, 180, 53, 228, , "Update", 0)) { ; back-up option, clicks "X" on Pokemon News pop-up from 7/2025; remove later
+                adbClick_wbb(137, 485)
+            }
 			else if(!renew && !getFC) {
 				if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0)) {
 					adbClick_wbb(139, 371)
 				}
-                if(FindOrLoseImage(125, 470, 154, 502, , "Privacy", 0)) { ; clicks "X" on Pokemon News pop-up
-                    adbClick_wbb(137, 485)
-                }
             }
 			else if(FindOrLoseImage(175, 165, 255, 235, , "Hourglass3", 0)) {
 				;TODO hourglass tutorial still broken after injection
@@ -3798,11 +3807,15 @@ SelectPack(HG := false) {
             adbSwipe("266 770 266 355 160")
             Sleep, 500
             adbSwipe("266 770 266 355 160")
-            Sleep, 50
+            Sleep, 200
             adbSwipe("266 770 266 355 160")
-            Sleep, 50   
+            Sleep, 200   
             adbSwipe("266 770 266 355 160")
-            Sleep, 50           
+            Sleep, 200       
+            adbSwipe("266 770 266 355 160")
+            Sleep, 200   
+            adbSwipe("266 770 266 355 160")
+            Sleep, 200   
             adbSwipe("266 770 266 355 160")
             Sleep, 200      
 
