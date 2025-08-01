@@ -3662,10 +3662,10 @@ SelectPack(HG := false) {
     packy := HomeScreenAllPackY
     if (openPack == "HoOh") {
         packx := MiddlePackX
-    } else if (openPack == "Eevee") {
-        packx := LeftPackX
-    } else {
+    } else if (openPack == "Lugia") {
         packx := RightPackX
+    } else {
+        packx := MiddlePackX
     }
 	
 	if(openPack == "Eevee" || openPack == "HoOh" || openPack == "Lugia") {
@@ -3674,7 +3674,7 @@ SelectPack(HG := false) {
 		PackIsInHomeScreen := 0
 	}
 	
-	if(openPack == "HoOh" || "Lugia") {
+	if(openPack == "HoOh" || openPack == "Lugia") {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
@@ -3702,7 +3702,7 @@ SelectPack(HG := false) {
 				if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0)) {
 					adbClick_wbb(139, 371)
 				}
-                if(FindOrLoseImage(15, 187, 62, 209, , "Update", 0)) {
+                if(FindOrLoseImage(125, 470, 154, 502, , "Privacy", 0)) { ; clicks "X" on Pokemon News pop-up
                     adbClick_wbb(137, 485)
                 }
             }
@@ -3734,9 +3734,9 @@ SelectPack(HG := false) {
 				packy := PackScreenAllPackY ; Y coordinate is lower when in pack select screen then in home screen
 				
 				if(packx != MiddlePackX) { ; if it is already the middle Pack, no need to click again
-					Delay(10)
+					Delay(5) ; lowered from 10 to 5 to speed up inject users
 					adbClick_wbb(packx, packy) 
-					Delay(10)
+					Delay(5) ; lowered from 10 to 5 to speed up inject users
 				}
 			} else {
 				FindImageAndClick(115, 140, 160, 155, , "SelectExpansion", 248, 459, 1000) ; if selected pack is not the latest pack click directly select other boosters
