@@ -28,6 +28,7 @@ global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP,
 global avgtotalSeconds
 global verboseLogging := false
 global showcaseEnabled
+global currentPackIs6Card := false
 global injectSortMethod := "ModifiedAsc"  ; Default sort method (oldest accounts first)
 global injectMinPacks := 0       ; Minimum pack count for injection (0 = no minimum)
 global injectMaxPacks := 39      ; Maximum pack count for injection (default for regular "Inject")
@@ -1168,6 +1169,28 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     } else if(!confirmed && vRet = GDEL && GDEL = 0) {
         confirmed := true
     }
+
+    ; Handle 7/2025 trade news update popup, remove later patch
+    if(imageName = "Points") {
+        Path = %imagePath%Privacy.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 115, 465, 160, 510, searchVariation)
+        if (vRet = 1) {
+            adbClick_wbb(137, 485)
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+        
+        Path = %imagePath%Update.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 15, 180, 53, 228, searchVariation)
+        if (vRet = 1) {
+            adbClick_wbb(137, 485)
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+    }
+    
     Path = %imagePath%Error.png ; Search for communication error
     pNeedle := GetNeedle(Path)
     ; ImageSearch within the region
@@ -1225,6 +1248,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     Gdip_DisposeImage(pBitmap)
     return confirmed
 }
+
 FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", clickx := 0, clicky := 0, sleepTime := "", skip := false, safeTime := 0) {
     global winTitle, failSafe, confirmed, slowMotion
 
@@ -1358,6 +1382,28 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 restartGameInstance("Stuck at " . imageName . "...") ; change to reset the instance and delete data then reload script
             }
         }
+
+        ; Search for 7/2025 trade news update popup; can be removed later patch
+        if(imageName = "Points") {
+            Path = %imagePath%Privacy.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 115, 465, 160, 510, searchVariation)
+            if (vRet = 1) {
+                adbClick_wbb(137, 485)
+                Gdip_DisposeImage(pBitmap)
+                continue
+            }
+            
+            Path = %imagePath%Update.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 15, 180, 53, 228, searchVariation)
+            if (vRet = 1) {
+                adbClick_wbb(137, 485)
+                Gdip_DisposeImage(pBitmap)
+                continue
+            }
+        }
+
         Path = %imagePath%Error.png ; Search for communication error
         pNeedle := GetNeedle(Path)
         ; ImageSearch within the region
@@ -1479,12 +1525,6 @@ LevelUp() {
             pos2 += 5
         }
         adbClick_wbb(pos1, pos2)
-    }
-    if(FindOrLoseImage(115, 465, 160, 510, , "Privacy", 0)) { ; clicks "X" on Pokemon News pop-up from 7/2025; remove later
-        adbClick_wbb(137, 485)
-    }
-    if(FindOrLoseImage(15, 180, 53, 228, , "Update", 0)) { ; back-up option, clicks "X" on Pokemon News pop-up from 7/2025; remove later
-        adbClick_wbb(137, 485)
     }
     Delay(1)
 }
@@ -1745,17 +1785,20 @@ menuDeleteStart() {
     ;    FileDelete, %loadedAccount%
     }
 }
+
 CheckPack() {
+
+    currentPackIs6Card := false ; reset before each pack check
     ; Update pack count.
-	accountOpenPacks += 1
-	if (injectMethod && loadedAccount)
-		UpdateAccount()
-	
+    accountOpenPacks += 1
+    if (injectMethod && loadedAccount)
+        UpdateAccount()
+    
     packsInPool += 1
     packsThisRun += 1
-		
-	if(!friendIDs && friendID = "" && !s4tEnabled && !ImmersiveCheck && !CrownCheck && !ShinyCheck)
-		return false
+        
+    if(!friendIDs && friendID = "" && !s4tEnabled && !ImmersiveCheck && !CrownCheck && !ShinyCheck)
+        return false
 
     ; Wait for cards to render before checking.
     Loop {
@@ -1763,8 +1806,11 @@ CheckPack() {
             break
         Delay(1)
     }
+    currentPackIs6Card := DetectSixCardPack()
+    
+    ; Determine total cards in pack for 4-diamond s4t calculations
+    totalCardsInPack := currentPackIs6Card ? 6 : 5
 
-    ; Define a variable to contain whatever is found based on settings.
     foundLabel := false
 
     ; Before doing anything else, check if the current pack is valid.
@@ -1775,13 +1821,13 @@ CheckPack() {
 
     if (foundInvalid) {
         ; Pack is invalid...
-		foundInvalidGP := FindGodPack(true) ; GP is never ignored
+        foundInvalidGP := FindGodPack(true) ; GP is never ignored
 
-    if (foundInvalidGP){
-        restartGameInstance("Invalid God Pack Found.", "GodPack")
-    }
+        if (foundInvalidGP){
+            restartGameInstance("Invalid God Pack Found.", "GodPack")
+        }
         if (!foundInvalidGP && !InvalidCheck) {
-			; If not a GP and not "ignore invalid packs" , check what cards the current pack contains which make it invalid, and if user want to save them.
+            ; If not a GP and not "ignore invalid packs" , check what cards the current pack contains which make it invalid, and if user want to save them.
             if (ShinyCheck && foundShiny && !foundLabel)
                 foundLabel := "Shiny"
             if (ImmersiveCheck && foundImmersive && !foundLabel)
@@ -1797,7 +1843,6 @@ CheckPack() {
         }
 
         IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
-
         return
     }
 
@@ -1806,15 +1851,15 @@ CheckPack() {
 
     if (foundGP) {
         if (loadedAccount) {
-            ;accountFoundGP()
+            ;accountFoundGP() 
             accountHasPackInTesting := 1 
             setMetaData()               
             IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
         }
 
-    restartGameInstance("God Pack found. Continuing...", "GodPack")
-    return
-}
+        restartGameInstance("God Pack found. Continuing...", "GodPack")
+        return
+    }
 
     ; if not invalid and no GP, Check for 2-star cards.
     if (!CheckShinyPackOnly || shinyPacks.HasKey(openPack)) {
@@ -1832,20 +1877,20 @@ CheckPack() {
                 foundLabel := "Double two star"
         }
         if (TrainerCheck && !foundLabel) {
-			if(!PseudoGodPack)
-				foundTrainer := FindBorders("trainer")
+            if(!PseudoGodPack)
+                foundTrainer := FindBorders("trainer")
             if (foundTrainer)
                 foundLabel := "Trainer"
         }
         if (RainbowCheck && !foundLabel) {
             if(!PseudoGodPack)
-				foundRainbow := FindBorders("rainbow")
+                foundRainbow := FindBorders("rainbow")
             if (foundRainbow)
                 foundLabel := "Rainbow"
         }
         if (FullArtCheck && !foundLabel) {
             if(!PseudoGodPack)
-				foundFullArt := FindBorders("fullart")
+                foundFullArt := FindBorders("fullart")
             if (foundFullArt)
                 foundLabel := "Full Art"
         }
@@ -1879,8 +1924,8 @@ CheckPack() {
 
         if (s4t4Dmnd) {
             ; Detecting a 4-diamond EX card isn't possible using a needle.
-            ; Start with 5 and substract other card types as efficiently as possible.
-            found4Dmnd := 5 - FindBorders("normal")
+            ; Start with total cards (5 or 6) and subtract other card types as efficiently as possible.
+            found4Dmnd := totalCardsInPack - FindBorders("normal")
 
             if (found4Dmnd > 0) {
                 if (s4t3Dmnd)
@@ -2035,6 +2080,31 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
     restartGameInstance("Tradeable cards found. Continuing...", "GodPack")
 }
 
+DetectSixCardPack() {
+    global winTitle, defaultLanguage
+    searchVariation := 20
+    
+    imagePath := A_ScriptDir . "\" . defaultLanguage . "\"
+    
+    pBitmap := from_window(WinExist(winTitle))
+    
+    ; Look for 6cardpackcheck.png (background element visible only in 5-card packs)
+    Path = %imagePath%6cardpackcheck.png
+    if (FileExist(Path)) {
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 228, 324, 248, 351, searchVariation)
+        if (vRet = 1) {
+            ; Found the check image, so this is a 5-card pack
+            Gdip_DisposeImage(pBitmap)
+            return false  ; Return false = 5-card pack
+        }
+    }
+    
+    ; Did not find check image, so this must be a 6-card pack
+    Gdip_DisposeImage(pBitmap)
+    return true  ; Return true = 6-card pack
+}
+
 FoundStars(star) {
     global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack
 
@@ -2100,45 +2170,99 @@ FoundStars(star) {
 }
 
 FindBorders(prefix) {
+    global currentPackIs6Card
     count := 0
     searchVariation := 40
-    borderCoords := [[30, 284, 83, 286]
-        ,[113, 284, 166, 286]
-        ,[196, 284, 249, 286]
-        ,[70, 399, 123, 401]
-        ,[155, 399, 208, 401]]
-    if (prefix = "shiny1star" || prefix = "shiny2star") {
-        borderCoords := [[90, 261, 93, 283]
-        ,[173, 261, 176, 283]
-        ,[255, 261, 258, 283]
-        ,[130, 376, 133, 398]
-        ,[215, 376, 218, 398]]
+    searchVariation6Card := 60  ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
+    
+    is6CardPack := currentPackIs6Card
+    
+    if (is6CardPack) {
+        borderCoords := [[30, 284, 83, 286]      ; Top row card 1
+            ,[113, 284, 166, 286]                ; Top row card 2  
+            ,[196, 284, 249, 286]                ; Top row card 3
+            ,[30, 399, 83, 401]                  ; Bottom row card 1
+            ,[113, 399, 166, 401]                ; Bottom row card 2
+            ,[196, 399, 249, 401]]               ; Bottom row card 3
+    } else {
+        ; Standard 5-card pack layout: 3 top, 2 bottom
+        borderCoords := [[30, 284, 83, 286]
+            ,[113, 284, 166, 286]
+            ,[196, 284, 249, 286]
+            ,[70, 399, 123, 401]
+            ,[155, 399, 208, 401]]
     }
-    ; 100% scale changes
-    if (scaleParam = 287) {
-        if (prefix = "shiny1star" || prefix = "shiny2star") {
-            borderCoords := [[91, 253, 95, 278]
-            ,[175, 253, 179, 278]
-            ,[259, 253, 263, 278]
-            ,[132, 370, 136, 395]
-            ,[218, 371, 222, 394]]
+    
+    ; Handle shiny card coordinates differently
+    if (prefix = "shiny1star" || prefix = "shiny2star") {
+        if (is6CardPack) {
+            borderCoords := [[90, 261, 93, 283] ; 6-card pack
+                ,[173, 261, 176, 283]
+                ,[255, 261, 258, 283]
+                ,[90, 376, 93, 398]      ; Bottom row card 1
+                ,[173, 376, 176, 398]    ; Bottom row card 2
+                ,[255, 376, 258, 398]]   ; Bottom row card 3
         } else {
-            borderCoords := [[26, 278, 84, 280]
-            ,[110, 278, 168, 280]
-            ,[194, 278, 252, 280]
-            ,[67, 395, 125, 397]
-            ,[153, 395, 211, 397]]
+            borderCoords := [[90, 261, 93, 283] ; 5-card pack
+                ,[173, 261, 176, 283]
+                ,[255, 261, 258, 283]
+                ,[130, 376, 133, 398]
+                ,[215, 376, 218, 398]]
         }
     }
+    
+    ; 100% scale adjustments
+    if (scaleParam = 287) {
+        if (prefix = "shiny1star" || prefix = "shiny2star") {
+            if (is6CardPack) {
+                borderCoords := [[91, 253, 95, 278]
+                    ,[175, 253, 179, 278]
+                    ,[259, 253, 263, 278]
+                    ,[91, 370, 95, 395]
+                    ,[175, 371, 179, 394]
+                    ,[259, 371, 263, 394]]
+            } else {
+                borderCoords := [[91, 253, 95, 278]
+                    ,[175, 253, 179, 278]
+                    ,[259, 253, 263, 278]
+                    ,[132, 370, 136, 395]
+                    ,[218, 371, 222, 394]]
+            }
+        } else {
+            if (is6CardPack) {
+                borderCoords := [[26, 278, 84, 280]
+                    ,[110, 278, 168, 280]
+                    ,[194, 278, 252, 280]
+                    ,[26, 395, 84, 397]
+                    ,[110, 395, 168, 397]
+                    ,[194, 395, 252, 397]]
+            } else {
+                borderCoords := [[26, 278, 84, 280]
+                    ,[110, 278, 168, 280]
+                    ,[194, 278, 252, 280]
+                    ,[67, 395, 125, 397]
+                    ,[153, 395, 211, 397]]
+            }
+        }
+    }
+    
     pBitmap := from_window(WinExist(winTitle))
-    ; imagePath := "C:\Users\Arturo\Desktop\PTCGP\GPs\" . Clipboard . ".png"
-    ; pBitmap := Gdip_CreateBitmapFromFile(imagePath)
     for index, value in borderCoords {
         coords := borderCoords[A_Index]
-        Path = %A_ScriptDir%\%defaultLanguage%\%prefix%%A_Index%.png
+        
+        ; For 6-card packs, reuse images from top row
+        if (is6CardPack && A_Index >= 4) {
+            imageIndex := A_Index - 3
+            currentSearchVariation := searchVariation6Card ; less image match requirement while we test if top row needles can be re-used for bottom row in 6-card packs
+        } else {
+            imageIndex := A_Index
+            currentSearchVariation := searchVariation
+        }
+        
+        Path = %A_ScriptDir%\%defaultLanguage%\%prefix%%imageIndex%.png
         if (FileExist(Path)) {
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], searchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
             if (vRet = 1) {
                 count += 1
             }
@@ -2149,28 +2273,63 @@ FindBorders(prefix) {
 }
 
 FindCard(prefix) {
+    global currentPackIs6Card
     count := 0
     searchVariation := 40
-    borderCoords := [[23, 191, 76, 193]
-        ,[106, 191, 159, 193]
-        ,[189, 191, 242, 193]
-        ,[63, 306, 116, 308]
-        ,[146, 306, 199, 308]]
-    ; 100% scale changes
-    if (scaleParam = 287) {
-        borderCoords := [[23, 184, 81, 186]
-            ,[107, 184, 165, 186]
-            ,[191, 184, 249, 186]
-            ,[64, 301, 122, 303]
-            ,[148, 301, 206, 303]]
+    searchVariation6Card := 60  ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
+    
+    is6CardPack := currentPackIs6Card
+    
+    if (is6CardPack) {
+        borderCoords := [[23, 191, 76, 193]
+            ,[106, 191, 159, 193]
+            ,[189, 191, 242, 193]
+            ,[23, 306, 76, 308]              ; Bottom left
+            ,[106, 306, 159, 308]            ; Bottom center
+            ,[189, 306, 242, 308]]           ; Bottom right
+    } else {
+        borderCoords := [[23, 191, 76, 193] ; Standard 5-card pack
+            ,[106, 191, 159, 193]
+            ,[189, 191, 242, 193]
+            ,[63, 306, 116, 308]
+            ,[146, 306, 199, 308]]
     }
+    
+    ; 100% scale adjustments
+    if (scaleParam = 287) {
+        if (is6CardPack) {
+            borderCoords := [[23, 184, 81, 186]
+                ,[107, 184, 165, 186]
+                ,[191, 184, 249, 186]
+                ,[23, 301, 81, 303]
+                ,[107, 301, 165, 303]
+                ,[191, 301, 249, 303]]
+        } else {
+            borderCoords := [[23, 184, 81, 186]
+                ,[107, 184, 165, 186]
+                ,[191, 184, 249, 186]
+                ,[64, 301, 122, 303]
+                ,[148, 301, 206, 303]]
+        }
+    }
+    
     pBitmap := from_window(WinExist(winTitle))
     for index, value in borderCoords {
         coords := borderCoords[A_Index]
-        Path = %A_ScriptDir%\%defaultLanguage%\%prefix%%A_Index%.png
+        
+        if (is6CardPack && A_Index >= 4) {
+            ; Position 4 uses image 1, position 5 uses image 2, position 6 uses image 3
+            imageIndex := A_Index - 3
+            currentSearchVariation := searchVariation6Card
+        } else {
+            imageIndex := A_Index
+            currentSearchVariation := searchVariation
+        }
+        
+        Path = %A_ScriptDir%\%defaultLanguage%\%prefix%%imageIndex%.png
         if (FileExist(Path)) {
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], searchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
             if (vRet = 1) {
                 count += 1
             }
@@ -3671,7 +3830,7 @@ SelectPack(HG := false) {
     } else if (openPack == "Lugia") {
         packx := RightPackX
     } else {
-        packx := MiddlePackX
+        packx := LeftPackX ; currently Eevee
     }
 	
 	if(openPack == "Eevee" || openPack == "HoOh" || openPack == "Lugia") {
@@ -3704,12 +3863,6 @@ SelectPack(HG := false) {
 			if(FindOrLoseImage(233, 400, 264, 428, , "Points", 0, failSafeTime)) {
 				break
 			}
-            if(FindOrLoseImage(115, 465, 160, 510, , "Privacy", 0)) { ; clicks "X" on Pokemon News pop-up from 7/2025; remove later
-                adbClick_wbb(137, 485)
-            }
-            if(FindOrLoseImage(15, 180, 53, 228, , "Update", 0)) { ; back-up option, clicks "X" on Pokemon News pop-up from 7/2025; remove later
-                adbClick_wbb(137, 485)
-            }
 			else if(!renew && !getFC) {
 				if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0)) {
 					adbClick_wbb(139, 371)
@@ -3896,7 +4049,7 @@ SelectPack(HG := false) {
         failSafe := A_TickCount
         failSafeTime := 0
         Loop {
-            if(FindImageAndClick(233, 486, 272, 519, , "Skip2", 143, 417, 2)) { ;click on open button until skip button appears
+            if(FindImageAndClick(233, 486, 272, 519, , "Skip2", 143, 417, 200)) { ;click on open button until skip button appears
                 break
 			} else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
 				cantOpenMorePacks := 1
@@ -3935,6 +4088,7 @@ PackOpening() {
         CreateStatusMessage("Waiting for Pack`n(" . failSafeTime . "/45 seconds)")
         if(failSafeTime > 45){
 			RemoveFriends()
+            IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
             restartGameInstance("Stuck at Pack")
 		}
     }
@@ -3967,7 +4121,7 @@ PackOpening() {
     FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497) ;skip through cards until results opening screen
 
     CheckPack()
-	
+    
 	if(!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum) 
 		return
 
