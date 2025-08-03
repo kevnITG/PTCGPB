@@ -1101,7 +1101,32 @@ EraseInput(num := 0, total := 0) {
     failSafeTime := 0
 
     Loop {
-        FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
+        ; MODIFIED: Add OK2 timeout here instead
+        ok2FailSafe := A_TickCount
+        ok2FailSafeTime := 0
+        ok2Found := false
+
+        Loop {
+            if(FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454, 100, 1)) {
+                ok2Found := true
+                break
+            }
+            
+            ok2FailSafeTime := (A_TickCount - ok2FailSafe) // 1000
+            
+            ; If we can't find OK2 after 5 seconds, break out
+            if(ok2FailSafeTime >= 5) {
+                CreateStatusMessage("OK2 not found in EraseInput, continuing...", , , , false)
+                return  ; Exit EraseInput function
+            }
+            
+            Sleep, 100
+        }
+
+        if(!ok2Found) {
+            return  ; Exit if OK2 wasn't found
+        }
+
         adbInputEvent("59 122 67") ; Press Shift + Home + Backspace
         if(FindOrLoseImage(15, 500, 68, 520, , "Erase", 0, failSafeTime))
             break
@@ -1383,6 +1408,21 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             }
         }
 
+        ; detect if no free packs are available, such as user loaded account without free packs
+        IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
+        if(imageName = "Skip2" && spendHourGlass = 0) {
+            Path = %imagePath%HourglassPack.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
+            if(vRet = 1) {
+                cantOpenMorePacks := 1
+                    if(injectMethod && loadedAccount) {
+                    MarkAccountAsUsed()
+                    }
+                return 0
+            }
+        }
+
         ; Search for 7/2025 trade news update popup; can be removed later patch
         if(imageName = "Points") {
             Path = %imagePath%Privacy.png
@@ -1404,24 +1444,35 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             }
         }
 
-        Path = %imagePath%Error.png ; Search for communication error
+        Path = %imagePath%Error.png ; Search for communication error OR start-up error
         pNeedle := GetNeedle(Path)
-        ; ImageSearch within the region
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 120, 187, 155, 210, searchVariation)
         if (vRet = 1) {
             CreateStatusMessage("Error message in " . scriptName . ". Clicking retry...",,,, false)
-            adbClick_wbb(82, 389)
-            Delay(1)
-            adbClick_wbb(139, 386)
-            Sleep, 1000
-        }
-            Path = %imagePath%App.png
+            
+            ; First try to find the "X" button (Privacy.png) for Start-Up error
+            Path = %imagePath%Privacy.png
             pNeedle := GetNeedle(Path)
-            ; ImageSearch within the region
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 225, 300, 242, 314, searchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 79, 319, 210, 500, searchVariation)
             if (vRet = 1) {
-                restartGameInstance("Stuck at " . imageName . "...")
+                ; Found Start-up error
+                adbClick_wbb(139, 440) ; click the "X" button
+            } else {
+                ; assume it's communication error instead; click the "Retry" blue button
+                adbClick_wbb(82, 389)
+                Delay(1)
+                adbClick_wbb(139, 386)
             }
+            Sleep, 5000 ; longer sleep time to allow reloading, previously 1000ms
+        }
+
+        Path = %imagePath%App.png
+        pNeedle := GetNeedle(Path)
+        ; ImageSearch within the region
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 225, 300, 242, 314, searchVariation)
+        if (vRet = 1) {
+            restartGameInstance("Stuck at " . imageName . "...")
+        }
             
         if(imageName = "Social" || imageName = "Country" || imageName = "Account2" || imageName = "Account") { ;only look for deleted account on start up.
             Path = %imagePath%NoSave.png ; look for No Save Data error message > if loaded account > delete xml > reload
@@ -1464,6 +1515,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
 				;restartGameInstance("Not Enough Items")
 			}
 		}
+
 		if(imageName = "Mission_dino2") {
 			Path = %imagePath%1solobattlemission.png
             pNeedle := GetNeedle(Path)
@@ -4049,7 +4101,7 @@ SelectPack(HG := false) {
         failSafe := A_TickCount
         failSafeTime := 0
         Loop {
-            if(FindImageAndClick(233, 486, 272, 519, , "Skip2", 143, 417, 200)) { ;click on open button until skip button appears
+            if(FindImageAndClick(233, 486, 272, 519, , "Skip2", 152, 425, 200)) { ;click on open button until skip button appears
                 break
 			} else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
 				cantOpenMorePacks := 1
