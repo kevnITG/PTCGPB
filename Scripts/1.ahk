@@ -812,7 +812,7 @@ RemoveFriends() {
             FindImageAndClick(98, 184, 151, 224, , "Hourglass1", 168, 438, 500, 5) ;stop at hourglasses tutorial 2
             Delay(1)
 
-            adbClick_wbb(203, 436) ; 203 436
+            adbClick_wbb(203, 436) 
         } else if(!renew && !getFC && DeadCheck = 1) {
             clickButton := FindOrLoseImage(75, 340, 195, 530, 80, "Button", 0)
             if(clickButton) {
@@ -851,7 +851,6 @@ RemoveFriends() {
         failSafeTime := 0
         Loop {
             adbClick(58, 190)
-            Delay(1)
             if(FindOrLoseImage(87, 401, 99, 412, , "Accepted2", 0, failSafeTime)){
                 accepted := true
                 break
@@ -874,6 +873,9 @@ RemoveFriends() {
             FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407)
             FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372)
         }
+        adbClick_wbb(143, 507)
+        adbClick_wbb(143, 507) ; added these two extra clicks to ensure button is clicked,
+        Sleep, 50              ; but then we need the 750ms wait time to avoid going back too many pages.
         FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 750)
         friendsProcessed++
     }
@@ -1101,32 +1103,7 @@ EraseInput(num := 0, total := 0) {
     failSafeTime := 0
 
     Loop {
-        ; MODIFIED: Add OK2 timeout here instead
-        ok2FailSafe := A_TickCount
-        ok2FailSafeTime := 0
-        ok2Found := false
-
-        Loop {
-            if(FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454, 100, 1)) {
-                ok2Found := true
-                break
-            }
-            
-            ok2FailSafeTime := (A_TickCount - ok2FailSafe) // 1000
-            
-            ; If we can't find OK2 after 5 seconds, break out
-            if(ok2FailSafeTime >= 5) {
-                CreateStatusMessage("OK2 not found in EraseInput, continuing...", , , , false)
-                return  ; Exit EraseInput function
-            }
-            
-            Sleep, 100
-        }
-
-        if(!ok2Found) {
-            return  ; Exit if OK2 wasn't found
-        }
-
+        FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
         adbInputEvent("59 122 67") ; Press Shift + Home + Backspace
         if(FindOrLoseImage(15, 500, 68, 520, , "Erase", 0, failSafeTime))
             break
@@ -1388,6 +1365,30 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if (!confirmed && vRet = 1) {
             confirmed := vPosXY
         } else {
+            ; Special failsafe condition for OK2
+            if(imageName = "OK2") {
+                ; Check if we're on the wrong page by looking for "Send" button
+                Path = %imagePath%Send.png
+                pNeedle := GetNeedle(Path)
+                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 165, 250, 190, 275, searchVariation)
+                if (vRet = 1) {
+                    CreateStatusMessage("Unexpected screen; fixing...",,,, false)
+                    ; Found Send button, click it multiple times to get past this screen
+                    adbClick_wbb(243, 258)
+                    adbClick_wbb(243, 258)
+                    adbClick_wbb(243, 258)
+                    Sleep, 1000
+                    ; Navigate back to search screen
+                    adbClick_wbb(143, 518) ; "Search2" coodinates
+                    ; Now complete the original OK2 operation that was requested
+                    Sleep, 1000
+                    FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
+                    CreateStatusMessage("Fixed screen, continuing...",,,, false)               
+                    Gdip_DisposeImage(pBitmap)
+                    return true ; Completed the original request for finding OK2; on expected screen now
+                }
+            }
+            
             ElapsedTime := (A_TickCount - StartSkipTime) // 1000
             if(imageName = "Country")
                 FSTime := 90
