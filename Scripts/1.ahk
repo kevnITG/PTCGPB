@@ -851,6 +851,7 @@ RemoveFriends() {
         failSafeTime := 0
         Loop {
             adbClick(58, 190)
+            Delay(1)
             if(FindOrLoseImage(87, 401, 99, 412, , "Accepted2", 0, failSafeTime)){
                 accepted := true
                 break
@@ -873,9 +874,6 @@ RemoveFriends() {
             FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407)
             FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372)
         }
-        adbClick_wbb(143, 507)
-        adbClick_wbb(143, 507) ; added these two extra clicks to ensure button is clicked,
-        Sleep, 50              ; but then we need the 750ms wait time to avoid going back too many pages.
         FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 750)
         friendsProcessed++
     }
@@ -1173,7 +1171,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     }
 
     ; Handle 7/2025 trade news update popup, remove later patch
-    if(imageName = "Points") {
+    if(imageName = "Points" || imageName = "Social") {
         Path = %imagePath%Privacy.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 115, 465, 160, 510, searchVariation)
@@ -1365,30 +1363,6 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if (!confirmed && vRet = 1) {
             confirmed := vPosXY
         } else {
-            ; Special failsafe condition for OK2
-            if(imageName = "OK2") {
-                ; Check if we're on the wrong page by looking for "Send" button
-                Path = %imagePath%Send.png
-                pNeedle := GetNeedle(Path)
-                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 165, 250, 190, 275, searchVariation)
-                if (vRet = 1) {
-                    CreateStatusMessage("Unexpected screen; fixing...",,,, false)
-                    ; Found Send button, click it multiple times to get past this screen
-                    adbClick_wbb(243, 258)
-                    adbClick_wbb(243, 258)
-                    adbClick_wbb(243, 258)
-                    Sleep, 1000
-                    ; Navigate back to search screen
-                    adbClick_wbb(143, 518) ; "Search2" coodinates
-                    ; Now complete the original OK2 operation that was requested
-                    Sleep, 1000
-                    FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
-                    CreateStatusMessage("Fixed screen, continuing...",,,, false)               
-                    Gdip_DisposeImage(pBitmap)
-                    return true ; Completed the original request for finding OK2; on expected screen now
-                }
-            }
-            
             ElapsedTime := (A_TickCount - StartSkipTime) // 1000
             if(imageName = "Country")
                 FSTime := 90
@@ -1408,6 +1382,28 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 restartGameInstance("Stuck at " . imageName . "...") ; change to reset the instance and delete data then reload script
             }
         }
+        Path = %imagePath%Error.png ; Search for communication error
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 120, 187, 155, 210, searchVariation)
+        if (vRet = 1) {
+            CreateStatusMessage("Error message in " . scriptName . ". Clicking retry...",,,, false)
+            
+            ; First try to find the "X" button (Privacy.png) for Start-Up error
+            Path = %imagePath%Privacy.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 79, 319, 210, 500, searchVariation)
+            if (vRet = 1) {
+                ; Found Start-up error
+                adbClick_wbb(139, 440) ; click the "X" button
+            } else {
+                ; assume it's communication error instead; click the "Retry" blue button
+                adbClick_wbb(82, 389)
+                Delay(1)
+                adbClick_wbb(139, 386)
+            }
+            Sleep, 5000 ; longer sleep time to allow reloading, previously 1000ms
+        }
+
 
         ; detect if no free packs are available, such as user loaded account without free packs
         IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
@@ -1443,28 +1439,6 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 Gdip_DisposeImage(pBitmap)
                 continue
             }
-        }
-
-        Path = %imagePath%Error.png ; Search for communication error OR start-up error
-        pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 120, 187, 155, 210, searchVariation)
-        if (vRet = 1) {
-            CreateStatusMessage("Error message in " . scriptName . ". Clicking retry...",,,, false)
-            
-            ; First try to find the "X" button (Privacy.png) for Start-Up error
-            Path = %imagePath%Privacy.png
-            pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 79, 319, 210, 500, searchVariation)
-            if (vRet = 1) {
-                ; Found Start-up error
-                adbClick_wbb(139, 440) ; click the "X" button
-            } else {
-                ; assume it's communication error instead; click the "Retry" blue button
-                adbClick_wbb(82, 389)
-                Delay(1)
-                adbClick_wbb(139, 386)
-            }
-            Sleep, 5000 ; longer sleep time to allow reloading, previously 1000ms
         }
 
         Path = %imagePath%App.png
@@ -2238,7 +2212,7 @@ FindBorders(prefix) {
             ,[113, 399, 166, 401]                ; Bottom row card 2
             ,[196, 399, 249, 401]]               ; Bottom row card 3
     } else {
-        ; Standard 5-card pack layout: 3 top, 2 bottom
+        ; 5-card pack
         borderCoords := [[30, 284, 83, 286]
             ,[113, 284, 166, 286]
             ,[196, 284, 249, 286]
@@ -2264,7 +2238,7 @@ FindBorders(prefix) {
         }
     }
     
-    ; 100% scale adjustments
+    ; 100% scale changes
     if (scaleParam = 287) {
         if (prefix = "shiny1star" || prefix = "shiny2star") {
             if (is6CardPack) {
