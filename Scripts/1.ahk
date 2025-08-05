@@ -2163,8 +2163,8 @@ DetectSixCardPack() {
     
     pBitmap := from_window(WinExist(winTitle))
     
-    ; Look for 6cardpackcheck.png (background element visible only in 5-card packs)
-    Path = %imagePath%6cardpackcheck.png
+    ; Look for 6cardpackindicator.png (background element visible only in 5-card packs)
+    Path = %imagePath%6cardpackindicator.png
     if (FileExist(Path)) {
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 228, 324, 248, 351, searchVariation)
