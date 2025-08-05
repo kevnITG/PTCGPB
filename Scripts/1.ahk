@@ -1393,6 +1393,30 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if (!confirmed && vRet = 1) {
             confirmed := vPosXY
         } else {
+            ; Special failsafe condition for OK2
+            if(imageName = "OK2") {
+                ; Check if we're on the wrong page by looking for "Send" button
+                Path = %imagePath%Send.png
+                pNeedle := GetNeedle(Path)
+                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 165, 250, 190, 275, searchVariation)
+                if (vRet = 1) {
+                    CreateStatusMessage("Unexpected screen; fixing...",,,, false)
+                    ; Found Send button, click it multiple times to get past this screen
+                    adbClick_wbb(243, 258)
+                    adbClick_wbb(243, 258)
+                    adbClick_wbb(243, 258)
+                    Sleep, 1000
+                    ; Navigate back to search screen
+                    adbClick_wbb(143, 518) ; "Search2" coodinates
+                    ; Now complete the original OK2 operation that was requested
+                    Sleep, 1000
+                    FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
+                    CreateStatusMessage("Fixed screen, continuing...",,,, false)               
+                    Gdip_DisposeImage(pBitmap)
+                    return true ; Completed the original request for finding OK2; on expected screen now
+                }
+            }
+            
             ElapsedTime := (A_TickCount - StartSkipTime) // 1000
             if(imageName = "Country")
                 FSTime := 90
