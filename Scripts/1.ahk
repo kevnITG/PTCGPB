@@ -1173,6 +1173,21 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         confirmed := true
     }
 
+        ; detect if no free packs are available, such as user loaded account without free packs
+    IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
+    if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0) {
+        Path = %imagePath%HourglassPack.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
+        if(vRet = 1) {
+            cantOpenMorePacks := 1
+                if(injectMethod && loadedAccount) {
+                MarkAccountAsUsed()
+                }
+            return 0
+        }
+    }
+
     ; Handle 7/2025 trade news update popup, remove later patch
     if(imageName = "Points" || imageName = "Social") {
         Path = %imagePath%Privacy.png
