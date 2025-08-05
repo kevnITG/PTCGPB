@@ -874,6 +874,9 @@ RemoveFriends() {
             FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407)
             FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372)
         }
+        adbClick(143,507)
+        Sleep, 75
+        adbClick(143,507) ; added these two adbClicks to ensure it's clicked. then we need to wait for the 750ms below to avoid backing out of an extra screen.
         FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 750)
         friendsProcessed++
     }
@@ -1191,15 +1194,27 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
     
-    Path = %imagePath%Error.png ; Search for communication error
-    pNeedle := GetNeedle(Path)
-    ; ImageSearch within the region
-    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 120, 187, 155, 210, searchVariation)
-    if (vRet = 1) {
-        CreateStatusMessage("Error message in " . scriptName . ". Clicking retry...",,,, false)
-        adbClick_wbb(139, 386)
-        Sleep, 1000
-    }
+        Path = %imagePath%Error.png ; Search for communication error
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 120, 187, 155, 210, searchVariation)
+        if (vRet = 1) {
+            CreateStatusMessage("Error message in " . scriptName . ". Clicking retry...",,,, false)
+            
+            ; First try to find the "X" button (Privacy.png) for Start-Up error
+            Path = %imagePath%Privacy.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 79, 319, 210, 500, searchVariation)
+            if (vRet = 1) {
+                ; Found Start-up error
+                adbClick_wbb(139, 440) ; click the "X" button
+            } else {
+                ; assume it's communication error instead; click the "Retry" blue button
+                adbClick_wbb(82, 389)
+                Delay(1)
+                adbClick_wbb(139, 386)
+            }
+            Sleep, 5000 ; longer sleep time to allow reloading, previously 1000ms
+        }
     
         Path = %imagePath%App.png
         pNeedle := GetNeedle(Path)
@@ -1407,7 +1422,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
 
         ; detect if no free packs are available, such as user loaded account without free packs
         IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
-        if(imageName = "Skip2" && spendHourGlass = 0) {
+        if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0) {
             Path = %imagePath%HourglassPack.png
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
