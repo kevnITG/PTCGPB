@@ -1175,7 +1175,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
 
         ; detect if no free packs are available, such as user loaded account without free packs
     IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
-    if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0) {
+    if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount) {
         Path = %imagePath%HourglassPack.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
@@ -1221,7 +1221,17 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 79, 319, 210, 500, searchVariation)
             if (vRet = 1) {
                 ; Found Start-up error
+                CreateStatusMessage("Start-up error; initiating slow reload...",,,, false)
+                Sleep, 2000
+                adbClick_wbb(19,125) ; platin, must remove speedmod for reload app
+                Sleep, 500
+                adbClick_wbb(26, 180) ; 1x
+                Sleep, 2000
                 adbClick_wbb(139, 440) ; click the "X" button
+                Sleep, 10000
+                adbClick_wbb(139, 440) ; click to start loading in
+                Sleep, 10000
+                Reload ; reload the script to reset the instance
             } else {
                 ; assume it's communication error instead; click the "Retry" blue button
                 adbClick_wbb(82, 389)
@@ -1393,30 +1403,6 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if (!confirmed && vRet = 1) {
             confirmed := vPosXY
         } else {
-            ; Special failsafe condition for OK2
-            if(imageName = "OK2") {
-                ; Check if we're on the wrong page by looking for "Send" button
-                Path = %imagePath%Send.png
-                pNeedle := GetNeedle(Path)
-                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 165, 250, 190, 275, searchVariation)
-                if (vRet = 1) {
-                    CreateStatusMessage("Unexpected screen; fixing...",,,, false)
-                    ; Found Send button, click it multiple times to get past this screen
-                    adbClick_wbb(243, 258)
-                    adbClick_wbb(243, 258)
-                    adbClick_wbb(243, 258)
-                    Sleep, 1000
-                    ; Navigate back to search screen
-                    adbClick_wbb(143, 518) ; "Search2" coodinates
-                    ; Now complete the original OK2 operation that was requested
-                    Sleep, 1000
-                    FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
-                    CreateStatusMessage("Fixed screen, continuing...",,,, false)               
-                    Gdip_DisposeImage(pBitmap)
-                    return true ; Completed the original request for finding OK2; on expected screen now
-                }
-            }
-            
             ElapsedTime := (A_TickCount - StartSkipTime) // 1000
             if(imageName = "Country")
                 FSTime := 90
@@ -1448,7 +1434,15 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 79, 319, 210, 500, searchVariation)
             if (vRet = 1) {
                 ; Found Start-up error
+                CreateStatusMessage("Start-up error; initiating slow reload...",,,, false)
+                Sleep, 2000
+                adbClick_wbb(19,125) ; platin, must remove speedmod for reload app
+                Sleep, 500
+                adbClick_wbb(26, 180) ; 1x
+                Sleep, 2000
                 adbClick_wbb(139, 440) ; click the "X" button
+                Sleep, 10000
+                Reload ; reload the script to reset the instance
             } else {
                 ; assume it's communication error instead; click the "Retry" blue button
                 adbClick_wbb(82, 389)
@@ -1461,7 +1455,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
 
         ; detect if no free packs are available, such as user loaded account without free packs
         IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
-        if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0) {
+        if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount) {
             Path = %imagePath%HourglassPack.png
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
