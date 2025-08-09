@@ -3005,8 +3005,8 @@ ArrangeWindows:
    
    if (debugMode && windowsPositioned == 0) {
       MsgBox, 0x40000,, No windows found to arrange
-   } else {
-      MsgBox, 0x40000,, Arranged %windowsPositioned% windows
+   ; } else {
+   ;    MsgBox, 0x40000,, Arranged %windowsPositioned% windows
    }
    
    ; Save settings after arranging windows

@@ -1192,7 +1192,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     if(imageName = "Points" || imageName = "Social" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account") {
         Path = %imagePath%Privacy.png
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 115, 465, 160, 510, searchVariation)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
         if (vRet = 1) {
             adbClick_wbb(137, 485)
             Gdip_DisposeImage(pBitmap)
@@ -1472,7 +1472,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if(imageName = "Points" || imageName = "Social" || imageName = "Missions" || imageName = "WonderPick") {
             Path = %imagePath%Privacy.png
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 115, 465, 160, 510, searchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
             if (vRet = 1) {
                 adbClick_wbb(137, 485)
                 Gdip_DisposeImage(pBitmap)
@@ -2248,7 +2248,12 @@ FindBorders(prefix) {
     global currentPackIs6Card
     count := 0
     searchVariation := 40
-    searchVariation6Card := 60  ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
+    searchVariation6Card := 50  ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
+
+     if (prefix = "shiny2star") { ; 
+         searchVariation := 65  ; 40-60 is not being detected. 80 is too much (3d detected as 2starshiny). trying 65.
+         searchVariation6Card := 65  ; 
+     }
     
     is6CardPack := currentPackIs6Card
     
@@ -5172,6 +5177,9 @@ GoToMain(fromSocial := false) {
         }
     }
     else {
+        Delay(2)
+        adbClick(139,518)
+        adbClick(139,518) ; prevents getting stuck in pack opening menu
         FindImageAndClick(120, 500, 155, 530, , "Social", 143, 493)
         FindImageAndClick(191, 393, 211, 411, , "Shop", 20, 515, 500) ;click until at main menu
     }
