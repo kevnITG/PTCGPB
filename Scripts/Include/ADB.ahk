@@ -16,7 +16,7 @@ findAdbPorts(baseFolder := "C:\Program Files\Netease") {
         mumuFolder = %baseFolder%\MuMu Player 12\vms\*
 
     if !FileExist(mumuFolder){
-        MsgBox, 16, , Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
+        MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
         ExitApp
     }
     ; Loop through all directories in the base folder

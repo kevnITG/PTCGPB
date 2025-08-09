@@ -3021,7 +3021,7 @@ LaunchAllMumu:
    SaveAllSettings()
    
    if(StrLen(A_ScriptDir) > 200 || InStr(A_ScriptDir, " ")) {
-      MsgBox, 0x40000,, ERROR: bot folder path is too long or contains blank spaces. Move it to a shorter path without spaces, such as C:\PTCGPB
+      MsgBox, 0x40000,, ERROR: bot folder path is too long or contains blank spaces. Move to a shorter path without spaces such as C:\PTCGPB
       return
    }
    
