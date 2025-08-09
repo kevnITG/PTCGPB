@@ -1175,7 +1175,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
 
         ; detect if no free packs are available, such as user loaded account without free packs
     IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
-    if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount) {
+    if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount && openExtraPack = 0) {
         Path = %imagePath%HourglassPack.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
@@ -1189,7 +1189,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     }
 
     ; Handle 7/2025 trade news update popup, remove later patch
-    if(imageName = "Points" || imageName = "Social") {
+    if(imageName = "Points" || imageName = "Social" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account") {
         Path = %imagePath%Privacy.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 115, 465, 160, 510, searchVariation)
@@ -1455,7 +1455,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
 
         ; detect if no free packs are available, such as user loaded account without free packs
         IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
-        if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount) {
+        if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount && openExtraPack = 0) {
             Path = %imagePath%HourglassPack.png
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
@@ -1469,7 +1469,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         }
 
         ; Search for 7/2025 trade news update popup; can be removed later patch
-        if(imageName = "Points") {
+        if(imageName = "Points" || imageName = "Social" || imageName = "Missions" || imageName = "WonderPick") {
             Path = %imagePath%Privacy.png
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 115, 465, 160, 510, searchVariation)
@@ -4124,7 +4124,7 @@ SelectPack(HG := false) {
         failSafe := A_TickCount
         failSafeTime := 0
         Loop {
-            if(FindImageAndClick(233, 486, 272, 519, , "Skip2", 152, 425, 200)) { ;click on open button until skip button appears
+            if(FindImageAndClick(233, 486, 272, 519, , "Skip2", 143, 417, 2)) { ;click on open button until skip button appears
                 break
 			} else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
 				cantOpenMorePacks := 1
