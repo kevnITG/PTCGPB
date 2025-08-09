@@ -420,16 +420,16 @@ NextStep:
    ; Create Sort By label and dropdown
    SetNormalFont()
    Gui, Add, Text, % "x" . xPos . " y150 backgroundtrans vTxt_DeleteMethod", % currentDictionary.Txt_DeleteMethod
-   defaultDelete := 1 ; Default to first option (13 Pack)
-   if (deleteMethod = "13 Pack")
+   defaultDelete := 1 ; Default to first option (Create Bots (13P))
+   if (deleteMethod = "Create Bots (13P)")
       defaultDelete := 1
-   else if (deleteMethod = "Inject")
+   else if (deleteMethod = "Inject 13-39P")
       defaultDelete := 2
    else if (deleteMethod = "Inject Missions")
+      defaultDelete := 2 ; map to Inject 13-39P if user somehow selected Missions after I have hidden the option
+   else if (deleteMethod = "Inject Wonderpick 39P+")
       defaultDelete := 3
-   else if (deleteMethod = "Inject for Reroll")
-      defaultDelete := 4
-   Gui, Add, DropDownList, % "x" . xPos+65 . " y148 w120 vdeleteMethod gdeleteSettings hwndMethod +0x0210 choose" . defaultDelete . " -E0x200 backgroundtrans", 13 Pack|Inject|Inject Missions|Inject for Reroll
+   Gui, Add, DropDownList, % "x" . xPos+65 . " y148 w120 vdeleteMethod gdeleteSettings hwndMethod +0x0210 choose" . defaultDelete . " -E0x200 backgroundtrans", Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+
    ; Apply the correct selection
    GuiControl, Choose, deleteMethod, %defaultDelete%
    global Txt_packMethod, Txt_nukeAccount, Txt_spendHourGlass, Txt_openExtraPack
@@ -493,14 +493,14 @@ NextStep:
    
    Gui, Add, Text, x%xPos% y242 vSortByText BackgroundTrans, % currentDictionary.SortByText
    Gui, Add, DropDownList, % "x" . xPos+110 . " y240 w120 vSortByDropdown gSortByDropdownHandler hwndSortby +0x0210 Choose" . sortOption . " BackgroundTrans", Oldest First|Newest First|Fewest Packs First|Most Packs First
-   if (deleteMethod != "Inject for Reroll") {
+   if (deleteMethod != "Inject Wonderpick 39P+") {
       GuiControl, Hide, packMethod
       GuiControl, Hide, Txt_packMethod
       GuiControl, Hide, openExtraPack
       GuiControl, Hide, Txt_openExtraPack
    }
    
-   if (deleteMethod != "13 Pack") {
+   if (deleteMethod != "Create Bots (13P)") {
       GuiControl, Hide, nukeAccount
       GuiControl, Hide, Txt_nukeAccount
    } else {
@@ -2117,7 +2117,7 @@ LoadSettingsFromIni() {
       IniRead, minStars, Settings.ini, UserSettings, minStars, 0
       IniRead, minStarsShiny, Settings.ini, UserSettings, minStarsShiny, 0
       IniRead, minStarsEnabled, Settings.ini, UserSettings, minStarsEnabled, 0
-      IniRead, deleteMethod, Settings.ini, UserSettings, deleteMethod, 13 Pack
+      IniRead, deleteMethod, Settings.ini, UserSettings, deleteMethod, Create Bots (13P)
       IniRead, packMethod, Settings.ini, UserSettings, packMethod, 0
       IniRead, nukeAccount, Settings.ini, UserSettings, nukeAccount, 0
       IniRead, spendHourGlass, Settings.ini, UserSettings, spendHourGlass, 0
@@ -2352,11 +2352,11 @@ SaveAllSettings() {
    
    Gui, % MainGuiName . ":Submit", NoHide
    if (deleteMethod = "" || deleteMethod = "ERROR") {
-      deleteMethod := "13 Pack"
+      deleteMethod := "Create Bots (13P)"
    }
-   validMethods := "13 Pack|Inject|Inject Missions|Inject for Reroll"
+   validMethods := "Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+"
    if (!InStr(validMethods, deleteMethod)) {
-      deleteMethod := "13 Pack"
+      deleteMethod := "Create Bots (13P)"
    }
    
    if (SortByDropdown = "Oldest First")
@@ -2368,7 +2368,7 @@ SaveAllSettings() {
    else if (SortByDropdown = "Most Packs First")
       injectSortMethod := "PacksDesc"
    iniContent_Second := "deleteMethod=" deleteMethod "`n"
-   if (deleteMethod = "Inject for Reroll" || deleteMethod = "13 Pack") {
+   if (deleteMethod = "Inject Wonderpick 39P+" || deleteMethod = "Create Bots (13P)") {
       iniContent_Second .= "FriendID=" FriendID "`n"
       iniContent_Second .= "mainIdsURL=" mainIdsURL "`n"
    } else {
@@ -2810,7 +2810,7 @@ deleteSettings:
       ShowCheck("spendHourGlass", spendHourGlass)
       for _, ctrl in sortControls
          GuiControl, Show, %ctrl%
-      if (currentMethod = "Inject for Reroll") {
+      if (currentMethod = "Inject Wonderpick 39P+") {
          for _, ctrl in extraControls
             ShowCheck(ctrl, %ctrl%)
       } else {

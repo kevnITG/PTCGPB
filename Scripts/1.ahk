@@ -31,7 +31,7 @@ global showcaseEnabled
 global currentPackIs6Card := false
 global injectSortMethod := "ModifiedAsc"  ; Default sort method (oldest accounts first)
 global injectMinPacks := 0       ; Minimum pack count for injection (0 = no minimum)
-global injectMaxPacks := 39      ; Maximum pack count for injection (default for regular "Inject")
+global injectMaxPacks := 39      ; Maximum pack count for injection (default for regular Inject 13-39P)
 
 global waitForEligibleAccounts := 1  ; Enable/disable waiting (1 = wait, 0 = stop script)
 global maxWaitHours := 24             ; Maximum hours to wait before giving up (0 = wait forever)
@@ -260,7 +260,7 @@ else if (setSpeed = "1x/3x")
 
 setSpeed := 3 ;always 1x/3x
 
-if(InStr(deleteMethod, "Inject"))
+if(InStr(deleteMethod, Inject 13-39P))
     injectMethod := true
 
 initializeAdbShell()
@@ -290,7 +290,7 @@ adbSwipeX2 := Round(267 / 277 * 535)
 adbSwipeY := Round((327 - 44) / 489 * 960)
 global adbSwipeParams := adbSwipeX1 . " " . adbSwipeY . " " . adbSwipeX2 . " " . adbSwipeY . " " . swipeSpeed
 
-if(DeadCheck = 1 && deleteMethod != "13 Pack") {
+if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
     CreateStatusMessage("Account is stuck! Restarting and unfriending...")
     friended := true
     CreateStatusMessage("Stuck account still has friends. Unfriending accounts...")
@@ -306,7 +306,7 @@ if(DeadCheck = 1 && deleteMethod != "13 Pack") {
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
     createAccountList(scriptName)
     Reload
-} else if(DeadCheck = 1 && deleteMethod = "13 Pack") {
+} else if(DeadCheck = 1 && deleteMethod = "Create Bots (13P)") {
     CreateStatusMessage("New account creation is stuck! Deleting account...")
     menuDeleteStart()
     Reload
@@ -421,7 +421,7 @@ if(DeadCheck = 1 && deleteMethod != "13 Pack") {
             accountOpenPacks := 0 ;tutorial packs don't count
         }
         
-        if(deleteMethod = "5 Pack" || deleteMethod = "5 Pack (Fast)" || deleteMethod = "13 Pack")
+        if(deleteMethod = "5 Pack" || deleteMethod = "5 Pack (Fast)" || deleteMethod = "Create Bots (13P)")
             wonderPicked := DoWonderPick()
             
         friendsAdded := AddFriends()
@@ -472,14 +472,14 @@ if(DeadCheck = 1 && deleteMethod != "13 Pack") {
 
         MidOfRun:
 		
-        if(deleteMethod = "Inject" || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)
+        if(deleteMethod = Inject 13-39P || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)
             Goto, EndOfRun
 
-        if(deleteMethod = "Inject for Reroll" && openExtraPack && packMethod) {
+        if(deleteMethod = "Inject Wonderpick 39P+" && openExtraPack && packMethod) {
             friendsAdded := AddFriends(true)
             SelectPack("HGPack")
             HourglassOpening(true)
-        } else if(deleteMethod = "Inject for Reroll" && openExtraPack && !packMethod) {
+        } else if(deleteMethod = "Inject Wonderpick 39P+" && openExtraPack && !packMethod) {
             HourglassOpening(true)
             Goto, EndOfRun
         }
@@ -574,7 +574,7 @@ if(DeadCheck = 1 && deleteMethod != "13 Pack") {
 
         ; Special missions
         IniRead, claimSpecialMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, claimSpecialMissions, 0
-        if (claimSpecialMissions = 1 && !specialMissionsDone && !(deleteMethod = "Inject" && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
+        if (claimSpecialMissions = 1 && !specialMissionsDone && !(deleteMethod = Inject 13-39P && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
             GoToMain()
             HomeAndMission(1)
             GetEventRewards(true) ; collects all the Special mission hourglass
@@ -586,17 +586,17 @@ if(DeadCheck = 1 && deleteMethod != "13 Pack") {
         
         ; Hourglass spending
         IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 0
-        if (spendHourGlass = 1 && !(deleteMethod = "Inject" && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
+        if (spendHourGlass = 1 && !(deleteMethod = Inject 13-39P && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
             SpendAllHourglass()
         }
 
-        ; Friend removal for inject reroll
+        ; Friend removal for inject wonderpick 39P+
         if (injectMethod && friended && !keepAccount) {
             RemoveFriends()
         }
         
         ; Collect Daily Hourglasses - either separate setting? or will be currently part of openExtraPack
-        if(deleteMethod = "Inject for Reroll" && openExtraPack) {
+        if(deleteMethod = "Inject Wonderpick 39P+" && openExtraPack) {
             GoToMain(true)
             GetAllRewards(false, true)
         }
@@ -636,7 +636,7 @@ if(DeadCheck = 1 && deleteMethod != "13 Pack") {
         AppendToJsonFile(packsThisRun)
 		
         ; Check for 40 first to quit	
-        if (deleteMethod = "Inject" || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum) {
+        if (deleteMethod = Inject 13-39P || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum) {
             if (injectMethod && loadedAccount) {
                 if (!keepAccount) {
                     MarkAccountAsUsed() 
@@ -4613,11 +4613,11 @@ CreateAccountList(instance) {
     if (!injectSortMethod)
         injectSortMethod := "ModifiedAsc"
     
-    parseInjectType := "Inject"  ; Default
+    parseInjectType := Inject 13-39P  ; Default
     
     ; Determine injection type and pack ranges
-    if (deleteMethod = "Inject") {
-        parseInjectType := "Inject"
+    if (deleteMethod = Inject 13-39P) {
+        parseInjectType := Inject 13-39P
         minPacks := 0
         maxPacks := 38
     }
@@ -4626,8 +4626,8 @@ CreateAccountList(instance) {
         minPacks := 0
         maxPacks := 38
     }
-    else if (deleteMethod = "Inject for Reroll") {
-        parseInjectType := "Inject for Reroll"
+    else if (deleteMethod = "Inject Wonderpick 39P+") {
+        parseInjectType := "Inject Wonderpick 39P+"
         minPacks := 35
         maxPacks := 9999
     }
@@ -4802,7 +4802,7 @@ checkShouldDoMissions() {
         return false
     }
     
-    if (deleteMethod = "13 Pack") {
+    if (deleteMethod = "Create Bots (13P)") {
         return (!friendIDs && friendID = "" && accountOpenPacks < maxAccountPackNum) || (friendIDs || friendID != "")
     }
     else if (deleteMethod = "Inject Missions") {
@@ -4816,7 +4816,7 @@ checkShouldDoMissions() {
             LogToFile("Executing missions for Inject Missions method (user setting enabled)")
         return true
     }
-    else if (deleteMethod = "Inject" || deleteMethod = "Inject for Reroll") {
+    else if (deleteMethod = Inject 13-39P || deleteMethod = "Inject Wonderpick 39P+") {
         if(verboseLogging)
             LogToFile("Skipping missions for " . deleteMethod . " method - missions only run for 'Inject Missions'")
         return false

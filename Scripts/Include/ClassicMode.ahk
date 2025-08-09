@@ -61,7 +61,7 @@ LoadSettingsFromIni() {
     ;pack settings
     IniRead, minStars, %A_ScriptDir%\..\..\Settings.ini, UserSettings, minStars, 0
     IniRead, minStarsShiny, %A_ScriptDir%\..\..\Settings.ini, UserSettings, minStarsShiny, 0
-    IniRead, deleteMethod, %A_ScriptDir%\..\..\Settings.ini, UserSettings, deleteMethod, 13 Pack
+    IniRead, deleteMethod, %A_ScriptDir%\..\..\Settings.ini, UserSettings, deleteMethod, Create Bots (13P)
     IniRead, packMethod, %A_ScriptDir%\..\..\Settings.ini, UserSettings, packMethod, 0
     IniRead, nukeAccount, %A_ScriptDir%\..\..\Settings.ini, UserSettings, nukeAccount, 0
     IniRead, spendHourGlass, %A_ScriptDir%\..\..\Settings.ini, UserSettings, spendHourGlass, 0
@@ -164,13 +164,13 @@ SaveAllSettings() {
     deleteMethod := currentDeleteMethod
   } else if (deleteMethod = "" || deleteMethod = "ERROR") {
     ; Set default if empty or invalid
-    deleteMethod := "13 Pack"
+    deleteMethod := "Create Bots (13P)"
   }
   
   ; FIXED: Validate deleteMethod against known valid options
-  validMethods := "13 Pack|Inject|Inject Missions|Inject for Reroll"
+  validMethods := "Create Bots (13P)|Inject 13-39P|Inject Missions|Inject Wonderpick 39P+"
   if (!InStr(validMethods, deleteMethod)) {
-    deleteMethod := "13 Pack" ; Reset to default if invalid
+    deleteMethod := "Create Bots (13P)" ; Reset to default if invalid
   }
   
   ; Update injectSortMethod based on dropdown if available
@@ -188,7 +188,7 @@ SaveAllSettings() {
   
   ; Do not initalize friend IDs or id.txt if Inject or Inject Missions
   IniWrite, %deleteMethod%, %A_ScriptDir%\..\..\Settings.ini, UserSettings, deleteMethod
-  if (deleteMethod = "Inject for Reroll" || deleteMethod = "13 Pack") {
+  if (deleteMethod = "Inject Wonderpick 39P+" || deleteMethod = "Create Bots (13P)") {
     IniWrite, %FriendID%, %A_ScriptDir%\..\..\Settings.ini, UserSettings, FriendID
     IniWrite, %mainIdsURL%, %A_ScriptDir%\..\..\Settings.ini, UserSettings, mainIdsURL
   } else {
@@ -433,20 +433,20 @@ Gui, Add, Text, x270 y180 %sectionColor%, % currentDictionary.Txt_ShinyMinStars
 Gui, Add, Edit, vminStarsShiny w25 x410 y178 h20 -E0x200 Background2A2A2A cWhite Center, %minStarsShiny%
 
 Gui, Add, Text, x270 y203 %sectionColor%, % currentDictionary.Txt_DeleteMethod
-if (deleteMethod = "13 Pack")
+if (deleteMethod = "Create Bots (13P)")
   defaultDelete := 1
-else if (deleteMethod = "Inject")
+else if (deleteMethod = "Inject 13-39P")
   defaultDelete := 2
 else if (deleteMethod = "Inject Missions")
+  defaultDelete := 2 ; If user somehow set to Inject Missions after I removed the UI, default to regular Inject 13-39P
+else if (deleteMethod = "Inject Wonderpick 39P+")
   defaultDelete := 3
-else if (deleteMethod = "Inject for Reroll")
-  defaultDelete := 4
 ;	SquallTCGP 2025.03.12 - 	Adding the delete method 5 Pack (Fast) to the delete method dropdown list.
-Gui, Add, DropDownList, vdeleteMethod gdeleteSettings choose%defaultDelete% x350 y203 w130 Background2A2A2A cWhite, 13 Pack|Inject|Inject Missions|Inject for Reroll
-Gui, Add, Checkbox, % (packMethod ? "Checked" : "") " vpackMethod x270 y235 " . sectionColor . ((deleteMethod = "Inject for Reroll") ? "" : " Hidden"), % currentDictionary.Txt_packMethod
-Gui, Add, Checkbox, % (nukeAccount ? "Checked" : "") " vnukeAccount x270 y255 " . sectionColor . ((deleteMethod = "13 Pack")? "": " Hidden"), % currentDictionary.Txt_nukeAccount
-Gui, Add, Checkbox, % (openExtraPack ? "Checked" : "") " vopenExtraPack gopenExtraPackSettings x270 y255 " . sectionColor . ((deleteMethod = "Inject for Reroll") ? "" : " Hidden"), % currentDictionary.Txt_openExtraPack
-Gui, Add, Checkbox, % (spendHourGlass ? "Checked" : "") " vspendHourGlass gspendHourGlassSettings x270 y275 " . sectionColor . ((deleteMethod = "13 Pack")? " Hidden":""), % currentDictionary.Txt_spendHourGlass
+Gui, Add, DropDownList, vdeleteMethod gdeleteSettings choose%defaultDelete% x350 y203 w130 Background2A2A2A cWhite, Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+
+Gui, Add, Checkbox, % (packMethod ? "Checked" : "") " vpackMethod x270 y235 " . sectionColor . ((deleteMethod = "Inject Wonderpick 39P+") ? "" : " Hidden"), % currentDictionary.Txt_packMethod
+Gui, Add, Checkbox, % (nukeAccount ? "Checked" : "") " vnukeAccount x270 y255 " . sectionColor . ((deleteMethod = "Create Bots (13P)")? "": " Hidden"), % currentDictionary.Txt_nukeAccount
+Gui, Add, Checkbox, % (openExtraPack ? "Checked" : "") " vopenExtraPack gopenExtraPackSettings x270 y255 " . sectionColor . ((deleteMethod = "Inject Wonderpick 39P+") ? "" : " Hidden"), % currentDictionary.Txt_openExtraPack
+Gui, Add, Checkbox, % (spendHourGlass ? "Checked" : "") " vspendHourGlass gspendHourGlassSettings x270 y275 " . sectionColor . ((deleteMethod = "Create Bots (13P)")? " Hidden":""), % currentDictionary.Txt_spendHourGlass
 
 Gui, Add, Text, x270 y300 %sectionColor%, % currentDictionary.SortByText
 ; Determine which option to pre-select
@@ -670,12 +670,12 @@ return
 
 deleteSettings:
   Gui, Submit, NoHide
-  if (deleteMethod = "13 Pack") {
+  if (deleteMethod = "Create Bots (13P)") {
     GuiControl, Hide, spendHourGlass
     GuiControl, Hide, packMethod
     GuiControl, Hide, openExtraPack
     GuiControl, Show, nukeAccount
-  } else if (deleteMethod = "Inject for Reroll") {
+  } else if (deleteMethod = "Inject Wonderpick 39P+") {
     GuiControl, Show, spendHourGlass
     GuiControl, Show, packMethod
     GuiControl, Show, openExtraPack
