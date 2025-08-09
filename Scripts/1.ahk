@@ -260,7 +260,7 @@ else if (setSpeed = "1x/3x")
 
 setSpeed := 3 ;always 1x/3x
 
-if(InStr(deleteMethod, Inject))
+if(InStr(deleteMethod, "Inject"))
     injectMethod := true
 
 initializeAdbShell()
@@ -473,7 +473,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         MidOfRun:
 		
-        if(deleteMethod = Inject 13-39P || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)
+        if(deleteMethod = "Inject 13-39P" || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)
             Goto, EndOfRun
 
         if(deleteMethod = "Inject Wonderpick 39P+" && openExtraPack && packMethod) {
@@ -575,7 +575,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         ; Special missions
         IniRead, claimSpecialMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, claimSpecialMissions, 0
-        if (claimSpecialMissions = 1 && !specialMissionsDone && !(deleteMethod = Inject 13-39P && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
+        if (claimSpecialMissions = 1 && !specialMissionsDone && !(deleteMethod = "Inject 13-39P" && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
             GoToMain()
             HomeAndMission(1)
             GetEventRewards(true) ; collects all the Special mission hourglass
@@ -587,7 +587,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         
         ; Hourglass spending
         IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 0
-        if (spendHourGlass = 1 && !(deleteMethod = Inject 13-39P && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
+        if (spendHourGlass = 1 && !(deleteMethod = "Inject 13-39P" && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
             SpendAllHourglass()
         }
 
@@ -637,7 +637,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         AppendToJsonFile(packsThisRun)
 		
         ; Check for 40 first to quit	
-        if (deleteMethod = Inject 13-39P || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum) {
+        if (deleteMethod = "Inject 13-39P" || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum) {
             if (injectMethod && loadedAccount) {
                 if (!keepAccount) {
                     MarkAccountAsUsed() 
@@ -4619,11 +4619,11 @@ CreateAccountList(instance) {
     if (!injectSortMethod)
         injectSortMethod := "ModifiedAsc"
     
-    parseInjectType := Inject 13-39P  ; Default
+    parseInjectType := "Inject 13-39P"  ; Default
     
     ; Determine injection type and pack ranges
-    if (deleteMethod = Inject 13-39P) {
-        parseInjectType := Inject 13-39P
+    if (deleteMethod = "Inject 13-39P") {
+        parseInjectType := "Inject 13-39P"
         minPacks := 0
         maxPacks := 38
     }
@@ -4822,7 +4822,7 @@ checkShouldDoMissions() {
             LogToFile("Executing missions for Inject Missions method (user setting enabled)")
         return true
     }
-    else if (deleteMethod = Inject 13-39P || deleteMethod = "Inject Wonderpick 39P+") {
+    else if (deleteMethod = "Inject 13-39P" || deleteMethod = "Inject Wonderpick 39P+") {
         if(verboseLogging)
             LogToFile("Skipping missions for " . deleteMethod . " method - missions only run for 'Inject Missions'")
         return false

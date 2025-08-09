@@ -2100,7 +2100,7 @@ LoadSettingsFromIni() {
       ;system settings
       IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
       IniRead, defaultLanguage, Settings.ini, UserSettings, defaultLanguage, Scale125
-      IniRead, rowGap, Settings.ini, UserSettings, rowGap, 75
+      IniRead, rowGap, Settings.ini, UserSettings, rowGap, 90
       IniRead, folderPath, Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
       IniRead, ocrLanguage, Settings.ini, UserSettings, ocrLanguage, en
       IniRead, clientLanguage, Settings.ini, UserSettings, clientLanguage, en
@@ -2256,7 +2256,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "minStarsEnabled=0`n"
       iniContent .= "showcaseEnabled=0`n"
       iniContent .= "showcaseLikes=5`n"
-      iniContent .= "rowGap=75`n"
+      iniContent .= "rowGap=90`n"
       iniContent .= "variablePackCount=15`n"
       iniContent .= "claimSpecialMissions=0`n"
       iniContent .= "spendHourGlass=0`n"
