@@ -84,7 +84,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v6.5.14"
+   ,localVersion := "v6.6.1"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -1388,7 +1388,7 @@ AddCheckBox(CheckOptions)
    WinSet, AlwaysOnTop, Off, ahk_id %mainHwnd%
    ;; ========== Top Bar GUI ==========
    global topBarW := 340
-   global topBarH := 440
+   global topBarH := 150
    Gui, TopBar:New
    Gui, TopBar:+Owner%MainGuiName%
    Gui, TopBar:-Caption
@@ -1400,8 +1400,8 @@ AddCheckBox(CheckOptions)
    }
    Gui, TopBar:Add, Picture, x0 y0 w%topBarW% h%topBarH% vTopBarBackground, %TopBarSmall%
    SetTopBarNormalFont()
-   global Btn_ToolTip, Btn_reload, BackgroundToggle, ThemeToggle, Btn_ClassicMode
-   global Txt_Btn_reload, Txt_Btn_ClassicMode
+   global Btn_reload, Btn_ClassicMode, Btn_Theme, saveTopBar
+   global Txt_Btn_reload, Txt_Btn_ClassicMode, Txt_Btn_Theme, Txt_saveTopBar
    global CallOthers := 0
    SetTopBarBtnFont()
    TopBarBtnOptions := Object()
@@ -1420,7 +1420,6 @@ AddCheckBox(CheckOptions)
       ,TopBarBtnOptions["textX"] := 35
       ,TopBarBtnOptions["textY"] := 12
    AddBtnforTop(TopBarBtnOptions)
-   ; Clean up the options object for the next button
    TopBarBtnOptions := {}
    TopBarBtnOptions["type"] := "Picture"
       ,TopBarBtnOptions["x"] := 185
@@ -1440,114 +1439,40 @@ AddCheckBox(CheckOptions)
    BotLanguagelist := "English|中文|日本語|Deutsch"
    defaultChooseLang := 1
    if (BotLanguage != "") {
-      Loop, Parse, BotLanguagelist, |
-         if (A_LoopField = BotLanguage) {
-            defaultChooseLang := A_Index
-            break
-         }
+   Loop, Parse, BotLanguagelist, |
+      if (A_LoopField = BotLanguage) {
+         defaultChooseLang := A_Index
+         break
+      }
    }
    Gui, TopBar:Add, DropDownList, x150 y58 w80 vTopBotLanguage gLanguageControl hwndBotLan +0x0210 Choose%defaultChooseLang% BackgroundTrans Center, English|中文|日本語|Deutsch
-   global Btn_Font, Btn_FontColor, Btn_BackgroundToggle, Btn_PageToggle, Btn_MenuToggle, Btn_Theme, SaveTopBar
-   global Txt_Btn_Font, Txt_Btn_FontColor, Txt_Btn_BackgroundToggle, Txt_Btn_PageToggle, Txt_Btn_MenuToggle, Txt_Btn_Theme, Txt_saveTopBar
+
    SetTopBarBtnFont()
    TopBarBtnOptions := {}
-      ,TopBarBtnOptions["type"] := "Picture"
-      ,TopBarBtnOptions["x"] := 35 ,TopBarBtnOptions["y"] := 95 ,TopBarBtnOptions["w"] := 100,TopBarBtnOptions["h"] := 25
-      ,TopBarBtnOptions["vName"] := "Btn_Font" ,TopBarBtnOptions["gName"] := "ChooseFont"
-      ,TopBarBtnOptions["imagePath"] := (CurrentTheme = "Dark" ? A_ScriptDir . "\GUI\Images\panel_topbar2.png" : A_ScriptDir . "\GUI\Images\panel_topbar1.png")
-      ,TopBarBtnOptions["text"] := "Choose Font" ,TopBarBtnOptions["vTextName"] := "Txt_Btn_Font"
-      ,TopBarBtnOptions["textX"] := 35 ,TopBarBtnOptions["textY"] := 97
-   AddBtnforTop(TopBarBtnOptions)
-   SetTopBarNormalFont()
-   Gui, TopBar:Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "x150 y97 w147 h20 vcurrentfont -E0x200 Center backgroundtrans", %currentfont%
-   
-   Gui, TopBar:Add, Text, X35 y130 BackgroundTrans, Set Font Color << current：
-   Gui, TopBar:Add, Text, X238 y130 BackgroundTrans, >>
-   SetTopBarBtnFont()
-   TopBarBtnOptions := {}
-      ,TopBarBtnOptions["type"] := "Picture"
-      ,TopBarBtnOptions["x"] := 35 ,TopBarBtnOptions["y"] := 155 ,TopBarBtnOptions["w"] := 100,TopBarBtnOptions["h"] := 25
-      ,TopBarBtnOptions["vName"] := "Btn_FontColor" ,TopBarBtnOptions["gName"] := "ChooseFontColor"
-      ,TopBarBtnOptions["imagePath"] := (CurrentTheme = "Dark" ? A_ScriptDir . "\GUI\Images\panel_topbar2.png" : A_ScriptDir . "\GUI\Images\panel_topbar1.png")
-      ,TopBarBtnOptions["text"] := "Choose Color" ,TopBarBtnOptions["vTextName"] := "Txt_Btn_FontColor"
-      ,TopBarBtnOptions["textX"] := 35 ,TopBarBtnOptions["textY"] := 157
-   AddBtnforTop(TopBarBtnOptions)
-   SetTopBarNormalFont()
-   Gui, TopBar:Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "x150 y157 w147 h20 vFontColor BackgroundTrans -E0x200 Center backgroundtrans", %FontColor%
-   
-   Gui, TopBar:Add, Text, x35 y190 BackgroundTrans, Choose Background Image（9：16）：
-   SetTopBarBtnFont()
-   TopBarBtnOptions := {}
-      ,TopBarBtnOptions["type"] := "Picture"
-      ,TopBarBtnOptions["x"] := 35 ,TopBarBtnOptions["y"] := 215 ,TopBarBtnOptions["w"] := 60,TopBarBtnOptions["h"] := 25
-      ,TopBarBtnOptions["vName"] := "Btn_BackgroundToggle" ,TopBarBtnOptions["gName"] := "ChooseBackground"
-      ,TopBarBtnOptions["imagePath"] := (CurrentTheme = "Dark" ? A_ScriptDir . "\GUI\Images\panel_small2.png" : A_ScriptDir . "\GUI\Images\panel_small1.png")
-      ,TopBarBtnOptions["text"] := "Search" ,TopBarBtnOptions["vTextName"] := "Txt_Btn_BackgroundToggle"
-      ,TopBarBtnOptions["textX"] := 35 ,TopBarBtnOptions["textY"] := 217
-   AddBtnforTop(TopBarBtnOptions)
-   SetTopBarNormalFont()
-   Gui, TopBar:Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "x100 y217 w200 h20 vBackgroundImage -E0x200 Center backgroundtrans", %BackgroundImage%
-   
-   Gui, TopBar:Add, Text, x35 y250 BackgroundTrans, Choose Page Image（8：11）：
-   SetTopBarBtnFont()
-   TopBarBtnOptions := {}
-      ,TopBarBtnOptions["type"] := "Picture"
-      ,TopBarBtnOptions["x"] := 35 ,TopBarBtnOptions["y"] := 275 ,TopBarBtnOptions["w"] := 60,TopBarBtnOptions["h"] := 25
-      ,TopBarBtnOptions["vName"] := "Btn_PageToggle" ,TopBarBtnOptions["gName"] := "ChoosePage"
-      ,TopBarBtnOptions["imagePath"] := (CurrentTheme = "Dark" ? A_ScriptDir . "\GUI\Images\panel_small2.png" : A_ScriptDir . "\GUI\Images\panel_small1.png")
-      ,TopBarBtnOptions["text"] := "Search" ,TopBarBtnOptions["vTextName"] := "Txt_Btn_PageToggle"
-      ,TopBarBtnOptions["textX"] := 35 ,TopBarBtnOptions["textY"] := 277
-   AddBtnforTop(TopBarBtnOptions)
-   SetTopBarNormalFont()
-   Gui, TopBar:Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "x100 y277 w200 h20 vPageImage -E0x200 Center backgroundtrans", %PageImage%
-   
-   Gui, TopBar:Add, Text, x35 y310 BackgroundTrans, Choose Menu Image（2：5）：
-   SetTopBarBtnFont()
-   TopBarBtnOptions := {}
-      ,TopBarBtnOptions["type"] := "Picture"
-      ,TopBarBtnOptions["x"] := 35 ,TopBarBtnOptions["y"] := 335 ,TopBarBtnOptions["w"] := 60,TopBarBtnOptions["h"] := 25
-      ,TopBarBtnOptions["vName"] := "Btn_MenuToggle" ,TopBarBtnOptions["gName"] := "ChooseMenu"
-      ,TopBarBtnOptions["imagePath"] := (CurrentTheme = "Dark" ? A_ScriptDir . "\GUI\Images\panel_small2.png" : A_ScriptDir . "\GUI\Images\panel_small1.png")
-      ,TopBarBtnOptions["text"] := "Search" ,TopBarBtnOptions["vTextName"] := "Txt_Btn_MenuToggle"
-      ,TopBarBtnOptions["textX"] := 35 ,TopBarBtnOptions["textY"] := 337
-   AddBtnforTop(TopBarBtnOptions)
-   SetTopBarNormalFont()
-   Gui, TopBar:Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "x100 y337 w200 h20 vMenuBackground -E0x200 Center backgroundtrans", %MenuBackground%
-   SetTopBarBtnFont()
-   TopBarBtnOptions := {}
-      ,TopBarBtnOptions["type"] := "Picture"
-      ,TopBarBtnOptions["x"] := 35 ,TopBarBtnOptions["y"] := 370 ,TopBarBtnOptions["w"] := 100,TopBarBtnOptions["h"] := 25
-      ,TopBarBtnOptions["vName"] := "Btn_Theme" ,TopBarBtnOptions["gName"] := "ToggleTheme"
-      ,TopBarBtnOptions["imagePath"] := (CurrentTheme = "Dark" ? A_ScriptDir . "\GUI\Images\panel_topbar2.png" : A_ScriptDir . "\GUI\Images\panel_topbar1.png")
-      ,TopBarBtnOptions["text"] := "Toggle Theme" ,TopBarBtnOptions["vTextName"] := "Txt_Btn_Theme"
-      ,TopBarBtnOptions["textX"] := 35 ,TopBarBtnOptions["textY"] := 372
+   ,TopBarBtnOptions["type"] := "Picture"
+   ,TopBarBtnOptions["x"] := 35 ,TopBarBtnOptions["y"] := 95 ,TopBarBtnOptions["w"] := 100,TopBarBtnOptions["h"] := 25
+   ,TopBarBtnOptions["vName"] := "Btn_Theme" ,TopBarBtnOptions["gName"] := "ToggleTheme"
+   ,TopBarBtnOptions["imagePath"] := (CurrentTheme = "Dark" ? A_ScriptDir . "\GUI\Images\panel_topbar2.png" : A_ScriptDir . "\GUI\Images\panel_topbar1.png")
+   ,TopBarBtnOptions["text"] := "Toggle Theme" ,TopBarBtnOptions["vTextName"] := "Txt_Btn_Theme"
+   ,TopBarBtnOptions["textX"] := 35 ,TopBarBtnOptions["textY"] := 97
    AddBtnforTop(TopBarBtnOptions)
    TopBarBtnOptions := {}
-      ,TopBarBtnOptions["type"] := "Picture"
-      ,TopBarBtnOptions["x"] := 140 ,TopBarBtnOptions["y"] := 400 ,TopBarBtnOptions["w"] := 60,TopBarBtnOptions["h"] := 28
-      ,TopBarBtnOptions["vName"] := "saveTopBar" ,TopBarBtnOptions["gName"] := "SaveTopBarSettings"
-      ,TopBarBtnOptions["imagePath"] := (CurrentTheme = "Dark" ? A_ScriptDir . "\GUI\Images\panel_small2.png" : A_ScriptDir . "\GUI\Images\panel_small1.png")
-      ,TopBarBtnOptions["text"] := "Save" ,TopBarBtnOptions["vTextName"] := "Txt_saveTopBar"
-      ,TopBarBtnOptions["textX"] := 138,TopBarBtnOptions["textY"] := 402
+   ,TopBarBtnOptions["type"] := "Picture"
+   ,TopBarBtnOptions["x"] := 140 ,TopBarBtnOptions["y"] := 120 ,TopBarBtnOptions["w"] := 60,TopBarBtnOptions["h"] := 28
+   ,TopBarBtnOptions["vName"] := "saveTopBar" ,TopBarBtnOptions["gName"] := "SaveTopBarSettings"
+   ,TopBarBtnOptions["imagePath"] := (CurrentTheme = "Dark" ? A_ScriptDir . "\GUI\Images\panel_small2.png" : A_ScriptDir . "\GUI\Images\panel_small1.png")
+   ,TopBarBtnOptions["text"] := "Save" ,TopBarBtnOptions["vTextName"] := "Txt_saveTopBar"
+   ,TopBarBtnOptions["textX"] := 138,TopBarBtnOptions["textY"] := 122
    AddBtnforTop(TopBarBtnOptions)
    SetTopBarNormalFont()
    Gui, Font, norm
    SetTopBarNormalFont()
    Gui, TopBar:Show, % "x" . mainX+15 . " y" . mainY+32 . " w" . topBarW . " h36 NoActivate"
    if (CurrentTheme = "Dark") {
-      OD_Colors.Attach(BotLan,{T: 0XFDFDFD, B: 0X7C8590})
+   OD_Colors.Attach(BotLan,{T: 0XFDFDFD, B: 0X7C8590})
    } else {
-      OD_Colors.Attach(BotLan,{T: 0XFF5555, B: 0XFFD1CD})
+   OD_Colors.Attach(BotLan,{T: 0XFF5555, B: 0XFFD1CD})
    }
-   ; ColorBlock
-   Gui, TopBarColor:New
-   Gui, TopBarColor:+Owner%MainGuiName%
-   Gui, TopBarColor:-Caption -Border
-   Gui, TopBarColor:+HWNDtopBarColorHwnd
-   Gui, TopBarColor:Color, 0xeeeeee
-   Gui, TopBarColor:Add, Edit, x0 y0 w15 h15 vColorBlock Hidden, % " "
-   Gui, TopBarColor:Show, % "x" . mainX+274 . " y" . mainY+195 . " w0 h0 NoActivate"
-   WinSet, TransColor, 0xeeeeee
    ; TopBarSwitch
    Gui, TopBarSwitch:New
    Gui, TopBarSwitch:+Owner%MainGuiName%
@@ -1558,7 +1483,6 @@ AddCheckBox(CheckOptions)
    Gui, TopBarSwitch:Show, % "x" . mainX+15 . " y" . mainY+77 . " w" . topBarW . " h20 NoActivate"
    Gui, TopBarSwitch:+LastFound
    WinSet, TransColor, 0xeeeeee
-   ApplyInputStyle()
    WinSet, Redraw,, A
    OnMessage(0x0003, "OnGuiMove") ; WM_MOVE
    OnMessage(0x0006, "OnMainGuiActivate")
@@ -2099,11 +2023,6 @@ OnGuiMove(wParam, lParam, msg, hwnd) {
       ,TopBarY := mainY + 32
    Gui, TopBar:Show, % "x" . TopBarX . " y" . TopBarY . " NoActivate"
    
-   ; TopColor position
-   TopColorX := mainX + 274
-      ,TopColorY := mainY + 195
-   Gui, TopBarColor:Show, % "x" . TopColorX . " y" . TopColorY . " NoActivate"
-   
    ; TopBarSwitch position
    TopBarSwitchX := TopBarX
    if (!topBarExpanded) {
@@ -2115,14 +2034,13 @@ OnGuiMove(wParam, lParam, msg, hwnd) {
 }
 
 OnMainGuiActivate(wParam, lParam, msg, hwnd) {
-   global mainHwnd, menuHwnd, topBarHwnd, topBarSwitchHwnd, topBarColorHwnd, CallOthers
+   global mainHwnd, menuHwnd, topBarHwnd, topBarSwitchHwnd, CallOthers
    if (!CallOthers)
    {
       WinSet, AlwaysOnTop, On, ahk_id %menuHwnd%
       WinSet, AlwaysOnTop, On, ahk_id %mainHwnd%
       WinSet, AlwaysOnTop, On, ahk_id %topBarHwnd%
       WinSet, AlwaysOnTop, On, ahk_id %topBarSwitchHwnd%
-      WinSet, AlwaysOnTop, On, ahk_id %topBarColorHwnd%
    }
 }
 
@@ -2131,10 +2049,8 @@ GuiRemoveAlwaysOnTop() {
    WinSet, AlwaysOnTop, Off, ahk_id %mainHwnd%
    WinSet, AlwaysOnTop, Off, ahk_id %topBarHwnd%
    WinSet, AlwaysOnTop, Off, ahk_id %topBarSwitchHwnd%
-   WinSet, AlwaysOnTop, Off, ahk_id %topBarColorHwnd%
 }
 
-; Function to load settings from INI file
 LoadSettingsFromIni() {
    global
    ; Check if Settings.ini exists
@@ -2144,35 +2060,25 @@ LoadSettingsFromIni() {
       IniRead, BotLanguage, Settings.ini, UserSettings, BotLanguage, English
       
       IniRead, shownLicense, Settings.ini, UserSettings, shownLicense, 0
-      ; Read basic settings with default values if they don't exist in the file
       IniRead, currentfont, Settings.ini, UserSettings, currentfont, segoe UI
-      defaultBg := A_ScriptDir . "\\GUI\\Images\background2.png"
-      defaultPage := A_ScriptDir . "\\GUI\\Images\Page2.png"
-      defaultMenu := A_ScriptDir . "\GUI\Images\Menu2.png"
-      defaultBtn := A_ScriptDir . "\GUI\Images\panel2.png"
-      defaultTitle := A_ScriptDir . "\GUI\Images\title2.png"
-      defaultTopBarBig := A_ScriptDir . "\GUI\Images\TopBarBig2.png"
-      defaultTopBarSmall := A_ScriptDir . "\GUI\Images\TopBarSmall2.png"
-      defaultTopBarOpen := A_ScriptDir . "\GUI\Images\TopBarOpen2.png"
-      defaultTopBarClose := A_ScriptDir . "\GUI\Images\TopBarClose2.png"
-      defaultMenuOpen := A_ScriptDir . "\GUI\Images\MenuOpen2.png"
-      defaultMenuClose := A_ScriptDir . "\GUI\Images\MenuClose2.png"
-      defaultToolTip := A_ScriptDir . "\GUI\Images\ToolTip2.png"
-      IniRead, BackgroundImage, Settings.ini, UserSettings, BackgroundImage, %defaultBg%
-      IniRead, PageImage, Settings.ini, UserSettings, PageImage, %defaultPage%
-      IniRead, MenuBackground, Settings.ini, UserSettings, MenuBackground, %defaultMenu%
       IniRead, FontColor, Settings.ini, UserSettings, FontColor, FDFDFD
       IniRead, CurrentTheme, Settings.ini, UserSettings, CurrentTheme, Dark
-      IniRead, btn_mainPage, Settings.ini, UserSettings, btn_mainPage, %defaultBtn%
-      IniRead, btn_fontColor, Settings.ini, UserSettings, btn_fontColor, FDFDFD
-      IniRead, titleImage, Settings.ini, UserSettings, titleImage, %defaultTitle%
-      IniRead, TopBarBig, Settings.ini, UserSettings, TopBarBig, %defaultTopBarBig%
-      IniRead, TopBarSmall, Settings.ini, UserSettings, TopBarSmall, %defaultTopBarSmall%
-      IniRead, TopBarOpen, Settings.ini, UserSettings, TopBarOpen, %defaultTopBarOpen%
-      IniRead, TopBarClose, Settings.ini, UserSettings, TopBarClose, %defaultTopBarClose%
-      IniRead, MenuOpen, Settings.ini, UserSettings, MenuOpen, %defaultMenuOpen%
-      IniRead, MenuClose, Settings.ini, UserSettings, MenuClose, %defaultMenuClose%
-      IniRead, ToolTipImage, Settings.ini, UserSettings, ToolTipImage, %defaultToolTip%
+      
+      ; Always use relative paths based on theme
+      BackgroundImage := A_ScriptDir . "\GUI\Images\background" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      PageImage := A_ScriptDir . "\GUI\Images\Page" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      MenuBackground := A_ScriptDir . "\GUI\Images\Menu" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      btn_mainPage := A_ScriptDir . "\GUI\Images\panel" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      titleImage := A_ScriptDir . "\GUI\Images\title" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      TopBarBig := A_ScriptDir . "\GUI\Images\TopBarBig" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      TopBarSmall := A_ScriptDir . "\GUI\Images\TopBarSmall" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      TopBarOpen := A_ScriptDir . "\GUI\Images\TopBarOpen" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      TopBarClose := A_ScriptDir . "\GUI\Images\TopBarClose" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      MenuOpen := A_ScriptDir . "\GUI\Images\MenuOpen" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      MenuClose := A_ScriptDir . "\GUI\Images\MenuClose" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      ToolTipImage := A_ScriptDir . "\GUI\Images\ToolTip" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
+      btn_fontColor := CurrentTheme = "Dark" ? "FDFDFD" : "CC0000"
+      
       ;friend id
       IniRead, FriendID, Settings.ini, UserSettings, FriendID, ""
       ;instance settings
@@ -2289,10 +2195,6 @@ LoadSettingsFromIni() {
       
       IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
-      /*
-      IniRead, isDarkTheme, Settings.ini, UserSettings, isDarkTheme, 1
-      IniRead, useBackgroundImage, Settings.ini, UserSettings, useBackgroundImage, 1
-      */
       IniRead, menuExpanded, Settings.ini, UserSettings, menuExpanded, True
       
       ; Validate numeric values
@@ -2318,39 +2220,14 @@ LoadSettingsFromIni() {
 ; Function to create the default settings file if it doesn't exist
 CreateDefaultSettingsFile() {
    if (!FileExist("Settings.ini")) {
-      defaultBg := A_ScriptDir . "\\GUI\\Images\background2.png"
-      defaultPage := A_ScriptDir . "\\GUI\\Images\Page2.png"
-      defaultMenu := A_ScriptDir . "\GUI\Images\Menu2.png"
-      defaultBtn := A_ScriptDir . "\GUI\Images\panel2.png"
-      defaultTitle := A_ScriptDir . "\GUI\Images\title2.png"
-      defaultTopBarBig := A_ScriptDir . "\GUI\Images\TopBarBig2.png"
-      defaultTopBarSmall := A_ScriptDir . "\GUI\Images\TopBarSmall2.png"
-      defaultTopBarOpen := A_ScriptDir . "\GUI\Images\TopBarOpen2.png"
-      defaultTopBarClose := A_ScriptDir . "\GUI\Images\TopBarClose2.png"
-      defaultMenuOpen := A_ScriptDir . "\GUI\Images\MenuOpen2.png"
-      defaultMenuClose := A_ScriptDir . "\GUI\Images\MenuClose2.png"
-      defaultToolTip := A_ScriptDir . "\GUI\Images\ToolTip2.png"
       iniContent := "[UserSettings]`n"
       iniContent .= "IsLanguageSet=0`n"
       iniContent .= "defaultBotLanguage=1`n"
       iniContent .= "BotLanguage=English`n"
       iniContent .= "shownLicense=0`n"
       iniContent .= "currentfont=Segoe UI`n"
-      iniContent .= "BackgroundImage=" defaultBg "`n"
-      iniContent .= "PageImage=" defaultPage "`n"
-      iniContent .= "MenuBackground=" defaultMenu "`n"
       iniContent .= "FontColor=FDFDFD`n"
       iniContent .= "CurrentTheme=Dark`n"
-      iniContent .= "btn_mainPage=" defaultBtn "`n"
-      iniContent .= "btn_fontColor=FDFDFD`n"
-      iniContent .= "titleImage=" defaultTitle "`n"
-      iniContent .= "TopBarBig=" defaultTopBarBig "`n"
-      iniContent .= "TopBarSmall=" defaultTopBarSmall "`n"
-      iniContent .= "TopBarOpen=" defaultTopBarOpen "`n"
-      iniContent .= "TopBarClose=" defaultTopBarClose "`n"
-      iniContent .= "MenuOpen=" defaultMenuOpen "`n"
-      iniContent .= "MenuClose=" defaultMenuClose "`n"
-      iniContent .= "ToolTipImage=" defaultToolTip "`n"
       iniContent .= "FriendID=`n"
       iniContent .= "AccountName=`n"
       iniContent .= "waitTime=1`n"
@@ -2379,8 +2256,6 @@ CreateDefaultSettingsFile() {
       iniContent .= "minStarsEnabled=0`n"
       iniContent .= "showcaseEnabled=0`n"
       iniContent .= "showcaseLikes=5`n"
-      iniContent .= "isDarkTheme=1`n"
-      iniContent .= "useBackgroundImage=1`n"
       iniContent .= "rowGap=75`n"
       iniContent .= "variablePackCount=15`n"
       iniContent .= "claimSpecialMissions=0`n"
@@ -2397,10 +2272,8 @@ CreateDefaultSettingsFile() {
 }
 
 SaveAllSettings() {
-   global IsLanguageSet, defaultBotLanguage, BotLanguage, currentfont, BackgroundImage, PageImage, MenuBackground, FontColor
-   global CurrentTheme, btn_mainPage, btn_fontColor, titleImage, ToolTipImage
-   global TopBarBig, TopBarSmall, TopBarOpen, TopBarClose, MenuOpen, MenuClose
-   global shownLicense
+   global IsLanguageSet, defaultBotLanguage, BotLanguage, currentfont, FontColor
+   global CurrentTheme, shownLicense
    global FriendID, AccountName, waitTime, Delay, folderPath, discordWebhookURL, discordUserId, Columns, godPack
    global Instances, instanceStartDelay, defaultLanguage, SelectedMonitorIndex, swipeSpeed, deleteMethod
    global runMain, Mains, heartBeat, heartBeatWebhookURL, heartBeatName, nukeAccount, packMethod
@@ -2425,16 +2298,9 @@ SaveAllSettings() {
    iniContent .= "BotLanguage=" BotLanguage "`n"
    iniContent .= "shownLicense=" shownLicense "`n"
    iniContent .= "CurrentTheme=" CurrentTheme "`n"
-   iniContent .= "btn_mainPage=" btn_mainPage "`n"
-   iniContent .= "btn_fontColor=" btn_fontColor "`n"
-   iniContent .= "titleImage=" titleImage "`n"
-   iniContent .= "TopBarBig=" TopBarBig "`n"
-   iniContent .= "TopBarSmall=" TopBarSmall "`n"
-   iniContent .= "TopBarOpen=" TopBarOpen "`n"
-   iniContent .= "TopBarClose=" TopBarClose "`n"
-   iniContent .= "MenuOpen=" MenuOpen "`n"
-   iniContent .= "MenuClose=" MenuClose "`n"
-   iniContent .= "ToolTipImage=" ToolTipImage "`n"
+   iniContent .= "FontColor=" FontColor "`n"
+   iniContent .= "currentfont=" currentfont "`n"
+   
    ;CheckBox
    iniContent .= "runMain=" runMain "`n"
    iniContent .= "autoUseGPTest=" autoUseGPTest "`n"
@@ -2482,7 +2348,6 @@ SaveAllSettings() {
    iniContent .= "s4tSendAccountXml=" s4tSendAccountXml "`n"
    iniContent .= "sendAccountXml=" sendAccountXml "`n"
    iniContent .= "heartBeat=" heartBeat "`n"
-   
    iniContent .= "menuExpanded=" menuExpanded "`n"
    
    Gui, % MainGuiName . ":Submit", NoHide
@@ -2563,15 +2428,7 @@ SaveAllSettings() {
    iniContent_Second .= "minStarsShiny=" minStarsShiny "`n"
    iniContent_Second .= "tesseractPath=" tesseractPath "`n"
    
-   Gui, TopBar:Submit, NoHide
-   iniContent_third := "currentfont=" currentfont "`n"
-   iniContent_third .= "BackgroundImage=" BackgroundImage "`n"
-   iniContent_third .= "PageImage=" PageImage "`n"
-   iniContent_third .= "MenuBackground=" MenuBackground "`n"
-   iniContent_third .= "FontColor=" FontColor "`n"
-   ;iniContent .= "isDarkTheme=" isDarkTheme "`n"
-   ;iniContent .= "useBackgroundImage=" useBackgroundImage "`n"
-   iniFull := iniContent . iniContent_Second . iniContent_third
+   iniFull := iniContent . iniContent_Second
    FileDelete, Settings.ini
    FileAppend, %iniFull%, Settings.ini, UTF-16
    
@@ -2624,13 +2481,6 @@ SetTopBarSmallBtnFont() { ;For toolbar e.g. background,theme
 setTopBarNormalFont() {
    global currentfont
    Gui, TopBar:Font, norm s9 c000000, %currentfont%
-}
-
-ApplyInputStyle() {
-   global FontColor
-   Gui, TopBarColor:Color,, %FontColor%
-   GuiControl, TopBarColor:MoveDraw, ColorBlock
-   GuiControl, TopBarColor:, ColorBlock, % " "
 }
 
 AddCheckBox(options) {
@@ -2743,7 +2593,8 @@ MinStarCheck(vName) {
 
 ExpandTopBar() {
    global
-   ; get current x, y
+   ; Remove references to removed controls
+   ; Only keep references to Btn_reload and Btn_ClassicMode
    GuiControlGet, reloadPos, TopBar:Pos, Btn_reload
    GuiControlGet, classicPos, TopBar:Pos, Btn_ClassicMode
    GuiControlGet, TxtReloadPos, TopBar:Pos, Txt_Btn_reload
@@ -2751,7 +2602,6 @@ ExpandTopBar() {
    
    GuiControl, TopBar:Move, Btn_reload, % "y" . (reloadPosY + 15)
    GuiControl, TopBar:Move, Btn_ClassicMode, % "y" . (classicPosY + 15)
-   
    GuiControl, TopBar:Move, Txt_Btn_reload, % "y" . (TxtreloadPosY + 15)
    GuiControl, TopBar:Move, Txt_Btn_ClassicMode, % "y" . (TxtclassicPosY + 15)
 }
@@ -2765,7 +2615,6 @@ CloseTopBar() {
    
    GuiControl, TopBar:Move, Btn_reload, % "y" . (reloadPosY - 15)
    GuiControl, TopBar:Move, Btn_ClassicMode, % "y" . (classicPosY - 15)
-   
    GuiControl, TopBar:Move, Txt_Btn_reload, % "y" . (TxtReloadPosY - 15)
    GuiControl, TopBar:Move, Txt_Btn_ClassicMode, % "y" . (TxtclassicPosY - 15)
 }
@@ -2812,7 +2661,7 @@ TopBarSwitchHandler:
    global topBarExpanded, topBarW, topBarH, topBarHwnd
    steps := 15
    minH := 36
-   maxH := 440
+   maxH := 150  ; Much smaller now since we removed customization
    additionalCount := 15
    WinGetPos, barX, barY, , , ahk_id %topBarHwnd%
    if (!topBarExpanded) {
@@ -2829,15 +2678,12 @@ TopBarSwitchHandler:
          UpdateTopBarSwitchPos(barX, barY + curH + additionalCount)
          Sleep, 15
       }
-      GuiControl, TopBarColor:Show, ColorBlock
       GuiControl, TopBarSwitch:, SwitchPic, %TopBarClose%
-      UpdateTopBarSwitchPos(barX, barY + maxH + 107)
-      Gui, TopBarColor:Show, w15 h15 NoActivate
+      UpdateTopBarSwitchPos(barX, barY + maxH + 20)
       topBarExpanded := true
    } else {
-      Gui, TopBarColor:Show, w0 h0 NoActivate
       ; close
-      additionalCount := 107
+      additionalCount := 20
       CloseTopBar()
       GuiControl, TopBar:, TopBarBackground, %TopBarSmall%
       Loop, %steps%
@@ -2846,11 +2692,10 @@ TopBarSwitchHandler:
          if(curH < minH)
             curH := minH
          Gui, TopBar:Show, % "x" . barX . " y" . barY . " w" . topBarW . " h" . curH . " NoActivate"
-         additionalCount := additionalCount - 7
+         additionalCount := additionalCount - 2
          UpdateTopBarSwitchPos(barX, barY + curH + additionalCount)
          Sleep, 15
       }
-      GuiControl, TopBarColor:Hide, ColorBlock
       GuiControl, TopBarSwitch:, SwitchPic, %TopBarOpen%
       UpdateTopBarSwitchPos(barX, barY + minH + 9)
       topBarExpanded := false
@@ -3246,82 +3091,6 @@ LanguageControl:
    defaultBotLanguage := langMap.HasKey(BotLanguage) ? langMap[BotLanguage] : 1
    GuiControl, TopBar:Show, saveTopBar
 Return
-
-ChooseFont:
-   global selectedFont
-   CallOthers := 1
-   GuiRemoveAlwaysOnTop()
-   selectedFont := ""
-   ShowFontListGui("selectedFont")
-   if (selectedFont = "")
-      selectedFont := "Segoe UI"
-   GuiControl,TopBar:, currentfont, %selectedFont%
-   GuiControl, TopBar:Show, saveTopBar
-   WinSet, AlwaysOnTop, On, ahk_id %topBarColorHwnd%
-   CallOthers := 0
-return
-
-FontListOK:
-   global FontChoice
-   Gui, FontList:Submit
-   selectedFont := FontChoice
-   Gui, FontList:Destroy
-return
-
-ChooseBackground:
-   CallOthers := 1
-   GuiRemoveAlwaysOnTop()
-   FileSelectFile, selectedFile, 3, , Please select a background image, Image Files (*.jpg; *.png)
-   if (selectedFile != "") {
-      BackgroundImage := selectedFile
-      GuiControl, TopBar:, BackgroundImage, %BackgroundImage%
-   }
-   GuiControl, TopBar:Show, saveTopBar
-   WinSet, AlwaysOnTop, On, ahk_id %topBarColorHwnd%
-   CallOthers := 0
-return
-
-ChoosePage:
-   CallOthers := 1
-   GuiRemoveAlwaysOnTop()
-   FileSelectFile, selectedFile, 3, , Please select a Page image, Image Files (*.jpg; *.png)
-   if (selectedFile != "") {
-      PageImage := selectedFile
-      GuiControl, TopBar:, PageImage, %PageImage%
-   }
-   GuiControl, TopBar:Show, saveTopBar
-   WinSet, AlwaysOnTop, On, ahk_id %topBarColorHwnd%
-   CallOthers := 0
-return
-
-ChooseMenu:
-   CallOthers := 1
-   GuiRemoveAlwaysOnTop()
-   FileSelectFile, selectedFile, 3, , Please select a Menu image, Image Files (*.jpg; *.png)
-   if (selectedFile != "") {
-      MenuBackground := selectedFile
-      GuiControl, TopBar:, MenuBackground, %MenuBackground%
-   }
-   GuiControl, TopBar:Show, saveTopBar
-   WinSet, AlwaysOnTop, On, ahk_id %topBarColorHwnd%
-   CallOthers := 0
-return
-
-ChooseFontColor:
-   CallOthers := 1
-   GuiRemoveAlwaysOnTop()
-   result := ChooseColors("", FontColor)
-   temp := FontColor
-      ,FontColor := result.1
-   if (FontColor = "") {
-      FontColor := temp
-   }
-   GuiControl, TopBar:, FontColor, %FontColor%
-   ApplyInputStyle()
-   GuiControl, TopBar:Show, saveTopBar
-   WinSet, AlwaysOnTop, On, ahk_id %topBarColorHwnd%
-   CallOthers := 0
-return
 
 ToggleTheme:
    Front := A_ScriptDir . "\GUI\Images\"
