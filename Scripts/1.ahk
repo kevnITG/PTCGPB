@@ -260,7 +260,7 @@ else if (setSpeed = "1x/3x")
 
 setSpeed := 3 ;always 1x/3x
 
-if(InStr(deleteMethod, Inject 13-39P))
+if(InStr(deleteMethod, Inject))
     injectMethod := true
 
 initializeAdbShell()
@@ -308,6 +308,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
     Reload
 } else if(DeadCheck = 1 && deleteMethod = "Create Bots (13P)") {
     CreateStatusMessage("New account creation is stuck! Deleting account...")
+    Delay(5)
     menuDeleteStart()
     Reload
 } else {
@@ -2248,7 +2249,7 @@ FindBorders(prefix) {
     global currentPackIs6Card
     count := 0
     searchVariation := 40
-    searchVariation6Card := 50  ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
+    searchVariation6Card := 60  ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
 
      if (prefix = "shiny2star") { ; 
          searchVariation := 65  ; 40-60 is not being detected. 80 is too much (3d detected as 2starshiny). trying 65.
