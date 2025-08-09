@@ -798,7 +798,7 @@ RemoveNonVipFriends() {
 
     CreateStatusMessage("Downloading vip_ids.txt.",,,, false)
     if (vipIdsURL != "" && !DownloadFile(vipIdsURL, "vip_ids.txt")) {
-        CreateStatusMessage("Failed to download vip_ids.txt. Aborting test...",,,, false)
+        CreateStatusMessage("Failed to download vip_ids.txt..`nIf you are botting solo, disable AutoGPTest to fix this issue.`nAborting test...",,,, false)
         return
     }
 
