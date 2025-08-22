@@ -81,7 +81,18 @@ IniRead, defaultLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, defaultLa
 IniRead, rowGap, %A_ScriptDir%\..\Settings.ini, UserSettings, rowGap, 100
 IniRead, SelectedMonitorIndex, %A_ScriptDir%\..\Settings.ini, UserSettings, SelectedMonitorIndex, 1
 IniRead, swipeSpeed, %A_ScriptDir%\..\Settings.ini, UserSettings, swipeSpeed, 300
-IniRead, deleteMethod, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod, 3 Pack
+IniRead, deleteMethod, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod, Create Bots (13P)
+    ; support to convert old settings.ini deleteMethods to new nomenclature
+    originalDeleteMethod := deleteMethod
+    deleteMethod := MigrateDeleteMethod(deleteMethod)
+    if (deleteMethod != originalDeleteMethod) {
+        IniWrite, %deleteMethod%, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
+        validMethods := "Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+"
+        if (!InStr(validMethods, deleteMethod)) {
+            deleteMethod := "Create Bots (13P)"
+            IniWrite, %deleteMethod%, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
+        }
+    }
 IniRead, runMain, %A_ScriptDir%\..\Settings.ini, UserSettings, runMain, 1
 IniRead, Mains, %A_ScriptDir%\..\Settings.ini, UserSettings, Mains, 1
 IniRead, AccountName, %A_ScriptDir%\..\Settings.ini, UserSettings, AccountName, ""
@@ -260,6 +271,19 @@ else if (setSpeed = "1x/3x")
 
 setSpeed := 3 ;always 1x/3x
 
+MigrateDeleteMethod(oldMethod) {
+    if (oldMethod = "13 Pack") {
+        return "Create Bots (13P)"
+    } else if (oldMethod = "Inject") {
+        return "Inject 13-39P" 
+    } else if (oldMethod = "Inject for Reroll") {
+        return "Inject Wonderpick 39P+"
+    } else if (oldMethod = "Inject Missions") {
+        return "Inject 13-39P"
+    }
+    return oldMethod
+}
+
 if(InStr(deleteMethod, "Inject"))
     injectMethod := true
 
@@ -302,6 +326,10 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
     adbClick_wbb(41, 296)
     Delay(1)
     RemoveFriends()
+    if(injectMethod && loadedAccount && !keepAccount) {
+        MarkAccountAsUsed()
+        loadedAccount := false
+    }
     DeadCheck := 0
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
     createAccountList(scriptName)
@@ -345,7 +373,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         while (StartCurrentTimeDiff > 0 && EndCurrentTimeDiff < 0) {
             FormatTime, formattedEndTime, %EndTime%, HH:mm:ss
-            CreateStatusMessage("I need a break... Sleeping until " . formattedEndTime ,,,, false)
+            CreateStatusMessage("Waiting for daily server reset until " . formattedEndTime ,,,, false)
             dateChange := true
             Sleep, 5000
 
@@ -360,7 +388,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         ; Only refresh account lists if we're not in injection mode or if no account is loaded
         ; This prevents constant list regeneration during injection
-        if(!injectMethod || !loadedAccount) {
+        if(injectMethod && !loadedAccount) {
             createAccountList(scriptName)
         }
 
@@ -471,19 +499,28 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             }
         }
 
+            ; claim daily hg mission before opening hgpack to prevent server crash during hgpack opening
+        if(deleteMethod = "Inject Wonderpick 39P+" && openExtraPack) {
+            
+            ; Remove & add friends between 2nd free pack & HG pack if 1-pack method is enabled
+            if(packMethod) {
+                friendsAdded := AddFriends(true)
+            }
+
+            GoToMain()
+            GetAllRewards(false, true)
+            GoToMain()
+            SelectPack("HGPack")
+            if(!cantOpenMorePacks) {
+                PackOpening()
+            }
+        }
+
         MidOfRun:
 		
         if(deleteMethod = "Inject 13-39P" || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)
             Goto, EndOfRun
 
-        if(deleteMethod = "Inject Wonderpick 39P+" && openExtraPack && packMethod) {
-            friendsAdded := AddFriends(true)
-            SelectPack("HGPack")
-            HourglassOpening(true)
-        } else if(deleteMethod = "Inject Wonderpick 39P+" && openExtraPack && !packMethod) {
-            HourglassOpening(true)
-            Goto, EndOfRun
-        }
         if (checkShouldDoMissions()) {
 
             HomeAndMission()
@@ -594,12 +631,6 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         ; Friend removal for inject wonderpick 39P+
         if (injectMethod && friended && !keepAccount) {
             RemoveFriends()
-        }
-        
-        ; Collect Daily Hourglasses - either separate setting? or will be currently part of openExtraPack
-        if(deleteMethod = "Inject Wonderpick 39P+" && openExtraPack) {
-            GoToMain(true)
-            GetAllRewards(false, true)
         }
 
         ; BallCity 2025.02.21 - Track monitor
@@ -813,7 +844,7 @@ RemoveFriends() {
             FindImageAndClick(98, 184, 151, 224, , "Hourglass1", 168, 438, 500, 5) ;stop at hourglasses tutorial 2
             Delay(1)
 
-            adbClick_wbb(203, 436) 
+            adbClick_wbb(203, 436) ; 203 436
         } else if(!renew && !getFC && DeadCheck = 1) {
             clickButton := FindOrLoseImage(75, 340, 195, 530, 80, "Button", 0)
             if(clickButton) {
@@ -875,9 +906,6 @@ RemoveFriends() {
             FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407)
             FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372)
         }
-        adbClick(143,507)
-        Sleep, 75
-        adbClick(143,507) ; added these two adbClicks to ensure it's clicked. then we need to wait for the 750ms below to avoid backing out of an extra screen.
         FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 750)
         friendsProcessed++
     }
@@ -956,7 +984,7 @@ AddFriends(renew := false, getFC := false) {
     }
     IniRead, showcaseNumber, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
     IniRead, showcaseEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseEnabled
-    if (showcaseNumber > 0 && showcaseEnabled = 1) {
+    if (showcaseNumber > 0 && showcaseEnabled = 1 && packsThisRun = 0) {
         showcaseNumber -= 1
         IniWrite, %showcaseNumber%, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
         showcaseLikes()
@@ -1025,6 +1053,7 @@ AddFriends(renew := false, getFC := false) {
                 if(renew){
                     FindImageAndClick(135, 355, 160, 385, , "Remove", 193, 258)
                     FindImageAndClick(165, 250, 190, 275, , "Send", 200, 372)
+                    Delay(2) ; otherwise it will click before UI finishes loading
                     adbClick_wbb(243, 258)
                     adbClick_wbb(243, 258)
                     adbClick_wbb(243, 258)
@@ -1190,7 +1219,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     }
 
     ; Handle 7/2025 trade news update popup, remove later patch
-    if(imageName = "Points" || imageName = "Social" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account") {
+    if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account") {
         Path = %imagePath%Privacy.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
@@ -1210,33 +1239,50 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
     
+
         Path = %imagePath%Error.png ; Search for communication error
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 120, 187, 155, 210, searchVariation)
         if (vRet = 1) {
             CreateStatusMessage("Error message in " . scriptName . ". Clicking retry...",,,, false)
+            Sleep, 3000
+            Gdip_DisposeImage(pBitmap)
+            pBitmap := from_window(WinExist(winTitle))
             
-            ; First try to find the "X" button (Privacy.png) for Start-Up error
-            Path = %imagePath%Privacy.png
+            Gdip_SaveBitmapToFile(pBitmap, A_ScriptDir . "\debug_startup_error.png")
+            
+            Path = %imagePath%StartupErrorX.png
+            CreateStatusMessage("Searching for: " . Path,,,, false)
+            
+            if (FileExist(Path)) {
+                CreateStatusMessage("File exists, searching...",,,, false)
+            } else {
+                CreateStatusMessage("FILE NOT FOUND: " . Path,,,, false)
+            }
+            
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 79, 319, 210, 500, searchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 124, 423, 155, 455, searchVariation)
+            CreateStatusMessage("Search result: " . vRet . " at coords: " . vPosXY,,,, false)
+            
+            if (vRet != 1) {
+                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 50, 350, 250, 500, 80)
+                CreateStatusMessage("Wide search result: " . vRet . " at coords: " . vPosXY,,,, false)
+            }
+            
             if (vRet = 1) {
-                ; Found Start-up error
                 CreateStatusMessage("Start-up error; initiating slow reload...",,,, false)
                 Sleep, 2000
                 adbClick_wbb(19,125) ; platin, must remove speedmod for reload app
                 Sleep, 500
                 adbClick_wbb(26, 180) ; 1x
                 Sleep, 2000
-                adbClick_wbb(139, 440) ; click the "X" button
+                adbClick_wbb(139, 440) ; click "X"
                 Sleep, 10000
-                adbClick_wbb(139, 440) ; click to start loading in
-                Sleep, 10000
-                Reload ; reload the script to reset the instance
+                Reload
             } else {
                 ; assume it's communication error instead; click the "Retry" blue button
                 adbClick_wbb(82, 389)
-                Delay(1)
+                Delay(5)
                 adbClick_wbb(139, 386)
             }
             Sleep, 5000 ; longer sleep time to allow reloading, previously 1000ms
@@ -1283,6 +1329,9 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     else
         FSTime := 45
     if (safeTime >= FSTime) {
+        if(injectMethod && loadedAccount && friended) {
+            IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+        }
         restartGameInstance("Stuck at " . imageName . "...")
         failSafe := A_TickCount
     }
@@ -1420,21 +1469,43 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             }
             if (ElapsedTime >= FSTime || safeTime >= FSTime) {
                 CreateStatusMessage("Instance " . scriptName . " has been stuck for 90s. Killing it...")
+            if(injectMethod && loadedAccount && friended) {
+                IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+            }
                 restartGameInstance("Stuck at " . imageName . "...") ; change to reset the instance and delete data then reload script
             }
         }
+
         Path = %imagePath%Error.png ; Search for communication error
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 120, 187, 155, 210, searchVariation)
         if (vRet = 1) {
             CreateStatusMessage("Error message in " . scriptName . ". Clicking retry...",,,, false)
+            Sleep, 3000
+            Gdip_DisposeImage(pBitmap)
+            pBitmap := from_window(WinExist(winTitle))
             
-            ; First try to find the "X" button (Privacy.png) for Start-Up error
-            Path = %imagePath%Privacy.png
+            Gdip_SaveBitmapToFile(pBitmap, A_ScriptDir . "\debug_startup_error.png")
+            
+            Path = %imagePath%StartupErrorX.png
+            CreateStatusMessage("Searching for: " . Path,,,, false)
+            
+            if (FileExist(Path)) {
+                CreateStatusMessage("File exists, searching...",,,, false)
+            } else {
+                CreateStatusMessage("FILE NOT FOUND: " . Path,,,, false)
+            }
+            
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 79, 319, 210, 500, searchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 124, 423, 155, 455, searchVariation)
+            CreateStatusMessage("Search result: " . vRet . " at coords: " . vPosXY,,,, false)
+            
+            if (vRet != 1) {
+                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 50, 350, 250, 500, 80)
+                CreateStatusMessage("Wide search result: " . vRet . " at coords: " . vPosXY,,,, false)
+            }
+            
             if (vRet = 1) {
-                ; Found Start-up error
                 CreateStatusMessage("Start-up error; initiating slow reload...",,,, false)
                 Sleep, 2000
                 adbClick_wbb(19,125) ; platin, must remove speedmod for reload app
@@ -1447,7 +1518,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             } else {
                 ; assume it's communication error instead; click the "Retry" blue button
                 adbClick_wbb(82, 389)
-                Delay(1)
+                Delay(5)
                 adbClick_wbb(139, 386)
             }
             Sleep, 5000 ; longer sleep time to allow reloading, previously 1000ms
@@ -1470,7 +1541,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         }
 
         ; Search for 7/2025 trade news update popup; can be removed later patch
-        if(imageName = "Points" || imageName = "Social" || imageName = "Missions" || imageName = "WonderPick") {
+        if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account") {
             Path = %imagePath%Privacy.png
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
@@ -2060,6 +2131,12 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
 
     foundTradeable := found3Dmnd + found4Dmnd + found1Star + foundGimmighoul
 
+    if (s4tWP && s4tWPMinCards = 2 && foundTradeable < 2) {
+        CreateStatusMessage("s4t: insufficient cards (" . foundTradeable . "/2)",,,, false)
+        keepAccount := false
+        return 
+    }
+
     packDetailsFile := ""
     packDetailsMessage := ""
 
@@ -2107,6 +2184,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         return
     }
 
+    ; WonderPick logic: foundTradeable >= s4tWPMinCards
     friendCode := getFriendCode()
 
     Sleep, 5000
@@ -2158,7 +2236,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
 
 DetectSixCardPack() {
     global winTitle, defaultLanguage
-    searchVariation := 20
+    searchVariation := 5 ; needed to tighten from 20 to avoid false positives
     
     imagePath := A_ScriptDir . "\" . defaultLanguage . "\"
     
@@ -2249,12 +2327,12 @@ FindBorders(prefix) {
     global currentPackIs6Card
     count := 0
     searchVariation := 40
-    searchVariation6Card := 60  ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
-
-     if (prefix = "shiny2star") { ; 
-         searchVariation := 65  ; 40-60 is not being detected. 80 is too much (3d detected as 2starshiny). trying 65.
-         searchVariation6Card := 65  ; 
-     }
+    searchVariation6Card := 60 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
+    
+    if (prefix = "shiny2star") { ; some aren't being detected at lower variations
+        searchVariation := 75
+        searchVariation6Card := 75 
+    }
     
     is6CardPack := currentPackIs6Card
     
@@ -2274,17 +2352,34 @@ FindBorders(prefix) {
             ,[155, 399, 208, 401]]
     }
     
-    ; Handle shiny card coordinates differently
-    if (prefix = "shiny1star" || prefix = "shiny2star") {
+    ; Changed Shiny 2star needles to improve detection after hours of testing previous needles.
+    if (prefix = "shiny2star") {
         if (is6CardPack) {
-            borderCoords := [[90, 261, 93, 283] ; 6-card pack
+            borderCoords := [[74, 175, 97, 187]
+                ,[153, 175, 180, 187]
+                ,[237, 175, 262, 187]
+                ,[74, 293, 97, 305]
+                ,[153, 293, 180, 305]
+                ,[237, 293, 262, 305]]
+        } else {
+            borderCoords := [[74, 175, 97, 187]
+                ,[153, 175, 180, 187]
+                ,[237, 175, 262, 187]
+                ,[110, 293, 140, 305]
+                ,[192, 293, 223, 305]]
+        }
+    }
+
+    if (prefix = "shiny1star") {
+        if (is6CardPack) {
+            borderCoords := [[90, 261, 93, 283]
                 ,[173, 261, 176, 283]
                 ,[255, 261, 258, 283]
-                ,[90, 376, 93, 398]      ; Bottom row card 1
-                ,[173, 376, 176, 398]    ; Bottom row card 2
-                ,[255, 376, 258, 398]]   ; Bottom row card 3
+                ,[90, 376, 93, 398]
+                ,[173, 376, 176, 398]
+                ,[255, 376, 258, 398]]
         } else {
-            borderCoords := [[90, 261, 93, 283] ; 5-card pack
+            borderCoords := [[90, 261, 93, 283]
                 ,[173, 261, 176, 283]
                 ,[255, 261, 258, 283]
                 ,[130, 376, 133, 398]
@@ -2292,7 +2387,7 @@ FindBorders(prefix) {
         }
     }
     
-    ; 100% scale changes
+    ; 100% scale adjustments
     if (scaleParam = 287) {
         if (prefix = "shiny1star" || prefix = "shiny2star") {
             if (is6CardPack) {
@@ -2330,17 +2425,21 @@ FindBorders(prefix) {
     pBitmap := from_window(WinExist(winTitle))
     for index, value in borderCoords {
         coords := borderCoords[A_Index]
+        imageName := "" ; prevents accidentally reusing previously loaded imageName if imageName is undefined in custom one-off needles
+        currentSearchVariation := searchVariation
         
-        ; For 6-card packs, reuse images from top row
         if (is6CardPack && A_Index >= 4) {
-            imageIndex := A_Index - 3
-            currentSearchVariation := searchVariation6Card ; less image match requirement while we test if top row needles can be re-used for bottom row in 6-card packs
+            ; Bottom row of 6-card pack (positions 4, 5, 6), re-use top row images
+            imageIndex := A_Index - 3  ; Card 4 -> uses Card 1 needle, 5->2, 6->3
+            imageName := prefix . imageIndex
+            currentSearchVariation := searchVariation6Card
         } else {
-            imageIndex := A_Index
+            ; Top row of 6-card pack, or any position in 5-card pack, use the 'real' needles
+            imageName := prefix . A_Index
             currentSearchVariation := searchVariation
         }
         
-        Path = %A_ScriptDir%\%defaultLanguage%\%prefix%%imageIndex%.png
+        Path := A_ScriptDir . "\" . defaultLanguage . "\" . imageName . ".png"
         if (FileExist(Path)) {
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
@@ -2354,63 +2453,28 @@ FindBorders(prefix) {
 }
 
 FindCard(prefix) {
-    global currentPackIs6Card
     count := 0
     searchVariation := 40
-    searchVariation6Card := 60  ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
-    
-    is6CardPack := currentPackIs6Card
-    
-    if (is6CardPack) {
-        borderCoords := [[23, 191, 76, 193]
-            ,[106, 191, 159, 193]
-            ,[189, 191, 242, 193]
-            ,[23, 306, 76, 308]              ; Bottom left
-            ,[106, 306, 159, 308]            ; Bottom center
-            ,[189, 306, 242, 308]]           ; Bottom right
-    } else {
-        borderCoords := [[23, 191, 76, 193] ; Standard 5-card pack
-            ,[106, 191, 159, 193]
-            ,[189, 191, 242, 193]
-            ,[63, 306, 116, 308]
-            ,[146, 306, 199, 308]]
-    }
-    
-    ; 100% scale adjustments
+    borderCoords := [[23, 191, 76, 193]
+        ,[106, 191, 159, 193]
+        ,[189, 191, 242, 193]
+        ,[63, 306, 116, 308]
+        ,[146, 306, 199, 308]]
+    ; 100% scale changes
     if (scaleParam = 287) {
-        if (is6CardPack) {
-            borderCoords := [[23, 184, 81, 186]
-                ,[107, 184, 165, 186]
-                ,[191, 184, 249, 186]
-                ,[23, 301, 81, 303]
-                ,[107, 301, 165, 303]
-                ,[191, 301, 249, 303]]
-        } else {
-            borderCoords := [[23, 184, 81, 186]
-                ,[107, 184, 165, 186]
-                ,[191, 184, 249, 186]
-                ,[64, 301, 122, 303]
-                ,[148, 301, 206, 303]]
-        }
+        borderCoords := [[23, 184, 81, 186]
+            ,[107, 184, 165, 186]
+            ,[191, 184, 249, 186]
+            ,[64, 301, 122, 303]
+            ,[148, 301, 206, 303]]
     }
-    
     pBitmap := from_window(WinExist(winTitle))
     for index, value in borderCoords {
         coords := borderCoords[A_Index]
-        
-        if (is6CardPack && A_Index >= 4) {
-            ; Position 4 uses image 1, position 5 uses image 2, position 6 uses image 3
-            imageIndex := A_Index - 3
-            currentSearchVariation := searchVariation6Card
-        } else {
-            imageIndex := A_Index
-            currentSearchVariation := searchVariation
-        }
-        
-        Path = %A_ScriptDir%\%defaultLanguage%\%prefix%%imageIndex%.png
+        Path = %A_ScriptDir%\%defaultLanguage%\%prefix%%A_Index%.png
         if (FileExist(Path)) {
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], searchVariation)
             if (vRet = 1) {
                 count += 1
             }
@@ -2470,9 +2534,10 @@ FindGodPack(invalidPack := false) {
     
     ; Check if pack meets minimum stars requirement
     if (!invalidPack) {
-        starCount := 5 - FindBorders("1star")
+        ; Calculate tempStarCount by counting only valid 2-star cards for minimum check
+        tempStarCount := FindBorders("fullart") + FindBorders("rainbow") + FindBorders("trainer")
         
-        if (requiredStars > 0 && starCount < requiredStars) {
+        if (requiredStars > 0 && tempStarCount < requiredStars) {
             CreateStatusMessage("Pack doesn't contain enough 2 stars...",,,, false)
             invalidPack := true
         }
@@ -2504,7 +2569,11 @@ GodPackFound(validity) {
     Randmax := Praise.Length()
     Random, rand, 1, Randmax
     Interjection := Praise[rand]
-    starCount := 5 - FindBorders("1star") - FindBorders("shiny1star")
+    
+    ; Calculate star count by only counting valid 2-star cards (fullart, rainbow, trainer)
+    ; Don't subtract invalid cards, instead count only the valid ones
+    starCount := FindBorders("fullart") + FindBorders("rainbow") + FindBorders("trainer")
+    
     screenShot := Screenshot(validity)
     accountFullPath := ""
     accountFile := saveAccount(validity, accountFullPath)
@@ -3443,6 +3512,7 @@ GetNeedle(Path) {
         return pNeedle
     }
 }
+
 MonthToDays(year, month) {
     static DaysInMonths := [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     days := 0
@@ -3803,7 +3873,7 @@ DoTutorial() {
         Delay(1)
     }
 
-    FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497) ;skip through cards until results opening screen
+    FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497, 50) ;skip through cards until results opening screen
 
     FindImageAndClick(233, 486, 272, 519, , "Skip", 146, 496) ;click on next until skip button appears
 
@@ -4003,10 +4073,15 @@ SelectPack(HG := false) {
 	
 	if(inselectexpansionscreen) {
         if (openPack = "Shining" || openPack = "Arceus") {
-            ; One swipe
-            adbSwipe("266 770 266 355 160")
-            Sleep, 500
-
+            X := 266
+            Y1 := 430
+            Y2 := 350
+            
+            Loop, 2 {
+                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
+                Sleep, 600  ; Longer sleep for consistency
+            }
+            
             packy := 436
 			
 			if (openPack = "Shining") {
@@ -4126,24 +4201,30 @@ SelectPack(HG := false) {
             CreateStatusMessage("Waiting for HourglassPack4`n(" . failSafeTime . "/45 seconds)")
         }
     }
-    ;if(HG != "Tutorial")
+    else { 
         failSafe := A_TickCount
         failSafeTime := 0
         Loop {
-            if(FindImageAndClick(233, 486, 272, 519, , "Skip2", 143, 417, 2)) { ;click on open button until skip button appears
+            if(FindImageAndClick(233, 486, 272, 519, , "Skip2", 151, 420)) { ;click on open button until skip button appears
                 break
-			} else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
-				cantOpenMorePacks := 1
-			} else if(FindOrLoseImage(191, 393, 211, 411, , "Shop", 0, failSafeTime)){
-            SelectPack("HGPack")
+            } else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
+                cantOpenMorePacks := 1
+            } else if(FindOrLoseImage(191, 393, 211, 411, , "Shop", 0, failSafeTime)) {
+                SelectPack("HGPack")
+            } else {
+                ; if this is not supposed to be an HGPack, but HGPack confirmation pops up unexpectedly, handle Open button
+                if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
+                    adbClick_wbb(205, 458)
+                }
             }
-
-			if(cantOpenMorePacks)
-				return
+            if(cantOpenMorePacks)
+                return
+                
             Delay(1)
-            adbClick_wbb(200, 451) ;for hourglass???
+            adbClick_wbb(200, 451) ; for hourglass?
             failSafeTime := (A_TickCount - failSafe) // 1000
             CreateStatusMessage("Waiting for Skip2`n(" . failSafeTime . "/45 seconds)")
+        }
     }
 }
 
@@ -4199,7 +4280,7 @@ PackOpening() {
         Delay(1)
     }
 
-    FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497) ;skip through cards until results opening screen
+    FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497, 50) ;skip through cards until results opening screen
 
     CheckPack()
     
@@ -4344,7 +4425,7 @@ HourglassOpening(HG := false, NEIRestart := true) {
         Delay(1)
     }
 
-    FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497) ;skip through cards until results opening screen
+    FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497, 50) ;skip through cards until results opening screen
 
     CheckPack()
 	
@@ -5042,8 +5123,6 @@ setMetaData() {
             AccountNewName := NameAndExtension[1] . "(" . metadata . ").xml"
         }
     }
-
-    ;MsgBox, %AccountNewName% ;debug check for filename
     
     saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
     accountFile := saveDir . "\" . accountFileName
@@ -5178,10 +5257,7 @@ GoToMain(fromSocial := false) {
         }
     }
     else {
-        Delay(2)
-        adbClick(139,518)
-        adbClick(139,518) ; prevents getting stuck in pack opening menu
-        FindImageAndClick(120, 500, 155, 530, , "Social", 143, 493)
+        FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518)
         FindImageAndClick(191, 393, 211, 411, , "Shop", 20, 515, 500) ;click until at main menu
     }
 }

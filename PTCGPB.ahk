@@ -1,51 +1,42 @@
-﻿; Improved status display function
-DisplayPackStatus(Message, X := 0, Y := 625) {
+﻿DisplayPackStatus(Message, X := 0, Y := 625) {
    global SelectedMonitorIndex
    static GuiName := "ScreenPackStatus"
    
-   ; Fixed light theme colors
-   bgColor := "F0F5F9" ; Light background
-   textColor := "2E3440" ; Dark text for contrast
+   bgColor := "F0F5F9"
+   textColor := "2E3440"
    
    MaxRetries := 10
    RetryCount := 0
    
    try {
-      ; Get monitor origin from index
       SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
       SysGet, Monitor, Monitor, %SelectedMonitorIndex%
       X := MonitorLeft + X
       
-      ;Adjust Y position to be just above buttons
-      Y := MonitorTop + 503 ; This is approximately where the buttons start - 30 (status height)
+      Y := MonitorTop + 348
       
-      ; Check if GUI already exists
       Gui %GuiName%:+LastFoundExist
       if (PackGuiBuild) {
          GuiControl, %GuiName%:, PackStatus, %Message%
       }
       else {
          PackGuiBuild := 1
-         ; Create a new GUI with light theme styling
          OwnerWND := WinExist(1)
          Gui, %GuiName%:Destroy
          if(!OwnerWND)
             Gui, %GuiName%:New, +ToolWindow -Caption +LastFound -DPIScale +AlwaysOnTop
          else
             Gui, %GuiName%:New, +Owner%OwnerWND% +ToolWindow -Caption +LastFound -DPIScale
-         Gui, %GuiName%:Color, %bgColor% ; Light background
+         Gui, %GuiName%:Color, %bgColor%
          Gui, %GuiName%:Margin, 2, 2
-         Gui, %GuiName%:Font, s8 c%textColor% ; Dark text
+         Gui, %GuiName%:Font, s8 c%textColor%
          Gui, %GuiName%:Add, Text, vPackStatus c%textColor%, %Message%
-         ; Show the GUI without activating it
          Gui, %GuiName%:Show, NoActivate x%X% y%Y%, %GuiName%
       }
    } catch e {
-      ; Silent error handling
    }
 }
 
-;OPTIMIZATIONS START
 #NoEnv
 #MaxHotkeysPerInterval 99000000
 #HotkeyInterval 99000000
@@ -59,11 +50,10 @@ SetDefaultMouseSpeed, 0
 SetWinDelay, -1
 SetControlDelay, -1
 SendMode Input
-DllCall("ntdll\ZwSetTimerResolution","Int",5000,"Int",1,"Int*",MyCurrentTimerResolution) ;setting the Windows Timer Resolution to 0.5ms, THIS IS A GLOBAL CHANGE
-;OPTIMIZATIONS END
-;YOUR SCRIPT GOES HERE
-DllCall("Sleep","UInt",1) ;I just slept exactly 1ms!
-DllCall("ntdll\ZwDelayExecution","Int",0,"Int64*",-5000) ;you can use this to sleep in increments of 0.5ms if you need even more granularity
+DllCall("ntdll\ZwSetTimerResolution","Int",5000,"Int",1,"Int*",MyCurrentTimerResolution)
+
+DllCall("Sleep","UInt",1)
+DllCall("ntdll\ZwDelayExecution","Int",0,"Int64*",-5000)
 
 #Include %A_ScriptDir%\Scripts\Include\
 #Include Dictionary.ahk
@@ -80,32 +70,31 @@ SetTitleMatchMode, 3
 
 OnError("ErrorHandler")
 
-;OnError("ErrorHandler") ; Add this line here
-
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v6.6.1"
+   ,localVersion := "v7.0.0alpha"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
    ,intro := "Wisdom of Sea and Sky"
 
+global GUI_WIDTH := 790
+global GUI_HEIGHT := 370
+global MainGuiName
+
 if not A_IsAdmin
 {
-   ; Relaunch script with admin rights
    Run *RunAs "%A_ScriptFullPath%"
    ExitApp
 }
 
-; ========== Load Settings ==========
 settingsLoaded := LoadSettingsFromIni()
 if (!settingsLoaded) {
    CreateDefaultSettingsFile()
    LoadSettingsFromIni()
 }
-; ========== language Selection ==========
+
 if (!IsLanguageSet) {
-   ; Build language select
    Gui, Add, Text,, Select Language
    BotLanguagelist := "English|中文|日本語|Deutsch"
    defaultChooseLang := 1
@@ -130,7 +119,6 @@ NextStep:
    langMap := { "English": 1, "中文": 2, "日本語": 3, "Deutsch": 4 }
    defaultBotLanguage := langMap.HasKey(BotLanguage) ? langMap[BotLanguage] : 1
    Gui, Destroy
-   ; Define Language Dictionary
    global LicenseDictionary, ProxyDictionary, currentDictionary, SetUpDictionary, HelpDictionary
    LicenseDictionary := CreateLicenseNoteLanguage(defaultBotLanguage)
       ,ProxyDictionary := CreateProxyLanguage(defaultBotLanguage)
@@ -138,9 +126,7 @@ NextStep:
       ,SetUpDictionary := CreateSetUpByLanguage(defaultBotLanguage)
       ,HelpDictionary := CreateHelpByLanguage(defaultBotLanguage)
    
-   ; ========== License/Proxy Notice ==========
    RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
-   ; Check for debugMode and display license notification if not in debug mode
    global saveSignalFile := A_ScriptDir "\Scripts\Include\save.signal"
    if (!debugMode && !shownLicense && !FileExist(saveSignalFile)) {
       MsgBox, 64, % LicenseDictionary.Title, % LicenseDictionary.Content
@@ -149,7 +135,6 @@ NextStep:
          MsgBox, 64,, % ProxyDictionary.Notice
    }
    
-   ; ========== Handle save.signal ==========
    if FileExist(saveSignalFile) {
       KillADBProcesses()
       FileDelete, %saveSignalFile%
@@ -158,12 +143,10 @@ NextStep:
       CheckForUpdate()
    }
    
-   ; ========== Backup JSON Files ==========
    scriptName := StrReplace(A_ScriptName, ".ahk")
    winTitle := scriptName
    showStatus := true
    
-   ; Backup total.json
    totalFile := A_ScriptDir . "\json\total.json"
    backupFile := A_ScriptDir . "\json\total-backup.json"
    if FileExist(totalFile) {
@@ -173,7 +156,6 @@ NextStep:
       FileDelete, %totalFile%
    }
    
-   ; Backup Packs.json
    packsFile := A_ScriptDir . "\json\Packs.json"
    backupFile := A_ScriptDir . "\json\Packs-backup.json"
    if FileExist(packsFile) {
@@ -181,1879 +163,1430 @@ NextStep:
       if (ErrorLevel)
          MsgBox, 0x40000,, Failed to create %backupFile%. Ensure permissions and paths are correct.
    }
-   InitializeJsonFile() ; Create or open the JSON file
-   ; ========== GUI Setup ==========
-   global MainGuiName
-   global checkedPath, uncheckedPath
-   checkedPath := A_ScriptDir . "\GUI\Gui_checked.png"
-   uncheckedPath := A_ScriptDir . "\GUI\Gui_unchecked.png"
-   Gui,+HWNDSGUI
-   if (CurrentTheme = "Dark") {
-      Gui, Color, e9f1f7, 7C8590
+   InitializeJsonFile()
+
+   Gui,+HWNDSGUI +Resize
+   Gui, Color, 1E1E1E, 333333
+   Gui, Font, s10 cWhite, Segoe UI
+   MainGuiName := SGUI
+
+   sectionColor := "cWhite"
+   Gui, Add, GroupBox, x5 y0 w240 h50 %sectionColor%, Friend ID
+   if(FriendID = "ERROR" || FriendID = "")
+     FriendID =
+   Gui, Add, Edit, vFriendID w180 x35 y20 h20 -E0x200 Background2A2A2A cWhite, %FriendID%
+
+   if (deleteMethod = "Create Bots (13P)") {
+      GuiControl, Hide, FriendID
+   }
+
+   sectionColor := "cWhite"
+   Gui, Add, GroupBox, x5 y50 w240 h130 %sectionColor%, % currentDictionary.InstanceSettings
+   Gui, Add, Text, x20 y75 %sectionColor%, % currentDictionary.Txt_Instances
+   Gui, Add, Edit, vInstances w50 x125 y75 h20 -E0x200 Background2A2A2A cWhite Center, %Instances%
+   Gui, Add, Text, x20 y100 %sectionColor%, % currentDictionary.Txt_Columns
+   Gui, Add, Edit, vColumns w50 x125 y100 h20 -E0x200 Background2A2A2A cWhite Center, %Columns%
+      Gui, Font, s8 cWhite, Segoe UI
+   Gui, Add, Button, x185 y100 w50 h20 gArrangeWindows BackgroundTrans, % currentDictionary.btn_arrange
+      Gui, Font, s10 cWhite, Segoe UI
+   Gui, Add, Text, x20 y125 %sectionColor%, % currentDictionary.Txt_InstanceStartDelay
+   Gui, Add, Edit, vinstanceStartDelay w50 x125 y125 h20 -E0x200 Background2A2A2A cWhite Center, %instanceStartDelay%
+
+   Gui, Add, Checkbox, % (runMain ? "Checked" : "") " vrunMain gmainSettings x20 y150 " . sectionColor, % currentDictionary.Txt_runMain
+   Gui, Add, Edit, % "vMains w50 x125 y150 h20 -E0x200 Background2A2A2A " . sectionColor . " Center" . (runMain ? "" : " Hidden"), %Mains%
+
+   sectionColor := "c39FF14"
+   Gui, Add, GroupBox, x5 y185 w240 h175 %sectionColor%, % currentDictionary.BotSettings
+
+   if (deleteMethod = "Create Bots (13P)")
+   defaultDelete := 1
+   else if (deleteMethod = "Inject 13-39P")
+   defaultDelete := 2
+   else if (deleteMethod = "Inject Missions")
+   defaultDelete := 2
+   else if (deleteMethod = "Inject Wonderpick 39P+")
+   defaultDelete := 3
+   Gui, Add, DropDownList, vdeleteMethod gdeleteSettings choose%defaultDelete% x20 y210 w200 Background2A2A2A cWhite, Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+
+
+   Gui, Add, Checkbox, % (packMethod ? "Checked" : "") " vpackMethod x20 y240 " . sectionColor . ((deleteMethod = "Inject Wonderpick 39P+") ? "" : " Hidden"), % currentDictionary.Txt_packMethod
+   Gui, Add, Checkbox, % (nukeAccount ? "Checked" : "") " vnukeAccount x20 y240 " . sectionColor . ((deleteMethod = "Create Bots (13P)")? "": " Hidden"), % currentDictionary.Txt_nukeAccount
+   Gui, Add, Checkbox, % (openExtraPack ? "Checked" : "") " vopenExtraPack gopenExtraPackSettings x20 y260 " . sectionColor . ((deleteMethod = "Inject Wonderpick 39P+") ? "" : " Hidden"), % currentDictionary.Txt_openExtraPack
+   Gui, Add, Checkbox, % (spendHourGlass ? "Checked" : "") " vspendHourGlass gspendHourGlassSettings x20 y280 " . sectionColor . ((deleteMethod = "Create Bots (13P)")? " Hidden":""), % currentDictionary.Txt_spendHourGlass
+
+   Gui, Add, Text, x20 y305 %sectionColor% vSortByText, % currentDictionary.SortByText
+   sortOption := 1
+   if (injectSortMethod = "ModifiedDesc")
+   sortOption := 2
+   else if (injectSortMethod = "PacksAsc")
+   sortOption := 3
+   else if (injectSortMethod = "PacksDesc")
+   sortOption := 4
+   Gui, Add, DropDownList, vSortByDropdown gSortByDropdownHandler choose%sortOption% x20 y325 w130 Background2A2A2A cWhite, Oldest First|Newest First|Fewest Packs First|Most Packs First
+
+   Gui, Add, Text, x20 y260 %sectionColor% vAccountNameText, % currentDictionary.Txt_AccountName
+   Gui, Add, Edit, vAccountName w90 x130 y260 h20 -E0x200 Background2A2A2A cWhite Center, %AccountName%
+
+   if (deleteMethod = "Create Bots (13P)") {
+      GuiControl, Hide, SortByText
+      GuiControl, Hide, SortByDropdown
    } else {
-      Gui, Color, e9f1f7, FFD1CD
+      GuiControl, Hide, AccountNameText
+      GuiControl, Hide, AccountName
    }
-   Loop, 8 {
-      Gui, Add, Picture, % "x" (A_Index-1)*360 " y0 w360 h640 BackgroundTrans", %BackgroundImage%
-      Gui, Add, Picture, % "x" (A_Index-1)*360 + 20 " y90 w320 h480 BackgroundTrans", %PageImage%
-   }
-   OD_Colors.SetItemHeight("s10", currentfont)
-   ; ========== Page 1 ==========
-   xPos := 45
-   SetHeaderFont()
-   Gui, Add, Text, x%xPos% y110 backgroundtrans, % currentDictionary.btn_reroll
-   SetNormalFont()
-   ;; FriendID Section
-   Gui, Add, Text, x%xPos% y150 vFriendIDLabel backgroundtrans, % currentDictionary.FriendIDLabel
-   if(FriendID = "ERROR" || FriendID = "") {
-      Gui, Add, Edit, % "vFriendID w270 x" . xPos . " y175 h20 -E0x200 Center backgroundtrans" . (CurrentTheme = "Dark"? " cFDFDFD ": " cBC0000"),
+
+   sectionColor := "cFFD700"
+   Gui, Font, s10 cWhite, Segoe UI
+   Gui, Add, GroupBox, x255 y0 w180 h50 %sectionColor%, % currentDictionary.PackHeading
+
+   UpdatePackSelectionButtonText()
+   Gui, Add, Button, x275 y20 w140 h25 gShowPackSelection vPackSelectionButton BackgroundTrans, Loading...
+   UpdatePackSelectionButtonText()
+
+   sectionColor := "cFF4500"
+   Gui, Font, s10 cWhite, Segoe UI
+   Gui, Add, GroupBox, x255 y55 w180 h50 %sectionColor%, % currentDictionary.CardDetection
+   
+   Gui, Add, Button, x275 y75 w140 h25 gShowCardDetection vCardDetectionButton BackgroundTrans, Loading...
+   
+   UpdateCardDetectionButtonText()
+
+   sectionColor := "c4169E1"
+   Gui, Font, s10 cWhite, Segoe UI
+   Gui, Add, GroupBox, x255 y110 w180 h50 %sectionColor%, % currentDictionary.SaveForTrade
+   
+   Gui, Add, Button, x275 y130 w140 h25 gShowS4TSettings vS4TButton BackgroundTrans, Loading...
+   
+   UpdateS4TButtonText()
+
+   sectionColor := "cWhite"
+   Gui, Font, s10 cWhite, Segoe UI
+   Gui, Add, GroupBox, x255 y165 w180 h50 %sectionColor%, % currentDictionary.GroupSettings
+
+   Gui, Add, Button, x275 y185 w140 h25 gShowGroupRerollSettings vGroupRerollButton BackgroundTrans, Loading...
+
+   UpdateGroupRerollButtonText()
+
+   Gui, Font, s10 cWhite, Segoe UI
+   sectionColor := "c9370DB"
+   Gui, Add, GroupBox, x255 y220 w180 h100 %sectionColor%, % currentDictionary.TimeSettings
+   Gui, Add, Text, x270 y245 %sectionColor%, % currentDictionary.Txt_Delay
+   Gui, Add, Edit, vDelay w30 x400 y245 h20 -E0x200 Background2A2A2A cWhite Center, %Delay%
+   Gui, Add, Text, x270 y270 %sectionColor%, % currentDictionary.Txt_SwipeSpeed
+   Gui, Add, Edit, vswipeSpeed w30 x400 y270 h20 -E0x200 Background2A2A2A cWhite Center, %swipeSpeed%
+   Gui, Add, Text, x270 y295 %sectionColor%, % currentDictionary.Txt_WaitTime
+   Gui, Add, Edit, vwaitTime w30 x400 y295 h20 -E0x200 Background2A2A2A cWhite Center, %waitTime%
+
+   sectionColor := "cFF69B4"
+   Gui, Font, s10 cWhite, Segoe UI
+   Gui, Add, GroupBox, x445 y0 w156 h130 %sectionColor%, % currentDictionary.DiscordSettingsHeading
+   if(StrLen(discordUserID) < 3)
+   discordUserID =
+   if(StrLen(discordWebhookURL) < 3)
+   discordWebhookURL =
+   Gui, Add, Text, x455 y20 %sectionColor%, Discord ID:
+   Gui, Add, Edit, vdiscordUserId w136 x455 y40 h20 -E0x200 Background2A2A2A cWhite, %discordUserId%
+   Gui, Add, Text, x455 y60 %sectionColor%, Webhook URL:
+   Gui, Add, Edit, vdiscordWebhookURL w136 x455 y80 h20 -E0x200 Background2A2A2A cWhite, %discordWebhookURL%
+   Gui, Add, Checkbox, % (sendAccountXml ? "Checked" : "") " vsendAccountXml x455 y105 " . sectionColor, Send Account XML
+
+   sectionColor := "c00FFFF"
+   Gui, Font, s10 cWhite, Segoe UI
+   Gui, Add, GroupBox, x445 y130 w156 h180 %sectionColor%, % currentDictionary.HeartbeatSettingsSubHeading
+   Gui, Add, Checkbox, % (heartBeat ? "Checked" : "") " vheartBeat x455 y155 gdiscordSettings " . sectionColor, % currentDictionary.Txt_heartBeat
+
+   if(StrLen(heartBeatName) < 3)
+   heartBeatName =
+   if(StrLen(heartBeatWebhookURL) < 3)
+   heartBeatWebhookURL =
+
+   if (heartBeat) {
+   Gui, Add, Text, vhbName x455 y175 %sectionColor%, % currentDictionary.hbName
+   Gui, Add, Edit, vheartBeatName w136 x455 y195 h20 -E0x200 Background2A2A2A cWhite, %heartBeatName%
+   Gui, Add, Text, vhbURL x455 y215 %sectionColor%, Webhook URL:
+   Gui, Add, Edit, vheartBeatWebhookURL w136 x455 y235 h20 -E0x200 Background2A2A2A cWhite, %heartBeatWebhookURL%
+   Gui, Add, Text, vhbDelay x455 y260 %sectionColor%, % currentDictionary.hbDelay
+   Gui, Add, Edit, vheartBeatDelay w50 x455 y280 h20 -E0x200 Background2A2A2A cWhite Center, %heartBeatDelay%
    } else {
-      Gui, Add, Edit, % "vFriendID w270 x" . xPos . " y175 h20 -E0x200 Center backgroundtrans" . (CurrentTheme = "Dark"? " cFDFDFD ": " cBC0000"), %FriendID%
+   Gui, Add, Text, vhbName x455 y175 Hidden %sectionColor%, % currentDictionary.hbName
+   Gui, Add, Edit, vheartBeatName w136 x455 y195 h20 Hidden -E0x200 Background2A2A2A cWhite, %heartBeatName%
+   Gui, Add, Text, vhbURL x455 y215 Hidden %sectionColor%, Webhook URL:
+   Gui, Add, Edit, vheartBeatWebhookURL w136 x455 y235 h20 Hidden -E0x200 Background2A2A2A cWhite, %heartBeatWebhookURL%
+   Gui, Add, Text, vhbDelay x455 y260 Hidden %sectionColor%, % currentDictionary.hbDelay
+   Gui, Add, Edit, vheartBeatDelay w50 x455 y280 h20 Hidden -E0x200 Background2A2A2A cWhite Center, %heartBeatDelay%
+   }
+
+   Gui, Font, s10 cWhite
+   Gui, Add, Picture, gOpenDiscord x455 y320 w36 h36, %A_ScriptDir%\GUI\Images\discord-icon.png
+   Gui, Add, Picture, gOpenToolTip x505 y320 w36 h36, %A_ScriptDir%\GUI\Images\help-icon.png
+   Gui, Add, Picture, gShowToolsAndSystemSettings x555 y322 w32 h32, %A_ScriptDir%\GUI\Images\tools-icon.png
+
+   sectionColor := "cWhite"
+   Gui, Add, GroupBox, x611 y0 w175 h360 %sectionColor%
+
+   Gui, Font, s12 cWhite Bold
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
+   Gui, Font, s10 cWhite Bold
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.0.0 (kevinnnn)"
+
+   Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
+   Gui, Add, Button, x621 y240 w155 h40 gLaunchAllMumu BackgroundTrans, % currentDictionary.btn_mumu
+   Gui, Add, Button, gSave x621 y290 w155 h40, Start Bot
+
+   Gui, Font, s7 cGray
+   Gui, Add, Text, x620 y340 w165 Center BackgroundTrans, CC BY-NC 4.0 international license
+
+   Gui, Show, w%GUI_WIDTH% h%GUI_HEIGHT%, Arturo's PTCGP BOT
+
+Return
+
+mainSettings:
+  Gui, Submit, NoHide
+  if (runMain) {
+    GuiControl, Show, Mains
+  } else {
+    GuiControl, Hide, Mains
+  }
+return
+
+deleteSettings:
+  Gui, Submit, NoHide
+  if (deleteMethod = "Create Bots (13P)") {
+    GuiControl, Hide, FriendID
+    GuiControl, Hide, spendHourGlass
+    GuiControl, Hide, packMethod
+    GuiControl, Hide, openExtraPack
+    GuiControl, Show, nukeAccount
+    GuiControl, Hide, SortByText
+    GuiControl, Hide, SortByDropdown
+    GuiControl, Show, AccountNameText
+    GuiControl, Show, AccountName
+  } else if (deleteMethod = "Inject Wonderpick 39P+") {
+    GuiControl, Show, FriendID
+    GuiControl, Show, spendHourGlass
+    GuiControl, Show, packMethod
+    GuiControl, Show, openExtraPack
+    GuiControl, Hide, nukeAccount
+    GuiControl, Show, SortByText
+    GuiControl, Show, SortByDropdown
+    GuiControl, Hide, AccountNameText
+    GuiControl, Hide, AccountName
+    nukeAccount := false
+  } else {
+    GuiControl, Hide, FriendID
+    GuiControl, Show, spendHourGlass
+    GuiControl, Hide, packMethod
+    GuiControl, Hide, openExtraPack
+    GuiControl, Hide, nukeAccount
+    GuiControl, Show, SortByText
+    GuiControl, Show, SortByDropdown
+    GuiControl, Hide, AccountNameText
+    GuiControl, Hide, AccountName
+    nukeAccount := false
+  }
+return
+
+openExtraPackSettings:
+  Gui, Submit, NoHide
+  if (openExtraPack) {
+    GuiControl,, spendHourGlass, 0
+    spendHourGlass := false
+  }
+Return
+
+spendHourGlassSettings:
+  Gui, Submit, NoHide
+  if (spendHourGlass) {
+    GuiControl,, openExtraPack, 0
+    openExtraPack := false
+  }
+Return
+
+SortByDropdownHandler:
+  Gui, Submit, NoHide
+  GuiControlGet, selectedOption,, SortByDropdown
+  if (selectedOption = "Oldest First")
+    injectSortMethod := "ModifiedAsc"
+  else if (selectedOption = "Newest First")
+    injectSortMethod := "ModifiedDesc"
+  else if (selectedOption = "Fewest Packs First")
+    injectSortMethod := "PacksAsc"
+  else if (selectedOption = "Most Packs First")
+    injectSortMethod := "PacksDesc"
+return
+
+UpdatePackSelectionButtonText() {
+    global HoOh, Lugia, Eevee, Buzzwole, Solgaleo, Lunala, Shining, Arceus
+    global Palkia, Dialga, Pikachu, Charizard, Mewtwo, Mew, currentDictionary
+    
+    selectedPacks := []
+
+    if (HoOh)
+        selectedPacks.Push(currentDictionary.Txt_HoOh)
+    if (Lugia)
+        selectedPacks.Push(currentDictionary.Txt_Lugia)
+    if (Eevee)
+        selectedPacks.Push(currentDictionary.Txt_Eevee)
+    if (Buzzwole)
+        selectedPacks.Push(currentDictionary.Txt_Buzzwole)
+    if (Solgaleo)
+        selectedPacks.Push(currentDictionary.Txt_Solgaleo)
+    if (Lunala)
+        selectedPacks.Push(currentDictionary.Txt_Lunala)
+    if (Shining)
+        selectedPacks.Push("Shining Revelry")
+    if (Arceus)
+        selectedPacks.Push("Triumphant Light")
+    if (Dialga)
+        selectedPacks.Push(currentDictionary.Txt_Dialga)
+    if (Palkia)
+        selectedPacks.Push(currentDictionary.Txt_Palkia)
+    if (Mew)
+        selectedPacks.Push(currentDictionary.Txt_Mew)
+    if (Charizard)
+        selectedPacks.Push(currentDictionary.Txt_Charizard)
+    if (Mewtwo)
+        selectedPacks.Push(currentDictionary.Txt_Mewtwo)
+    if (Pikachu)
+        selectedPacks.Push(currentDictionary.Txt_Pikachu)
+    
+    packCount := selectedPacks.MaxIndex() ? selectedPacks.MaxIndex() : 0
+    
+    if (packCount = 0) {
+        buttonText := "Select..."
+        fontSize := 8
+    } else if (packCount = 1) {
+        buttonText := selectedPacks[1]
+        if (StrLen(buttonText) > 15)
+            fontSize := 7
+        else
+            fontSize := 8
+    } else if (packCount <= 2) {
+        buttonText := ""
+        Loop, % packCount {
+            buttonText .= selectedPacks[A_Index]
+            if (A_Index < packCount)
+                buttonText .= ", "
+        }
+        fontSize := 7
+    } else {
+        buttonText := selectedPacks[1] . " +" . (packCount - 1) . " more"
+        fontSize := 7
+    }
+    
+    Gui, Font, s%fontSize% cWhite, Segoe UI
+    GuiControl,, PackSelectionButton, %buttonText%
+    GuiControl, Font, PackSelectionButton
+}
+
+ShowPackSelection:
+    WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
+    
+    popupX := mainWinX + 275 + 140 + 10
+    popupY := mainWinY + 18 + 30
+    
+    Gui, PackSelect:Destroy
+    Gui, PackSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Pack Selection
+    Gui, PackSelect:Color, 1E1E1E, 333333
+    Gui, PackSelect:Font, s10 cWhite, Segoe UI
+    
+    yPos := 10
+    Gui, PackSelect:Add, Checkbox, % (HoOh ? "Checked" : "") " vHoOh_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_HoOh
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Lugia ? "Checked" : "") " vLugia_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Lugia
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Eevee ? "Checked" : "") " vEevee_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Eevee
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Buzzwole ? "Checked" : "") " vBuzzwole_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Buzzwole
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Solgaleo ? "Checked" : "") " vSolgaleo_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Solgaleo
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Lunala ? "Checked" : "") " vLunala_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Lunala
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Shining ? "Checked" : "") " vShining_Popup x10 y" . yPos . " cWhite", Shining Revelry
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Arceus ? "Checked" : "") " vArceus_Popup x10 y" . yPos . " cWhite", Triumphant Light
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Dialga ? "Checked" : "") " vDialga_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Dialga
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Palkia ? "Checked" : "") " vPalkia_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Palkia
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Mew ? "Checked" : "") " vMew_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Mew
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Charizard ? "Checked" : "") " vCharizard_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Charizard
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Mewtwo ? "Checked" : "") " vMetwo_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Mewtwo
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (Pikachu ? "Checked" : "") " vPikachu_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Pikachu
+    yPos += 35
+    
+    Gui, PackSelect:Add, Button, x10 y%yPos% w80 h30 gApplyPackSelection, Apply
+    Gui, PackSelect:Add, Button, x100 y%yPos% w80 h30 gCancelPackSelection, Cancel
+    yPos += 40
+    
+    Gui, PackSelect:Show, x%popupX% y%popupY% w200 h%yPos%
+return
+
+ApplyPackSelection:
+    Gui, PackSelect:Submit, NoHide
+    
+    HoOh := HoOh_Popup
+    Lugia := Lugia_Popup
+    Eevee := Eevee_Popup
+    Buzzwole := Buzzwole_Popup
+    Solgaleo := Solgaleo_Popup
+    Lunala := Lunala_Popup
+    Shining := Shining_Popup
+    Arceus := Arceus_Popup
+    Dialga := Dialga_Popup
+    Palkia := Palkia_Popup
+    Mew := Mew_Popup
+    Charizard := Charizard_Popup
+    Mewtwo := Mewtwo_Popup
+    Pikachu := Pikachu_Popup
+    
+    Gui, PackSelect:Destroy
+    
+    Gui, 1:Default
+    
+    UpdatePackSelectionButtonText()
+return
+
+CancelPackSelection:
+    Gui, PackSelect:Destroy
+return
+
+UpdateCardDetectionButtonText() {
+    global FullArtCheck, TrainerCheck, RainbowCheck, PseudoGodPack, CheckShinyPackOnly
+    global InvalidCheck, CrownCheck, ShinyCheck, ImmersiveCheck, minStars, minStarsShiny
+    global currentDictionary
+    
+    enabledOptions := []
+    
+    if (FullArtCheck)
+        enabledOptions.Push("Single Full Art")
+    if (TrainerCheck)
+        enabledOptions.Push("Single Trainer")
+    if (RainbowCheck)
+        enabledOptions.Push("Single Rainbow")
+    if (PseudoGodPack)
+        enabledOptions.Push("Double 2★")
+    if (CrownCheck)
+        enabledOptions.Push("Save Crowns")
+    if (ShinyCheck)
+        enabledOptions.Push("Save Shiny")
+    if (ImmersiveCheck)
+        enabledOptions.Push("Save Immersives")
+    if (CheckShinyPackOnly)
+        enabledOptions.Push("Only Shiny Packs")
+    if (InvalidCheck)
+        enabledOptions.Push("Ignore Invalid")
+    
+    statusText := ""
+    if (minStars > 0 || minStarsShiny > 0) {
+        statusText .= "Min GP 2★: " . minStars
+        if (minStarsShiny > 0)
+            statusText .= " (Shiny: " . minStarsShiny . ")"
+    }
+    
+    if (enabledOptions.Length() > 0) {
+        if (statusText != "")
+            statusText .= "`n"
+        statusText .= enabledOptions[1]
+        if (enabledOptions.Length() > 1)
+            statusText .= " +" . (enabledOptions.Length() - 1) . " more"
+    } else {
+        if (statusText != "")
+            statusText .= "`n"
+        statusText .= "No options selected"
+    }
+    
+    if (statusText = "No options selected" && minStars = 0 && minStarsShiny = 0) {
+        statusText := "Configure settings..."
+    }
+    
+    Gui, Font, s8 cWhite, Segoe UI
+    GuiControl, Font, CardDetectionButton
+    GuiControl,, CardDetectionButton, %statusText%
+}
+
+ShowCardDetection:
+    WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
+    
+    popupX := mainWinX + 275 + 140 + 10
+    popupY := mainWinY + 73 + 30
+    
+    Gui, CardDetect:Destroy
+    Gui, CardDetect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Card Detection Settings
+    Gui, CardDetect:Color, 1E1E1E, 333333
+    Gui, CardDetect:Font, s10 cWhite, Segoe UI
+    
+    yPos := 15
+    
+    Gui, CardDetect:Add, Text, x15 y%yPos% cWhite, Min GP 2★:
+    Gui, CardDetect:Add, Edit, vminStars_Popup w40 x100 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %minStars%
+    yPos += 25
+
+    Gui, CardDetect:Add, Text, x15 y%yPos% cWhite, Min GP 2★ (Shiny):
+    Gui, CardDetect:Add, Edit, vminStarsShiny_Popup w40 x100 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %minStarsShiny%
+      
+    Gui, CardDetect:Add, Checkbox, % (FullArtCheck ? "Checked" : "") " vFullArtCheck_Popup x15 y" . yPos . " cWhite", Single Full Art 2★
+    yPos += 25
+    Gui, CardDetect:Add, Checkbox, % (TrainerCheck ? "Checked" : "") " vTrainerCheck_Popup x15 y" . yPos . " cWhite", Single Trainer 2★
+    yPos += 25
+    Gui, CardDetect:Add, Checkbox, % (RainbowCheck ? "Checked" : "") " vRainbowCheck_Popup x15 y" . yPos . " cWhite", Single Rainbow 2★
+    yPos += 25
+    Gui, CardDetect:Add, Checkbox, % (PseudoGodPack ? "Checked" : "") " vPseudoGodPack_Popup x15 y" . yPos . " cWhite", Double 2★
+    yPos += 25
+    Gui, CardDetect:Add, Checkbox, % (CheckShinyPackOnly ? "Checked" : "") " vCheckShinyPackOnly_Popup x15 y" . yPos . " cWhite", Only for Shiny Packs
+    yPos += 25
+    Gui, CardDetect:Add, Checkbox, % (InvalidCheck ? "Checked" : "") " vInvalidCheck_Popup x15 y" . yPos . " cWhite", Ignore Invalid Packs
+    yPos += 35
+    
+    Gui, CardDetect:Add, Text, x15 y%yPos% w200 h2 +0x10
+    yPos += 15
+    
+    Gui, CardDetect:Add, Checkbox, % (CrownCheck ? "Checked" : "") " vCrownCheck_Popup x15 y" . yPos . " cWhite", Save Crowns
+    yPos += 25
+    Gui, CardDetect:Add, Checkbox, % (ShinyCheck ? "Checked" : "") " vShinyCheck_Popup x15 y" . yPos . " cWhite", Save Shiny
+    yPos += 25
+    Gui, CardDetect:Add, Checkbox, % (ImmersiveCheck ? "Checked" : "") " vImmersiveCheck_Popup x15 y" . yPos . " cWhite", Save Immersives
+    yPos += 40
+    
+    Gui, CardDetect:Add, Button, x15 y%yPos% w90 h30 gApplyCardDetection, Apply
+    Gui, CardDetect:Add, Button, x115 y%yPos% w90 h30 gCancelCardDetection, Cancel
+    yPos += 40
+    
+    Gui, CardDetect:Show, x%popupX% y%popupY% w230 h%yPos%
+return
+
+ApplyCardDetection:
+    Gui, CardDetect:Submit, NoHide
+    
+    minStars := minStars_Popup
+    minStarsShiny := minStarsShiny_Popup
+    FullArtCheck := FullArtCheck_Popup
+    TrainerCheck := TrainerCheck_Popup
+    RainbowCheck := RainbowCheck_Popup
+    PseudoGodPack := PseudoGodPack_Popup
+    CheckShinyPackOnly := CheckShinyPackOnly_Popup
+    InvalidCheck := InvalidCheck_Popup
+    CrownCheck := CrownCheck_Popup
+    ShinyCheck := ShinyCheck_Popup
+    ImmersiveCheck := ImmersiveCheck_Popup
+    
+    Gui, CardDetect:Destroy
+    
+    Gui, 1:Default
+    
+    UpdateCardDetectionButtonText()
+return
+
+CancelCardDetection:
+    Gui, CardDetect:Destroy
+return
+
+UpdateGroupRerollButtonText() {
+    global groupRerollEnabled, mainIdsURL, vipIdsURL, autoUseGPTest, applyRoleFilters
+    global currentDictionary
+    
+    if (!groupRerollEnabled) {
+        Gui, Font, s8 cRed, Segoe UI
+        GuiControl, Font, GroupRerollButton
+        GuiControl,, GroupRerollButton, % currentDictionary.Txt_Disabled
+        return
+    }
+
+    statusText := "Group reroll enabled"
+
+    idsStatus := (mainIdsURL != "" && StrLen(mainIdsURL) > 5) ? "✓" : "✗"
+    vipStatus := (vipIdsURL != "" && StrLen(vipIdsURL) > 5) ? "✓" : "✗"
+    
+    statusText .= "`n" . idsStatus . " ids API " . vipStatus . " vip_ids API"
+    
+    if (autoUseGPTest)
+        statusText .= "`n• Auto GPTest"
+    if (applyRoleFilters)
+        statusText .= "`n• Role-Based filters"
+    
+    Gui, Font, s7 cLime, Segoe UI
+    GuiControl, Font, GroupRerollButton
+    GuiControl,, GroupRerollButton, %statusText%
+}
+
+ShowGroupRerollSettings:
+    WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
+    
+    buttonCenterX := 345
+    popupWidth := 250
+    popupX := mainWinX + buttonCenterX - (popupWidth / 2)
+    popupY := mainWinY + 183 + 30
+    
+    Gui, GroupRerollSelect:Destroy
+    Gui, GroupRerollSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Group Reroll Settings
+    Gui, GroupRerollSelect:Color, 1E1E1E, 333333
+    Gui, GroupRerollSelect:Font, s10 cWhite, Segoe UI
+    
+    yPos := 15
+    Gui, GroupRerollSelect:Add, Checkbox, % (groupRerollEnabled ? "Checked" : "") " vgroupRerollEnabled_Popup x15 y" . yPos . " cWhite", Enable Group Reroll
+    yPos += 35
+    
+    Gui, GroupRerollSelect:Add, Text, x15 y%yPos% cWhite, ids.txt API URL:
+    yPos += 20
+    Gui, GroupRerollSelect:Add, Edit, vmainIdsURL_Popup w220 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, %mainIdsURL%
+    yPos += 35
+    
+    Gui, GroupRerollSelect:Add, Text, x15 y%yPos% cWhite, vip_ids.txt API URL:
+    yPos += 20  
+    Gui, GroupRerollSelect:Add, Edit, vvipIdsURL_Popup w220 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, %vipIdsURL%
+    yPos += 35
+    
+    Gui, GroupRerollSelect:Add, Checkbox, % (autoUseGPTest ? "Checked" : "") " vautoUseGPTest_Popup x15 y" . yPos . " cWhite", Auto GPTest (s)
+    yPos += 20
+    Gui, GroupRerollSelect:Add, Edit, vTestTime_Popup w50 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %TestTime%
+    yPos += 35
+    
+    Gui, GroupRerollSelect:Add, Checkbox, % (applyRoleFilters ? "Checked" : "") " vapplyRoleFilters_Popup x15 y" . yPos . " cWhite", Role-Based Filters
+    yPos += 40
+    
+    Gui, GroupRerollSelect:Add, Button, x15 y%yPos% w90 h30 gApplyGroupRerollSettings, Apply
+    Gui, GroupRerollSelect:Add, Button, x115 y%yPos% w90 h30 gCancelGroupRerollSettings, Cancel
+    yPos += 40
+    
+    Gui, GroupRerollSelect:Show, x%popupX% y%popupY% w250 h%yPos%
+return
+
+ApplyGroupRerollSettings:
+    Gui, GroupRerollSelect:Submit, NoHide
+    
+    groupRerollEnabled := groupRerollEnabled_Popup
+    mainIdsURL := mainIdsURL_Popup
+    vipIdsURL := vipIdsURL_Popup
+    autoUseGPTest := autoUseGPTest_Popup
+    TestTime := TestTime_Popup
+    applyRoleFilters := applyRoleFilters_Popup
+    
+    Gui, GroupRerollSelect:Destroy
+    
+    Gui, 1:Default
+    
+    UpdateGroupRerollButtonText()
+    
+    GuiControl,, groupRerollEnabled, %groupRerollEnabled%
+    GuiControl,, mainIdsURL, %mainIdsURL%
+    GuiControl,, vipIdsURL, %vipIdsURL%
+    GuiControl,, autoUseGPTest, %autoUseGPTest%
+    GuiControl,, TestTime, %TestTime%
+    GuiControl,, applyRoleFilters, %applyRoleFilters%
+return
+
+CancelGroupRerollSettings:
+    Gui, GroupRerollSelect:Destroy
+return
+
+UpdateS4TButtonText() {
+    global s4tEnabled, s4t1Star, s4t3Dmnd, s4t4Dmnd, currentDictionary
+    
+    if (!s4tEnabled) {
+        Gui, Font, s8 cRed, Segoe UI
+        GuiControl, Font, S4TButton
+        GuiControl,, S4TButton, % currentDictionary.Txt_S4TDisabled
+        return
+    }
+
+    enabledOptions := []
+    if (s4t1Star)
+        enabledOptions.Push("1★")
+    if (s4t4Dmnd)
+        enabledOptions.Push("4◆")
+    if (s4t3Dmnd)
+        enabledOptions.Push("3◆")
+    
+    statusText := currentDictionary.Txt_S4TEnabled
+    if (enabledOptions.Length() > 0) {
+        statusText .= "`n" . Join(enabledOptions, ", ")
+    }
+    
+    Gui, Font, s8 cLime, Segoe UI
+    GuiControl, Font, S4TButton
+    GuiControl,, S4TButton, %statusText%
+}
+
+Join(array, delimiter) {
+    result := ""
+    for index, value in array {
+        if (index > 1)
+            result .= delimiter
+        result .= value
+    }
+    return result
+}
+
+ShowSystemSettings:
+    WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
+    
+    buttonCenterX := 698
+    popupWidth := 280
+    popupX := mainWinX + buttonCenterX - (popupWidth / 2)
+    popupY := mainWinY + 125 + 30
+    
+    Gui, SystemSettingsSelect:Destroy
+    Gui, SystemSettingsSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, % currentDictionary.Txt_SystemSettings
+    Gui, SystemSettingsSelect:Color, 1E1E1E, 333333
+    Gui, SystemSettingsSelect:Font, s10 cWhite, Segoe UI
+    
+    sectionColor := "c4169E1"
+    
+    yPos := 15
+    Gui, SystemSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_Monitor
+    yPos += 20
+    SysGet, MonitorCount, MonitorCount
+    MonitorOptions := ""
+    Loop, %MonitorCount% {
+        SysGet, MonitorName, MonitorName, %A_Index%
+        SysGet, Monitor, Monitor, %A_Index%
+        MonitorOptions .= (A_Index > 1 ? "|" : "") "" A_Index ": (" MonitorRight - MonitorLeft "x" MonitorBottom - MonitorTop ")"
+    }
+    SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+    Gui, SystemSettingsSelect:Add, DropDownList, x15 y%yPos% w125 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
+    
+    Gui, SystemSettingsSelect:Add, Text, x155 y%yPos% %sectionColor%, % currentDictionary.Txt_Scale
+    if (defaultLanguage = "Scale125") {
+        defaultLang := 1
+    } else if (defaultLanguage = "Scale100") {
+        defaultLang := 2
+    }
+    Gui, SystemSettingsSelect:Add, DropDownList, x155 y%yPos% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125|Scale100
+    yPos += 35
+    
+    Gui, SystemSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_RowGap
+    Gui, SystemSettingsSelect:Add, Edit, vRowGap_Popup w50 x125 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %RowGap%
+    yPos += 35
+    
+    Gui, SystemSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_FolderPath
+    yPos += 20
+    Gui, SystemSettingsSelect:Add, Edit, vfolderPath_Popup w250 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, %folderPath%
+    yPos += 35
+    
+    Gui, SystemSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, OCR:
+    ocrLanguageList := "en|zh|es|de|fr|ja|ru|pt|ko|it|tr|pl|nl|sv|ar|uk|id|vi|th|he|cs|no|da|fi|hu|el|zh-TW"
+    defaultOcrLang := 1
+    if (ocrLanguage != "") {
+        index := 0
+        Loop, Parse, ocrLanguageList, |
+        {
+            index++
+            if (A_LoopField = ocrLanguage) {
+                defaultOcrLang := index
+                break
+            }
+        }
+    }
+    Gui, SystemSettingsSelect:Add, DropDownList, vocrLanguage_Popup choose%defaultOcrLang% x60 y%yPos% w50 Background2A2A2A cWhite, %ocrLanguageList%
+    
+    Gui, SystemSettingsSelect:Add, Text, x125 y%yPos% %sectionColor%, Client:
+    clientLanguageList := "en|es|fr|de|it|pt|jp|ko|cn"
+    defaultClientLang := 1
+    if (clientLanguage != "") {
+        index := 0
+        Loop, Parse, clientLanguageList, |
+        {
+            index++
+            if (A_LoopField = clientLanguage) {
+                defaultClientLang := index
+                break
+            }
+        }
+    }
+    Gui, SystemSettingsSelect:Add, DropDownList, vclientLanguage_Popup choose%defaultClientLang% x170 y%yPos% w50 Background2A2A2A cWhite, %clientLanguageList%
+    yPos += 35
+    
+    Gui, SystemSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_InstanceLaunchDelay
+    Gui, SystemSettingsSelect:Add, Edit, vinstanceLaunchDelay_Popup w50 x170 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %instanceLaunchDelay%
+    yPos += 35
+    
+    Gui, SystemSettingsSelect:Add, Checkbox, % (autoLaunchMonitor ? "Checked" : "") " vautoLaunchMonitor_Popup x15 y" . yPos . " " . sectionColor, % currentDictionary.Txt_autoLaunchMonitor
+    yPos += 40
+    
+    Gui, SystemSettingsSelect:Add, Button, x15 y%yPos% w100 h30 gApplySystemSettings, Apply
+    Gui, SystemSettingsSelect:Add, Button, x125 y%yPos% w100 h30 gCancelSystemSettings, Cancel
+    yPos += 40
+    
+    Gui, SystemSettingsSelect:Show, x%popupX% y%popupY% w280 h%yPos%
+return
+
+ApplySystemSettings:
+    Gui, SystemSettingsSelect:Submit, NoHide
+    
+    SelectedMonitorIndex := SelectedMonitorIndex_Popup
+    defaultLanguage := defaultLanguage_Popup
+    RowGap := RowGap_Popup
+    folderPath := folderPath_Popup
+    ocrLanguage := ocrLanguage_Popup
+    clientLanguage := clientLanguage_Popup
+    instanceLaunchDelay := instanceLaunchDelay_Popup
+    autoLaunchMonitor := autoLaunchMonitor_Popup
+    
+    Gui, SystemSettingsSelect:Destroy
+    
+    Gui, 1:Default
+return
+
+CancelSystemSettings:
+    Gui, SystemSettingsSelect:Destroy
+return
+
+ShowS4TSettings:
+    WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
+    
+    buttonCenterX := 375
+    popupWidth := 200
+    popupX := mainWinX + buttonCenterX - (popupWidth / 2)
+    popupY := mainWinY + 50
+    
+    Gui, S4TSettingsSelect:Destroy
+    Gui, S4TSettingsSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Save for Trade Settings
+    Gui, S4TSettingsSelect:Color, 1E1E1E, 333333
+    Gui, S4TSettingsSelect:Font, s10 cWhite, Segoe UI
+    
+    sectionColor := "c4169E1"
+    
+    yPos := 15
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tEnabled ? "Checked" : "") " vs4tEnabled_Popup x15 y" . yPos . " cWhite", Enable S4T
+    yPos += 30
+    
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4t1Star ? "Checked" : "") " vs4t1Star_Popup x15 y" . yPos . " " . sectionColor, 1 ★
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4t4Dmnd ? "Checked" : "") " vs4t4Dmnd_Popup x15 y" . yPos . " " . sectionColor, 4 ◆◆◆◆
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4t3Dmnd ? "Checked" : "") " vs4t3Dmnd_Popup x15 y" . yPos . " " . sectionColor, 3 ◆◆◆
+    yPos += 35
+    
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tWP ? "Checked" : "") " vs4tWP_Popup x15 y" . yPos . " cWhite", % currentDictionary.Txt_s4tWP
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_s4tWPMinCards
+    Gui, S4TSettingsSelect:Add, Edit, cFDFDFD w40 x135 y%yPos% h20 vs4tWPMinCards_Popup -E0x200 Background2A2A2A Center cWhite, %s4tWPMinCards%
+    yPos += 30
+    
+    if(StrLen(s4tDiscordUserId) < 3)
+        s4tDiscordUserId := ""
+    if(StrLen(s4tDiscordWebhookURL) < 3)
+        s4tDiscordWebhookURL := ""
+    
+    Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, S4T Discord ID:
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Edit, vs4tDiscordUserId_Popup w170 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, %s4tDiscordUserId%
+    yPos += 25
+    
+    Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, Webhook URL:
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Edit, vs4tDiscordWebhookURL_Popup w170 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, %s4tDiscordWebhookURL%
+    yPos += 25
+    
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tSendAccountXml ? "Checked" : "") " vs4tSendAccountXml_Popup x15 y" . yPos . " " . sectionColor, % currentDictionary.Txt_s4tSendAccountXml
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tSilent ? "Checked" : "") " vs4tSilent_Popup x15 y" . yPos . " " . sectionColor, Silent (No Ping)
+    yPos += 35
+    
+    Gui, S4TSettingsSelect:Add, Button, x15 y%yPos% w70 h30 gApplyS4TSettings, Apply
+    Gui, S4TSettingsSelect:Add, Button, x95 y%yPos% w70 h30 gCancelS4TSettings, Cancel
+    yPos += 40
+    
+    Gui, S4TSettingsSelect:Show, x%popupX% y%popupY% w185 h%yPos%
+return
+
+ApplyS4TSettings:
+    Gui, S4TSettingsSelect:Submit, NoHide
+    
+    s4tEnabled := s4tEnabled_Popup
+    s4t1Star := s4t1Star_Popup
+    s4t4Dmnd := s4t4Dmnd_Popup
+    s4t3Dmnd := s4t3Dmnd_Popup
+    s4tWP := s4tWP_Popup
+    s4tWPMinCards := s4tWPMinCards_Popup
+    s4tDiscordUserId := s4tDiscordUserId_Popup
+    s4tDiscordWebhookURL := s4tDiscordWebhookURL_Popup
+    s4tSendAccountXml := s4tSendAccountXml_Popup
+    s4tSilent := s4tSilent_Popup
+    
+    if (s4tWPMinCards < 1)
+        s4tWPMinCards := 1
+    if (s4tWPMinCards > 2)
+        s4tWPMinCards := 2
+    
+    Gui, S4TSettingsSelect:Destroy
+    
+    Gui, 1:Default
+    
+    GuiControl,, s4tEnabled, %s4tEnabled%
+    GuiControl,, s4t1Star, %s4t1Star%
+    GuiControl,, s4t4Dmnd, %s4t4Dmnd%
+    GuiControl,, s4t3Dmnd, %s4t3Dmnd%
+    GuiControl,, s4tWP, %s4tWP%
+    GuiControl,, s4tWPMinCards, %s4tWPMinCards%
+    GuiControl,, s4tDiscordUserId, %s4tDiscordUserId%
+    GuiControl,, s4tDiscordWebhookURL, %s4tDiscordWebhookURL%
+    GuiControl,, s4tSendAccountXml, %s4tSendAccountXml%
+    GuiControl,, s4tSilent, %s4tSilent%
+    
+    UpdateS4TButtonText()
+return
+
+CancelS4TSettings:
+    Gui, S4TSettingsSelect:Destroy
+return
+
+ShowToolsAndSystemSettings:
+    WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
+    
+    popupX := mainWinX + 555
+    popupY := mainWinY - 25
+    
+    Gui, ToolsAndSystemSelect:Destroy
+    Gui, ToolsAndSystemSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Tools & System Settings
+    Gui, ToolsAndSystemSelect:Color, 1E1E1E, 333333
+    Gui, ToolsAndSystemSelect:Font, s10 cWhite, Segoe UI
+    
+    yPos := 15
+    
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (debugMode ? "Checked" : "") " vdebugMode_Popup x15 y" . yPos . " cWhite", Debug Mode
+    yPos += 20
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (statusMessage ? "Checked" : "") " vstatusMessage_Popup x15 y" . yPos . " cWhite", Status Messages
+    yPos += 20
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (showcaseEnabled ? "Checked" : "") " vshowcaseEnabled_Popup x15 y" . yPos . " cWhite", 5x Showcase Likes
+    yPos += 20
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x15 y" . yPos . " cWhite", 1x speed (no speedmod)
+    yPos += 25
+    
+    sectionColor := "c4169E1"
+    
+    Gui, ToolsAndSystemSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_Monitor
+    yPos += 20
+    SysGet, MonitorCount, MonitorCount
+    MonitorOptions := ""
+    Loop, %MonitorCount% {
+        SysGet, MonitorName, MonitorName, %A_Index%
+        SysGet, Monitor, Monitor, %A_Index%
+        MonitorOptions .= (A_Index > 1 ? "|" : "") "" A_Index ": (" MonitorRight - MonitorLeft "x" MonitorBottom - MonitorTop ")"
+    }
+    SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+    Gui, ToolsAndSystemSelect:Add, DropDownList, x15 y%yPos% w100 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
+    
+    Gui, ToolsAndSystemSelect:Add, Text, x125 y%yPos% %sectionColor%, % currentDictionary.Txt_Scale
+    if (defaultLanguage = "Scale125") {
+        defaultLang := 1
+    } else if (defaultLanguage = "Scale100") {
+        defaultLang := 2
+    }
+    Gui, ToolsAndSystemSelect:Add, DropDownList, x125 y%yPos% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125|Scale100
+    yPos += 25
+    
+    yPos += 5
+    Gui, ToolsAndSystemSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_RowGap
+    Gui, ToolsAndSystemSelect:Add, Edit, vRowGap_Popup w50 x80 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %RowGap%
+    yPos += 20
+    
+    Gui, ToolsAndSystemSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_FolderPath
+    yPos += 20
+    Gui, ToolsAndSystemSelect:Add, Edit, vfolderPath_Popup w180 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, %folderPath%
+    yPos += 25
+    
+    Gui, ToolsAndSystemSelect:Add, Text, x15 y%yPos% %sectionColor%, OCR:
+    ocrLanguageList := "en|zh|es|de|fr|ja|ru|pt|ko|it|tr|pl|nl|sv|ar|uk|id|vi|th|he|cs|no|da|fi|hu|el|zh-TW"
+    defaultOcrLang := 1
+    if (ocrLanguage != "") {
+        index := 0
+        Loop, Parse, ocrLanguageList, |
+        {
+            index++
+            if (A_LoopField = ocrLanguage) {
+                defaultOcrLang := index
+                break
+            }
+        }
+    }
+    Gui, ToolsAndSystemSelect:Add, DropDownList, vocrLanguage_Popup choose%defaultOcrLang% x45 y%yPos% w50 Background2A2A2A cWhite, %ocrLanguageList%
+    
+    Gui, ToolsAndSystemSelect:Add, Text, x105 y%yPos% %sectionColor%, Client:
+    clientLanguageList := "en|es|fr|de|it|pt|jp|ko|cn"
+    defaultClientLang := 1
+    if (clientLanguage != "") {
+        index := 0
+        Loop, Parse, clientLanguageList, |
+        {
+            index++
+            if (A_LoopField = clientLanguage) {
+                defaultClientLang := index
+                break
+            }
+        }
+    }
+    Gui, ToolsAndSystemSelect:Add, DropDownList, vclientLanguage_Popup choose%defaultClientLang% x145 y%yPos% w50 Background2A2A2A cWhite, %clientLanguageList%
+    yPos += 25
+    
+    yPos += 5
+    Gui, ToolsAndSystemSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_InstanceLaunchDelay
+    Gui, ToolsAndSystemSelect:Add, Edit, vinstanceLaunchDelay_Popup w50 x140 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %instanceLaunchDelay%
+    yPos += 20
+    
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (autoLaunchMonitor ? "Checked" : "") " vautoLaunchMonitor_Popup x15 y" . yPos . " " . sectionColor, % currentDictionary.Txt_autoLaunchMonitor
+    yPos += 25
+    
+    Gui, ToolsAndSystemSelect:Add, Button, x15 y%yPos% w170 h30 gRunXMLSortTool, XML Sort Tool
+    yPos += 35
+    Gui, ToolsAndSystemSelect:Add, Button, x15 y%yPos% w170 h30 gRunXMLDuplicateTool, XML Duplicate Tool
+    yPos += 40
+    
+    Gui, ToolsAndSystemSelect:Add, Button, x15 y%yPos% w70 h30 gApplyToolsAndSystemSettings, Apply
+    Gui, ToolsAndSystemSelect:Add, Button, x95 y%yPos% w70 h30 gCancelToolsAndSystemSettings, Cancel
+    yPos += 40
+    
+    Gui, ToolsAndSystemSelect:Show, x%popupX% y%popupY% w220 h%yPos%
+return
+
+ApplyToolsAndSystemSettings:
+    Gui, ToolsAndSystemSelect:Submit, NoHide
+    
+    debugMode := debugMode_Popup
+    statusMessage := statusMessage_Popup
+    showcaseEnabled := showcaseEnabled_Popup
+    slowMotion := slowMotion_Popup
+    
+    SelectedMonitorIndex := SelectedMonitorIndex_Popup
+    defaultLanguage := defaultLanguage_Popup
+    RowGap := RowGap_Popup
+    folderPath := folderPath_Popup
+    ocrLanguage := ocrLanguage_Popup
+    clientLanguage := clientLanguage_Popup
+    instanceLaunchDelay := instanceLaunchDelay_Popup
+    autoLaunchMonitor := autoLaunchMonitor_Popup
+    
+    Gui, ToolsAndSystemSelect:Destroy
+    
+    Gui, 1:Default
+    
+    GuiControl,, debugMode, %debugMode%
+    GuiControl,, statusMessage, %statusMessage%
+    GuiControl,, showcaseEnabled, %showcaseEnabled%
+    GuiControl,, slowMotion, %slowMotion%
+return
+
+CancelToolsAndSystemSettings:
+    Gui, ToolsAndSystemSelect:Destroy
+return
+
+discordSettings:
+  Gui, Submit, NoHide
+  if (heartBeat) {
+    GuiControl, Show, heartBeatName
+    GuiControl, Show, heartBeatWebhookURL
+    GuiControl, Show, heartBeatDelay
+    GuiControl, Show, hbName
+    GuiControl, Show, hbURL
+    GuiControl, Show, hbDelay
+  } else {
+    GuiControl, Hide, heartBeatName
+    GuiControl, Hide, heartBeatWebhookURL
+    GuiControl, Hide, heartBeatDelay
+    GuiControl, Hide, hbName
+    GuiControl, Hide, hbURL
+    GuiControl, Hide, hbDelay
+  }
+return
+
+Save:
+  Gui, Submit, NoHide
+  
+  SaveAllSettings()
+  
+  if(StrLen(A_ScriptDir) > 200 || InStr(A_ScriptDir, " ")) {
+    MsgBox, 0x40000,, % SetUpDictionary.Error_BotPathTooLong
+    return
+  }
+
+  confirmMsg := SetUpDictionary.Confirm_SelectedMethod . deleteMethod . "`n"
+  
+  confirmMsg .= "Instances: " . Instances
+  if (runMain) {
+    confirmMsg .= " + " . Mains . " Main"
+  }
+  confirmMsg .= "`n"
+  
+  confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
+  if (HoOh)
+    confirmMsg .= "• " . currentDictionary.Txt_HoOh . "`n"
+  if (Lugia)
+    confirmMsg .= "• " . currentDictionary.Txt_Lugia . "`n"
+  if (Eevee) 
+    confirmMsg .= "• " . currentDictionary.Txt_Eevee . "`n"
+  if (Buzzwole)
+    confirmMsg .= "• " . currentDictionary.Txt_Buzzwole . "`n"
+  if (Solgaleo)
+    confirmMsg .= "• " . currentDictionary.Txt_Solgaleo . "`n"
+  if (Lunala)
+    confirmMsg .= "• " . currentDictionary.Txt_Lunala . "`n"
+  if (Shining)
+    confirmMsg .= "• " . currentDictionary.Txt_Shining . "`n"
+  if (Arceus)
+    confirmMsg .= "• " . currentDictionary.Txt_Arceus . "`n"
+  if (Palkia)
+    confirmMsg .= "• " . currentDictionary.Txt_Palkia . "`n"
+  if (Dialga)
+    confirmMsg .= "• " . currentDictionary.Txt_Dialga . "`n"
+  if (Pikachu)
+    confirmMsg .= "• " . currentDictionary.Txt_Pikachu . "`n"
+  if (Charizard)
+    confirmMsg .= "• " . currentDictionary.Txt_Charizard . "`n"
+  if (Mewtwo)
+    confirmMsg .= "• " . currentDictionary.Txt_Mewtwo . "`n"
+  if (Mew)
+    confirmMsg .= "• " . currentDictionary.Txt_Mew . "`n"
+  
+  additionalSettings := ""
+  if (packMethod)
+    additionalSettings .= SetUpDictionary.Confirm_1PackMethod . "`n"
+  if (nukeAccount && !injectMethod)
+    additionalSettings .= SetUpDictionary.Confirm_MenuDelete . "`n"
+  if (openExtraPack)
+    additionalSettings .= SetUpDictionary.Confirm_openExtraPack . "`n"
+  if (spendHourGlass)
+    additionalSettings .= SetUpDictionary.Confirm_SpendHourGlass . "`n"
+  if (claimSpecialMissions)
+    additionalSettings .= SetUpDictionary.Confirm_ClaimMissions . "`n"
+  if (showcaseEnabled)
+    additionalSettings .= "• Showcase Likes`n"
+  if (injectMethod) {
+    additionalSettings .= SetUpDictionary.Confirm_SortBy . " "
+    if (injectSortMethod = "ModifiedAsc")
+      additionalSettings .= "Oldest First`n"
+    else if (injectSortMethod = "ModifiedDesc")
+      additionalSettings .= "Newest First`n"
+    else if (injectSortMethod = "PacksAsc")
+      additionalSettings .= "Fewest Packs First`n"
+    else if (injectSortMethod = "PacksDesc")
+      additionalSettings .= "Most Packs First`n"
+  }
+  
+  if (additionalSettings != "") {
+    confirmMsg .= "`n" . SetUpDictionary.Confirm_AdditionalSettings . "`n" . additionalSettings
+  }
+  
+  cardDetection := ""
+  if (FullArtCheck)
+    cardDetection .= SetUpDictionary.Confirm_SingleFullArt . "`n"
+  if (TrainerCheck)
+    cardDetection .= SetUpDictionary.Confirm_SingleTrainer . "`n"
+  if (RainbowCheck)
+    cardDetection .= SetUpDictionary.Confirm_SingleRainbow . "`n"
+  if (PseudoGodPack)
+    cardDetection .= SetUpDictionary.Confirm_Double2Star . "`n"
+  if (CrownCheck)
+    cardDetection .= SetUpDictionary.Confirm_SaveCrowns . "`n"
+  if (ShinyCheck)
+    cardDetection .= SetUpDictionary.Confirm_SaveShiny . "`n"
+  if (ImmersiveCheck)
+    cardDetection .= SetUpDictionary.Confirm_SaveImmersives . "`n"
+  if (CheckShinyPackOnly)
+    cardDetection .= SetUpDictionary.Confirm_OnlyShinyPacks . "`n"
+  if (InvalidCheck)
+    cardDetection .= SetUpDictionary.Confirm_IgnoreInvalid . "`n"
+    
+  if (cardDetection != "") {
+    confirmMsg .= "`n" . SetUpDictionary.Confirm_CardDetection . "`n" . cardDetection
+  }
+  
+  if (s4tEnabled) {
+    confirmMsg .= "`n" . SetUpDictionary.Confirm_SaveForTrade . ": " . SetUpDictionary.Confirm_Enabled . "`n"
+    s4tSettings := ""
+    if (s4t1Star)
+      s4tSettings .= "• 1 Star`n"
+    if (s4t3Dmnd)
+      s4tSettings .= "• 3 Diamond`n"
+    if (s4t4Dmnd)
+      s4tSettings .= "• 4 Diamond`n"
+    if (s4tWP)
+      s4tSettings .= "• " . SetUpDictionary.Confirm_WonderPick . " (" . s4tWPMinCards . " " . SetUpDictionary.Confirm_MinCards . ")`n"
+    if (s4tSilent)
+      s4tSettings .= "• " . SetUpDictionary.Confirm_SilentPings . "`n"
+    confirmMsg .= s4tSettings
+  }
+  
+  if (sendAccountXml || s4tSendAccountXml) {
+    confirmMsg .= "`n" . SetUpDictionary.Confirm_XMLWarning . "`n"
+  }
+  
+  confirmMsg .= "`n" . SetUpDictionary.Confirm_StartBot
+  
+  MsgBox, 4, Confirm Bot Settings, %confirmMsg%
+  IfMsgBox, No
+    return
+  
+  Gui, Destroy
+  
+  StartBot()
+return
+
+LaunchAllMumu:
+   Gui, Submit, NoHide
+   SaveAllSettings()
+   LoadSettingsFromIni()
+   
+   if(StrLen(A_ScriptDir) > 200 || InStr(A_ScriptDir, " ")) {
+      MsgBox, 0x40000,, ERROR: bot folder path is too long or contains blank spaces. Move to a shorter path without spaces such as C:\PTCGPB
+      return
    }
    
-   Gui, Add, Text, x%xPos% y200 w275 h1 +0x10 ; Creates a horizontal line
-   
-   ;; Instance Settings Section
-   Gui, Add, Text, x%xPos% y205 backgroundtrans vTxt_Instances, % currentDictionary.Txt_Instances
-   Gui, Add, Edit, % "vInstances w40 x" . xPos+185 . " y205 h20 -E0x200 Center backgroundtrans" . (CurrentTheme = "Dark"? " cFDFDFD ": " cBC0000"), %Instances%
-   
-   Gui, Add, Text, x%xPos% y230 backgroundtrans vTxt_InstanceStartDelay, % currentDictionary.Txt_InstanceStartDelay
-   Gui, Add, Edit, % "vinstanceStartDelay w40 x" . xPos+185 . " y230 h20 -E0x200 Center backgroundtrans" . (CurrentTheme = "Dark"? " cFDFDFD ": " cBC0000"), %instanceStartDelay%
-   
-   Gui, Add, Text, x%xPos% y255 backgroundtrans vTxt_Columns, % currentDictionary.Txt_Columns
-   Gui, Add, Edit, % "vColumns w40 x" . xPos+185 . " y255 h20 -E0x200 Center backgroundtrans" . (CurrentTheme = "Dark"? " cFDFDFD ": " cBC0000"), %Columns%
-   global Txt_runMain
-   CheckOptions := Object()
-      ,CheckOptions["x"] := xPos,CheckOptions["y"] := 282,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "runMain"
-      ,CheckOptions["gName"] := "runMainSettings"
-      ,CheckOptions["checkedImagePath"] := checkedPath,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := runMain
-      ,CheckOptions["vTextName"] := "Txt_runMain"
-      ,CheckOptions["text"] := currentDictionary.Txt_runMain
-      ,CheckOptions["textX"] := xPos+35,CheckOptions["textY"] := 280
-   AddCheckBox(CheckOptions)
-   Gui, Add, Edit, % "vMains w40 x" . xPos+185 . " y280 h20 -E0x200 Center backgroundtrans" . (runMain ? "" : " Hidden") . (CurrentTheme = "Dark"? " cFDFDFD ": " cBC0000"), %Mains%
-   global Txt_autoUseGPTest
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 306,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "autoUseGPTest"
-      ,CheckOptions["gName"] := "autoUseGPTestSettings"
-      ,CheckOptions["checkedImagePath"] := checkedPath,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := autoUseGPTest
-      ,CheckOptions["vTextName"] := "Txt_autoUseGPTest"
-      ,CheckOptions["text"] := currentDictionary.Txt_autoUseGPTest
-      ,CheckOptions["textX"] := xPos+35,CheckOptions["textY"] := 305
-   AddCheckBox(CheckOptions)
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vTestTime w40 x" . xPos+185 . " y305 h20 -E0x200 Center backgroundtrans" . (autoUseGPTest ? "" : " Hidden"), %TestTime%
-   Gui, Add, Text, x%xPos% y330 backgroundtrans vTxt_AccountName, % currentDictionary.Txt_AccountName
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vAccountName w85 x" . xPos+185 . " y330 h20 -E0x200 Center backgroundtrans", %AccountName%
-   
-   Gui, Add, Text, x%xPos% y355 w275 h1 +0x10 ; Creates a horizontal line
-   
-   ;; Time Settings Section
-   Gui, Add, Text, x%xPos% y360 backgroundtrans vTxt_Delay, % currentDictionary.Txt_Delay
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vDelay w40 x" . xPos+185 . " y360 h20 -E0x200 Center backgroundtrans", %Delay%
-   Gui, Add, Text, x%xPos% y385 backgroundtrans vTxt_WaitTime, % currentDictionary.Txt_WaitTime
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vwaitTime w40 x" . xPos+185 . " y385 h20 -E0x200 Center backgroundtrans", %waitTime%
-   
-   Gui, Add, Text, x%xPos% y410 backgroundtrans vTxt_SwipeSpeed, % currentDictionary.Txt_SwipeSpeed
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vswipeSpeed w40 x" . xPos+185 . " y410 h20 -E0x200 Center backgroundtrans", %swipeSpeed%
-   global Txt_slowMotion
-   CheckOptions := {}
-   CheckOptions["x"] := xPos ,CheckOptions["y"] := 436,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "slowMotion"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := slowMotion
-      ,CheckOptions["vTextName"] := "Txt_slowMotion"
-      ,CheckOptions["text"] := currentDictionary.Txt_slowMotion
-      ,CheckOptions["textX"] := xPos+35,CheckOptions["textY"] := 435
-   AddCheckBox(CheckOptions)
-   
-   ; ========== Page 2 ==========
-   xPos := 405
-   SetHeaderFont()
-   Gui, Add, Text, x%xPos% y110 backgroundtrans, % currentDictionary.btn_system
-   ;; System Settings Section
-   SetNormalFont()
-   SysGet, MonitorCount, MonitorCount
-   MonitorOptions := ""
-   Loop, %MonitorCount% {
-      SysGet, MonitorName, MonitorName, %A_Index%
-      SysGet, Monitor, Monitor, %A_Index%
-      MonitorOptions .= (A_Index > 1 ? "|" : "") "" A_Index ": (" MonitorRight - MonitorLeft "x" MonitorBottom - MonitorTop ")"
+   launchAllFile := A_ScriptDir . "\Scripts\Include\LaunchAllMumu.ahk"
+   if(FileExist(launchAllFile)) {
+      Run, %launchAllFile%
+
+      totalInstances := Instances + (runMain ? Mains : 0)
+      estimatedLaunchTime := (instanceLaunchDelay * totalInstances * 1000) + 500
+      
+      Sleep, %estimatedLaunchTime%
+      
+      Gosub, ArrangeWindows
    }
-   SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
-   Gui, Add, Text, x%xPos% y150 backgroundtrans vTxt_Monitor, % currentDictionary.Txt_Monitor
-   Gui, Add, DropDownList, % "x" . xPos+145 . " y146 w140 vSelectedMonitorIndex hwndMoitor +0x0210 Choose" . SelectedMonitorIndex . " -E0x200 Center BackgroundTrans", %MonitorOptions%
-   Gui, Add, Text, x%xPos% y200 backgroundtrans vTxt_Scale, % currentDictionary.Txt_Scale
+return
+
+ArrangeWindows:
+   Gui, Submit, NoHide
+   SaveAllSettings()
+   LoadSettingsFromIni()
+   
    if (defaultLanguage = "Scale125") {
-      defaultLang := 1
       scaleParam := 277
    } else if (defaultLanguage = "Scale100") {
-      defaultLang := 2
       scaleParam := 287
    }
    
-   Gui, Add, DropDownList, % "x" . xPos+145 . " y197 w80 vdefaultLanguage hwndScale gdefaultLangSetting +0x0210 choose" . defaultLang . " -E0x200 Center backgroundtrans", Scale125
-   Gui, Add, Text, x%xPos% y225 backgroundtrans vTxt_RowGap, % currentDictionary.Txt_RowGap
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vRowGap w80 x" . xPos+145 . " y223 h20 -E0x200 Center backgroundtrans", %RowGap%
-   Gui, Add, Text, x%xPos% y175 backgroundtrans vTxt_FolderPath, % currentDictionary.Txt_FolderPath
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vfolderPath w140 x" . xPos+145 . " y173 h20 -E0x200 Center backgroundtrans", %folderPath%
-   Gui, Add, Text, x%xPos% y250 backgroundtrans vTxt_OcrLanguage, % currentDictionary.Txt_OcrLanguage
-   ; ========== Language Pack list ==========
-   ocrLanguageList := "en|zh|es|de|fr|ja|ru|pt|ko|it|tr|pl|nl|sv|ar|uk|id|vi|th|he|cs|no|da|fi|hu|el|zh-TW"
-   if (ocrLanguage != "")
-   {
-      index := 0
-      Loop, Parse, ocrLanguageList, |
-      {
-         index++
-         if (A_LoopField = ocrLanguage)
-         {
-            defaultOcrLang := index
-            break
+   windowsPositioned := 0
+   
+   if (runMain && Mains > 0) {
+      Loop %Mains% {
+         mainInstanceName := "Main" . (A_Index > 1 ? A_Index : "")
+         SetTitleMatchMode, 3
+         if (WinExist(mainInstanceName)) {
+            WinActivate, %mainInstanceName%
+            WinGetPos, curX, curY, curW, curH, %mainInstanceName%
+            
+            SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+            SysGet, Monitor, Monitor, %SelectedMonitorIndex%
+            
+            instanceIndex := A_Index
+            rowHeight := 533
+            currentRow := Floor((instanceIndex - 1) / Columns)
+            y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
+            x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+            
+            WinMove, %mainInstanceName%,, %x%, %y%, %scaleParam%, 537
+            WinSet, Redraw, , %mainInstanceName%
+            
+            windowsPositioned++
+            sleep, 100
          }
       }
    }
    
-   Gui, Add, DropDownList, % "x" . xPos+145 . " y247 w80 vocrLanguage hwndOCR +0x0210 choose" . defaultOcrLang . " -E0x200 Center backgroundtrans", %ocrLanguageList%
-   
-   Gui, Add, Text, x%xPos% y275 backgroundtrans vTxt_ClientLanguage, % currentDictionary.Txt_ClientLanguage
-   
-   ; ========== Client Language Pack list ==========
-   clientLanguageList := "en|es|fr|de|it|pt|jp|ko|cn"
-   
-   if (clientLanguage != "")
-   {
-      index := 0
-      Loop, Parse, clientLanguageList, |
-      {
-         index++
-         if (A_LoopField = clientLanguage)
-         {
-            defaultClientLang := index
-            break
+   if (Instances > 0) {
+      Loop %Instances% {
+         SetTitleMatchMode, 3
+         windowTitle := A_Index
+         
+         if (WinExist(windowTitle)) {
+            WinActivate, %windowTitle%
+            WinGetPos, curX, curY, curW, curH, %windowTitle%
+            
+            SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+            SysGet, Monitor, Monitor, %SelectedMonitorIndex%
+            
+            if (runMain) {
+               instanceIndex := (Mains - 1) + A_Index + 1
+            } else {
+               instanceIndex := A_Index
+            }
+            
+            rowHeight := 533
+            currentRow := Floor((instanceIndex - 1) / Columns)
+            y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
+            x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+            
+            WinMove, %windowTitle%,, %x%, %y%, %scaleParam%, 537
+            WinSet, Redraw, , %windowTitle%
+            
+            windowsPositioned++
+            sleep, 100
          }
       }
    }
-   Gui, Add, DropDownList, % "x" . xPos+145 . " y273 w80 vclientLanguage hwndClient +0x0210 choose" . defaultClientLang . " -E0x200 Center backgroundtrans", %clientLanguageList%
    
-   Gui, Add, Text, x%xPos% y300 backgroundtrans vTxt_InstanceLaunchDelay, % currentDictionary.Txt_InstanceLaunchDelay
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vinstanceLaunchDelay w80 x" . xPos+145 . " y300 h20 -E0x200 Center backgroundtrans", %instanceLaunchDelay%
-   global Txt_autoLaunchMonitor
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 326,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "autoLaunchMonitor"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := autoLaunchMonitor
-      ,CheckOptions["vTextName"] := "Txt_autoLaunchMonitor"
-      ,CheckOptions["text"] := currentDictionary.Txt_autoLaunchMonitor
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 325
-   AddCheckBox(CheckOptions)
-   Gui, Add, Text, x%xPos% y350 w275 h1 +0x10 ; Creates a horizontal line
-   SetSectionFont()
-   Gui, Add, Text, x%xPos% y355 backgroundtrans vExtraSettingsHeading, % currentDictionary.ExtraSettingsHeading
-   SetNormalFont()
-   ; ========= Extra Settings Section =========
-   global Txt_applyRoleFilters, Txt_debugMode, Txt_useTesseract, Txt_statusMessage
-   ; First add Role-Based Filters
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 381,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "applyRoleFilters"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := applyRoleFilters
-      ,CheckOptions["vTextName"] := "Txt_applyRoleFilters"
-      ,CheckOptions["text"] := currentDictionary.Txt_applyRoleFilters
-      ,CheckOptions["textX"] := xPos+35,CheckOptions["textY"] := 380
-   AddCheckBox(CheckOptions)
-   
-   ; Then add Debug Mode
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 406,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "debugMode"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := debugMode
-      ,CheckOptions["vTextName"] := "Txt_debugMode"
-      ,CheckOptions["text"] := currentDictionary.Txt_debugMode
-      ,CheckOptions["textX"] := xPos+35,CheckOptions["textY"] := 405
-   AddCheckBox(CheckOptions)
-   
-   ; Then add the Use Tesseract checkbox
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 431,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "useTesseract"
-      ,CheckOptions["gName"] := "useTesseractSettings"
-      ,CheckOptions["checkedImagePath"] := checkedPath,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := useTesseract
-      ,CheckOptions["vTextName"] := "Txt_useTesseract"
-      ,CheckOptions["text"] := currentDictionary.Txt_tesseractOption
-      ,CheckOptions["textX"] := xPos+35,CheckOptions["textY"] := 430
-   AddCheckBox(CheckOptions)
-   
-   ; Then add status messages
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 456,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "statusMessage"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := statusMessage
-      ,CheckOptions["vTextName"] := "Txt_statusMessage"
-      ,CheckOptions["text"] := currentDictionary.Txt_statusMessage
-      ,CheckOptions["textX"] := xPos+35,CheckOptions["textY"] := 455
-   AddCheckBox(CheckOptions)
-   
-   ; Keep Tesseract Path at the end
-   Gui, Add, Text, % "x" . xPos . " y480 backgroundtrans vTxt_TesseractPath" . (useTesseract ? "" : " Hidden"), % currentDictionary.Txt_TesseractPath
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vtesseractPath w280 x" . xPos . " y505 h20 -E0x200 backgroundtrans" . (useTesseract ? "" : " Hidden"), %tesseractPath%
-   
-   ; ========== Page 3 ==========
-   ; ========== Delete Method ==========
-   xPos := 765
-   SetHeaderFont()
-   Gui, Add, Text, x%xPos% y110 backgroundtrans, % currentDictionary.btn_pack
-   ; Create Sort By label and dropdown
-   SetNormalFont()
-   Gui, Add, Text, % "x" . xPos . " y150 backgroundtrans vTxt_DeleteMethod", % currentDictionary.Txt_DeleteMethod
-   defaultDelete := 1 ; Default to first option (Create Bots (13P))
-   if (deleteMethod = "Create Bots (13P)")
-      defaultDelete := 1
-   else if (deleteMethod = "Inject 13-39P")
-      defaultDelete := 2
-   else if (deleteMethod = "Inject Missions")
-      defaultDelete := 2 ; map to Inject 13-39P if user somehow selected Missions after I have hidden the option
-   else if (deleteMethod = "Inject Wonderpick 39P+")
-      defaultDelete := 3
-   Gui, Add, DropDownList, % "x" . xPos+65 . " y148 w120 vdeleteMethod gdeleteSettings hwndMethod +0x0210 choose" . defaultDelete . " -E0x200 backgroundtrans", Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+
-   ; Apply the correct selection
-   GuiControl, Choose, deleteMethod, %defaultDelete%
-   global Txt_packMethod, Txt_nukeAccount, Txt_spendHourGlass, Txt_openExtraPack
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 182,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "packMethod"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := deleteMethodEnabled
-      ,CheckOptions["vTextName"] := "Txt_packMethod"
-      ,CheckOptions["text"] := currentDictionary.Txt_packMethod
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 181
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+155,CheckOptions["y"] := 182,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "nukeAccount"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := nukeAccount
-      ,CheckOptions["vTextName"] := "Txt_nukeAccount"
-      ,CheckOptions["text"] := currentDictionary.Txt_nukeAccount
-      ,CheckOptions["textX"] := xPos+190
-      ,CheckOptions["textY"] := 181
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 212,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "spendHourGlass"
-      ,CheckOptions["gName"] := "spendHourGlassSettings"
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := spendHourGlass
-      ,CheckOptions["vTextName"] := "Txt_spendHourGlass"
-      ,CheckOptions["text"] := currentDictionary.Txt_spendHourGlass
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 211
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+155,CheckOptions["y"] := 212,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "openExtraPack"
-      ,CheckOptions["gName"] := "openExtraPackSettings"
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := openExtraPack
-      ,CheckOptions["vTextName"] := "Txt_openExtraPack"
-      ,CheckOptions["text"] := currentDictionary.Txt_openExtraPack
-      ,CheckOptions["textX"] := xPos+190
-      ,CheckOptions["textY"] := 211
-   AddCheckBox(CheckOptions)
-   
-   ; Determine which option to pre-select
-   sortOption := 1 ; Default (ModifiedAsc)
-   if (injectSortMethod = "ModifiedDesc")
-      sortOption := 2
-   else if (injectSortMethod = "PacksAsc")
-      sortOption := 3
-   else if (injectSortMethod = "PacksDesc")
-      sortOption := 4
-   
-   Gui, Add, Text, x%xPos% y242 vSortByText BackgroundTrans, % currentDictionary.SortByText
-   Gui, Add, DropDownList, % "x" . xPos+110 . " y240 w120 vSortByDropdown gSortByDropdownHandler hwndSortby +0x0210 Choose" . sortOption . " BackgroundTrans", Oldest First|Newest First|Fewest Packs First|Most Packs First
-   if (deleteMethod != "Inject Wonderpick 39P+") {
-      GuiControl, Hide, packMethod
-      GuiControl, Hide, Txt_packMethod
-      GuiControl, Hide, openExtraPack
-      GuiControl, Hide, Txt_openExtraPack
+   if (debugMode && windowsPositioned == 0) {
+      MsgBox, 0x40000,, No windows found to arrange
    }
-   
-   if (deleteMethod != "Create Bots (13P)") {
-      GuiControl, Hide, nukeAccount
-      GuiControl, Hide, Txt_nukeAccount
-   } else {
-      GuiControl, Hide, spendHourGlass
-      GuiControl, Hide, Txt_spendHourGlass
-      GuiControl, Hide, SortByText
-      GuiControl, Hide, SortByDropdown
-   }
-   
-   ; Add divider for God Pack Settings section
-   Gui, Add, Text, x%xPos% y271 w275 h1 +0x10 BackgroundTrans ; Creates a horizontal line
-   ; === Card Detection Subsection ===
-   SetNormalFont()
-   global Txt_FullArtCheck, Txt_TrainerCheck, Txt_RainbowCheck, Txt_PseudoGodPack, Txt_CheckShinyPackOnly,
-   global Txt_CrownCheck, Txt_ShinyCheck, Txt_ImmersiveCheck, Txt_invalidCheck,
-   ; 2-Column Layout for Card Detection Subsection
-   CheckOptions := {}
-   CheckOptions["x"] :=xPos,CheckOptions["y"] := 281,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "FullArtCheck"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := FullArtCheck
-      ,CheckOptions["vTextName"] := "Txt_FullArtCheck"
-      ,CheckOptions["text"] := currentDictionary.Txt_FullArtCheck
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 280
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 306,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "TrainerCheck"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := TrainerCheck
-      ,CheckOptions["vTextName"] := "Txt_TrainerCheck"
-      ,CheckOptions["text"] := currentDictionary.Txt_TrainerCheck
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 305
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 331,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "RainbowCheck"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := RainbowCheck
-      ,CheckOptions["vTextName"] := "Txt_RainbowCheck"
-      ,CheckOptions["text"] := currentDictionary.Txt_RainbowCheck
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 330
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 356,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "PseudoGodPack"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := PseudoGodPack
-      ,CheckOptions["vTextName"] := "Txt_PseudoGodPack"
-      ,CheckOptions["text"] := currentDictionary.Txt_PseudoGodPack
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 355
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 381,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "CheckShinyPackOnly"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := CheckShinyPackOnly
-      ,CheckOptions["vTextName"] := "Txt_CheckShinyPackOnly"
-      ,CheckOptions["text"] := currentDictionary.Txt_CheckShinyPackOnly
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 380
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+155,CheckOptions["y"] := 281,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "CrownCheck"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := CrownCheck
-      ,CheckOptions["vTextName"] := "Txt_CrownCheck"
-      ,CheckOptions["text"] := currentDictionary.Txt_CrownCheck
-      ,CheckOptions["textX"] := xPos+190
-      ,CheckOptions["textY"] := 280
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+155,CheckOptions["y"] := 306,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "ShinyCheck"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := ShinyCheck
-      ,CheckOptions["vTextName"] := "Txt_ShinyCheck"
-      ,CheckOptions["text"] := currentDictionary.Txt_ShinyCheck
-      ,CheckOptions["textX"] := xPos+190
-      ,CheckOptions["textY"] := 305
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+155,CheckOptions["y"] := 331,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "ImmersiveCheck"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := ImmersiveCheck
-      ,CheckOptions["vTextName"] := "Txt_ImmersiveCheck"
-      ,CheckOptions["text"] := currentDictionary.Txt_ImmersiveCheck
-      ,CheckOptions["textX"] := xPos+190
-      ,CheckOptions["textY"] := 330
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 406,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "InvalidCheck"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := InvalidCheck
-      ,CheckOptions["vTextName"] := "Txt_InvalidCheck"
-      ,CheckOptions["text"] := currentDictionary.Txt_InvalidCheck
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 405
-   AddCheckBox(CheckOptions)
-   ; ========== Page 4 ==========
-; ========== Pack Selection ==========
-xPos := 1125
-SetHeaderFont()
-Gui, Add, Text, x%xPos% y110 backgroundtrans, % currentDictionary.btn_pack
-global Txt_HoOh, Txt_Lugia, Txt_Eevee,Txt_Buzzwole, Txt_Solgaleo, Txt_Lunala, Txt_Shining, Txt_Arceus, Txt_Palkia, Txt_Dialga
-global Txt_Mewtwo, Txt_Charizard, Txt_Pikachu, Txt_Mew
-SetNormalFont()
+return
 
-CheckOptions := {}
-CheckOptions["x"] := xPos,CheckOptions["y"] := 151,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "HoOh"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := HoOh
-   ,CheckOptions["vTextName"] := "Txt_HoOh"
-   ,CheckOptions["text"] := currentDictionary.Txt_HoOh
-   ,CheckOptions["textX"] := xPos+35
-   ,CheckOptions["textY"] := 150
-AddCheckBox(CheckOptions)
+OpenToolTip:
+   Run, https://mixman208.github.io/PTCGPB/
+return
 
-CheckOptions := {}
-CheckOptions["x"] := xPos+155,CheckOptions["y"] := 151,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Lugia"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Lugia
-   ,CheckOptions["vTextName"] := "Txt_Lugia"
-   ,CheckOptions["text"] := currentDictionary.Txt_Lugia
-   ,CheckOptions["textX"] := xPos+190
-   ,CheckOptions["textY"] := 150
-AddCheckBox(CheckOptions)
+OpenLink:
+   Run, https://buymeacoffee.com/aarturoo
+return
 
-CheckOptions := {}
-CheckOptions["x"] := xPos,CheckOptions["y"] := 176,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Eevee"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Eevee
-   ,CheckOptions["vTextName"] := "Txt_Eevee"
-   ,CheckOptions["text"] := currentDictionary.Txt_Eevee
-   ,CheckOptions["textX"] := xPos+35
-   ,CheckOptions["textY"] := 175
-AddCheckBox(CheckOptions)
+OpenDiscord:
+   Run, https://discord.gg/C9Nyf7P4sT
+return
 
-CheckOptions := {}
-CheckOptions["x"] := xPos+155,CheckOptions["y"] := 176,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Buzzwole"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Buzzwole
-   ,CheckOptions["vTextName"] := "Txt_Buzzwole"
-   ,CheckOptions["text"] := currentDictionary.Txt_Buzzwole
-   ,CheckOptions["textX"] := xPos+190
-   ,CheckOptions["textY"] := 175
-AddCheckBox(CheckOptions)
-
-CheckOptions := {}
-CheckOptions["x"] := xPos,CheckOptions["y"] := 201,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Solgaleo"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Solgaleo
-   ,CheckOptions["vTextName"] := "Txt_Solgaleo"
-   ,CheckOptions["text"] := currentDictionary.Txt_Solgaleo
-   ,CheckOptions["textX"] := xPos+35
-   ,CheckOptions["textY"] := 200
-AddCheckBox(CheckOptions)
-
-CheckOptions := {}
-CheckOptions["x"] := xPos+155,CheckOptions["y"] := 201,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Lunala"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Lunala
-   ,CheckOptions["vTextName"] := "Txt_Lunala"
-   ,CheckOptions["text"] := currentDictionary.Txt_Lunala
-   ,CheckOptions["textX"] := xPos+190
-   ,CheckOptions["textY"] := 200
-AddCheckBox(CheckOptions)
-
-CheckOptions := {}
-CheckOptions["x"] := xPos,CheckOptions["y"] := 226,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Shining"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Shining
-   ,CheckOptions["vTextName"] := "Txt_Shining"
-   ,CheckOptions["text"] := currentDictionary.Txt_Shining
-   ,CheckOptions["textX"] := xPos+35
-   ,CheckOptions["textY"] := 225
-AddCheckBox(CheckOptions)
-
-CheckOptions := {}
-CheckOptions["x"] := xPos+155,CheckOptions["y"] := 226,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Arceus"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Arceus
-   ,CheckOptions["vTextName"] := "Txt_Arceus"
-   ,CheckOptions["text"] := currentDictionary.Txt_Arceus
-   ,CheckOptions["textX"] := xPos+190
-   ,CheckOptions["textY"] := 225
-AddCheckBox(CheckOptions)
-
-CheckOptions := {}
-CheckOptions["x"] := xPos,CheckOptions["y"] := 251,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Palkia"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Palkia
-   ,CheckOptions["vTextName"] := "Txt_Palkia"
-   ,CheckOptions["text"] := currentDictionary.Txt_Palkia
-   ,CheckOptions["textX"] := xPos+35
-   ,CheckOptions["textY"] := 250
-AddCheckBox(CheckOptions)
-
-CheckOptions := {}
-CheckOptions["x"] := xPos+155,CheckOptions["y"] := 251,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Dialga"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Dialga
-   ,CheckOptions["vTextName"] := "Txt_Dialga"
-   ,CheckOptions["text"] := currentDictionary.Txt_Dialga
-   ,CheckOptions["textX"] := xPos+190
-   ,CheckOptions["textY"] := 250
-AddCheckBox(CheckOptions)
-
-CheckOptions := {}
-CheckOptions["x"] := xPos,CheckOptions["y"] := 276,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Pikachu"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Pikachu
-   ,CheckOptions["vTextName"] := "Txt_Pikachu"
-   ,CheckOptions["text"] := currentDictionary.Txt_Pikachu
-   ,CheckOptions["textX"] := xPos+35
-   ,CheckOptions["textY"] := 275
-AddCheckBox(CheckOptions)
-
-CheckOptions := {}
-CheckOptions["x"] := xPos+155,CheckOptions["y"] := 276,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Charizard"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Charizard
-   ,CheckOptions["vTextName"] := "Txt_Charizard"
-   ,CheckOptions["text"] := currentDictionary.Txt_Charizard
-   ,CheckOptions["textX"] := xPos+190
-   ,CheckOptions["textY"] := 275
-AddCheckBox(CheckOptions)
-
-CheckOptions := {}
-CheckOptions["x"] := xPos,CheckOptions["y"] := 301,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Mewtwo"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Mewtwo
-   ,CheckOptions["vTextName"] := "Txt_Mewtwo"
-   ,CheckOptions["text"] := currentDictionary.Txt_Mewtwo
-   ,CheckOptions["textX"] := xPos+35
-   ,CheckOptions["textY"] := 300
-AddCheckBox(CheckOptions)
-
-CheckOptions := {}
-CheckOptions["x"] := xPos+155,CheckOptions["y"] := 301,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-   ,CheckOptions["vName"] := "Mew"
-   ,CheckOptions["gName"] := ""
-   ,CheckOptions["checkedImagePath"] := checkedPath
-   ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-   ,CheckOptions["isChecked"] := Mew
-   ,CheckOptions["vTextName"] := "Txt_Mew"
-   ,CheckOptions["text"] := currentDictionary.Txt_Mew
-   ,CheckOptions["textX"] := xPos+190
-   ,CheckOptions["textY"] := 300
-AddCheckBox(CheckOptions)
-
-   ; ========== Page 5 ==========
-   ; ========== Min Stars ==========
-   xPos := 1485
-   SetHeaderFont()
-   Gui, Add, Text, x%xPos% y110 backgroundtrans, % currentDictionary.btn_pack
-   SetNormalFont()
-   Gui, Add, Text, x%xPos% y150 backgroundtrans vTxt_MinStars, % currentDictionary.Txt_MinStars
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vminStars w40 x" . xPos+120 . " y149 h20 -E0x200 Center backgroundtrans", %minStars%
-   
-   Gui, Add, Text, x%xPos% y175 backgroundtrans vTxt_ShinyMinStars, % currentDictionary.Txt_ShinyMinStars
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vminStarsShiny w40 x" . xPos+120 . " y174 h20 -E0x200 Center backgroundtrans", %minStarsShiny%
-   global Txt_minStarsEnabled
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 200, CheckOptions["w"] := 28, CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "minStarsEnabled"
-      ,CheckOptions["gName"] := "minStarsEnabledSettings"
-      ,CheckOptions["checkedImagePath"] := checkedPath, CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := minStarsEnabled
-      ,CheckOptions["vTextName"] := "Txt_minStarsEnabled"
-      ,CheckOptions["text"] := currentDictionary.Txt_minStarsEnabled
-      ,CheckOptions["textX"] := xPos+35, CheckOptions["textY"] := 199
-   AddCheckBox(CheckOptions)
-   Gui, Add, Text, % "x" . xPos . " y225 vTxt_minStarsA4HoOh BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_HoOh
-   defaultStars := MinStarCheck("minStarsA4HoOh")
-   Gui, Add, DropDownList, % "x" . xPos+90 . " y225 w40 vminStarsA4HoOh hwndMinA4HoOh +0x0210 choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-   
-   Gui, Add, Text, % "x" . xPos+155 . " y225 vTxt_minStarsA4Lugia BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Lugia
-   defaultStars := MinStarCheck("minStarsA4Lugia")
-   Gui, Add, DropDownList, % "x" . xPos+245 . " y225 w40 vminStarsA4Lugia hwndMinA4Lugia +0x0210 choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos . " y250 vTxt_minStarsA3b BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Eevee
-   defaultStars := MinStarCheck("minStarsA3b")
-   Gui, Add, DropDownList, % "x" . xPos+90 . " y250 w40 vminStarsA3b hwndMinA3b +0x0210 choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos+155 . " y250 vTxt_minStarsA3a BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Buzzwole
-   defaultStars := MinStarCheck("minStarsA3a")
-   Gui, Add, DropDownList, % "x" . xPos+245 . " y250 w40 vminStarsA3a hwndMinA3a +0x0210 choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos . " y275 vTxt_minStarsA3Solgaleo BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Solgaleo
-   defaultStars := MinStarCheck("minStarsA3Solgaleo")
-   Gui, Add, DropDownList, % "x" . xPos+90 . " y275 w40 vminStarsA3Solgaleo hwndMinA3S +0x0210 choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos+155 . " y275 vTxt_minStarsA3Lunala BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Lunala
-   defaultStars := MinStarCheck("minStarsA3Lunala")
-   Gui, Add, DropDownList, % "x" . xPos+245 . " y275 w40 vminStarsA3Lunala hwndMinA3L +0x0210 choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos . " y300 vTxt_minStarsA2b BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Shining
-   defaultStars := MinStarCheck("minStarsA2b")
-   Gui, Add, DropDownList, % "x" . xPos+90 . " y300 w40 vminStarsA2b hwndMinA2b +0x0210 choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos+155 . " y300 vTxt_minStarsA2a BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Arceus
-   defaultStars := MinStarCheck("minStarsA2a")
-   Gui, Add, DropDownList, % "x" . xPos+245 . " y300 w40 vminStarsA2a hwndMinA2a +0x0210 choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos . " y325 vTxt_minStarsA2Dialga BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Dialga
-   defaultStars := MinStarCheck("minStarsA2Dialga")
-   Gui, Add, DropDownList, % "x" . xPos+90 . " y325 w40 vminStarsA2Dialga hwndMinA2D +0x0210 choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos+155 . " y325 vTxt_minStarsA2Palkia BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Palkia
-   defaultStars := MinStarCheck("minStarsA2Palkia")
-   Gui, Add, DropDownList, % "x" . xPos+245 . " y325 w40 vminStarsA2Palkia hwndMinA2P +0x0210 choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos . " y350 vTxt_minStarsA1Mewtwo BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Mewtwo
-   defaultStars := MinStarCheck("minStarsA1Mewtwo")
-   Gui, Add, DropDownList, % "x" . xPos+90 . " y350 w40 vminStarsA1Mewtwo +0x0210 hwndMinA1MT choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos+155 . " y350 vTxt_minStarsA1Charizard BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Charizard
-   defaultStars := MinStarCheck("minStarsA1Charizard")
-   Gui, Add, DropDownList, % "x" . xPos+245 . " y350 w40 vminStarsA1Charizard +0x0210 hwndMinA1C choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos . " y375 vTxt_minStarsA1Pikachu BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Pikachu
-   defaultStars := MinStarCheck("minStarsA1Pikachu")
-   Gui, Add, DropDownList, % "x" . xPos+90 . " y375 w40 vminStarsA1Pikachu +0x0210 hwndMinA1P choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5
-
-   Gui, Add, Text, % "x" . xPos+155 . " y375 vTxt_minStarsA1a BackgroundTrans" . (minStarsEnabled ? "" : " Hidden"), % currentDictionary.Txt_Mew
-   defaultStars := MinStarCheck("minStarsA1a")
-   Gui, Add, DropDownList, % "x" . xPos+245 . " y375 w40 vminStarsA1a +0x0210 hwndMinA1M choose" . defaultStars . " -E0x200 Center backgroundtrans" . (minStarsEnabled ? "" : " Hidden"), 0|1|2|3|4|5 
-
-   ; ========== Page 6 ==========
-   ;; Save For Trade Section
-   xPos := 1845
-   SetHeaderFont()
-   Gui, Add, Text, x%xPos% y110 backgroundtrans, % currentDictionary.btn_save
-   SetNormalFont()
-   global Txt_s4tEnabled, Txt_s4tSilent, Txt_s4t3Dmnd, Txt_s4t4Dmnd, Txt_s4t1Star, s4tGholdengoArrow
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 151,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "s4tEnabled"
-      ,CheckOptions["gName"] := "s4tSettings"
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := s4tEnabled
-      ,CheckOptions["vTextName"] := "Txt_s4tEnabled"
-      ,CheckOptions["text"] := currentDictionary.Txt_s4tEnabled
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 150
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 181,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "s4tSilent"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := s4tSilent
-      ,CheckOptions["vTextName"] := "Txt_s4tSilent"
-      ,CheckOptions["text"] := currentDictionary.Txt_s4tSilent
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 180
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 206,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "s4t3Dmnd"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := s4t3Dmnd
-      ,CheckOptions["vTextName"] := "Txt_s4t3Dmnd"
-      ,CheckOptions["text"] := "3 ◆◆◆"
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 205
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 231,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "s4t4Dmnd"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := s4t4Dmnd
-      ,CheckOptions["vTextName"] := "Txt_s4t4Dmnd"
-      ,CheckOptions["text"] := "4 ◆◆◆◆"
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 230
-   AddCheckBox(CheckOptions)
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 256,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "s4t1Star"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := s4t1Star
-      ,CheckOptions["vTextName"] := "Txt_s4t1Star"
-      ,CheckOptions["text"] := "1 ★"
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 255
-   AddCheckBox(CheckOptions)
-   
-   Gui, Add, Text, % "x" . xPos . " y280 w275 h1 vS4T_Divider1 +0x10 BackgroundTrans" . (!s4tEnabled ? " Hidden" : "") ; Creates a horizontal line
-   
-   CheckOptions := {}
-   CheckOptions["x"] := xPos+140,CheckOptions["y"] := 181,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "s4tGholdengo"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := s4tGholdengo
-      ,CheckOptions["vTextName"] := "s4tGholdengoArrow"
-      ,CheckOptions["text"] := "➤"
-      ,CheckOptions["textX"] := xPos+175
-      ,CheckOptions["textY"] := 180
-      if (!s4tEnabled || !Shining)
-         CheckOptions["extraOptions"] := " Hidden"
-      AddCheckBox(CheckOptions)
-      Gui, Add, Picture, % (!s4tEnabled ? "Hidden " : "") . "vs4tGholdengoEmblem w25 h25 x" . xPos+195 . " y175 backgroundtrans", % A_ScriptDir . "\GUI\Images\GholdengoEmblem.png"
- 
-   global Txt_s4tWP
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 286,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "s4tWP"
-      ,CheckOptions["gName"] := "s4tWPSettings"
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := s4tWP
-      ,CheckOptions["vTextName"] := "Txt_s4tWP"
-      ,CheckOptions["text"] := currentDictionary.Txt_s4tWP
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 285
-   AddCheckBox(CheckOptions)
-   
-   Gui, Add, Text, % "vs4tWPMinCardsLabel x" . xPos . " y310 BackgroundTrans" . (!s4tEnabled || !s4tWP ? " Hidden " : ""), % currentDictionary.Txt_s4tWPMinCards
-   Gui, Add, DropDownList, % "vs4tWPMinCards x" . xPos+120 . " y307 w40 hwnds4tMin +0x0210 choose" . (s4tWPMinCards=2?2:1) . " -E0x200 Center backgroundtrans" . (!s4tEnabled || !s4tWP ? " Hidden" : ""), 1|2
-   
-   Gui, Add, Text, % "x" . xPos . " y335 w275 h1 vS4T_Divider2 +0x10 BackgroundTrans" . (!s4tEnabled ? " Hidden" : "") ; Creates a horizontal line
-   ; === S4T Discord Settings (now part of Save For Trade) ===
-   SetSectionFont()
-   Gui, Add, Text, % "x" . xPos . " y340 backgroundtrans vS4TDiscordSettingsSubHeading" . (!s4tEnabled? " Hidden" : ""), % currentDictionary.S4TDiscordSettingsSubHeading
-   
-   SetNormalFont()
-   if(StrLen(s4tDiscordUserId) < 3)
-      s4tDiscordUserId =
-   if(StrLen(s4tDiscordWebhookURL) < 3)
-      s4tDiscordWebhookURL =
-   
-   Gui, Add, Text, % "x" . xPos . " y365 backgroundtrans vTxt_S4T_DiscordID" . (!s4tEnabled ? " Hidden" : ""), Discord ID:
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vs4tDiscordUserId w220 x" . xPos . " y390 h20 -E0x200 Center backgroundtrans" . (!s4tEnabled ? " Hidden" : ""), %s4tDiscordUserId%
-   Gui, Add, Text, % "x" . xPos . " y415 backgroundtrans vTxt_S4T_DiscordWebhook" . (!s4tEnabled ? " Hidden" : ""), Webhook URL:
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vs4tDiscordWebhookURL w220 x" . xPos . " y440 h20 -E0x200 Center backgroundtrans" . (!s4tEnabled ? " Hidden" : ""), %s4tDiscordWebhookURL%
-   global Txt_s4tSendAccountXml
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 466,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "s4tSendAccountXml"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := s4tSendAccountXml
-      ,CheckOptions["vTextName"] := "Txt_s4tSendAccountXml"
-      ,CheckOptions["text"] := currentDictionary.Txt_s4tSendAccountXml
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 465
-   AddCheckBox(CheckOptions)
-
-   if (s4tEnabled) {
-   ShowControls(s4tMainControls)
-   ; Gholdengo show/hide
-      if (Shining) {
-         ShowControls("s4tGholdengo,s4tGholdengoEmblem,s4tGholdengoArrow")
-      } else {
-         HideControls("s4tGholdengo,s4tGholdengoEmblem,s4tGholdengoArrow")
-      }
-   ; s4tWP show/hide
-      if (s4tWP) {
-         ShowControls("s4tWPMinCardsLabel,s4tWPMinCards")
-      } else {
-         HideControls("s4tWPMinCardsLabel,s4tWPMinCards")
-      }
-   }
-   
-   if (!s4tEnabled) {
-      GuiControl, Hide, s4tSilent
-      GuiControl, Hide, Txt_s4tSilent
-      GuiControl, Hide, s4t3Dmnd
-      GuiControl, Hide, Txt_s4t3Dmnd
-      GuiControl, Hide, s4t4Dmnd
-      GuiControl, Hide, Txt_s4t4Dmnd
-      GuiControl, Hide, s4t1Star
-      GuiControl, Hide, Txt_s4t1Star
-      GuiControl, Hide, s4tGholdengo
-      GuiControl, Hide, s4tGholdengoArrow
-      GuiControl, Hide, s4tWP
-      GuiControl, Hide, Txt_s4tWP
-      GuiControl, Hide, s4tSendAccountXml
-      GuiControl, Hide, Txt_s4tSendAccountXml
-   }
-   ; ========== Page 7 ==========
-   xPos := 2205
-   SetHeaderFont()
-   Gui, Add, Text, x%xPos% y110 backgroundtrans, Discord && HeartBeat Settings
-   ;; Discord Settings Section
-   ; Add main heading for Discord Settings section
-   SetSectionFont()
-   Gui, Add, Text, x%xPos% y150 backgroundtrans vDiscordSettingsHeading, % currentDictionary.DiscordSettingsHeading
-   
-   SetNormalFont()
-   if(StrLen(discordUserID) < 3)
-      discordUserID := ""
-   if(StrLen(discordWebhookURL) < 3)
-      discordWebhookURL := ""
-   
-   Gui, Add, Text, x%xPos% y175 backgroundtrans vTxt_DiscordID, Discord ID:
-   if(discordUserId = "" || discordUserId = "ERROR")
-      Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vdiscordUserId w270 x" . xPos . " y200 h20 -E0x200 Center backgroundtrans",
-   else
-      Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vdiscordUserId w270 x" . xPos . " y200 h20 -E0x200 Center backgroundtrans", %discordUserId%
-   
-   Gui, Add, Text, x%xPos% y225 backgroundtrans vTxt_DiscordWebhook, Webhook URL:
-   if(discordWebhookURL = "" || discordWebhookURL = "ERROR")
-      Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vdiscordWebhookURL w270 x" . xPos . " y250 h20 -E0x200 Center backgroundtrans",
-   else
-      Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vdiscordWebhookURL w270 x" . xPos . " y250 h20 -E0x200 Center backgroundtrans", %discordWebhookURL%
-   global Txt_sendAccountXml
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 276,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "sendAccountXml"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := sendAccountXml
-      ,CheckOptions["vTextName"] := "Txt_sendAccountXml"
-      ,CheckOptions["text"] := currentDictionary.Txt_sendAccountXml
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 275
-   AddCheckBox(CheckOptions)
-   
-   ; Add divider after heading
-   Gui, Add, Text, x%xPos% y300 w275 h1 vDiscordSettingsDivider +0x10 BackgroundTrans ; Creates a horizontal line
-   ; === Heartbeat Settings (now part of Discord) ===
-   SetSectionFont()
-   Gui, Add, Text, x%xPos% y305 backgroundtrans vHeartbeatSettingsSubHeading, % currentDictionary.HeartbeatSettingsSubHeading
-   
-   SetNormalFont()
-   global Txt_heartBeat
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 331,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "heartBeat"
-      ,CheckOptions["gName"] := "discordSettings"
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := heartBeat
-      ,CheckOptions["vTextName"] := "Txt_heartBeat"
-      ,CheckOptions["text"] := currentDictionary.Txt_heartBeat
-      ,CheckOptions["textX"] := xPos+35
-      ,CheckOptions["textY"] := 330
-   AddCheckBox(CheckOptions)
-   
-   if(StrLen(heartBeatName) < 3)
-      heartBeatName := ""
-   if(StrLen(heartBeatWebhookURL) < 3)
-      heartBeatWebhookURL := ""
-   
-   Gui, Add, Text, % "vhbName x" . xPos . " y355 backgroundtrans" . (heartBeat?"":" Hidden"), % currentDictionary.hbName
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vheartBeatName w270 x" . xPos . " y380 h20 -E0x200 Center backgroundtrans" . (heartBeat?"":" Hidden"), %heartBeatName%
-   Gui, Add, Text, % "vhbURL x" . xPos . " y405 backgroundtrans" . (heartBeat?"":" Hidden"), Webhook URL:
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vheartBeatWebhookURL w270 x" . xPos . " y430 h20 -E0x200 Center backgroundtrans" . (heartBeat?"":" Hidden"), %heartBeatWebhookURL%
-   Gui, Add, Text, % "vhbDelay x" . xPos . " y455 backgroundtrans" . (heartBeat?"":" Hidden"), % currentDictionary.hbDelay
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vheartBeatDelay w40 x" . xPos+175 . " y454 h20 -E0x200 Center backgroundtrans" . (heartBeat?"":" Hidden"), %heartBeatDelay%
-   ; =========== Page 8 ===========
-   xPos := 2565
-   SetHeaderFont()
-   Gui, Add, Text, x%xPos% y110 backgroundtrans, % currentDictionary.btn_download
-   ;; Download Settings Section
-   SetNormalFont()
-   if(StrLen(mainIdsURL) < 3)
-      mainIdsURL := ""
-   if(StrLen(vipIdsURL) < 3)
-      vipIdsURL := ""
-   
-   Gui, Add, Text, x%xPos% y150 backgroundtrans vTxt_MainIdsURL, ids.txt API:
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vmainIdsURL w270 x" . xPos . " y175 h20 -E0x200 Center backgroundtrans", %mainIdsURL%
-   
-   Gui, Add, Text, x%xPos% y200 backgroundtrans vTxt_VipIdsURL, vip_ids.txt API:
-   Gui, Add, Edit, % (CurrentTheme = "Dark"? "cFDFDFD ": "cBC0000 ") . "vvipIdsURL w270 x" . xPos . " y225 h20 -E0x200 Center backgroundtrans", %vipIdsURL%
-   
-   ; Add Showcase options to Download Settings Section
-   global Txt_showcaseEnabled
-   CheckOptions := {}
-   CheckOptions["x"] := xPos,CheckOptions["y"] := 251,CheckOptions["w"] := 28,CheckOptions["h"] := 13
-      ,CheckOptions["vName"] := "showcaseEnabled"
-      ,CheckOptions["gName"] := ""
-      ,CheckOptions["checkedImagePath"] := checkedPath
-      ,CheckOptions["uncheckedImagePath"] := uncheckedPath
-      ,CheckOptions["isChecked"] := showcaseEnabled
-      ,CheckOptions["vTextName"] := "Txt_showcaseEnabled"
-      ,CheckOptions["text"] := currentDictionary.Txt_showcaseEnabled
-      ,CheckOptions["textX"] := xPos + 35
-      ,CheckOptions["textY"] := 250
-   AddCheckBox(CheckOptions)
-   Gui, Add, Button, x0 y0 w10 h10 vDummyFocusButton Hidden, Dummy
-   GuiControl, Focus, DummyFocusButton
-   
-   SG:= New ScrollGUI(SGUI, 450, 800, "-DPIScale", 1, 1)
-   SG.Show("Arturo's PTCGP BOT","ycenter xcenter")
-   if (CurrentTheme = "Dark") {
-      OD_Colors.Attach(Moitor,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(Scale,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(OCR,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(Client,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA4HoOh,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA4Lugia,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA3b,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA3a,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA3S,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA3L,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA2b,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA2a,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA2D,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA2P,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA1MT,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA1C,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA1P,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(MinA1M,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(Method,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(Sortby,{T: 0XFDFDFD, B: 0X7C8590})
-      OD_Colors.Attach(s4tMin,{T: 0XFDFDFD, B: 0X7C8590})
-   } else {
-      OD_Colors.Attach(Moitor,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(Scale,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(OCR,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(Client,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA4HoOh,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA4Lugia,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA3b,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA3a,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA3S,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA3L,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA2b,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA2a,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA2D,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA2P,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA1MT,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA1C,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA1P,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(MinA1M,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(Method,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(Sortby,{T: 0XBC0000, B: 0XFFD1CD})
-      OD_Colors.Attach(s4tMin,{T: 0XBC0000, B: 0XFFD1CD})
-   }
-   
-   WinGet, mainHwnd, ID, Arturo's PTCGP BOT
-   WinGetPos, mainX, mainY, mainW, mainH, ahk_id %mainHwnd%
-   ;; ========== Menu ==========
-   global menuW := 260
-   global menuH := 683
-   global menuExpanded
-   if (!menuExpanded) {
-      menuX := mainX + mainW - menuW - 35
-      menuExpanded := False
-   } else {
-      menuX := mainX + mainW - 5
-      menuExpanded := True
-   }
-   menuY := mainY
-   xPos := 18
-   Gui, Menu:New
-   ;Gui, Menu:+Owner%MainGuiName%
-   Gui, Menu:-Caption
-   Gui, Menu:+HWNDmenuHwnd
-   Gui, Menu:Add, Picture, x0 y0 w%menuW% h%menuH%, %MenuBackground%
-   Gui, Menu:Add, Picture, x18 y12 w200 h60 BackgroundTrans, %titleImage%
-   if (menuExpanded)
-      menuPic := MenuClose
-   else
-      menuPic := MenuOpen
-   Gui, Menu:Add, Picture, x240 y310 w20 h80 vMenuSwitch gMenuSwitchHandler BackgroundTrans, %menuPic%
-   SetMenuBtnFont()
-   Gui, Menu:Add, Text, x32 y23 BackgroundTrans, % currentDictionary.title_main . "`n" . localVersion . " " . intro
-   global Btn_ToolTip, Txt_Btn_ToolTip
-   global Btn_Mumu, Btn_Arrange, Btn_BalanceXMLs, Btn_Update, Btn_Join, Btn_Coffee, Btn_Start, Btn_XMLSortTool, Btn_XMLDuplicateTool
-   global Txt_Btn_Mumu, Txt_Btn_Arrange, Txt_Btn_BalanceXMLs, Txt_Btn_Update, Txt_Btn_Join, Txt_Btn_Coffee, Txt_Btn_Start, Txt_XMLSortTool, Txt_XMLDuplicateTool
-   PageBtnShift(defaultBotLanguage)
-   ButtonOptions := Object()
-   if (CurrentTheme = "Dark") {
-      Gui, Menu:Font, s12 cBC1111, %currentfont%
-   } else {
-      Gui, Menu:Font, s12 c007700, %currentfont%
-   }
-   ButtonOptions["type"] := "Picture"
-      ,ButtonOptions["x"] := xPos
-      ,ButtonOptions["y"] := 94
-      ,ButtonOptions["w"] := 200
-      ,ButtonOptions["h"] := 44
-      ,ButtonOptions["vName"] := "Btn_ToolTip"
-      ,ButtonOptions["gName"] := "OpenToolTip"
-      ,ButtonOptions["text"] := currentDictionary.btn_ToolTip
-      ,ButtonOptions["imagePath"] := ToolTipImage
-      ,ButtonOptions["vTextName"] := "Txt_Btn_ToolTip"
-      ,ButtonOptions["textX"] := xPos
-      ,ButtonOptions["textY"] := (106 + ys)
-   AddBtn(ButtonOptions)
-   SetMenuBtnFont()
-   ButtonOptions["type"] := "Picture"
-      ,ButtonOptions["x"] := xPos
-      ,ButtonOptions["y"] := 157
-      ,ButtonOptions["w"] := 200
-      ,ButtonOptions["h"] := 36
-      ,ButtonOptions["vName"] := "Btn_Mumu"
-      ,ButtonOptions["gName"] := "LaunchAllMumu"
-      ,ButtonOptions["text"] := currentDictionary.btn_mumu
-      ,ButtonOptions["imagePath"] := btn_mainPage
-      ,ButtonOptions["vTextName"] := "Txt_Btn_Mumu"
-      ,ButtonOptions["textX"] := xPos
-      ,ButtonOptions["textY"] := (167 + ys)
-   AddBtn(ButtonOptions)
-   ButtonOptions["type"] := "Picture"
-      ,ButtonOptions["x"] := xPos
-      ,ButtonOptions["y"] := 211
-      ,ButtonOptions["w"] := 200
-      ,ButtonOptions["h"] := 36
-      ,ButtonOptions["vName"] := "Btn_Arrange"
-      ,ButtonOptions["gName"] := "ArrangeWindows"
-      ,ButtonOptions["text"] := currentDictionary.btn_arrange
-      ,ButtonOptions["imagePath"] := btn_mainPage
-      ,ButtonOptions["vTextName"] := "Txt_Btn_Arrange"
-      ,ButtonOptions["textX"] := xPos
-      ,ButtonOptions["textY"] := (221 + ys)
-   AddBtn(ButtonOptions)
-   ButtonOptions["type"] := "Picture"
-      ,ButtonOptions["x"] := xPos
-      ,ButtonOptions["y"] := 268
-      ,ButtonOptions["w"] := 200
-      ,ButtonOptions["h"] := 36
-      ,ButtonOptions["vName"] := "Btn_BalanceXMLs"
-      ,ButtonOptions["gName"] := "BalanceXMLs"
-      ,ButtonOptions["text"] := currentDictionary.btn_balance
-      ,ButtonOptions["imagePath"] := btn_mainPage
-      ,ButtonOptions["vTextName"] := "Txt_Btn_BalanceXMLs"
-      ,ButtonOptions["textX"] := xPos
-      ,ButtonOptions["textY"] := (278 + ys)
-   AddBtn(ButtonOptions)
-   ButtonOptions["type"] := "Picture"
-      ,ButtonOptions["x"] := xPos
-      ,ButtonOptions["y"] := 324
-      ,ButtonOptions["w"] := 200
-      ,ButtonOptions["h"] := 36
-      ,ButtonOptions["vName"] := "Btn_Update"
-      ,ButtonOptions["gName"] := "CheckForUpdates"
-      ,ButtonOptions["text"] := currentDictionary.btn_update
-      ,ButtonOptions["imagePath"] := btn_mainPage
-      ,ButtonOptions["vTextName"] := "Txt_Btn_Update"
-      ,ButtonOptions["textX"] := xPos
-      ,ButtonOptions["textY"] := (334 + ys)
-   AddBtn(ButtonOptions)
-   ButtonOptions["type"] := "Picture"
-      ,ButtonOptions["x"] := xPos
-      ,ButtonOptions["y"] := 379
-      ,ButtonOptions["w"] := 200
-      ,ButtonOptions["h"] := 36
-      ,ButtonOptions["vName"] := "Btn_Join"
-      ,ButtonOptions["gName"] := "OpenDiscord"
-      ,ButtonOptions["text"] := currentDictionary.btn_join
-      ,ButtonOptions["imagePath"] := btn_mainPage
-      ,ButtonOptions["vTextName"] := "Txt_Btn_Join"
-      ,ButtonOptions["textX"] := xPos
-      ,ButtonOptions["textY"] := (389 + ys)
-   AddBtn(ButtonOptions)
-   ButtonOptions["type"] := "Picture"
-      ,ButtonOptions["x"] := xPos
-      ,ButtonOptions["y"] := 436
-      ,ButtonOptions["w"] := 200
-      ,ButtonOptions["h"] := 36
-      ,ButtonOptions["vName"] := "Btn_Coffee"
-      ,ButtonOptions["gName"] := "OpenLink"
-      ,ButtonOptions["text"] := currentDictionary.btn_coffee
-      ,ButtonOptions["imagePath"] := btn_mainPage
-      ,ButtonOptions["vTextName"] := "Txt_Btn_Coffee"
-      ,ButtonOptions["textX"] := xPos
-      ,ButtonOptions["textY"] := (446 + ys)
-   AddBtn(ButtonOptions)
-   ButtonOptions["type"] := "Picture"
-      ,ButtonOptions["x"] := xPos
-      ,ButtonOptions["y"] := 491
-      ,ButtonOptions["w"] := 200
-      ,ButtonOptions["h"] := 44 
-      ,ButtonOptions["vName"] := "Btn_Start"
-      ,ButtonOptions["gName"] := "StartBot"
-      ,ButtonOptions["text"] := currentDictionary.btn_start
-      ,ButtonOptions["imagePath"] := ToolTipImage
-      ,ButtonOptions["vTextName"] := "Txt_Btn_Start"
-      ,ButtonOptions["textX"] := xPos
-      ,ButtonOptions["textY"] := (506 + ys)
-   AddBtn(ButtonOptions)
-   ButtonOptions["type"] := "Picture"
-      ,ButtonOptions["x"] := xPos
-      ,ButtonOptions["y"] := 546
-      ,ButtonOptions["w"] := 200
-      ,ButtonOptions["h"] := 36
-      ,ButtonOptions["vName"] := "Btn_XMLSortTool"
-      ,ButtonOptions["gName"] := "RunXMLSortTool"
-      ,ButtonOptions["text"] := "XML Sort Tool"
-      ,ButtonOptions["imagePath"] := btn_mainPage
-      ,ButtonOptions["vTextName"] := "Txt_XMLSortTool"
-      ,ButtonOptions["textX"] := xPos
-      ,ButtonOptions["textY"] := (556 + ys)
-   AddBtn(ButtonOptions)
-   ButtonOptions["type"] := "Picture"
-      ,ButtonOptions["x"] := xPos
-      ,ButtonOptions["y"] := 601
-      ,ButtonOptions["w"] := 200
-      ,ButtonOptions["h"] := 36
-      ,ButtonOptions["vName"] := "Btn_XMLDuplicateTool"
-      ,ButtonOptions["gName"] := "RunXMLDuplicateTool"
-      ,ButtonOptions["text"] := "XML Duplicate Tool"
-      ,ButtonOptions["imagePath"] := btn_mainPage
-      ,ButtonOptions["vTextName"] := "Txt_XMLDuplicateTool"
-      ,ButtonOptions["textX"] := xPos
-      ,ButtonOptions["textY"] := (611 + ys)
-   AddBtn(ButtonOptions)
-   setMenuNormalFont()
-   Gui, Menu:Add, Text, x8 y660 w220 Center BackgroundTrans, ● CC BY-NC 4.0 international license
-   Gui, Menu:Show, w%menuW% h%menuH% x%menuX% y%menuY% NoActivate
-   WinSet, AlwaysOnTop, On, ahk_id %mainHwnd%
-   WinSet, AlwaysOnTop, Off, ahk_id %mainHwnd%
-   ;; ========== Top Bar GUI ==========
-   global topBarW := 340
-   global topBarH := 150
-   Gui, TopBar:New
-   Gui, TopBar:+Owner%MainGuiName%
-   Gui, TopBar:-Caption
-   Gui, TopBar:+HWNDtopBarHwnd
-   if (CurrentTheme = "Dark") {
-      Gui, Color, e9f1f7, 7C8590
-   } else {
-      Gui, Color, e9f1f7, FFD1CD
-   }
-   Gui, TopBar:Add, Picture, x0 y0 w%topBarW% h%topBarH% vTopBarBackground, %TopBarSmall%
-   SetTopBarNormalFont()
-   global Btn_reload, Btn_ClassicMode, Btn_Theme, saveTopBar
-   global Txt_Btn_reload, Txt_Btn_ClassicMode, Txt_Btn_Theme, Txt_saveTopBar
-   global CallOthers := 0
-   SetTopBarBtnFont()
-   TopBarBtnOptions := Object()
-   ; first row
-   TopBarBtnOptions := {}
-      ,TopBarBtnOptions["type"] := "Picture"
-      ,TopBarBtnOptions["x"] := 35
-      ,TopBarBtnOptions["y"] := 10
-      ,TopBarBtnOptions["w"] := 121
-      ,TopBarBtnOptions["h"] := 25
-      ,TopBarBtnOptions["vName"] := "Btn_reload"
-      ,TopBarBtnOptions["gName"] := "SaveReload"
-      ,TopBarBtnOptions["imagePath"] := btn_mainPage
-      ,TopBarBtnOptions["text"] := currentDictionary.btn_reload
-      ,TopBarBtnOptions["vTextName"] := "Txt_Btn_reload"
-      ,TopBarBtnOptions["textX"] := 35
-      ,TopBarBtnOptions["textY"] := 12
-   AddBtnforTop(TopBarBtnOptions)
-   TopBarBtnOptions := {}
-   TopBarBtnOptions["type"] := "Picture"
-      ,TopBarBtnOptions["x"] := 185
-      ,TopBarBtnOptions["y"] := 10
-      ,TopBarBtnOptions["w"] := 121
-      ,TopBarBtnOptions["h"] := 25
-      ,TopBarBtnOptions["vName"] := "Btn_ClassicMode"
-      ,TopBarBtnOptions["gName"] := "OpenClassicMode"
-      ,TopBarBtnOptions["text"] := "Classic Mode"
-      ,TopBarBtnOptions["imagePath"] := btn_mainPage
-      ,TopBarBtnOptions["vTextName"] := "Txt_Btn_ClassicMode"
-      ,TopBarBtnOptions["textX"] := 185
-      ,TopBarBtnOptions["textY"] := 12
-   AddBtnforTop(TopBarBtnOptions)
-   SetTopBarNormalFont()
-   Gui, TopBar:Add, Text, x35 y60 BackgroundTrans, % currentDictionary.btn_Language . " :"
-   BotLanguagelist := "English|中文|日本語|Deutsch"
-   defaultChooseLang := 1
-   if (BotLanguage != "") {
-   Loop, Parse, BotLanguagelist, |
-      if (A_LoopField = BotLanguage) {
-         defaultChooseLang := A_Index
-         break
-      }
-   }
-   Gui, TopBar:Add, DropDownList, x150 y58 w80 vTopBotLanguage gLanguageControl hwndBotLan +0x0210 Choose%defaultChooseLang% BackgroundTrans Center, English|中文|日本語|Deutsch
-
-   SetTopBarBtnFont()
-   TopBarBtnOptions := {}
-   ,TopBarBtnOptions["type"] := "Picture"
-   ,TopBarBtnOptions["x"] := 35 ,TopBarBtnOptions["y"] := 95 ,TopBarBtnOptions["w"] := 100,TopBarBtnOptions["h"] := 25
-   ,TopBarBtnOptions["vName"] := "Btn_Theme" ,TopBarBtnOptions["gName"] := "ToggleTheme"
-   ,TopBarBtnOptions["imagePath"] := (CurrentTheme = "Dark" ? A_ScriptDir . "\GUI\Images\panel_topbar2.png" : A_ScriptDir . "\GUI\Images\panel_topbar1.png")
-   ,TopBarBtnOptions["text"] := "Toggle Theme" ,TopBarBtnOptions["vTextName"] := "Txt_Btn_Theme"
-   ,TopBarBtnOptions["textX"] := 35 ,TopBarBtnOptions["textY"] := 97
-   AddBtnforTop(TopBarBtnOptions)
-   TopBarBtnOptions := {}
-   ,TopBarBtnOptions["type"] := "Picture"
-   ,TopBarBtnOptions["x"] := 140 ,TopBarBtnOptions["y"] := 120 ,TopBarBtnOptions["w"] := 60,TopBarBtnOptions["h"] := 28
-   ,TopBarBtnOptions["vName"] := "saveTopBar" ,TopBarBtnOptions["gName"] := "SaveTopBarSettings"
-   ,TopBarBtnOptions["imagePath"] := (CurrentTheme = "Dark" ? A_ScriptDir . "\GUI\Images\panel_small2.png" : A_ScriptDir . "\GUI\Images\panel_small1.png")
-   ,TopBarBtnOptions["text"] := "Save" ,TopBarBtnOptions["vTextName"] := "Txt_saveTopBar"
-   ,TopBarBtnOptions["textX"] := 138,TopBarBtnOptions["textY"] := 122
-   AddBtnforTop(TopBarBtnOptions)
-   SetTopBarNormalFont()
-   Gui, Font, norm
-   SetTopBarNormalFont()
-   Gui, TopBar:Show, % "x" . mainX+15 . " y" . mainY+32 . " w" . topBarW . " h36 NoActivate"
-   if (CurrentTheme = "Dark") {
-   OD_Colors.Attach(BotLan,{T: 0XFDFDFD, B: 0X7C8590})
-   } else {
-   OD_Colors.Attach(BotLan,{T: 0XFF5555, B: 0XFFD1CD})
-   }
-   ; TopBarSwitch
-   Gui, TopBarSwitch:New
-   Gui, TopBarSwitch:+Owner%MainGuiName%
-   Gui, TopBarSwitch:-Caption -Border
-   Gui, TopBarSwitch:+HWNDtopBarSwitchHwnd
-   Gui, TopBarSwitch:Color, 0xeeeeee
-   Gui, TopBarSwitch:Add, Picture, x0 y0 w%topBarW% h20 vSwitchPic gTopBarSwitchHandler BackgroundTrans, %TopBarOpen%
-   Gui, TopBarSwitch:Show, % "x" . mainX+15 . " y" . mainY+77 . " w" . topBarW . " h20 NoActivate"
-   Gui, TopBarSwitch:+LastFound
-   WinSet, TransColor, 0xeeeeee
-   WinSet, Redraw,, A
-   OnMessage(0x0003, "OnGuiMove") ; WM_MOVE
-   OnMessage(0x0006, "OnMainGuiActivate")
+RunXMLSortTool:
+   Tool := A_ScriptDir . "\Accounts\xmlCounter.ahk"
+   RunWait, %Tool%
 Return
 
-;;========== Class_ScrollGUI ==========
-; ======================================================================================================================
-; Namepace:       ScrollGUI
-; Function:       Creates a scrollable GUI as a parent for GUI windows.
-; Tested with:    AHK 1.1.20.03 (1.1.20+ required)
-; Tested on:      Win 8.1 (x64)
-; License:        The Unlicense -> http://unlicense.org
-; Change log:
-;                 1.0.00.00/2015-02-06/just me        -  initial release on ahkscript.org
-;                 1.0.01.00/2015-02-08/just me        -  bug fixes
-;                 1.1.00.00/2015-02-13/just me        -  bug fixes, mouse wheel handling, AutoSize method
-;                 1.2.00.00/2015-03-12/just me        -  mouse wheel handling, resizing, OnMessage, bug fixes
-; ======================================================================================================================
-Class ScrollGUI {
-   Static Instances := []
-   ; ===================================================================================================================
-   ; __New          Creates a scrollable parent window (ScrollGUI) for the passed GUI.
-   ; Parameters:
-   ;    HGUI        -  HWND of the GUI child window.
-   ;    Width       -  Width of the client area of the ScrollGUI.
-   ;                   Pass 0 to set the client area to the width of the child GUI.
-   ;    Height      -  Height of the client area of the ScrollGUI.
-   ;                   Pass 0 to set the client area to the height of the child GUI.
-   ;    ----------- Optional:
-   ;    GuiOptions  -  GUI options to be used when creating the ScrollGUI (e.g. +LabelMyLabel).
-   ;                   Default: empty (no options)
-   ;    ScrollBars  -  Scroll bars to register:
-   ;                   1 : horizontal
-   ;                   2 : vertical
-   ;                   3 : both
-   ;                   Default: 3
-   ;    Wheel       -  Register WM_MOUSEWHEEL / WM_MOUSEHWHEEL messages:
-   ;                   1 : register WM_MOUSEHWHEEL for horizontal scrolling (reqires Win Vista+)
-   ;                   2 : register WM_MOUSEWHEEL for vertical scrolling
-   ;                   3 : register both
-   ;                   4 : register WM_MOUSEWHEEL for vertical and Shift+WM_MOUSEWHEEL for horizontal scrolling
-   ;                   Default: 0
-   ; Return values:
-   ;    On failure:    False
-   ; Remarks:
-   ;    The dimensions of the child GUI are determined internally according to the visible children.
-   ;    The maximum width and height of the parent GUI will be restricted to the dimensions of the child GUI.
-   ;    If you register mouse wheel messages, the messages will be passed to the focused control, unless the mouse
-   ;    is hovering on one of the ScrollGUI's scroll bars. If the control doesn't process the message, it will be
-   ;    returned back to the ScrollGUI.
-   ;    Common controls seem to ignore wheel messages whenever the CTRL is down. So you can use this modifier to
-   ;    scroll the ScrollGUI even if a scrollable control has the focus.
-   ; ===================================================================================================================
-   __New(HGUI, Width, Height, GuiOptions := "", ScrollBars := 3, Wheel := 0) {
-      Static WS_HSCROLL := "0x100000", WS_VSCROLL := "0x200000"
-      Static FN_SCROLL := ObjBindMethod(ScrollGui, "On_WM_Scroll")
-      Static FN_SIZE := ObjBindMethod(ScrollGui, "On_WM_Size")
-      Static FN_WHEEL := ObjBindMethod(ScrollGUI, "On_WM_Wheel")
-      ScrollBars &= 3
-      Wheel &= 7
-      If ((ScrollBars <> 1) && (ScrollBars <> 2) && (ScrollBars <> 3))
-         || ((Wheel <> 0) && (Wheel <> 1) && (Wheel <> 2) && (Wheel <> 3) && (Wheel <> 4))
-         Return False
-      If !DllCall("User32.dll\IsWindow", "Ptr", HGUI, "UInt")
-         Return False
-      VarSetCapacity(RC, 16, 0)
-      ; Child GUI
-      If !This.AutoSize(HGUI, GuiW, GuiH)
-         Return False
-      Gui, %HGUI%:-Caption -Resize
-      Gui, %HGUI%:Show, w%GuiW% h%GuiH% Hide
-      MaxH := GuiW
-      MaxV := GuiH
-      LineH := 450
-      LineV := Ceil(MaxV / 20)
-      ; ScrollGUI
-      If (Width = 0) || (Width > MaxH)
-         Width := MaxH
-      If (Height = 0) || (Height > MaxV)
-         Height := MaxV
-      Styles := (ScrollBars & 1 ? " +" . WS_HSCROLL : "") . (ScrollBars & 2 ? " +" . WS_VSCROLL : "")
-      Gui, New, %GuiOptions% %Styles% +hwndHWND
-      Gui, %HWND%:Show, w%Width% h%Height% Hide
-      Gui, %HWND%:+MaxSize%MaxH%x%MaxV%
-      PageH := Width + 1
-      PageV := Height + 1
-      ; Instance variables
-      This.HWND := HWND + 0
-      This.HGUI := HGUI
-      This.Width := Width
-      This.Height := Height
-      This.UseShift := False
-      If (ScrollBars & 1) {
-         This.SetScrollInfo(0, {Max: MaxH, Page: PageH, Pos: 0}) ; SB_HORZ = 0
-         OnMessage(0x0114, FN_SCROLL) ; WM_HSCROLL = 0x0114
-         If (Wheel & 1)
-            OnMessage(0x020E, FN_WHEEL) ; WM_MOUSEHWHEEL = 0x020E
-         Else If (Wheel & 4) {
-            OnMessage(0x020A, FN_WHEEL) ; WM_MOUSEWHEEL = 0x020A
-            This.UseShift := True
-         }
-         This.MaxH := MaxH
-         This.LineH := LineH
-         This.PageH := PageH
-         This.PosH := 0
-         This.ScrollH := True
-         If (Wheel & 5)
-            This.WheelH := True
-      }
-      If (ScrollBars & 2) {
-         This.SetScrollInfo(1, {Max: MaxV, Page: PageV, Pos: 0}) ; SB_VERT = 1
-         OnMessage(0x0115, FN_SCROLL) ; WM_VSCROLL = 0x0115
-         If (Wheel & 6)
-            OnMessage(0x020A, FN_WHEEL) ; WM_MOUSEWHEEL = 0x020A
-         This.MaxV := MaxV
-         This.LineV := LineV
-         This.PageV := PageV
-         This.PosV := 0
-         This.ScrollV := True
-         If (Wheel & 6)
-            This.WheelV := True
-      }
-      ; Set the position of the child GUI
-      Gui, %HGUI%:+Parent%HWND%
-      Gui, %HGUI%:Show, x0 y0
-      ; Adjust the scroll bars
-      This.Instances[This.HWND] := &This
-      This.Size()
-      OnMessage(0x0005, FN_SIZE) ; WM_SIZE = 0x0005
-   }
-   ; ===================================================================================================================
-   ; __Delete       Destroy the GUIs, if they still exist.
-   ; ===================================================================================================================
-   __Delete() {
-      This.Destroy()
-   }
-   ; ===================================================================================================================
-   ; Show           Shows the ScrollGUI.
-   ; Parameters:
-   ;    Title       -  Title of the ScrollGUI window
-   ;    ShowOptions -  Gui, Show command options, width or height options are ignored
-   ; Return values:
-   ;    On success: True
-   ;    On failure: False
-   ; ===================================================================================================================
-   Show(Title := "", ShowOptions := "") {
-      ShowOptions := RegExReplace(ShowOptions, "i)\+?AutoSize")
-      W := This.Width
-      H := This.Height
-      Gui, % This.HWND . ":Show",NA %ShowOptions% w%W% h%H%, %Title%
-      if (Title == "Arturo's PTCGP BOT")
-         MainGuiName := % This.HGUI
-      Return True
-   }
-   hide(Title := "") {
-      Gui, % This.HWND . ":Hide"
-      Return True
-   }
-   ; ===================================================================================================================
-   ; Destroy        Destroys the ScrollGUI and the associated child GUI.
-   ; Parameters:
-   ;    None.
-   ; Return values:
-   ;    On success: True
-   ;    On failure: False
-   ; Remarks:
-   ;    Use this method instead of 'Gui, Destroy' to remove the ScrollGUI from the 'Instances' object.
-   ; ===================================================================================================================
-   Destroy() {
-      If This.Instances.HasKey(This.HWND) {
-         Gui, % This.HWND . ":Destroy"
-         This.Instances.Remove(This.HWND, "")
-         Return True
-      }
-   }
-   ; ===================================================================================================================
-   ; AdjustToChild  Adjust the scroll bars to the new child dimensions.
-   ; Parameters:
-   ;    None
-   ; Return values:
-   ;    On success: True
-   ;    On failure: False
-   ; Remarks:
-   ;    Call this method whenever the visible area of the child GUI has to be changed, e.g. after adding, hiding,
-   ;    unhiding, resizing, or repositioning controls.
-   ;    The dimensions of the child GUI are determined internally according to the visible children.
-   ; ===================================================================================================================
-   AdjustToChild() {
-      VarSetCapacity(RC, 16, 0)
-      DllCall("User32.dll\GetWindowRect", "Ptr", This.HGUI, "Ptr", &RC)
-      PrevW := NumGet(RC, 8, "Int") - NumGet(RC, 0, "Int")
-      PrevH := Numget(RC, 12, "Int") - NumGet(RC, 4, "Int")
-      DllCall("User32.dll\ScreenToClient", "Ptr", This.HWND, "Ptr", &RC)
-      XC := XN := NumGet(RC, 0, "Int")
-      YC := YN := NumGet(RC, 4, "Int")
-      If !This.AutoSize(This.HGUI, GuiW, GuiH)
-         Return False
-      Gui, % This.HGUI . ":Show", x%XC% y%YC% w%GuiW% h%GuiH%
-      MaxH := GuiW
-      MaxV := GuiH
-      Gui, % This.HWND . ":+MaxSize" . MaxH . "x" . MaxV
-      If (GuiW < This.Width) || (GuiH < This.Height) {
-         Gui, % This.HWND . ":Show", w%GuiW% h%GuiH%
-         This.Width := GuiW
-         This.SetPage(1, MaxH + 1)
-         This.Height := GuiH
-         This.SetPage(2, MaxV + 1)
-      }
-      LineH := Ceil(MaxH / 20)
-      LineV := Ceil(MaxV / 20)
-      If This.ScrollH {
-         This.SetMax(1, MaxH)
-         This.LineH := LineH
-         If (XC + MaxH) < This.Width {
-            XN += This.Width - (XC + MaxH)
-            If (XN > 0)
-               XN := 0
-            This.SetScrollInfo(0, {Pos: XN * -1})
-            This.GetScrollInfo(0, SI)
-            This.PosH := NumGet(SI, 20, "Int")
-         }
-      }
-      If This.ScrollV {
-         This.SetMax(2, MaxV)
-         This.LineV := LineV
-         If (YC + MaxV) < This.Height {
-            YN += This.Height - (YC + MaxV)
-            If (YN > 0)
-               YN := 0
-            This.SetScrollInfo(1, {Pos: YN * -1})
-            This.GetScrollInfo(1, SI)
-            This.PosV := NumGet(SI, 20, "Int")
-         }
-      }
-      If (XC <> XN) || (YC <> YN)
-         DllCall("User32.dll\ScrollWindow", "Ptr", This.HWND, "Int", XN - XC, "Int", YN - YC, "Ptr", 0, "Ptr", 0)
-      Return True
-   }
-   ; ===================================================================================================================
-   ; SetMax         Sets the width or height of the scrolling area.
-   ; Parameters:
-   ;    SB          -  Scroll bar to set the value for:
-   ;                   1 = horizontal
-   ;                   2 = vertical
-   ;    Max         -  Width respectively height of the scrolling area in pixels
-   ; Return values:
-   ;    On success: True
-   ;    On failure: False
-   ; ===================================================================================================================
-   SetMax(SB, Max) {
-      ; SB_HORZ = 0, SB_VERT = 1
-      SB--
-      If (SB <> 0) && (SB <> 1)
-         Return False
-      If (SB = 0)
-         This.MaxH := Max
-      Else
-         This.MaxV := Max
-      Return This.SetScrollInfo(SB, {Max: Max})
-   }
-   ; ===================================================================================================================
-   ; SetLine        Sets the number of pixels to scroll by line.
-   ; Parameters:
-   ;    SB          -  Scroll bar to set the value for:
-   ;                   1 = horizontal
-   ;                   2 = vertical
-   ;    Line        -  Number of pixels.
-   ; Return values:
-   ;    On success: True
-   ;    On failure: False
-   ; ===================================================================================================================
-   SetLine(SB, Line) {
-      ; SB_HORZ = 0, SB_VERT = 1
-      SB--
-      If (SB <> 0) && (SB <> 1)
-         Return False
-      If (SB = 0)
-         This.LineH := Line
-      Else
-         This.LineV := Line
-      Return True
-   }
-   ; ===================================================================================================================
-   ; SetPage        Sets the number of pixels to scroll by page.
-   ; Parameters:
-   ;    SB          -  Scroll bar to set the value for:
-   ;                   1 = horizontal
-   ;                   2 = vertical
-   ;    Page        -  Number of pixels.
-   ; Return values:
-   ;    On success: True
-   ;    On failure: False
-   ; Remarks:
-   ;    If the ScrollGUI is resizable, the page size will be recalculated automatically while resizing.
-   ; ===================================================================================================================
-   SetPage(SB, Page) {
-      ; SB_HORZ = 0, SB_VERT = 1
-      SB--
-      If (SB <> 0) && (SB <> 1)
-         Return False
-      If (SB = 0)
-         This.PageH := Page
-      Else
-         This.PageV := Page
-      Return This.SetScrollInfo(SB, {Page: Page})
-   }
-   ; ===================================================================================================================
-   ; Methods for internal or system use!!!
-   ; ===================================================================================================================
-   AutoSize(HGUI, ByRef Width, ByRef Height) {
-      DHW := A_DetectHiddenWindows
-      DetectHiddenWindows, On
-      VarSetCapacity(RECT, 16, 0)
-      Width := Height := 0
-      HWND := HGUI
-      CMD := 5 ; GW_CHILD
-      L := T := R := B := LH := TH := ""
-      While (HWND := DllCall("GetWindow", "Ptr", HWND, "UInt", CMD, "UPtr")) && (CMD := 2) {
-         WinGetPos, X, Y, W, H, ahk_id %HWND%
-         W += X, H += Y
-         WinGet, Styles, Style, ahk_id %HWND%
-         If (Styles & 0x10000000) { ; WS_VISIBLE
-            If (L = "") || (X < L)
-               L := X
-            If (T = "") || (Y < T)
-               T := Y
-            If (R = "") || (W > R)
-               R := W
-            If (B = "") || (H > B)
-               B := H
-         }
-         Else {
-            If (LH = "") || (X < LH)
-               LH := X
-            If (TH = "") || (Y < TH)
-               TH := Y
-         }
-      }
-      DetectHiddenWindows, %DHW%
-      If (LH <> "") {
-         VarSetCapacity(POINT, 8, 0)
-         NumPut(LH, POINT, 0, "Int")
-         DllCall("ScreenToClient", "Ptr", HGUI, "Ptr", &POINT)
-         LH := NumGet(POINT, 0, "Int")
-      }
-      If (TH <> "") {
-         VarSetCapacity(POINT, 8, 0)
-         NumPut(TH, POINT, 4, "Int")
-         DllCall("ScreenToClient", "Ptr", HGUI, "Ptr", &POINT)
-         TH := NumGet(POINT, 4, "Int")
-      }
-      NumPut(L, RECT, 0, "Int"), NumPut(T, RECT, 4, "Int")
-      NumPut(R, RECT, 8, "Int"), NumPut(B, RECT, 12, "Int")
-      DllCall("MapWindowPoints", "Ptr", 0, "Ptr", HGUI, "Ptr", &RECT, "UInt", 2)
-      Width := NumGet(RECT, 8, "Int") + (LH <> "" ? LH : NumGet(RECT, 0, "Int"))
-      Height := NumGet(RECT, 12, "Int") + (TH <> "" ? TH : NumGet(RECT, 4, "Int"))
-      Return True
-   }
-   ; ===================================================================================================================
-   GetScrollInfo(SB, ByRef SI) {
-      VarSetCapacity(SI, 28, 0) ; SCROLLINFO
-      NumPut(28, SI, 0, "UInt")
-      NumPut(0x17, SI, 4, "UInt") ; SIF_ALL = 0x17
-      Return DllCall("User32.dll\GetScrollInfo", "Ptr", This.HWND, "Int", SB, "Ptr", &SI, "UInt")
-   }
-   ; ===================================================================================================================
-   SetScrollInfo(SB, Values) {
-      Static SIF := {Max: 0x01, Page: 0x02, Pos: 0x04}
-      Static Off := {Max: 12, Page: 16, Pos: 20}
-      Mask := 0
-      VarSetCapacity(SI, 28, 0) ; SCROLLINFO
-      NumPut(28, SI, 0, "UInt")
-      For Key, Value In Values {
-         If SIF.HasKey(Key) {
-            Mask |= SIF[Key]
-            NumPut(Value, SI, Off[Key], "UInt")
-         }
-      }
-      If (Mask) {
-         NumPut(Mask | 0x08, SI, 4, "UInt") ; SIF_DISABLENOSCROLL = 0x08
-         Return DllCall("User32.dll\SetScrollInfo", "Ptr", This.HWND, "Int", SB, "Ptr", &SI, "UInt", 1, "UInt")
-      }
-      Return False
-   }
-   ; ===================================================================================================================
-   On_WM_Scroll(WP, LP, Msg, HWND) {
-      ; WM_HSCROLL = 0x0114, WM_VSCROLL = 0x0115
-      If (Instance := Object(This.Instances[HWND]))
-         If ((Msg = 0x0114) && Instance.ScrollH)
-            || ((Msg = 0x0115) && Instance.ScrollV)
-            Return Instance.Scroll(WP, LP, Msg, HWND)
-   }
-   ; ==================================================================================================================
-   SnapToPage(SB := 1) {
-      ;ToolTip, InSnap, 50, 20
-      pos := (SB=1) ? This.PosH : This.PosV
-      page := (SB=1) ? This.Width : This.Height
-      target := Round(pos / page) * page
-      This.SetScrollInfo(SB-1, {Pos: target})
-      This.GetScrollInfo(SB-1, SI)
-      if (SB=1)
-         This.PosH := NumGet(SI, 20, "Int")
-      else
-         This.PosV := NumGet(SI, 20, "Int")
-      ; refresh immediately
-      DllCall("User32.dll\ScrollWindow", "Ptr", This.HWND, "Int", (SB=1) ? pos-target : 0, "Int", (SB=2) ? pos-target : 0, "Ptr", 0, "Ptr", 0)
-   }
-   ; ===================================================================================================================
-   Scroll(WP, LP, Msg, HWND) {
+RunXMLDuplicateTool:
+   Tool := A_ScriptDir . "\Accounts\xml_duplicate_finder.ahk"
+   RunWait, %Tool%
+Return
+
+GuiClose:
+   Gui, Submit, NoHide
+   SaveAllSettings()
+   
+   KillAllScripts()
+
+ExitApp
+return
+
+BalanceXMLs:
+   Gui, Submit, NoHide
+   SaveAllSettings()
+   LoadSettingsFromIni()
+   
+   if(Instances>0) {
+      saveDir := A_ScriptDir "\Accounts\Saved\"
+      if !FileExist(saveDir)
+         FileCreateDir, %saveDir%
       
-      ; WM_HSCROLL = 0x0114, WM_VSCROLL = 0x0115
-      Static SB_LINEMINUS := 0, SB_LINEPLUS := 1, SB_PAGEMINUS := 2, SB_PAGEPLUS := 3, SB_THUMBTRACK := 5
-      If (LP <> 0)
-         Return
-      SB := (Msg = 0x0114 ? 0 : 1) ; SB_HORZ : SB_VERT
-      SC := WP & 0xFFFF
-      if (SC = 8) {
-         ;ToolTip, SC = %SC%, 50, 50
-         This.SnapToPage(1)
+      tmpDir := A_ScriptDir "\Accounts\Saved\tmp"
+      if !FileExist(tmpDir)
+         FileCreateDir, %tmpDir%
+      
+      Tooltip, Moving Files and Folders to tmp
+      Loop, Files, %saveDir%*, D
+      {
+         if (A_LoopFilePath == tmpDir)
+            continue
+         dest := tmpDir . "\" . A_LoopFileName
+         
+         FileMoveDir, %A_LoopFilePath%, %dest%, 1
       }
-      SD := (Msg = 0x0114 ? This.LineH : This.LineV)
-      SI := 0
-      If !This.GetScrollInfo(SB, SI)
-         Return
-      PA := PN := NumGet(SI, 20, "Int")
-      PN := (SC = 0) ? PA - SD ; SB_LINEMINUS
-         : (SC = 1) ? PA + SD ; SB_LINEPLUS
-         : (SC = 2) ? PA - NumGet(SI, 16, "UInt") ; SB_PAGEMINUS
-         : (SC = 3) ? PA + NumGet(SI, 16, "UInt") ; SB_PAGEPLUS
-         : (SC = 5) ? NumGet(SI, 24, "Int") ; SB_THUMBTRACK
-         : PA
-      If (PA = PN)
-         Return 0
-      This.SetScrollInfo(SB, {Pos: PN})
-      This.GetScrollInfo(SB, SI)
-      PN := NumGet(SI, 20, "Int")
-      If (SB = 0)
-         This.PosH := PN
-      Else
-         This.PosV := PN
-      If (PA <> PN) {
-         HS := (Msg = 0x0114) ? PA - PN : 0
-         VS := (Msg = 0x0115) ? PA - PN : 0
-         DllCall("User32.dll\ScrollWindow", "Ptr", This.HWND, "Int", HS, "Int", VS, "Ptr", 0, "Ptr", 0)
+      Loop, Files, %saveDir%\*, F
+      {
+         dest := tmpDir . "\" . A_LoopFileName
+         FileMove, %A_LoopFilePath%, %dest%, 1
       }
-      Return 0
-   }
-   ; ===================================================================================================================
-   On_WM_Size(WP, LP, Msg, HWND) {
-      If ((WP = 0) || (WP = 2)) && (Instance := Object(This.Instances[HWND]))
-         Return Instance.Size(LP & 0xFFFF, (LP >> 16) & 0xFFFF)
-   }
-   ; ===================================================================================================================
-   Size(Width := 0, Height := 0) {
-      If (Width = 0) || (Height = 0) {
-         VarSetCapacity(RC, 16, 0)
-         DllCall("User32.dll\GetClientRect", "Ptr", This.HWND, "Ptr", &RC)
-         Width := NumGet(RC, 8, "Int")
-         Height := Numget(RC, 12, "Int")
+      Loop , %Instances%
+      {
+         instanceDir := saveDir . "\" . A_Index
+         if !FileExist(instanceDir)
+            FileCreateDir, %instanceDir%
+         listfile := instanceDir . "\list.txt"
+         if FileExist(listfile)
+            FileDelete, %listfile%
       }
-      SH := SV := 0
-      If This.ScrollH {
-         If (Width <> This.Width) {
-            This.SetScrollInfo(0, {Page: Width + 1})
-            This.Width := Width
-            This.GetScrollInfo(0, SI)
-            PosH := NumGet(SI, 20, "Int")
-            SH := This.PosH - PosH
-            This.PosH := PosH
+      
+      ToolTip, Checking for Duplicate names
+      fileList := ""
+      seenFiles := {}
+      Loop, Files, %tmpDir%\*.xml, R
+      {
+         fileName := A_LoopFileName
+         fileTime := A_LoopFileTimeModified
+         fileTime := A_LoopFileTimeCreated
+         filePath := A_LoopFileFullPath
+         
+         if seenFiles.HasKey(fileName)
+         {
+            prevTime := seenFiles[fileName].Time
+            prevPath := seenFiles[fileName].Path
+            
+            if (fileTime > prevTime)
+            {
+               FileDelete, %prevPath%
+               seenFiles[fileName] := {Time: fileTime, Path: filePath}
+            }
+            else
+            {
+               FileDelete, %filePath%
+            }
+            continue
          }
+         
+         seenFiles[fileName] := {Time: fileTime, Path: filePath}
+         fileList .= fileTime "`t" filePath "`n"
       }
-      If This.ScrollV {
-         If (Height <> This.Height) {
-            This.SetScrollInfo(1, {Page: Height + 1})
-            This.Height := Height
-            This.GetScrollInfo(1, SI)
-            PosV := NumGet(SI, 20, "Int")
-            SV := This.PosV - PosV
-            This.PosV := PosV
-         }
+      
+      ToolTip, Sorting by modified date
+      Sort, fileList, R
+      
+      ToolTip, Distributing XMLs between folders...please wait
+      instance := 1
+      Loop, Parse, fileList, `n
+      {
+         if (A_LoopField = "")
+            continue
+         
+         StringSplit, parts, A_LoopField, %A_Tab%
+         tmpFile := parts2
+         toDir := saveDir . "\" . instance
+         
+         FileMove, %tmpFile%, %toDir%, 1
+         
+         instance++
+         if (instance > Instances)
+            instance := 1
       }
-      If (SH) || (SV)
-         DllCall("User32.dll\ScrollWindow", "Ptr", This.HWND, "Int", SH, "Int", SV, "Ptr", 0, "Ptr", 0)
-      Return 0
+      
+      instanceOneDir := saveDir . "1"
+      counter := 0
+      counter2 := 0
+      Loop, Files, %instanceOneDir%\*.xml
+      {
+         fileModifiedTimeDiff := A_Now
+         FileGetTime, fileModifiedTime, %A_LoopFileFullPath%, M
+         EnvSub, fileModifiedTimeDiff, %fileModifiedTime%, Hours
+         if (fileModifiedTimeDiff >= 24)
+            counter++
+      }
+      
+      Tooltip
+      MsgBox, 0x40000,XML Balance,Done balancing XMLs between %Instances% instances`n%counter% XMLs past 24 hours per instance
    }
-   ; ===================================================================================================================
-   On_WM_Wheel(WP, LP, Msg, HWND) {
-      ; MK_SHIFT = 0x0004, WM_MOUSEWHEEL = 0x020A, WM_MOUSEHWHEEL = 0x020E, WM_NCHITTEST = 0x0084
-      HACT := WinActive("A") + 0
-      If (HACT <> HWND) && (Instance := Object(This.Instances[HACT])) {
-         SendMessage, 0x0084, 0, % (LP & 0xFFFFFFFF), , ahk_id %HACT%
-         OnBar := ErrorLevel
-         If (OnBar = 6) && Instance.WheelH ; HTHSCROLL = 6
-            Return Instance.Wheel(WP, LP, 0x020E, HACT)
-         If (OnBar = 7) && Instance.WheelV ; HTVSCROLL = 7
-            Return Instance.Wheel(WP, LP, 0x020A, HACT)
-      }
-      If (Instance := Object(This.Instances[HWND])) {
-         If ((Msg = 0x020E) && Instance.WheelH)
-            || ((Msg = 0x020A) && (Instance.WheelV || (Instance.WheelH && Instance.UseShift && (WP & 0x0004))))
-            Return Instance.Wheel(WP, LP, Msg, HWND)
-      }
-   }
-   ; ===================================================================================================================
-   Wheel(WP, LP, Msg, HWND) {
-      ; MK_SHIFT = 0x0004, WM_MOUSEWHEEL = 0x020A, WM_MOUSEHWHEEL = 0x020E, WM_HSCROLL = 0x0114, WM_VSCROLL = 0x0115
-      ; SB_LINEMINUS = 0, SB_LINEPLUS = 1
-      If (Msg = 0x020A) && This.UseShift && (WP & 0x0004)
-         Msg := 0x020E
-      Msg := (Msg = 0x020A ? 0x0115 : 0x0114)
-      SB := ((WP >> 16) > 0x7FFF) || (WP < 0) ? 1 : 0
-      Return This.Scroll(SB, 0, Msg, HWND)
-   }
+return
+
+CheckForUpdates:
+   CheckForUpdate()
+return
+
+IsNumeric(var) {
+   if var is number
+      return true
+   return false
 }
 
-UpdateTopBarSwitchPos(barX, barBottomY) {
-   global topBarW
-   Gui, TopBarSwitch:Show, % "x" . barX . " y" . barBottomY . " w" . topBarW . " NoActivate"
-}
-
-OnGuiMove(wParam, lParam, msg, hwnd) {
-   global mainHwnd, menuHwnd, menuW, menuH, menuExpanded
-   global topBarW, topBarH, topBarExpanded, topBarHwnd, topBarSwitchHwnd
-   if (hwnd != mainHwnd)
-      return
-   WinGetPos, mainX, mainY, mainW, mainH, ahk_id %mainHwnd%
-   
-   ; Menu position
-   if (menuExpanded)
-      menuX := mainX + mainW - 5
-   else
-      menuX := mainX + mainW - menuW - 35
-   menuY := mainY
-   Gui, Menu:Show, x%menuX% y%menuY% NoActivate
-   
-   ; TopBar position
-   TopBarX := mainX + 15
-      ,TopBarY := mainY + 32
-   Gui, TopBar:Show, % "x" . TopBarX . " y" . TopBarY . " NoActivate"
-   
-   ; TopBarSwitch position
-   TopBarSwitchX := TopBarX
-   if (!topBarExpanded) {
-      TopBarSwitchY := TopBarY + 45
-   } else {
-      TopBarSwitchY := TopBarY + topBarH + 107
-   }
-   Gui, TopBarSwitch:Show, % "x" . TopBarSwitchX . " y" . TopBarSwitchY . " NoActivate"
-}
-
-OnMainGuiActivate(wParam, lParam, msg, hwnd) {
-   global mainHwnd, menuHwnd, topBarHwnd, topBarSwitchHwnd, CallOthers
-   if (!CallOthers)
-   {
-      WinSet, AlwaysOnTop, On, ahk_id %menuHwnd%
-      WinSet, AlwaysOnTop, On, ahk_id %mainHwnd%
-      WinSet, AlwaysOnTop, On, ahk_id %topBarHwnd%
-      WinSet, AlwaysOnTop, On, ahk_id %topBarSwitchHwnd%
-   }
-}
-
-GuiRemoveAlwaysOnTop() {
-   WinSet, AlwaysOnTop, Off, ahk_id %menuHwnd%
-   WinSet, AlwaysOnTop, Off, ahk_id %mainHwnd%
-   WinSet, AlwaysOnTop, Off, ahk_id %topBarHwnd%
-   WinSet, AlwaysOnTop, Off, ahk_id %topBarSwitchHwnd%
+MigrateDeleteMethod(oldMethod) {
+    if (oldMethod = "13 Pack") {
+        return "Create Bots (13P)"
+    } else if (oldMethod = "Inject") {
+        return "Inject 13-39P"
+    } else if (oldMethod = "Inject for Reroll") {
+        return "Inject Wonderpick 39P+"
+    } else if (oldMethod = "Inject Missions") {
+        return "Inject 13-39P"
+    }
+    return oldMethod
 }
 
 LoadSettingsFromIni() {
    global
-   ; Check if Settings.ini exists
    if (FileExist("Settings.ini")) {
       IniRead, IsLanguageSet, Settings.ini, UserSettings, IsLanguageSet, 1
       IniRead, defaultBotLanguage, Settings.ini, UserSettings, defaultBotLanguage, 1
@@ -2064,60 +1597,42 @@ LoadSettingsFromIni() {
       IniRead, FontColor, Settings.ini, UserSettings, FontColor, FDFDFD
       IniRead, CurrentTheme, Settings.ini, UserSettings, CurrentTheme, Dark
       
-      ; Always use relative paths based on theme
-      BackgroundImage := A_ScriptDir . "\GUI\Images\background" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      PageImage := A_ScriptDir . "\GUI\Images\Page" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      MenuBackground := A_ScriptDir . "\GUI\Images\Menu" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      btn_mainPage := A_ScriptDir . "\GUI\Images\panel" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      titleImage := A_ScriptDir . "\GUI\Images\title" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      TopBarBig := A_ScriptDir . "\GUI\Images\TopBarBig" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      TopBarSmall := A_ScriptDir . "\GUI\Images\TopBarSmall" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      TopBarOpen := A_ScriptDir . "\GUI\Images\TopBarOpen" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      TopBarClose := A_ScriptDir . "\GUI\Images\TopBarClose" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      MenuOpen := A_ScriptDir . "\GUI\Images\MenuOpen" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      MenuClose := A_ScriptDir . "\GUI\Images\MenuClose" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      ToolTipImage := A_ScriptDir . "\GUI\Images\ToolTip" . (CurrentTheme = "Dark" ? "2" : "1") . ".png"
-      btn_fontColor := CurrentTheme = "Dark" ? "FDFDFD" : "CC0000"
-      
-      ;friend id
       IniRead, FriendID, Settings.ini, UserSettings, FriendID, ""
-      ;instance settings
       IniRead, Instances, Settings.ini, UserSettings, Instances, 1
-      IniRead, instanceStartDelay, Settings.ini, UserSettings, instanceStartDelay, 5
+      IniRead, instanceStartDelay, Settings.ini, UserSettings, instanceStartDelay, 10
       IniRead, Columns, Settings.ini, UserSettings, Columns, 5
       IniRead, runMain, Settings.ini, UserSettings, runMain, 1
       IniRead, Mains, Settings.ini, UserSettings, Mains, 1
       IniRead, AccountName, Settings.ini, UserSettings, AccountName, ""
       IniRead, autoLaunchMonitor, Settings.ini, UserSettings, autoLaunchMonitor, 1
-      IniRead, autoUseGPTest, Settings.ini, UserSettings, autoUseGPTest, 0
       IniRead, TestTime, Settings.ini, UserSettings, TestTime, 3600
-      ;Time settings
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
-      IniRead, waitTime, Settings.ini, UserSettings, waitTime, 1
+      IniRead, waitTime, Settings.ini, UserSettings, waitTime, 3
       IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 250
       IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 0
       
-      ;system settings
       IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
       IniRead, defaultLanguage, Settings.ini, UserSettings, defaultLanguage, Scale125
       IniRead, rowGap, Settings.ini, UserSettings, rowGap, 90
       IniRead, folderPath, Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
       IniRead, ocrLanguage, Settings.ini, UserSettings, ocrLanguage, en
       IniRead, clientLanguage, Settings.ini, UserSettings, clientLanguage, en
-      IniRead, instanceLaunchDelay, Settings.ini, UserSettings, instanceLaunchDelay, 5
+      IniRead, instanceLaunchDelay, Settings.ini, UserSettings, instanceLaunchDelay, 2
       
-      ; Extra Settings
       IniRead, tesseractPath, Settings.ini, UserSettings, tesseractPath, C:\Program Files\Tesseract-OCR\tesseract.exe
-      IniRead, applyRoleFilters, Settings.ini, UserSettings, applyRoleFilters, 0
       IniRead, debugMode, Settings.ini, UserSettings, debugMode, 0
-      IniRead, tesseractOption, Settings.ini, UserSettings, tesseractOption, 0
+      IniRead, useTesseract, Settings.ini, UserSettings, tesseractOption, 0
       IniRead, statusMessage, Settings.ini, UserSettings, statusMessage, 1
       
-      ;pack settings
       IniRead, minStars, Settings.ini, UserSettings, minStars, 0
       IniRead, minStarsShiny, Settings.ini, UserSettings, minStarsShiny, 0
       IniRead, minStarsEnabled, Settings.ini, UserSettings, minStarsEnabled, 0
       IniRead, deleteMethod, Settings.ini, UserSettings, deleteMethod, Create Bots (13P)
+        originalDeleteMethod := deleteMethod
+        deleteMethod := MigrateDeleteMethod(deleteMethod)
+        if (deleteMethod != originalDeleteMethod) {
+            IniWrite, %deleteMethod%, Settings.ini, UserSettings, deleteMethod
+        }
       IniRead, packMethod, Settings.ini, UserSettings, packMethod, 0
       IniRead, nukeAccount, Settings.ini, UserSettings, nukeAccount, 0
       IniRead, spendHourGlass, Settings.ini, UserSettings, spendHourGlass, 0
@@ -2150,7 +1665,6 @@ LoadSettingsFromIni() {
       IniRead, InvalidCheck, Settings.ini, UserSettings, InvalidCheck, 0
       IniRead, PseudoGodPack, Settings.ini, UserSettings, PseudoGodPack, 0
       
-      ; Read S4T settings
       IniRead, s4tEnabled, Settings.ini, UserSettings, s4tEnabled, 0
       IniRead, s4tSilent, Settings.ini, UserSettings, s4tSilent, 1
       IniRead, s4t3Dmnd, Settings.ini, UserSettings, s4t3Dmnd, 0
@@ -2163,7 +1677,6 @@ LoadSettingsFromIni() {
       IniRead, s4tDiscordUserId, Settings.ini, UserSettings, s4tDiscordUserId, ""
       IniRead, s4tSendAccountXml, Settings.ini, UserSettings, s4tSendAccountXml, 0
       
-      ;discord settings
       IniRead, DiscordWebhookURL, Settings.ini, UserSettings, DiscordWebhookURL, ""
       IniRead, DiscordUserId, Settings.ini, UserSettings, DiscordUserId, ""
       IniRead, heartBeat, Settings.ini, UserSettings, heartBeat, 0
@@ -2172,13 +1685,14 @@ LoadSettingsFromIni() {
       IniRead, heartBeatDelay, Settings.ini, UserSettings, heartBeatDelay, 30
       IniRead, sendAccountXml, Settings.ini, UserSettings, sendAccountXml, 0
       
-      ;download settings
+      IniRead, groupRerollEnabled, Settings.ini, UserSettings, groupRerollEnabled, 0
       IniRead, mainIdsURL, Settings.ini, UserSettings, mainIdsURL, ""
       IniRead, vipIdsURL, Settings.ini, UserSettings, vipIdsURL, ""
       IniRead, showcaseEnabled, Settings.ini, UserSettings, showcaseEnabled, 0
       IniRead, showcaseLikes, Settings.ini, UserSettings, showcaseLikes, 5
-      
-      ; Advanced settings
+      IniRead, autoUseGPTest, Settings.ini, UserSettings, autoUseGPTest, 0
+      IniRead, applyRoleFilters, Settings.ini, UserSettings, applyRoleFilters, 0
+
       IniRead, minStarsA1Charizard, Settings.ini, UserSettings, minStarsA1Charizard, 0
       IniRead, minStarsA1Mewtwo, Settings.ini, UserSettings, minStarsA1Mewtwo, 0
       IniRead, minStarsA1Pikachu, Settings.ini, UserSettings, minStarsA1Pikachu, 0
@@ -2197,7 +1711,6 @@ LoadSettingsFromIni() {
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
       IniRead, menuExpanded, Settings.ini, UserSettings, menuExpanded, True
       
-      ; Validate numeric values
       if (!IsNumeric(Instances))
          Instances := 1
       if (!IsNumeric(Columns) || Columns < 1)
@@ -2209,15 +1722,18 @@ LoadSettingsFromIni() {
       if (s4tWPMinCards < 1 || s4tWPMinCards > 2)
          s4tWPMinCards := 1
          
-      ; Return success
+      validMethods := "Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+"
+      if (!InStr(validMethods, deleteMethod)) {
+         deleteMethod := "Create Bots (13P)"
+         IniWrite, %deleteMethod%, Settings.ini, UserSettings, deleteMethod
+      }
+
       return true
    } else {
-      ; Settings file doesn't exist, will use defaults
       return false
    }
 }
 
-; Function to create the default settings file if it doesn't exist
 CreateDefaultSettingsFile() {
    if (!FileExist("Settings.ini")) {
       iniContent := "[UserSettings]`n"
@@ -2230,13 +1746,13 @@ CreateDefaultSettingsFile() {
       iniContent .= "CurrentTheme=Dark`n"
       iniContent .= "FriendID=`n"
       iniContent .= "AccountName=`n"
-      iniContent .= "waitTime=1`n"
+      iniContent .= "waitTime=5`n"
       iniContent .= "Delay=250`n"
       iniContent .= "folderPath=C:\Program Files\Netease`n"
       iniContent .= "Columns=5`n"
       iniContent .= "godPack=Continue`n"
       iniContent .= "Instances=1`n"
-      iniContent .= "instanceStartDelay=5`n"
+      iniContent .= "instanceStartDelay=10`n"
       iniContent .= "defaultLanguage=Scale125`n"
       iniContent .= "SelectedMonitorIndex=1`n"
       iniContent .= "swipeSpeed=250`n"
@@ -2264,6 +1780,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "waitForEligibleAccounts=1`n"
       iniContent .= "maxWaitHours=24`n"
       iniContent .= "menuExpanded=True`n"
+      iniContent .= "groupRerollEnabled=0`n"
       
       FileAppend, %iniContent%, Settings.ini, UTF-16
       return true
@@ -2277,20 +1794,24 @@ SaveAllSettings() {
    global FriendID, AccountName, waitTime, Delay, folderPath, discordWebhookURL, discordUserId, Columns, godPack
    global Instances, instanceStartDelay, defaultLanguage, SelectedMonitorIndex, swipeSpeed, deleteMethod
    global runMain, Mains, heartBeat, heartBeatWebhookURL, heartBeatName, nukeAccount, packMethod
-   global autoLaunchMonitor, autoUseGPTest, TestTime
+   global autoLaunchMonitor, autoUseGPTest, TestTime, groupRerollEnabled
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
    global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, slowMotion, ocrLanguage, clientLanguage
    global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, isDarkTheme
-   global useBackgroundImage, tesseractPath, applyRoleFilters, debugMode, tesseractOption, statusMessage
+   global useBackgroundImage, tesseractPath, debugMode, useTesseract, statusMessage
    global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards
-   global s4tDiscordUserId, s4tDiscordWebhookURL, s4tSendAccountXml, minStarsShiny, instanceLaunchDelay, mainIdsURL, vipIdsURL
+   global s4tDiscordUserId, s4tDiscordWebhookURL, s4tSendAccountXml, minStarsShiny, instanceLaunchDelay, applyRoleFilters, mainIdsURL, vipIdsURL
    global spendHourGlass, openExtraPack, injectSortMethod, rowGap, SortByDropdown
    global waitForEligibleAccounts, maxWaitHours, skipMissionsInjectMissions
    global minStarsEnabled, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a
    global minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b
    global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA3b
    global menuExpanded
+
+   if (deleteMethod != "Inject Wonderpick 39P+") {
+       packMethod := false
+   }
    
    iniContent := "[UserSettings]`n"
    iniContent .= "isLanguageSet=" IsLanguageSet "`n"
@@ -2301,14 +1822,13 @@ SaveAllSettings() {
    iniContent .= "FontColor=" FontColor "`n"
    iniContent .= "currentfont=" currentfont "`n"
    
-   ;CheckBox
    iniContent .= "runMain=" runMain "`n"
    iniContent .= "autoUseGPTest=" autoUseGPTest "`n"
    iniContent .= "slowMotion=" slowMotion "`n"
    iniContent .= "autoLaunchMonitor=" autoLaunchMonitor "`n"
    iniContent .= "applyRoleFilters=" applyRoleFilters "`n"
    iniContent .= "debugMode=" debugMode "`n"
-   iniContent .= "tesseractOption=" tesseractOption "`n"
+   iniContent .= "tesseractOption=" useTesseract "`n"
    iniContent .= "statusMessage=" statusMessage "`n"
    iniContent .= "minStarsEnabled=" minStarsEnabled "`n"
    iniContent .= "nukeAccount=" nukeAccount "`n"
@@ -2349,14 +1869,24 @@ SaveAllSettings() {
    iniContent .= "sendAccountXml=" sendAccountXml "`n"
    iniContent .= "heartBeat=" heartBeat "`n"
    iniContent .= "menuExpanded=" menuExpanded "`n"
+   iniContent .= "groupRerollEnabled=" groupRerollEnabled "`n"
    
-   Gui, % MainGuiName . ":Submit", NoHide
+   originalDeleteMethod := deleteMethod
+   deleteMethod := MigrateDeleteMethod(deleteMethod)
    if (deleteMethod = "" || deleteMethod = "ERROR") {
       deleteMethod := "Create Bots (13P)"
    }
    validMethods := "Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+"
    if (!InStr(validMethods, deleteMethod)) {
       deleteMethod := "Create Bots (13P)"
+   }
+
+   if (!groupRerollEnabled) {
+   mainIdsURL := ""
+   vipIdsURL := ""
+   autoUseGPTest := 0
+   TestTime := 3600
+   applyRoleFilters := 0
    }
    
    if (SortByDropdown = "Oldest First")
@@ -2368,7 +1898,7 @@ SaveAllSettings() {
    else if (SortByDropdown = "Most Packs First")
       injectSortMethod := "PacksDesc"
    iniContent_Second := "deleteMethod=" deleteMethod "`n"
-   if (deleteMethod = "Inject Wonderpick 39P+" || deleteMethod = "Create Bots (13P)") {
+   if (deleteMethod = "Inject Wonderpick 39P+") {
       iniContent_Second .= "FriendID=" FriendID "`n"
       iniContent_Second .= "mainIdsURL=" mainIdsURL "`n"
    } else {
@@ -2437,836 +1967,18 @@ SaveAllSettings() {
    }
 }
 
-IsNumeric(var) {
-   if var is number
-      return true
-   return false
-}
-
-SetNormalFont() {
-   global currentfont, FontColor
-   Gui, Font, norm s9 c%FontColor%, %currentfont%
-}
-
-SetMenuBtnFont() {
-   global currentfont, btn_fontColor
-   Gui, Font, norm s10 c%btn_fontColor%, %currentfont%
-}
-
-SetTopBarBtnFont() {
-   global currentfont, btn_fontColor
-   Gui, Font, norm s9 c%btn_fontColor%, %currentfont%
-}
-
-SetHeaderFont() {
-   global currentfont, FontColor
-   Gui, Font, norm s11 c%FontColor%, %currentfont%
-}
-
-SetSectionFont() {
-   global currentfont, FontColor
-   Gui, Font, norm s10 c%FontColor%, %currentfont%
-}
-
-setMenuNormalFont() {
-   global currentfont
-   Gui, Menu:Font, norm s8 c%btn_fontColor%, %currentfont%
-}
-
-SetTopBarSmallBtnFont() { ;For toolbar e.g. background,theme
-   global currentfont
-   Gui, TopBar:Font, norm s9 c000000, %currentfont%
-}
-
-setTopBarNormalFont() {
-   global currentfont
-   Gui, TopBar:Font, norm s9 c000000, %currentfont%
-}
-
-AddCheckBox(options) {
-   ; options: {x, y, w, h, vName, gName, checkedImagePath, uncheckedImagePath, isChecked, vTextName, text, textX, textY}
-   imagePath := options.isChecked ? options.checkedImagePath : options.uncheckedImagePath
-   gName := (options.gName = "" ? "CheckBoxToggle" : options.gName)
-   
-   Gui, Add, Picture
-      , % "x" . options.x . " y" . options.y . " w" . options.w . " h" . options.h . " v" . options.vName
-      . " g" . gName
-      . " BackgroundTrans"
-      , %imagePath%
-   
-   if (options.HasKey("vTextName") && options.HasKey("textX") && options.HasKey("textY")) {
-      Gui, Add, Text, % "x" . options.textX . " y" . options.textY . " v" . options.vTextName . " BackgroundTrans", % options.text
-   }
-}
-
-AddBtn(options) {
-   type := options.type ? Trim(options.type) : "Button"
-   GuiOptions := ""
-   if (options.HasKey("x"))
-      GuiOptions .= "x" . options.x . " "
-   if (options.HasKey("y"))
-      GuiOptions .= "y" . options.y . " "
-   if (options.HasKey("w"))
-      GuiOptions .= "w" . options.w . " "
-   if (options.HasKey("h"))
-      GuiOptions .= "h" . options.h . " "
-   if (options.HasKey("vName"))
-      GuiOptions .= "v" . options.vName . " "
-   if (options.HasKey("gName") && options.gName != "")
-      GuiOptions .= "g" . options.gName . " "
-   GuiOptions .= "BackgroundTrans"
-   Gui, Menu:Add, %type%, %GuiOptions%, % options.imagePath
-   
-   if (options.HasKey("vTextName") && options.HasKey("text")) {
-      TextOptions := ""
-      if (options.HasKey("textX"))
-         TextOptions .= "x" . options.textX . " "
-      if (options.HasKey("textY"))
-         TextOptions .= "y" . options.textY . " "
-      if (options.HasKey("w"))
-         TextOptions .= "w" . options.w . " "
-      if (options.HasKey("h"))
-         TextOptions .= "h" . options.h . " "
-      TextOptions .= "v" . options.vTextName . " BackgroundTrans Center"
-      Gui, Menu:Add, Text, %TextOptions%, % options.text
-   }
-}
-
-AddBtnforTop(options) {
-   type := options.type ? Trim(options.type) : "Button"
-   GuiOptions := ""
-   if (options.HasKey("x"))
-      GuiOptions .= "x" . options.x . " "
-   if (options.HasKey("y"))
-      GuiOptions .= "y" . options.y . " "
-   if (options.HasKey("w"))
-      GuiOptions .= "w" . options.w . " "
-   if (options.HasKey("h"))
-      GuiOptions .= "h" . options.h . " "
-   if (options.HasKey("vName"))
-      GuiOptions .= "v" . options.vName . " "
-   if (options.HasKey("gName") && options.gName != "")
-      GuiOptions .= "g" . options.gName . " "
-   GuiOptions .= "BackgroundTrans"
-   Gui, TopBar:Add, %type%, %GuiOptions%, % options.imagePath
-   
-   if (options.HasKey("vTextName") && options.HasKey("text")) {
-      TextOptions := ""
-      if (options.HasKey("textX"))
-         TextOptions .= "x" . options.textX . " "
-      if (options.HasKey("textY"))
-         TextOptions .= "y" . options.textY . " "
-      if (options.HasKey("w"))
-         TextOptions .= "w" . options.w . " "
-      if (options.HasKey("h"))
-         TextOptions .= "h" . options.h . " "
-      TextOptions .= "v" . options.vTextName . " BackgroundTrans Center"
-      Gui, TopBar:Add, Text, %TextOptions%, % options.text
-   }
-}
-
-ShowControls(controlList) {
-   Loop, Parse, controlList, `,
-   {
-      if (A_LoopField)
-         GuiControl, Show, %A_LoopField%
-   }
-}
-
-; Function to hide multiple controls at once
-HideControls(controlList) {
-   Loop, Parse, controlList, `,
-   {
-      if (A_LoopField)
-         GuiControl, Hide, %A_LoopField%
-   }
-}
-
-MinStarCheck(vName) {
-   value := %vName%
-   if (value = "" || value = 0)
-      return 1
-   if (value >= 1 && value <= 5)
-      return value + 1
-   return 0
-}
-
-ExpandTopBar() {
-   global
-   ; Remove references to removed controls
-   ; Only keep references to Btn_reload and Btn_ClassicMode
-   GuiControlGet, reloadPos, TopBar:Pos, Btn_reload
-   GuiControlGet, classicPos, TopBar:Pos, Btn_ClassicMode
-   GuiControlGet, TxtReloadPos, TopBar:Pos, Txt_Btn_reload
-   GuiControlGet, TxtClassicPos, TopBar:Pos, Txt_Btn_ClassicMode
-   
-   GuiControl, TopBar:Move, Btn_reload, % "y" . (reloadPosY + 15)
-   GuiControl, TopBar:Move, Btn_ClassicMode, % "y" . (classicPosY + 15)
-   GuiControl, TopBar:Move, Txt_Btn_reload, % "y" . (TxtreloadPosY + 15)
-   GuiControl, TopBar:Move, Txt_Btn_ClassicMode, % "y" . (TxtclassicPosY + 15)
-}
-
-CloseTopBar() {
-   global
-   GuiControlGet, reloadPos, TopBar:Pos, Btn_reload
-   GuiControlGet, classicPos, TopBar:Pos, Btn_ClassicMode
-   GuiControlGet, TxtReloadPos, TopBar:Pos, Txt_Btn_reload
-   GuiControlGet, TxtClassicPos, TopBar:Pos, Txt_Btn_ClassicMode
-   
-   GuiControl, TopBar:Move, Btn_reload, % "y" . (reloadPosY - 15)
-   GuiControl, TopBar:Move, Btn_ClassicMode, % "y" . (classicPosY - 15)
-   GuiControl, TopBar:Move, Txt_Btn_reload, % "y" . (TxtReloadPosY - 15)
-   GuiControl, TopBar:Move, Txt_Btn_ClassicMode, % "y" . (TxtclassicPosY - 15)
-}
-
-MenuSwitchHandler:
-   WinSet, AlwaysOnTop, On, ahk_id %menuHwnd%
-   WinSet, AlwaysOnTop, On, ahk_id %mainHwnd%
-   WinSet, AlwaysOnTop, Off, ahk_id %menuHwnd%
-   WinSet, AlwaysOnTop, Off, ahk_id %mainHwnd%
-   global menuExpanded, mainHwnd, menuW, menuH
-   WinGetPos, mainX, mainY, mainW, mainH, ahk_id %mainHwnd%
-   steps := 20
-   stepSize := Ceil(menuW / steps) + 5
-   if (!menuExpanded) {
-      ; open
-      Loop, %steps%
-      {
-         menuX := mainX + mainW - menuW + (A_Index * stepSize)
-         if (menuX > mainX + mainW - 5)
-            menuX := mainX + mainW - 5
-         Gui, Menu:Show, % "x" . menuX . " y" . mainY . " NoActivate"
-         
-         Sleep, 15
-      }
-      GuiControl, Menu:, MenuSwitch, %MenuClose%
-      menuExpanded := true
-   } else {
-      ; close
-      Loop, %steps%
-      {
-         menuX := mainX + mainW - (A_Index * stepSize)
-         if (menuX < mainX + mainW - menuW - 35)
-            menuX := mainX + mainW - menuW - 35
-         Gui, Menu:Show, % "x" . menuX . " y" . mainY . " NoActivate"
-         
-         Sleep, 15
-      }
-      GuiControl, Menu:, MenuSwitch, %MenuOpen%
-      menuExpanded := false
-   }
-return
-
-TopBarSwitchHandler:
-   global topBarExpanded, topBarW, topBarH, topBarHwnd
-   steps := 15
-   minH := 36
-   maxH := 150  ; Much smaller now since we removed customization
-   additionalCount := 15
-   WinGetPos, barX, barY, , , ahk_id %topBarHwnd%
-   if (!topBarExpanded) {
-      ; open
-      ExpandTopBar()
-      GuiControl, TopBar:, TopBarBackground, %TopBarBig%
-      Loop, %steps%
-      {
-         curH := minH + Ceil((maxH - minH) * (A_Index / steps))
-         if (curH > maxH)
-            curH := maxH
-         Gui, TopBar:Show, % "x" . barX . " y" . barY . " w" . topBarW . " h" . curH . " NoActivate"
-         additionalCount := additionalCount + 6
-         UpdateTopBarSwitchPos(barX, barY + curH + additionalCount)
-         Sleep, 15
-      }
-      GuiControl, TopBarSwitch:, SwitchPic, %TopBarClose%
-      UpdateTopBarSwitchPos(barX, barY + maxH + 20)
-      topBarExpanded := true
-   } else {
-      ; close
-      additionalCount := 20
-      CloseTopBar()
-      GuiControl, TopBar:, TopBarBackground, %TopBarSmall%
-      Loop, %steps%
-      {
-         curH := maxH - Ceil((maxH - minH) * (A_Index / steps))
-         if(curH < minH)
-            curH := minH
-         Gui, TopBar:Show, % "x" . barX . " y" . barY . " w" . topBarW . " h" . curH . " NoActivate"
-         additionalCount := additionalCount - 2
-         UpdateTopBarSwitchPos(barX, barY + curH + additionalCount)
-         Sleep, 15
-      }
-      GuiControl, TopBarSwitch:, SwitchPic, %TopBarOpen%
-      UpdateTopBarSwitchPos(barX, barY + minH + 9)
-      topBarExpanded := false
-   }
-return
-
-CheckBoxToggle:
-   varName := A_GuiControl
-   newValue := !%varName%
-   %varName% := newValue
-   GuiControl,, %varName%, % newValue ? checkedPath : uncheckedPath
-return
-
-runMainSettings:
-   runMain := !runMain
-   if (runMain) {
-      GuiControl,, runMain, %checkedPath%
-   } else {
-      GuiControl,, runMain, %uncheckedPath%
-   }
-   
-   if (runMain) {
-      GuiControl, Show, Mains
-   } else {
-      GuiControl, Hide, Mains
-   }
-return
-
-autoUseGPTestSettings:
-   autoUseGPTest := !autoUseGPTest
-   if (autoUseGPTest) {
-      GuiControl,, autoUseGPTest, %checkedPath%
-   } else {
-      GuiControl,, autoUseGPTest, %uncheckedPath%
-   }
-   
-   if (autoUseGPTest) {
-      GuiControl, Show, TestTime
-   } else {
-      GuiControl, Hide, TestTime
-   }
-return
-
-defaultLangSetting:
-   global scaleParam
-   if (defaultLanguage = "Scale125") {
-      scaleParam := 277
-      MsgBox, 0x40000,, Scale set to 125`% with scaleParam = %scaleParam%
-   } else if (defaultLanguage = "Scale100") {
-      scaleParam := 287
-      MsgBox, 0x40000,, Scale set to 100`% with scaleParam = %scaleParam%
-   }
-return
-
-useTesseractSettings:
-   tesseractOption := !tesseractOption
-   if (tesseractOption) {
-      GuiControl,, tesseractOption, %checkedPath%
-   } else {
-      GuiControl,, tesseractOption, %uncheckedPath%
-   }
-   
-   if (tesseractOption) {
-      GuiControl, Show, Txt_TesseractPath
-      GuiControl, Show, tesseractPath
-   } else {
-      GuiControl, Hide, Txt_TesseractPath
-      GuiControl, Hide, tesseractPath
-   }
-return
-
-minStarsEnabledSettings:
-   minStarsEnabled := !minStarsEnabled
-   controlsList := "Txt_minStarsA3b,minStarsA3b,Txt_minStarsA3a,minStarsA3a,"
-   controlsList .= "Txt_minStarsA3Solgaleo,minStarsA3Solgaleo,Txt_minStarsA3Lunala,minStarsA3Lunala,"
-   controlsList .= "Txt_minStarsA2b,minStarsA2b,Txt_minStarsA2a,minStarsA2a,"
-   controlsList .= "Txt_minStarsA2Palkia,minStarsA2Palkia,Txt_minStarsA2Dialga,minStarsA2Dialga,"
-   controlsList .= "Txt_minStarsA1Pikachu,minStarsA1Pikachu,Txt_minStarsA1Mewtwo,minStarsA1Mewtwo,"
-   controlsList .= "Txt_minStarsA1Charizard,minStarsA1Charizard,Txt_minStarsA1a,minStarsA1a"
-   if (minStarsEnabled) {
-      GuiControl,, minStarsEnabled, %checkedPath%
-      ShowControls(controlsList)
-   } else {
-      GuiControl,, minStarsEnabled, %uncheckedPath%
-      HideControls(controlsList)
-   }
-return
-
-deleteSettings:
-   global scaleParam, defaultLanguage
-   
-   currentScaleParam := scaleParam
-   GuiControlGet, currentMethod,, deleteMethod
-   deleteMethod := currentMethod
-   ShowCheck(name, checked := "") {
-      if (checked != "")
-         GuiControl,, %name%, % checked ? checkedPath : uncheckedPath
-      GuiControl, Show, %name%
-      GuiControl, Show, Txt_%name%
-   }
-   HideCheck(name) {
-      GuiControl, Hide, %name%
-      GuiControl, Hide, Txt_%name%
-   }
-   
-   extraControls := ["openExtraPack", "packMethod"]
-   sortControls := ["SortByText", "SortByDropdown"]
-   
-   if InStr(currentMethod, "Inject") {
-      HideCheck("nukeAccount")
-      nukeAccount := 0
-      ShowCheck("spendHourGlass", spendHourGlass)
-      for _, ctrl in sortControls
-         GuiControl, Show, %ctrl%
-      if (currentMethod = "Inject Wonderpick 39P+") {
-         for _, ctrl in extraControls
-            ShowCheck(ctrl, %ctrl%)
-      } else {
-         for _, ctrl in extraControls {
-            HideCheck(ctrl)
-            %ctrl% := 0
-         }
-      }
-   } else {
-      ShowCheck("nukeAccount", nukeAccount)
-      HideCheck("spendHourGlass")
-      for _, ctrl in extraControls {
-         HideCheck(ctrl)
-         %ctrl% := 0
-      }
-      for _, ctrl in sortControls
-         GuiControl, Hide, %ctrl%
-   }
-   
-   if (defaultLanguage = "Scale125")
-      scaleParam := 277
-   else if (defaultLanguage = "Scale100")
-      scaleParam := 287
-   
-   if (debugMode && scaleParam != currentScaleParam)
-      MsgBox, 0x40000,, Scale parameter updated: %scaleParam% (Was: %currentScaleParam%)
-return
-
-spendHourGlassSettings:
-   spendHourGlass := !spendHourGlass
-   if (spendHourGlass) {
-      GuiControl,, spendHourGlass, %checkedPath%
-      openExtraPack := 0
-      GuiControl,, openExtraPack, %uncheckedPath%
-   } else {
-      GuiControl,, spendHourGlass, %uncheckedPath%
-   }
-return
-
-openExtraPackSettings:
-   openExtraPack := !openExtraPack
-   if (openExtraPack) {
-      GuiControl,, openExtraPack, %checkedPath%
-      spendHourGlass := 0
-      GuiControl,, spendHourGlass, %uncheckedPath%
-   } else {
-      GuiControl,, openExtraPack, %uncheckedPath%
-   }
-return
-
-SortByDropdownHandler:
-   GuiControlGet, selectedOption,, SortByDropdown
-   
-   ; Update injectSortMethod based on selected option
-   if (selectedOption = "Oldest First")
-      injectSortMethod := "ModifiedAsc"
-   else if (selectedOption = "Newest First")
-      injectSortMethod := "ModifiedDesc"
-   else if (selectedOption = "Fewest Packs First")
-      injectSortMethod := "PacksAsc"
-   else if (selectedOption = "Most Packs First")
-      injectSortMethod := "PacksDesc"
-return
-
-s4tSettings:
-   global s4tMainControls := "s4tSilent,s4t3Dmnd,s4t4Dmnd,s4t1Star,S4T_Divider1,s4tWP,S4T_Divider2,"
-   s4tMainControls .= "Txt_s4tSilent,Txt_s4t3Dmnd,Txt_s4t4Dmnd,Txt_s4t1Star,Txt_s4tWP,"
-   s4tMainControls .= "Txt_s4tSendAccountXml,S4TDiscordSettingsSubHeading,Txt_S4T_DiscordID,s4tDiscordUserId,"
-   s4tMainControls .= "Txt_S4T_DiscordWebhook,s4tDiscordWebhookURL,s4tSendAccountXml,SaveForTradeDivider_1,SaveForTradeDivider_2"
-   global s4tAllControls := s4tMainControls . ",s4tGholdengo,s4tGholdengoEmblem,s4tGholdengoArrow,s4tWPMinCardsLabel,s4tWPMinCards"
-   ; Function to show multiple controls at once
-   s4tEnabled := !s4tEnabled
-   GuiControl,, s4tEnabled, % s4tEnabled ? checkedPath : uncheckedPath
-   
-   if (s4tEnabled) {
-      ShowControls(s4tMainControls)
-      ; Gholdengo show/hide
-      if (Shining) {
-         ShowControls("s4tGholdengo,s4tGholdengoEmblem,s4tGholdengoArrow")
-      } else {
-         HideControls("s4tGholdengo,s4tGholdengoEmblem,s4tGholdengoArrow")
-      }
-      ; s4tWP show/hide
-      if (s4tWP) {
-         ShowControls("s4tWPMinCardsLabel,s4tWPMinCards")
-      } else {
-         HideControls("s4tWPMinCardsLabel,s4tWPMinCards")
-      }
-   } else {
-      HideControls(s4tAllControls)
-   }
-return
-
-s4tWPSettings:
-   s4tWP := !s4tWP
-   GuiControl,, s4tWP, % s4tWP ? checkedPath : uncheckedPath
-   
-   if (s4tWP) {
-      GuiControl, Show, s4tWPMinCardsLabel
-      GuiControl, Show, s4tWPMinCards
-   } else {
-      GuiControl, Hide, s4tWPMinCardsLabel
-      GuiControl, Hide, s4tWPMinCards
-   }
-return
-
-discordSettings:
-   global heartbeatControls := "heartBeatName,heartBeatWebhookURL,heartBeatDelay,hbName,hbURL,hbDelay"
-   heartBeat := !heartBeat
-   GuiControl,, heartBeat, % heartBeat ? checkedPath : uncheckedPath
-   if (heartBeat)
-      ShowControls(heartbeatControls)
-   else
-      HideControls(heartbeatControls)
-return
-
-ArrangeWindows:
-   SaveAllSettings()
-   LoadSettingsFromIni()
-   ; Re-validate scaleParam based on current language
-   if (defaultLanguage = "Scale125") {
-      scaleParam := 277
-   } else if (defaultLanguage = "Scale100") {
-      scaleParam := 287
-   }
-   
-   windowsPositioned := 0
-   
-   if (runMain && Mains > 0) {
-      Loop %Mains% {
-         mainInstanceName := "Main" . (A_Index > 1 ? A_Index : "")
-         ; Use exact matching for Main windows
-         SetTitleMatchMode, 3 ; Exact match
-         if (WinExist(mainInstanceName)) {
-            WinActivate, %mainInstanceName%
-            WinGetPos, curX, curY, curW, curH, %mainInstanceName%
-            
-            ; Calculate position
-            SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
-            SysGet, Monitor, Monitor, %SelectedMonitorIndex%
-            
-            instanceIndex := A_Index
-            rowHeight := 533
-            currentRow := Floor((instanceIndex - 1) / Columns)
-            y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-            x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
-            
-            ; Move window
-            WinMove, %mainInstanceName%,, %x%, %y%, %scaleParam%, 537
-            WinSet, Redraw, , %mainInstanceName%
-            
-            windowsPositioned++
-            sleep, 100
-         }
-      }
-   }
-   
-   if (Instances > 0) {
-      Loop %Instances% {
-         ; Use exact window title matching with SetTitleMatchMode
-         SetTitleMatchMode, 3 ; Exact match
-         windowTitle := A_Index
-         
-         if (WinExist(windowTitle)) {
-            WinActivate, %windowTitle%
-            WinGetPos, curX, curY, curW, curH, %windowTitle%
-            
-            ; Calculate position
-            SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
-            SysGet, Monitor, Monitor, %SelectedMonitorIndex%
-            
-            if (runMain) {
-               instanceIndex := (Mains - 1) + A_Index + 1
-            } else {
-               instanceIndex := A_Index
-            }
-            
-            rowHeight := 533
-            currentRow := Floor((instanceIndex - 1) / Columns)
-            y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-            x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
-            
-            ; Move window
-            WinMove, %windowTitle%,, %x%, %y%, %scaleParam%, 537
-            WinSet, Redraw, , %windowTitle%
-            
-            windowsPositioned++
-            sleep, 100
-         }
-      }
-   }
-   
-   if (debugMode && windowsPositioned == 0) {
-      MsgBox, 0x40000,, No windows found to arrange
-   ; } else {
-   ;    MsgBox, 0x40000,, Arranged %windowsPositioned% windows
-   }
-   
-   ; Save settings after arranging windows
-   SaveAllSettings()
-return
-
-LaunchAllMumu:
-   SaveAllSettings()
-   LoadSettingsFromIni()
-   
-   ; Save settings before launching
-   SaveAllSettings()
-   
-   if(StrLen(A_ScriptDir) > 200 || InStr(A_ScriptDir, " ")) {
-      MsgBox, 0x40000,, ERROR: bot folder path is too long or contains blank spaces. Move to a shorter path without spaces such as C:\PTCGPB
-      return
-   }
-   
-   launchAllFile := A_ScriptDir . "\Scripts\Include\LaunchAllMumu.ahk"
-   if(FileExist(launchAllFile)) {
-      Run, %launchAllFile%
-   }
-return
-
-OpenClassicMode:
-   SaveAllSettings()
-   Run, %A_ScriptDir%\Scripts\Include\ClassicMode.ahk
-ExitApp
-return
-
-; ToolTip
-OpenToolTip:
-   ;WinMinimize, ahk_id %mainHwnd%
-   Run, https://mixman208.github.io/PTCGPB/
-return
-
-; Handle the link click
-OpenLink:
-   ;WinMinimize, ahk_id %mainHwnd%
-   Run, https://buymeacoffee.com/aarturoo
-return
-
-OpenDiscord:
-   ;WinMinimize, ahk_id %mainHwnd%
-   Run, https://discord.gg/C9Nyf7P4sT
-return
-
-RunXMLSortTool:
-   CallOthers := 1
-   GuiRemoveAlwaysOnTop()
-   WinMinimize, ahk_id %menuHwnd%
-   Tool := A_ScriptDir . "\Accounts\xmlCounter.ahk"
-   RunWait, %Tool%
-   WinRestore, ahk_id %menuHwnd%
-   WinActivate, ahk_id %menuHwnd%
-   CallOthers := 0
-Return
-
-RunXMLDuplicateTool:
-   CallOthers := 1
-   GuiRemoveAlwaysOnTop()
-   WinMinimize, ahk_id %menuHwnd%
-   Tool := A_ScriptDir . "\Accounts\xml_duplicate_finder.ahk"
-   RunWait, %Tool%
-   WinRestore, ahk_id %menuHwnd%
-   WinActivate, ahk_id %menuHwnd%
-   CallOthers := 0
-Return
-
-; IMPROVED: Ensure settings are saved completely before reload
-SaveReload:
-   ; Save all settings using our comprehensive function
-   SaveAllSettings()
-   ; Reload the script
-   Reload
-return
-
-LanguageControl:
-   GuiControlGet, curLang,, TopBotLanguage
-   BotLanguage := curLang
-   langMap := { "English": 1, "中文": 2, "日本語": 3, "Deutsch": 4 }
-   defaultBotLanguage := langMap.HasKey(BotLanguage) ? langMap[BotLanguage] : 1
-   GuiControl, TopBar:Show, saveTopBar
-Return
-
-ToggleTheme:
-   Front := A_ScriptDir . "\GUI\Images\"
-      ,CurrentTheme := (CurrentTheme = "Dark"? "Light": "Dark")
-      ,btn_mainPage := Front . (CurrentTheme = "Dark"? "panel2.png": "panel1.png")
-      ,ToolTipImage := Front . (CurrentTheme = "Dark"? "ToolTip2.png": "ToolTip1.png")
-      ,btn_fontColor := CurrentTheme = "Dark"? "FDFDFD": "CC0000"
-      ,titleImage := Front . (CurrentTheme = "Dark"? "Title2.png": "Title1.png")
-      ,TopBarBig := Front . (CurrentTheme = "Dark"? "TopBarBig2.png": "TopBarBig1.png")
-      ,TopBarSmall := Front . (CurrentTheme = "Dark"? "TopBarSmall2.png": "TopBarSmall1.png")
-      ,TopBarOpen := Front . (CurrentTheme = "Dark"? "TopBarOpen2.png": "TopBarOpen1.png")
-      ,TopBarClose := Front . (CurrentTheme = "Dark"? "TopBarClose2.png": "TopBarClose1.png")
-      ,MenuOpen := Front . (CurrentTheme = "Dark" ? "MenuOpen2.png":"MenuOpen1.png")
-      ,MenuClose := Front . (CurrentTheme = "Dark" ? "MenuClose2.png":"MenuClose1.png")
-      ,PageImage := Front . (CurrentTheme = "Dark"? "Page2.png": "Page1.png")
-      ,BackgroundImage := Front . (CurrentTheme = "Dark"? "Background2.png": "Background1.png")
-      ,MenuBackground := Front . (CurrentTheme = "Dark"? "Menu2.png": "Menu1.png")
-      ,FontColor := CurrentTheme = "Dark"? "FDFDFD": "000000"
-   GuiControl, TopBar:, MenuBackground, %MenuBackground%
-   GuiControl, TopBar:, BackgroundImage, %BackgroundImage%
-   GuiControl, TopBar:, PageImage, %PageImage%
-   GuiControl, TopBar:, FontColor, %FontColor%
-   SaveAllSettings()
-   Reload
-Return
-
-SaveTopBarSettings:
-   SaveAllSettings()
-   Reload
-Return
-
-BalanceXMLs:
-   if(Instances>0) {
-      ; Save all settings first to ensure Instances is up to date
-      SaveAllSettings()
-      LoadSettingsFromIni()
-      ;todo better status message location or method
-      GuiControlGet, ButtonPos, Pos, BalanceXMLs
-      XTooltipPos = % ButtonPosX + 10
-      YTooltipPos = % ButtonPosY + 140
-      
-      ;check folders
-      saveDir := A_ScriptDir "\Accounts\Saved\"
-      if !FileExist(saveDir) ; Check if the directory exists
-         FileCreateDir, %saveDir% ; Create the directory if it doesn't exist
-      
-      tmpDir := A_ScriptDir "\Accounts\Saved\tmp"
-      if !FileExist(tmpDir) ; Check if the directory exists
-         FileCreateDir, %tmpDir% ; Create the directory if it doesn't exist
-      
-      ;lags gui for some reason
-      Tooltip, Moving Files and Folders to tmp, XTooltipPos, YTooltipPos
-      Loop, Files, %saveDir%*, D
-      {
-         if (A_LoopFilePath == tmpDir)
-            continue
-         dest := tmpDir . "\" . A_LoopFileName
-         
-         FileMoveDir, %A_LoopFilePath%, %dest%, 1
-      }
-      Loop, Files, %saveDir%\*, F
-      {
-         dest := tmpDir . "\" . A_LoopFileName
-         FileMove, %A_LoopFilePath%, %dest%, 1
-      }
-      ; create instance dirs
-      Loop , %Instances%
-      {
-         instanceDir := saveDir . "\" . A_Index
-         if !FileExist(instanceDir) ; Check if the directory exists
-            FileCreateDir, %instanceDir% ; Create the directory if it doesn't exist
-         listfile := instanceDir . "\list.txt"
-         if FileExist(listfile)
-            FileDelete, %listfile% ; delete list if it exists
-      }
-      
-      ToolTip, Checking for Duplicate names, XTooltipPos, YTooltipPos
-      fileList := ""
-      seenFiles := {}
-      Loop, Files, %tmpDir%\*.xml, R
-      {
-         fileName := A_LoopFileName
-         fileTime := A_LoopFileTimeModified
-         ; TODO can also sort by name (num packs), or time created
-         fileTime := A_LoopFileTimeCreated
-         filePath := A_LoopFileFullPath
-         
-         if seenFiles.HasKey(fileName)
-         {
-            ; Compare the timestamps to determine which file is older
-            prevTime := seenFiles[fileName].Time
-            prevPath := seenFiles[fileName].Path
-            
-            if (fileTime > prevTime)
-            {
-               ; Current file is newer, delete the previous one
-               FileDelete, %prevPath%
-               seenFiles[fileName] := {Time: fileTime, Path: filePath}
-            }
-            else
-            {
-               ; Current file is older, delete it
-               FileDelete, %filePath%
-            }
-            continue
-         }
-         
-         ; Store the file info
-         seenFiles[fileName] := {Time: fileTime, Path: filePath}
-         fileList .= fileTime "`t" filePath "`n"
-      }
-      
-      ToolTip, Sorting by modified date, XTooltipPos, YTooltipPos
-      Sort, fileList, R
-      
-      ToolTip, Distributing XMLs between folders...please wait, XTooltipPos, YTooltipPos
-      instance := 1
-      Loop, Parse, fileList, `n
-      {
-         if (A_LoopField = "")
-            continue
-         
-         ; Split each line into timestamp and file path (split by tab)
-         StringSplit, parts, A_LoopField, %A_Tab%
-         tmpFile := parts2 ; Get the file path from the second part
-         toDir := saveDir . "\" . instance
-         
-         ; Move the file
-         FileMove, %tmpFile%, %toDir%, 1
-         
-         instance++
-         if (instance > Instances)
-            instance := 1
-      }
-      
-      ;count number of xmls with date modified time over 24 hours in instance 1
-      instanceOneDir := saveDir . "1"
-      counter := 0
-      counter2 := 0
-      Loop, Files, %instanceOneDir%\*.xml
-      {
-         fileModifiedTimeDiff := A_Now
-         FileGetTime, fileModifiedTime, %A_LoopFileFullPath%, M
-         EnvSub, fileModifiedTimeDiff, %fileModifiedTime%, Hours
-         if (fileModifiedTimeDiff >= 24) ; 24 hours
-            counter++
-      }
-      
-      Tooltip ;clear tooltip
-      MsgBox, 0x40000,XML Balance,Done balancing XMLs between %Instances% instances`n%counter% XMLs past 24 hours per instance
-   }
-return
-
-CheckForUpdates:
-   CheckForUpdate()
-return
-
-; Function to reset all account lists (automatically called on startup)
 ResetAccountLists() {
-   ; Check if ResetLists.ahk exists before trying to run it
    resetListsPath := A_ScriptDir . "\Scripts\Include\ResetLists.ahk"
    
    if (FileExist(resetListsPath)) {
-      ; Run the ResetLists.ahk script without waiting
       Run, %resetListsPath%,, Hide UseErrorLevel
       
-      ; Very short delay to ensure process starts
       Sleep, 50
       
-      ; Log that we've delegated to the script
       LogToFile("Account lists reset via ResetLists.ahk. New lists will be generated on next injection.")
       
-      ; Create a status message
       CreateStatusMessage("Account lists reset. New lists will use current method settings.",,,, false)
    } else {
-      ; Log error if file doesn't exist
       LogToFile("ERROR: ResetLists.ahk not found at: " . resetListsPath)
       
       if (debugMode) {
@@ -3275,192 +1987,27 @@ ResetAccountLists() {
    }
 }
 
-StartBot:
-   global PackGuiBuild := 0
+StartBot() {
+   global runMain, Mains, Instances, deleteMethod, instanceStartDelay, autoLaunchMonitor
+   global mainIdsURL, showcaseEnabled, defaultLanguage, scaleParam, FriendID
+   global heartBeat, heartBeatName, heartBeatWebhookURL, heartBeatDelay, debugMode
+   global Shining, Arceus, Palkia, Dialga, Mew, Pikachu, Charizard, Mewtwo
+   global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, packMethod, nukeAccount
+   global SelectedMonitorIndex, localVersion, githubUser, rerollTime, PackGuiBuild
+   
+   PackGuiBuild := 0
+   rerollTime := A_TickCount
+   
    SaveAllSettings()
    LoadSettingsFromIni()
-   CallOthers := 1
-   GuiRemoveAlwaysOnTop()
-   WinMinimize, ahk_id %menuHwnd%
-   ; Quick path validation (no file I/O)
+   
    if(StrLen(A_ScriptDir) > 200 || InStr(A_ScriptDir, " ")) {
-      MsgBox, 0x40000,, % SetUpDictionary.Error_BotPathTooLong
+      MsgBox, 0x40000,, ERROR: bot folder path is too long or contains blank spaces. Move to a shorter path without spaces such as C:\PTCGPB
       return
-   }
-   
-   ; Build confirmation message with current GUI values
-   confirmMsg := SetUpDictionary.Confirm_SelectedMethod . deleteMethod . "`n"
-   
-   confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
-   if (HoOh)
-      confirmMsg .= "• " . currentDictionary.Txt_HoOh . "`n"
-   if (Lugia)
-      confirmMsg .= "• " . currentDictionary.Txt_Lugia . "`n"
-   if (Eevee) 
-      confirmMsg .= "• " . currentDictionary.Txt_Eevee . "`n"
-   if (Buzzwole)
-      confirmMsg .= "• " . currentDictionary.Txt_Buzzwole . "`n"
-   if (Solgaleo)
-      confirmMsg .= "• " . currentDictionary.Txt_Solgaleo . "`n"
-   if (Lunala)
-      confirmMsg .= "• " . currentDictionary.Txt_Lunala . "`n"
-   if (Shining)
-      confirmMsg .= "• " . currentDictionary.Txt_Shining . "`n"
-   if (Arceus)
-      confirmMsg .= "• " . currentDictionary.Txt_Arceus . "`n"
-   if (Palkia)
-      confirmMsg .= "• " . currentDictionary.Txt_Palkia . "`n"
-   if (Dialga)
-      confirmMsg .= "• " . currentDictionary.Txt_Dialga . "`n"
-   if (Pikachu)
-      confirmMsg .= "• " . currentDictionary.Txt_Pikachu . "`n"
-   if (Charizard)
-      confirmMsg .= "• " . currentDictionary.Txt_Charizard . "`n"
-   if (Mewtwo)
-      confirmMsg .= "• " . currentDictionary.Txt_Mewtwo . "`n"
-   if (Mew)
-      confirmMsg .= "• " . currentDictionary.Txt_Mew . "`n"
-   
-   confirmMsg .= "`n" . SetUpDictionary.Confirm_AdditionalSettings
-   additionalSettingsFound := false
-   
-   if (packMethod) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_1PackMethod
-      additionalSettingsFound := true
-   }
-   if (nukeAccount && !InStr(deleteMethod, "Inject")) {
-      confirmMsg .= "`n•" . SetUpDictionary.Confirm_MenuDelete
-      additionalSettingsFound := true
-   }
-   if (spendHourGlass) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_SpendHourGlass
-      additionalSettingsFound := true
-   }
-   if (openExtraPack) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_OpenExtraPack
-      additionalSettingsFound := true
-   }
-   if (claimSpecialMissions && InStr(deleteMethod, "Inject")) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_ClaimMissions
-      additionalSettingsFound := true
-   }
-   if (InStr(deleteMethod, "Inject")) {
-      ;GuiControlGet, selectedSortOption,, SortByDropdown
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_SortBy . " " . SortByDropdown
-      additionalSettingsFound := true
-   }
-   if (!additionalSettingsFound)
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_None
-   
-   confirmMsg .= "`n`n" . SetUpDictionary.Confirm_CardDetection
-   cardDetectionFound := false
-   
-   if (FullArtCheck) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_SingleFullArt
-      cardDetectionFound := true
-   }
-   if (TrainerCheck) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_SingleTrainer
-      cardDetectionFound := true
-   }
-   if (RainbowCheck) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_SingleRainbow
-      cardDetectionFound := true
-   }
-   if (PseudoGodPack) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_Double2Star
-      cardDetectionFound := true
-   }
-   if (CrownCheck) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_SaveCrowns
-      cardDetectionFound := true
-   }
-   if (ShinyCheck) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_SaveShiny
-      cardDetectionFound := true
-   }
-   if (ImmersiveCheck) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_SaveImmersives
-      cardDetectionFound := true
-   }
-   if (CheckShinyPackOnly) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_OnlyShinyPacks
-      cardDetectionFound := true
-   }
-   if (InvalidCheck) {
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_IgnoreInvalid
-      cardDetectionFound := true
-   }
-   
-   if (!cardDetectionFound)
-      confirmMsg .= "`n" . SetUpDictionary.Confirm_None
-   
-   confirmMsg .= "`n`n" . SetUpDictionary.Confirm_SaveForTrade
-   
-   if (!s4tEnabled) {
-      confirmMsg .= ": " . SetUpDictionary.Confirm_Disabled
-   } else {
-      confirmMsg .= ": " . SetUpDictionary.Confirm_Enabled . "`n"
-      confirmMsg .= "• " . SetUpDictionary.Confirm_SilentPings . ": " . (s4tSilent ? SetUpDictionary.Confirm_Enabled : SetUpDictionary.Confirm_Disabled) . "`n"
-      
-      ; Add enabled filters
-      if (s4t3Dmnd)
-         confirmMsg .= "• 3 ◆◆◆`n"
-      if (s4t4Dmnd)
-         confirmMsg .= "• 4 ◆◆◆◆`n"
-      if (s4t1Star)
-         confirmMsg .= "• 1 ★`n"
-      if (s4tGholdengo && Shining)
-         confirmMsg .= "• " . SetUpDictionary.Confirm_Gholdengo . "`n"
-      
-      ; Add Wonder Pick status
-      if (s4tWP)
-         confirmMsg .= "• " . SetUpDictionary.Confirm_WonderPick . ": " . s4tWPMinCards . " " . SetUpDictionary.Confirm_MinCards . "`n"
-      else
-         confirmMsg .= "• " . SetUpDictionary.Confirm_WonderPick . ": " . SetUpDictionary.Confirm_Disabled . "`n"
-   }
-   
-   if (sendAccountXml || s4tEnabled && s4tSendAccountXml) {
-      confirmMsg .= "`n`n" . SetUpDictionary.Confirm_XMLWarning . "`n"
-   }
-   
-   confirmMsg .= "`n`n" . SetUpDictionary.Confirm_StartBot
-   
-   ; === SHOW CONFIRMATION DIALOG IMMEDIATELY ===
-   MsgBox, 4, Confirm Bot Settings, %confirmMsg%
-   IfMsgBox, No
-   {
-      WinRestore, ahk_id %menuHwnd%
-      WinActivate, ahk_id %menuHwnd%
-      CallOthers := 0
-      return ; Return to GUI for user to modify settings
    }
    
    ResetAccountLists()
    
-   /*
-   ; Update dropdown settings if needed
-   if (InStr(deleteMethod, "Inject")) {
-      ;MsgBox, SortByDropDown := %SortByDropdown%
-      if (SortByDropdown = "Oldest First")
-         injectSortMethod := "ModifiedAsc"
-      else if (SortByDropdown = "Newest First")
-         injectSortMethod := "ModifiedDesc"
-      else if (SortByDropdown = "Fewest Packs First")
-         injectSortMethod := "PacksAsc"
-      else if (SortByDropdown = "Most Packs First")
-         injectSortMethod := "PacksDesc"
-   }
-   */
-   
-   ; Re-validate scaleParam based on current language
-   if (defaultLanguage = "Scale125") {
-      scaleParam := 277
-   } else if (defaultLanguage = "Scale100") {
-      scaleParam := 287
-   }
-   
-   ; Handle deprecated FriendID field
    if (inStr(FriendID, "http")) {
       MsgBox,To provide a URL for friend IDs, please use the ids.txt API field and leave the Friend ID field empty.
       
@@ -3472,32 +2019,31 @@ StartBot:
       Reload
    }
    
-   ; Download a new Main ID file prior to running the rest of the below
    if (mainIdsURL != "") {
       DownloadFile(mainIdsURL, "ids.txt")
    }
    
-   ; Check for showcase_ids.txt if enabled
    if (showcaseEnabled) {
       if (!FileExist("showcase_ids.txt")) {
          MsgBox, 48, Showcase Warning, Showcase is enabled but showcase_ids.txt does not exist.`nPlease create this file in the same directory as the script.
       }
    }
    
-   ; Create the second page dynamically based on the number of instances
-   SG.Destroy()
-   Gui, Destroy ; Close the first page
+   if (defaultLanguage = "Scale125") {
+      scaleParam := 277
+   } else if (defaultLanguage = "Scale100") {
+      scaleParam := 287
+   }
    
-   ; Run main before instances to account for instance start delay
    if (runMain) {
       Loop, %Mains%
       {
          if (A_Index != 1) {
-            SourceFile := "Scripts\Main.ahk" ; Path to the source .ahk file
-            TargetFolder := "Scripts\" ; Path to the target folder
-            TargetFile := TargetFolder . "Main" . A_Index . ".ahk" ; Generate target file path
+            SourceFile := "Scripts\Main.ahk"
+            TargetFolder := "Scripts\"
+            TargetFile := TargetFolder . "Main" . A_Index . ".ahk"
             FileDelete, %TargetFile%
-            FileCopy, %SourceFile%, %TargetFile%, 1 ; Copy source file to target
+            FileCopy, %SourceFile%, %TargetFile%, 1
             if (ErrorLevel)
                MsgBox, Failed to create %TargetFile%. Ensure permissions and paths are correct.
          }
@@ -3515,16 +2061,15 @@ StartBot:
       }
    }
    
-   ; Loop to process each instance
    Loop, %Instances%
    {
       if (A_Index != 1) {
-         SourceFile := "Scripts\1.ahk" ; Path to the source .ahk file
-         TargetFolder := "Scripts\" ; Path to the target folder
-         TargetFile := TargetFolder . A_Index . ".ahk" ; Generate target file path
+         SourceFile := "Scripts\1.ahk"
+         TargetFolder := "Scripts\"
+         TargetFile := TargetFolder . A_Index . ".ahk"
          if(Instances > 1) {
             FileDelete, %TargetFile%
-            FileCopy, %SourceFile%, %TargetFile%, 1 ; Copy source file to target
+            FileCopy, %SourceFile%, %TargetFile%, 1
          }
          if (ErrorLevel)
             MsgBox, Failed to create %TargetFile%. Ensure permissions and paths are correct.
@@ -3538,7 +2083,6 @@ StartBot:
          Sleep, instanceStartDelayMS
       }
       
-      ; Clear out the last run time so that our monitor script doesn't try to kill and refresh this instance right away
       metricFile := A_ScriptDir . "\Scripts\" . A_Index . ".ini"
       if (FileExist(metricFile)) {
          IniWrite, 0, %metricFile%, Metrics, LastEndEpoch
@@ -3558,7 +2102,6 @@ StartBot:
       }
    }
    
-   ; Update ScaleParam for use in displaying the status
    SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
    SysGet, Monitor, Monitor, %SelectedMonitorIndex%
    rerollTime := A_TickCount
@@ -3614,14 +2157,11 @@ StartBot:
          selectMsg .= value . commaSeparate
    }
    
-   ; === MAIN HEARTBEAT LOOP ===
    Loop {
       Sleep, 30000
-      ;ToolTip, Enter Loop, 100, 800
-      ; Check if Main toggled GP Test Mode and send notification if needed
+      
       IniRead, mainTestMode, HeartBeat.ini, TestMode, Main, -1
       if (mainTestMode != -1) {
-         ; Main has toggled test mode, get status and send notification
          IniRead, mainStatus, HeartBeat.ini, HeartBeat, Main, 0
          
          onlineAHK := ""
@@ -3672,7 +2212,6 @@ StartBot:
          else
             onlineAHK := "Online: " . RTrim(onlineAHK, ", ")
          
-         ; Create status message with all regular heartbeat info
          discMessage := heartBeatName ? "\n" . heartBeatName : ""
          discMessage .= "\n" . onlineAHK . "\n" . offlineAHK
          
@@ -3686,20 +2225,16 @@ StartBot:
          discMessage .= typeMsg
          discMessage .= selectMsg
          
-         ; Add special note about Main's test mode status
          if (mainTestMode == "1")
             discMessage .= "\n\nMain entered GP Test Mode ✕"
          else
             discMessage .= "\n\nMain exited GP Test Mode ✓"
          
-         ; Send the message
          LogToDiscord(discMessage,, false,,, heartBeatWebhookURL)
          
-         ; Clear the flag
          IniDelete, HeartBeat.ini, TestMode, Main
       }
       
-      ; Every 5 minutes, pull down the main ID list and showcase list
       if(Mod(A_Index, 10) = 0) {
          if(mainIdsURL != "") {
             DownloadFile(mainIdsURL, "ids.txt")
@@ -3709,23 +2244,17 @@ StartBot:
          }
       }
       
-      ; Sum all variable values and write to total.json
       total := SumVariablesInJsonFile()
-      totalSeconds := Round((A_TickCount - rerollTime) / 1000) ; Total time in seconds
+      totalSeconds := Round((A_TickCount - rerollTime) / 1000)
       mminutes := Floor(totalSeconds / 60)
       
       packStatus := "Time: " . mminutes . "m Packs: " . total
       packStatus .= " | Avg: " . Round(total / mminutes, 2) . " packs/min"
-      ; Display pack status at the bottom of the first reroll instance
       DisplayPackStatus(packStatus, ((runMain ? Mains * scaleParam : 0) + 5), 625)
       
-      ; FIXED HEARTBEAT CODE
       if(heartBeat) {
-         ; Each loop iteration is 30 seconds (0.5 minutes)
-         ; So for X minutes, we need X * 2 iterations
          heartbeatIterations := heartBeatDelay * 2
          
-         ; Send heartbeat at start (A_Index = 1) or every heartbeatDelay minutes
          if (A_Index = 1 || Mod(A_Index, heartbeatIterations) = 0) {
             
             onlineAHK := ""
@@ -3786,41 +2315,25 @@ StartBot:
             
             LogToDiscord(discMessage,, false,,, heartBeatWebhookURL)
             
-            ; Optional debug log
             if (debugMode) {
                FileAppend, % A_Now . " - Heartbeat sent at iteration " . A_Index . "`n", %A_ScriptDir%\heartbeat_log.txt
             }
          }
       }
    }
+}
 
-Return
-
-GuiClose:
-   ; Save all settings before exiting
-   SaveAllSettings()
-   
-   ; Kill all related scripts
-   KillAllScripts()
-
-ExitApp
-return
-
-; New hotkey for sending "All Offline" status message
 ~+F7::
    SendAllInstancesOfflineStatus()
 ExitApp
 return
 
-; Function to send a Discord message with all instances marked as offline
 SendAllInstancesOfflineStatus() {
    global heartBeatName, heartBeatWebhookURL, localVersion, githubUser, Instances, runMain, Mains
    global typeMsg, selectMsg, rerollTime, scaleParam
    
-   ; Display visual feedback that the hotkey was triggered
    DisplayPackStatus("Shift+F7 pressed - Sending offline heartbeat to Discord...", ((runMain ? Mains * scaleParam : 0) + 5), 625)
    
-   ; Create message showing all instances as offline
    offlineInstances := ""
    if (runMain) {
       offlineInstances := "Main"
@@ -3838,12 +2351,10 @@ SendAllInstancesOfflineStatus() {
          offlineInstances .= ", "
    }
    
-   ; Create status message with heartbeat info
    discMessage := heartBeatName ? "\n" . heartBeatName : ""
    discMessage .= "\nOnline: none"
    discMessage .= "\nOffline: " . offlineInstances
    
-   ; Add pack statistics
    total := SumVariablesInJsonFile()
    totalSeconds := Round((A_TickCount - rerollTime) / 1000)
    mminutes := Floor(totalSeconds / 60)
@@ -3855,35 +2366,28 @@ SendAllInstancesOfflineStatus() {
    discMessage .= selectMsg
    discMessage .= "\n\n All instances marked as OFFLINE"
    
-   ; Send the message
    LogToDiscord(discMessage,, false,,, heartBeatWebhookURL)
    
-   ; Display confirmation in the status bar
    DisplayPackStatus("Discord notification sent: All instances marked as OFFLINE", ((runMain ? Mains * scaleParam : 0) + 5), 625)
 }
 
-; Global variable to track the current JSON file
 global jsonFileName := ""
 
-; Function to create or select the JSON file
 InitializeJsonFile() {
    global jsonFileName
    fileName := A_ScriptDir . "\json\Packs.json"
    
-   ; Add this line to create the directory if it doesn't exist
    FileCreateDir, %A_ScriptDir%\json
    
    if FileExist(fileName)
       FileDelete, %fileName%
    if !FileExist(fileName) {
-      ; Create a new file with an empty JSON array
-      FileAppend, [], %fileName% ; Write an empty JSON array
+      FileAppend, [], %fileName%
       jsonFileName := fileName
       return
    }
 }
 
-; Function to append a time and variable pair to the JSON file
 AppendToJsonFile(variableValue) {
    global jsonFileName
    if (jsonFileName = "") {
@@ -3891,49 +2395,40 @@ AppendToJsonFile(variableValue) {
       return
    }
    
-   ; Read the current content of the JSON file
    FileRead, jsonContent, %jsonFileName%
    if (jsonContent = "") {
       jsonContent := "[]"
    }
    
-   ; Parse and modify the JSON content
-   jsonContent := SubStr(jsonContent, 1, StrLen(jsonContent) - 1) ; Remove trailing bracket
+   jsonContent := SubStr(jsonContent, 1, StrLen(jsonContent) - 1)
    if (jsonContent != "[")
       jsonContent .= ","
    jsonContent .= "{""time"": """ A_Now """, ""variable"": " variableValue "}]"
    
-   ; Write the updated JSON back to the file
    FileDelete, %jsonFileName%
    FileAppend, %jsonContent%, %jsonFileName%
 }
 
-; Function to sum all variable values in the JSON file
 SumVariablesInJsonFile() {
    global jsonFileName
    if (jsonFileName = "") {
-      return 0 ; Return 0 instead of nothing if jsonFileName is empty
+      return 0
    }
-   ; Read the file content
    FileRead, jsonContent, %jsonFileName%
    if (jsonContent = "") {
       return 0
    }
    
-   ; Parse the JSON and calculate the sum
    sum := 0
-   ; Clean and parse JSON content
-   jsonContent := StrReplace(jsonContent, "[", "") ; Remove starting bracket
-   jsonContent := StrReplace(jsonContent, "]", "") ; Remove ending bracket
+   jsonContent := StrReplace(jsonContent, "[", "")
+   jsonContent := StrReplace(jsonContent, "]", "")
    Loop, Parse, jsonContent, {, }
    {
-      ; Match each variable value
       if (RegExMatch(A_LoopField, """variable"":\s*(-?\d+)", match)) {
          sum += match1
       }
    }
    
-   ; Write the total sum to a file called "total.json"
    if(sum > 0) {
       totalFile := A_ScriptDir . "\json\total.json"
       totalContent := "{""total_sum"": " sum "}"
@@ -3951,7 +2446,7 @@ CheckForUpdate() {
    response := HttpGet(url)
    if !response
    {
-      MsgBox, 0x40000, Check for Update, currentDictionary.fail_fetch
+      MsgBox, 0x40000, Check for Update, Failed to fetch latest version info
       return
    }
    latestReleaseBody := FixFormat(ExtractJSONValue(response, "body"))
@@ -3960,105 +2455,89 @@ CheckForUpdate() {
    Clipboard := latestReleaseBody
    if (zipDownloadURL = "" || !InStr(zipDownloadURL, "http"))
    {
-      MsgBox, 0x40000, Check for Update, % currentDictionary.fail_url
+      MsgBox, 0x40000, Check for Update, Failed to get download URL
       return
    }
    
    if (latestVersion = "")
    {
-      MsgBox, 0x40000, Check for Update, % currentDictionary.fail_version
+      MsgBox, 0x40000, Check for Update, Failed to get version info
       return
    }
    
    if (VersionCompare(latestVersion, localVersion) > 0)
    {
-      ; Get release notes from the JSON (ensure this is populated earlier in the script)
-      releaseNotes := latestReleaseBody ; Assuming `latestReleaseBody` contains the release notes
+      releaseNotes := latestReleaseBody
       
-      ; Show a message box asking if the user wants to download
-      updateAvailable := currentDictionary.update_title
-      latestDownloaad := currentDictionary.confirm_dl
+      updateAvailable := "Update Available: "
+      latestDownloaad := "Download Latest Version?"
       MsgBox, 262148, %updateAvailable% %latestVersion%, %releaseNotes%`n`nDo you want to download the latest version?
       
-      ; If the user clicks Yes (return value 6)
       IfMsgBox, Yes
       {
-         MsgBox, 262208, Downloading..., % currentDictionary.downloading
+         MsgBox, 262208, Downloading..., Downloading update...
          
-         ; Proceed with downloading the update
          URLDownloadToFile, %zipDownloadURL%, %zipPath%
          if ErrorLevel
          {
-            MsgBox, 0x40000, Check for Update, % currentDictionary.dl_failed
+            MsgBox, 0x40000, Check for Update, Download failed
             return
          }
          else {
-            MsgBox, 0x40000, Check for Update, % currentDictionary.dl_complete
+            MsgBox, 0x40000, Check for Update, Download complete
             
-            ; Create a temporary folder for extraction
             tempExtractPath := A_Temp "\PTCGPB_Temp"
             FileCreateDir, %tempExtractPath%
             
-            ; Extract the ZIP file into the temporary folder
             RunWait, powershell -Command "Expand-Archive -Path '%zipPath%' -DestinationPath '%tempExtractPath%' -Force",, Hide
             
-            ; Check if extraction was successful
             if !FileExist(tempExtractPath)
             {
-               MsgBox, 0x40000, Check for Update, % currentDictionary.extract_failed
+               MsgBox, 0x40000, Check for Update, Extraction failed
                return
             }
             
-            ; Get the first subfolder in the extracted folder
             Loop, Files, %tempExtractPath%\*, D
             {
                extractedFolder := A_LoopFileFullPath
                break
             }
             
-            ; Check if a subfolder was found and move its contents recursively to the script folder
             if (extractedFolder)
             {
                MoveFilesRecursively(extractedFolder, scriptFolder)
                
-               ; Clean up the temporary extraction folder
                FileRemoveDir, %tempExtractPath%, 1
-               MsgBox, 0x40000, Check for Update, % currentDictionary.installed
+               MsgBox, 0x40000, Check for Update, Update installed successfully
                Reload
             }
             else
             {
-               MsgBox, 0x40000, Check for Update, % currentDictionary.missing_files
+               MsgBox, 0x40000, Check for Update, Update files not found
                return
             }
          }
       }
       else
       {
-         MsgBox, 0x40000, Check for Update, % currentDictionary.cancel
+         MsgBox, 0x40000, Check for Update, Update cancelled
          return
       }
    }
    else
    {
-      ;MsgBox, 0x40000, Check for Update, % currentDictionary.up_to_date
    }
 }
 
 MoveFilesRecursively(srcFolder, destFolder) {
-   ; Loop through all files and subfolders in the source folder
    Loop, Files, % srcFolder . "\*", R
    {
-      ; Get the relative path of the file/folder from the srcFolder
       relativePath := SubStr(A_LoopFileFullPath, StrLen(srcFolder) + 2)
       
-      ; Create the corresponding destination path
       destPath := destFolder . "\" . relativePath
       
-      ; If it's a directory, create it in the destination folder
       if (A_LoopIsDir)
       {
-         ; Ensure the directory exists, if not, create it
          FileCreateDir, % destPath
       }
       else
@@ -4069,8 +2548,6 @@ MoveFilesRecursively(srcFolder, destFolder) {
             || (relativePath = "vip_ids.txt" && FileExist(destPath))) {
             continue
          }
-         ; If it's a file, move it to the destination folder
-         ; Ensure the directory exists before moving the file
          FileCreateDir, % SubStr(destPath, 1, InStr(destPath, "\", 0, 0) - 1)
          FileMove, % A_LoopFileFullPath, % destPath, 1
       }
@@ -4084,7 +2561,6 @@ HttpGet(url) {
    return http.ResponseText
 }
 
-; Function to extract value from JSON
 ExtractJSONValue(json, key1, key2:="", ext:="") {
    value := ""
    json := StrReplace(json, """", "")
@@ -4093,7 +2569,6 @@ ExtractJSONValue(json, key1, key2:="", ext:="") {
    Loop, % lines.MaxIndex()
    {
       if InStr(lines[A_Index], key1 ":") {
-         ; Take everything after the first colon as the value
          value := SubStr(lines[A_Index], InStr(lines[A_Index], ":") + 1)
          if (key2 != "")
          {
@@ -4107,23 +2582,19 @@ ExtractJSONValue(json, key1, key2:="", ext:="") {
 }
 
 FixFormat(text) {
-   ; Replace carriage return and newline with an actual line break
-   text := StrReplace(text, "\r\n", "`n") ; Replace \r\n with actual newlines
-   text := StrReplace(text, "\n", "`n") ; Replace \n with newlines
+   text := StrReplace(text, "\r\n", "`n")
+   text := StrReplace(text, "\n", "`n")
    
-   ; Remove unnecessary backslashes before other characters like "player" and "None"
-   text := StrReplace(text, "\player", "player") ; Example: removing backslashes around words
-   text := StrReplace(text, "\None", "None") ; Remove backslash around "None"
-   text := StrReplace(text, "\Welcome", "Welcome") ; Removing \ before "Welcome"
+   text := StrReplace(text, "\player", "player")
+   text := StrReplace(text, "\None", "None")
+   text := StrReplace(text, "\Welcome", "Welcome")
    
-   ; Escape commas by replacing them with %2C (URL encoding)
    text := StrReplace(text, ",", "")
    
    return text
 }
 
 VersionCompare(v1, v2) {
-   ; Remove non-numeric characters (like 'alpha', 'beta')
    cleanV1 := RegExReplace(v1, "[^\d.]")
    cleanV2 := RegExReplace(v2, "[^\d.]")
    
@@ -4139,16 +2610,15 @@ VersionCompare(v1, v2) {
          return -1
    }
    
-   ; If versions are numerically equal, check if one is an alpha version
    isV1Alpha := InStr(v1, "alpha") || InStr(v1, "beta")
    isV2Alpha := InStr(v2, "alpha") || InStr(v2, "beta")
    
    if (isV1Alpha && !isV2Alpha)
-      return -1 ; Non-alpha version is newer
+      return -1
    if (!isV1Alpha && isV2Alpha)
-      return 1 ; Alpha version is older
+      return 1
    
-   return 0 ; Versions are equal
+   return 0
 }
 
 DownloadFile(url, filename) {
@@ -4166,7 +2636,7 @@ ReadFile(filename, numbers := false) {
    
    values := []
    for _, val in StrSplit(Trim(content), "`n") {
-      cleanVal := RegExReplace(val, "[^a-zA-Z0-9]") ; Remove non-alphanumeric characters
+      cleanVal := RegExReplace(val, "[^a-zA-Z0-9]")
       if (cleanVal != "")
          values.Push(cleanVal)
    }
@@ -4175,7 +2645,6 @@ ReadFile(filename, numbers := false) {
 }
 
 ErrorHandler(exception) {
-   ; Display the error message
    errorMessage := "Error in PTCGPB.ahk`n`n"
       . "Message: " exception.Message "`n"
       . "What: " exception.What "`n"
@@ -4184,31 +2653,25 @@ ErrorHandler(exception) {
    
    MsgBox, 262160, PTCGPB Error, %errorMessage%
    
-   ; Kill all related scripts
    KillAllScripts()
    
-   ; Exit this script
    ExitApp, 1
-   return true ; Indicate that the error was handled
+   return true
 }
 
-; Add this function to kill all related scripts
 KillAllScripts() {
-   ; Kill Monitor.ahk if running
    Process, Exist, Monitor.ahk
    if (ErrorLevel) {
       Process, Close, %ErrorLevel%
    }
    
-   ; Kill all instance scripts
-   Loop, 50 { ; Assuming you won't have more than 50 instances
+   Loop, 50 {
       scriptName := A_Index . ".ahk"
       Process, Exist, %scriptName%
       if (ErrorLevel) {
          Process, Close, %ErrorLevel%
       }
       
-      ; Also check for Main scripts
       if (A_Index = 1) {
          Process, Exist, Main.ahk
          if (ErrorLevel) {
@@ -4223,6 +2686,10 @@ KillAllScripts() {
       }
    }
    
-   ; Close any status GUIs that might be open
    Gui, PackStatusGUI:Destroy
+
+   Return
+   DiscordLink:
+   Run, https://discord.com/invite/C9Nyf7P4sT
+   Return
 }

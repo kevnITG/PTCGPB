@@ -18,6 +18,19 @@ isNumeric(var) {
   return false
 }
 
+MigrateDeleteMethod(oldMethod) {
+    if (oldMethod = "13 Pack") {
+        return "Create Bots (13P)"
+    } else if (oldMethod = "Inject") {
+        return "Inject 13-39P"
+    } else if (oldMethod = "Inject for Reroll") {
+        return "Inject Wonderpick 39P+"
+    } else if (oldMethod = "Inject Missions") {
+        return "Inject 13-39P"
+    }
+    return oldMethod
+}
+
 LoadSettingsFromIni() {
   global
   IniPath := A_ScriptDir . "\..\..\Settings.ini"
@@ -62,6 +75,16 @@ LoadSettingsFromIni() {
     IniRead, minStars, %A_ScriptDir%\..\..\Settings.ini, UserSettings, minStars, 0
     IniRead, minStarsShiny, %A_ScriptDir%\..\..\Settings.ini, UserSettings, minStarsShiny, 0
     IniRead, deleteMethod, %A_ScriptDir%\..\..\Settings.ini, UserSettings, deleteMethod, Create Bots (13P)
+      originalDeleteMethod := deleteMethod
+      deleteMethod := MigrateDeleteMethod(deleteMethod)
+      if (deleteMethod != originalDeleteMethod) {
+      IniWrite, %deleteMethod%, Settings.ini, UserSettings, deleteMethod
+      }
+      validMethods := "Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+"
+      if (!InStr(validMethods, deleteMethod)) {
+          deleteMethod := "Create Bots (13P)"
+          IniWrite, %deleteMethod%, Settings.ini, UserSettings, deleteMethod
+      }
     IniRead, packMethod, %A_ScriptDir%\..\..\Settings.ini, UserSettings, packMethod, 0
     IniRead, nukeAccount, %A_ScriptDir%\..\..\Settings.ini, UserSettings, nukeAccount, 0
     IniRead, spendHourGlass, %A_ScriptDir%\..\..\Settings.ini, UserSettings, spendHourGlass, 0
@@ -310,6 +333,11 @@ Gui, Add, GroupBox, x5 y0 w240 h50 %sectionColor%, Friend ID
 if(FriendID = "ERROR" || FriendID = "")
   FriendID =
 Gui, Add, Edit, vFriendID w180 x35 y20 h20 -E0x200 Background2A2A2A cWhite, %FriendID%
+
+; Hide FriendID on initial load if "Create Accounts" is selected"
+if (deleteMethod = "Create Bots (13P)") {
+   GuiControl, Hide, FriendID
+}
 
 ; ========== Instance Settings Section ==========
 sectionColor := "cWhite"
@@ -671,17 +699,20 @@ return
 deleteSettings:
   Gui, Submit, NoHide
   if (deleteMethod = "Create Bots (13P)") {
+    GuiControl, Hide, FriendID
     GuiControl, Hide, spendHourGlass
     GuiControl, Hide, packMethod
     GuiControl, Hide, openExtraPack
     GuiControl, Show, nukeAccount
   } else if (deleteMethod = "Inject Wonderpick 39P+") {
+    GuiControl, Show, FriendID
     GuiControl, Show, spendHourGlass
     GuiControl, Show, packMethod
     GuiControl, Show, openExtraPack
     GuiControl, Hide, nukeAccount
     nukeAccount := false
   } else {
+    GuiControl, Show, FriendID
     GuiControl, Show, spendHourGlass
     GuiControl, Hide, packMethod
     GuiControl, Hide, openExtraPack

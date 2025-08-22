@@ -26,7 +26,7 @@
         Lang["btn_main"] := "Main Page"
 
         Lang["title_main"] := "Arturo's PTCGP BOT" ; MainPage
-        Lang["btn_arrange"] := "Arrange Windows"
+        Lang["btn_arrange"] := "Arrange"
         Lang["btn_coffee"] := "Buy Me a Coffee"
         Lang["btn_join"] := "Join Discord"
         Lang["btn_mumu"] := "Launch all Mumu"
@@ -47,35 +47,46 @@
         Lang["btn_theme_Light"] := "Light"
 
         Lang["FriendIDLabel"] := "Your Friend ID"
+        Lang["InstanceSettings"] := "Instance Settings"
+        Lang["BotSettings"] := "Bot Settings"
+        Lang["TimeSettings"] := "Time Settings"
+        Lang["PackHeading"] := "Pack Selection"
+        Lang["CardDetection"] := "Card Detection"
+        Lang["SaveForTrade"] := "Save for Trade"
+        Lang["GroupSettings"] := "Group Settings"
+        Lang["DiscordSettingsHeading"] := "Discord Settings"
+        Lang["HeartbeatSettingsSubHeading"] := "Heartbeat Settings"
+        
         Lang["Txt_Instances"] := "Instances:"
-        Lang["Txt_InstanceStartDelay"] := "Start Delay:"
+        Lang["Txt_InstanceStartDelay"] := "Start Delay (s):"
         Lang["Txt_Columns"] := "Columns:"
-        Lang["Txt_runMain"] := "Run Mains"
-        Lang["Txt_AccountName"] := "Account Name:"
-        Lang["Txt_autoUseGPTest"] := "Auto use GP Test (sec):"
-        Lang["Txt_Delay"] := "Delay:"
-        Lang["Txt_WaitTime"] := "Wait Time:"
-        Lang["Txt_SwipeSpeed"] := "Swipe Speed:"
+        Lang["Txt_runMain"] := "Run Main:"
+        Lang["Txt_AccountName"] := "New Bot Names:"
+        Lang["Txt_autoUseGPTest"] := "Auto GPTest ():"
+        Lang["Txt_Delay"] := "Global Delay (ms):"
+        Lang["Txt_WaitTime"] := "Wait for Main (s):"
+        Lang["Txt_SwipeSpeed"] := "Swipe Speed (ms):"
         Lang["Txt_slowMotion"] := "Base Game Compatibility"
 
         Lang["Txt_Monitor"] := "Monitor:"
         Lang["Txt_Scale"] := "Scale:"
         Lang["Txt_RowGap"] := "Row Gap:"
-        Lang["Txt_FolderPath"] := "Folder Path:"
+        Lang["Txt_FolderPath"] := "MuMuPlayer12 Folder Path:"
         Lang["Txt_OcrLanguage"] := "OCR:"
         Lang["Txt_ClientLanguage"] := "Client"
-        Lang["Txt_InstanceLaunchDelay"] := "Launch MUMU Delay:"
-        Lang["Txt_autoLaunchMonitor"] := "Auto open Monitor"
+        Lang["Txt_InstanceLaunchDelay"] := "Launch MuMu Delay:"
+        Lang["Txt_autoLaunchMonitor"] := "Auto-open Monitor"
         Lang["ExtraSettingsHeading"] := "Extra Settings"
-        Lang["Txt_applyRoleFilters"] := "Use Role-Based Filters"
-        Lang["Txt_debugMode"] := "Debug Mode"
-        Lang["Txt_tesseractOption"] := "Use Tesseract"
+        Lang["Txt_applyRoleFilters"] := "Role-Based Filters"
+        Lang["Txt_debugMode"] := "Debug"
+        Lang["Txt_tesseractOption"] := "Tesseract"
         Lang["Txt_statusMessage"] := "Status Messages"
         Lang["Txt_TesseractPath"] := "Tesseract Path:"
+        Lang["Txt_SystemSettings"] := "System Settings"
 
-        Lang["Txt_MinStars"] := "Min. 2 ★:"
-        Lang["Txt_ShinyMinStars"] := "2 ★ for Shiny Packs:"
-        Lang["Txt_minStarsEnabled"] := "Set all Min. 2 ★"
+        Lang["Txt_MinStars"] := "Min. 2★:"
+        Lang["Txt_ShinyMinStars"] := "Min. 2★ (Shiny Packs):"
+        Lang["Txt_minStarsEnabled"] := "Set all Min. 2★"
         Lang["Txt_DeleteMethod"] := "Method:"
         Lang["Txt_InjectMaxValue"] := "Max:"
         Lang["Txt_InjectMinValue"] := "Min:"
@@ -102,33 +113,33 @@
         Lang["Txt_Mewtwo"] := "Mewtwo"
         Lang["Txt_Mew"] := "Mew"
         Lang["AllPack"] := "🔎Show all packs"
-        Lang["PackHeading"] := "Pack Selection"
 
-        Lang["Txt_FullArtCheck"] := "Single Full Art"
-        Lang["Txt_TrainerCheck"] := "Single Trainer"
-        Lang["Txt_RainbowCheck"] := "Single Rainbow"
-        Lang["Txt_PseudoGodPack"] := "Double 2 ★"
-        Lang["Txt_CheckShinyPackOnly"] := "Apply to Shiny Packs Only"
+        Lang["Txt_FullArtCheck"] := "Single Full Art 2★"
+        Lang["Txt_TrainerCheck"] := "Single Trainer 2★"
+        Lang["Txt_RainbowCheck"] := "Single Rainbow 2★"
+        Lang["Txt_PseudoGodPack"] := "Double 2★"
+        Lang["Txt_CheckShinyPackOnly"] := "Only for Shiny Packs"
         Lang["Txt_CrownCheck"] := "Save Crowns"
         Lang["Txt_ShinyCheck"] := "Save Shiny"
         Lang["Txt_ImmersiveCheck"] := "Save Immersives"
         Lang["Txt_InvalidCheck"] := "Ignore Invalid Packs"
 
         Lang["Txt_s4tEnabled"] := "Enable Save for Trade"
-        Lang["Txt_s4tSilent"] := "Silent (No Ping)"
+        Lang["Txt_S4TEnabled"] := "S4T: Enabled"
+        Lang["Txt_S4TDisabled"] := "Disabled"
+        Lang["Txt_s4tSilent"] := "Silent (No Discord Msg)"
         Lang["Txt_s4tWP"] := "Wonder Pick"
         Lang["Txt_s4tWPMinCards"] := "Min. Cards:"
         Lang["S4TDiscordSettingsSubHeading"] := "S4T Discord Settings"
         Lang["Txt_s4tSendAccountXml"] := "Send Account XML"
 
-        Lang["DiscordSettingsHeading"] := "Discord Settings"
         Lang["Txt_sendAccountXml"] := "Send Account XML"
-        Lang["HeartbeatSettingsSubHeading"] := "Heartbeat settings"
         Lang["Txt_heartBeat"] := "Discord Heartbeat"
         Lang["hbName"] := "Name:"
         Lang["hbDelay"] := "Heartbeat Delay (min):"
 
         Lang["Txt_showcaseEnabled"] := "Collect 5 Daily Shop Tickets"
+        Lang["Txt_Disabled"] := "Disabled"
     } else if (Language = 2) {
         ;; 中文 GUI Text
         Lang["fail_fetch"] := "無法取得發行資訊。" ; checkForUpdate
@@ -175,6 +186,16 @@
         Lang["btn_theme_Light"] := "淺色"
 
         Lang["FriendIDLabel"] := "你的遊戲ID"
+        Lang["InstanceSettings"] := "模擬器設定"
+        Lang["BotSettings"] := "刷包設定"
+        Lang["TimeSettings"] := "時間設定"
+        Lang["PackHeading"] := "卡包選擇"
+        Lang["CardDetection"] := "卡片偵測"
+        Lang["SaveForTrade"] := "保存交換"
+        Lang["GroupSettings"] := "群組設定"
+        Lang["DiscordSettingsHeading"] := "Discord 設定"
+        Lang["HeartbeatSettingsSubHeading"] := "心跳設定"
+        
         Lang["Txt_Instances"] := "模擬器數量："
         Lang["Txt_InstanceStartDelay"] := "啟動延遲："
         Lang["Txt_Columns"] := "排列數："
@@ -200,6 +221,7 @@
         Lang["Txt_tesseractOption"] := "啟用 Tesseract"
         Lang["Txt_statusMessage"] := "顯示狀態訊息"
         Lang["Txt_TesseractPath"] := "Tesseract 路徑："
+        Lang["Txt_SystemSettings"] := "系統設定"
 
         Lang["Txt_MinStars"] := "最小 2 ★："
         Lang["Txt_ShinyMinStars"] := "閃光最小  2 ★："
@@ -230,7 +252,6 @@
         Lang["Txt_Mewtwo"] := "超夢"
         Lang["Txt_Mew"] := "夢幻"
         Lang["AllPack"] := "🔎查看所有卡包"
-        Lang["PackHeading"] := "卡包選擇"
 
         Lang["Txt_FullArtCheck"] := "單張全圖"
         Lang["Txt_TrainerCheck"] := "單張人物"
@@ -243,20 +264,21 @@
         Lang["Txt_InvalidCheck"] := "忽略無效包"
 
         Lang["Txt_s4tEnabled"] := "啟用保存交換"
+        Lang["Txt_S4TEnabled"] := "S4T: 已啟用"
+        Lang["Txt_S4TDisabled"] := "已停用"
         Lang["Txt_s4tSilent"] := "靜音（不通知）"
         Lang["Txt_s4tWP"] := "得卡挑戰"
         Lang["Txt_s4tWPMinCards"] := "最少卡數："
         Lang["S4TDiscordSettingsSubHeading"] := "S4T Discord 設定"
         Lang["Txt_s4tSendAccountXml"] := "傳送帳號 XML"
-        Lang["DiscordSettingsHeading"] := "Discord 設定"
+        
         Lang["Txt_sendAccountXml"] := "傳送帳號 XML"
-
-        Lang["HeartbeatSettingsSubHeading"] := "心跳設定"
         Lang["Txt_heartBeat"] := "Discord 心跳"
         Lang["hbName"] := "名稱："
         Lang["hbDelay"] := "間隔時間（分鐘）:"
 
         Lang["Txt_showcaseEnabled"] := "使用 showcase_ids.txt"
+        Lang["Txt_Disabled"] := "已停用"
     } else if (Language = 3) {
         ;; 日本語 GUI Text
         Lang["fail_fetch"] := "新しいリリース情報が見つかりませんでした。" ; checkForUpdate
@@ -303,6 +325,16 @@
         Lang["btn_theme_Light"] := "ライトモード"
 
         Lang["FriendIDLabel"] := "メインアカウントID"
+        Lang["InstanceSettings"] := "エミュ設定"
+        Lang["BotSettings"] := "ボット設定"
+        Lang["TimeSettings"] := "時間設定"
+        Lang["PackHeading"] := "パック選択"
+        Lang["CardDetection"] := "カード検出"
+        Lang["SaveForTrade"] := "交換保存"
+        Lang["GroupSettings"] := "グループ設定"
+        Lang["DiscordSettingsHeading"] := "Discord 設定"
+        Lang["HeartbeatSettingsSubHeading"] := "ハートビート設定"
+        
         Lang["Txt_Instances"] := "エミュレータ数："
         Lang["Txt_InstanceStartDelay"] := "起動遅延："
         Lang["Txt_Columns"] := "列数："
@@ -328,6 +360,7 @@
         Lang["Txt_tesseractOption"] := "Tesseract使用"
         Lang["Txt_statusMessage"] := "ステータスメッセージ"
         Lang["Txt_TesseractPath"] := "Tesseractパス:"
+        Lang["Txt_SystemSettings"] := "システム設定"
 
         Lang["Txt_MinStars"] := "最小 2 ★："
         Lang["Txt_ShinyMinStars"] := "色違い最小  2 ★："
@@ -358,7 +391,6 @@
         Lang["Txt_Mewtwo"] := "ミュウツー"
         Lang["Txt_Mew"] := "ミュウ"
         Lang["AllPack"] := "🔎パックを表示"
-        Lang["PackHeading"] := "パックを選択"
 
         Lang["Txt_FullArtCheck"] := "単枚フルアート"
         Lang["Txt_TrainerCheck"] := "単枚トレーナー"
@@ -371,20 +403,21 @@
         Lang["Txt_InvalidCheck"] := "無効パック無視"
 
         Lang["Txt_s4tEnabled"] := "交換保存を有効化"
+        Lang["Txt_S4TEnabled"] := "S4T: 有効"
+        Lang["Txt_S4TDisabled"] := "無効"
         Lang["Txt_s4tSilent"] := "通知なし（サイレント）"
         Lang["Txt_s4tWP"] := "ゲットチャレンジ"
         Lang["Txt_s4tWPMinCards"] := "最小枚数："
         Lang["S4TDiscordSettingsSubHeading"] := "S4T Discord 設定"
         Lang["Txt_s4tSendAccountXml"] := "アカウント XML 送信"
-        Lang["DiscordSettingsHeading"] := "Discord 設定"
+        
         Lang["Txt_sendAccountXml"] := "アカウント XML 送信"
-
-        Lang["HeartbeatSettingsSubHeading"] := "ハートビート設定"
         Lang["Txt_heartBeat"] := "Discord ハートビート"
         Lang["hbName"] := "名称："
         Lang["hbDelay"] := "ハートビート間隔（分）："
 
         Lang["Txt_showcaseEnabled"] := "showcase_ids.txt を使用"
+        Lang["Txt_Disabled"] := "無効"
     } else if (Language = 4) {
         ;; Deutsch GUI Text
         Lang["fail_fetch"] := "Abrufen der Versionsinformationen fehlgeschlagen." ; checkForUpdate
@@ -420,12 +453,11 @@
         Lang["btn_update"] := "Auf Updates überprüfen"
         Lang["btn_setting"] := "Einstellungen"
         Lang["btn_return"] := "↩️ Zurück"
-        Lang["PackHeading"] := "Pack Selection"
 
         Lang["btn_ToolTip"] := "QuickInfo"
         Lang["btn_Language"] := "Sprache"
         Lang["languageNotice"] := "PTCGPB.ahk muss neu geladen werden, um die Sprache zu wechseln. "
-        Lang["languageNotice"] .= "Klicke auf ‚Ja‘ zum Neuladen oder auf ‚Nein‘, "
+        Lang["languageNotice"] .= "Klicke auf ‚Ja' zum Neuladen oder auf ‚Nein', "
         Lang["languageNotice"] .= "um zu den Einstellungen zurückzukehren."
         Lang["btn_reload"] := "Neu laden"
         Lang["btn_bg_Off"] := "Hintergrund aus"
@@ -434,12 +466,22 @@
         Lang["btn_theme_Light"] := "Hell"
 
         Lang["FriendIDLabel"] := "Deine Freundes-ID"
+        Lang["InstanceSettings"] := "Instanz-Einstellungen"
+        Lang["BotSettings"] := "Bot-Einstellungen"
+        Lang["TimeSettings"] := "Zeit-Einstellungen"
+        Lang["PackHeading"] := "Pack-Auswahl"
+        Lang["CardDetection"] := "Karten-Erkennung"
+        Lang["SaveForTrade"] := "Für Tausch speichern"
+        Lang["GroupSettings"] := "Gruppen-Einstellungen"
+        Lang["DiscordSettingsHeading"] := "Discord Einstellungen"
+        Lang["HeartbeatSettingsSubHeading"] := "Herzschlag Einstellungen"
+        
         Lang["Txt_Instances"] := "Instanzen:"
         Lang["Txt_InstanceStartDelay"] := "Startverzögerung:"
         Lang["Txt_Columns"] := "Spalten:"
         Lang["Txt_runMain"] := "Main Account laufen:"
         Lang["Txt_AccountName"] := "Kontoname:"
-        Lang["Txt_autoUseGPTest"] := "Auto use GP Test (sec):"
+        Lang["Txt_autoUseGPTest"] := "Auto GPTest (s):"
         Lang["Txt_Delay"] := "Verzögerung:"
         Lang["Txt_WaitTime"] := "Wartezeit:"
         Lang["Txt_SwipeSpeed"] := "Wischgeschwindigkeit:"
@@ -459,6 +501,7 @@
         Lang["Txt_tesseractOption"] := "Tesseract nutzen"
         Lang["Txt_statusMessage"] := "Statusnachrichten"
         Lang["Txt_TesseractPath"] := "Tesseract Pfad:"
+        Lang["Txt_SystemSettings"] := "Systemeinstellungen"
 
         Lang["Txt_MinStars"] := "Min. 2 ★:"
         Lang["Txt_ShinyMinStars"] := "2 ★ für Schillernde Packs:"
@@ -489,7 +532,6 @@
         Lang["Txt_Mewtwo"] := "Mewtwo"
         Lang["Txt_Mew"] := "Mew"
         Lang["AllPack"] := "🔎Zeige alle Packs"
-        Lang["PackHeading"] := "Pack-Auswahl"
 
         Lang["Txt_FullArtCheck"] := "Einzelne Full Art"
         Lang["Txt_TrainerCheck"] := "Einzelne Trainer"
@@ -500,19 +542,23 @@
         Lang["Txt_ShinyCheck"] := "Schillernde speichern"
         Lang["Txt_ImmersiveCheck"] := "Immersive speichern"
         Lang["Txt_InvalidCheck"] := "Ignoriere ungültige Packs"
+        
         Lang["Txt_s4tEnabled"] := "Für Tausch speichern aktivieren"
+        Lang["Txt_S4TEnabled"] := "S4T: Aktiviert"
+        Lang["Txt_S4TDisabled"] := "Deaktiviert"
         Lang["Txt_s4tSilent"] := "Still (Kein Ping)"
         Lang["Txt_s4tWP"] := "Wunderwahl"
         Lang["Txt_s4tWPMinCards"] := "Min. Karten:"
         Lang["S4TDiscordSettingsSubHeading"] := "S4T Discord Einstellungen"
         Lang["Txt_s4tSendAccountXml"] := "Account XML senden"
-        Lang["DiscordSettingsHeading"] := "Discord Einstellungen"
+        
         Lang["Txt_sendAccountXml"] := "Account XML senden"
-        Lang["HeartbeatSettingsSubHeading"] := "Herzschlag Einstellungen"
         Lang["Txt_heartBeat"] := "Discord Herzschlag"
         Lang["hbName"] := "Name:"
         Lang["hbDelay"] := "Herzschlag Verzögerung (min):"
+        
         Lang["Txt_showcaseEnabled"] := "Showcase aus showcase_ids.txt verwenden"
+        Lang["Txt_Disabled"] := "Deaktiviert"
     }
     return Lang
 }
@@ -616,7 +662,7 @@ CreateSetUpByLanguage(Language) {
         SetUpLang["Confirm_StartBot"] .= " Click 'No' to CHANGE settings."
     } else if (Language = 2) {
         SetUpLang["Error_BotPathTooLong"] := "機器人資料夾的路徑太長或包含空白，"
-        SetUpLang["Error_BotPathTooLong"] := "請將其移至較短且不含空格的路徑"
+        SetUpLang["Error_BotPathTooLong"] .= "請將其移至較短且不含空格的路徑"
         SetUpLang["Confirm_SelectedMethod"] := "刷包法："
         SetUpLang["Confirm_RangeValue"] := "範圍："
         SetUpLang["Confirm_MaxPackCount"] := "最大卡包數量："
@@ -722,9 +768,9 @@ CreateSetUpByLanguage(Language) {
         SetUpLang["Confirm_WonderPick"] := "Wunderwahl"
         SetUpLang["Confirm_MinCards"] := "Min. Karten"
         SetUpLang["Confirm_XMLWarning"] := "⚠️ WARNUNG: Account XML senden ist aktiviert. Diese Einstellung wird nur zur alleinigen Nutzung empfohlen. Verwenden Sie sie nicht in Gruppen, da Ihre Konten mit anderen Mitgliedern Ihrer Gruppe geteilt werden."
-        SetUpLang["Confirm_StartBot"] := "Klicke auf „Ja“, um den BOT mit diesen "
+        SetUpLang["Confirm_StartBot"] := "Klicke auf Ja, um den BOT mit diesen "
         SetUpLang["Confirm_StartBot"] .= "Einstellungen zu STARTEN. Klicke auf "
-        SetUpLang["Confirm_StartBot"] .= "„Nein“, um die Einstellungen zu ÄNDERN."
+        SetUpLang["Confirm_StartBot"] .= "Nein, um die Einstellungen zu ÄNDERN."
     }
     return SetUPLang
 }
