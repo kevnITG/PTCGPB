@@ -1203,18 +1203,22 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         confirmed := true
     }
 
-        ; detect if no free packs are available, such as user loaded account without free packs
+    ; detect if no free packs are available, such as user loaded account without free packs
     IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
-    if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount && openExtraPack = 0) {
-        Path = %imagePath%HourglassPack.png
-        pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
-        if(vRet = 1) {
-            cantOpenMorePacks := 1
-                if(injectMethod && loadedAccount) {
-                MarkAccountAsUsed()
-                }
-            return 0
+    if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount) {
+        ; Don't trigger this during Hourglass opening, only free packs
+        if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
+        } else {
+            Path = %imagePath%HourglassPack.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
+            if(vRet = 1) {
+                cantOpenMorePacks := 1
+                    if(injectMethod && loadedAccount) {
+                    MarkAccountAsUsed()
+                    }
+                return 0
+            }
         }
     }
 
@@ -1527,16 +1531,20 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
 
         ; detect if no free packs are available, such as user loaded account without free packs
         IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
-        if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount && openExtraPack = 0) {
-            Path = %imagePath%HourglassPack.png
-            pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
-            if(vRet = 1) {
-                cantOpenMorePacks := 1
-                    if(injectMethod && loadedAccount) {
-                    MarkAccountAsUsed()
-                    }
-                return 0
+        if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount) {
+            ; Don't trigger this during Hourglass opening, only free packs
+            if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
+            } else {
+                Path = %imagePath%HourglassPack.png
+                pNeedle := GetNeedle(Path)
+                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
+                if(vRet = 1) {
+                    cantOpenMorePacks := 1
+                        if(injectMethod && loadedAccount) {
+                        MarkAccountAsUsed()
+                        }
+                    return 0
+                }
             }
         }
 
@@ -4209,8 +4217,8 @@ SelectPack(HG := false) {
                 break
             } else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
                 cantOpenMorePacks := 1
-            } else if(FindOrLoseImage(191, 393, 211, 411, , "Shop", 0, failSafeTime)) {
-                SelectPack("HGPack")
+            ; } else if(FindOrLoseImage(191, 393, 211, 411, , "Shop", 0, failSafeTime)) {
+            ;     SelectPack("HGPack")
             } else {
                 ; if this is not supposed to be an HGPack, but HGPack confirmation pops up unexpectedly, handle Open button
                 if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
