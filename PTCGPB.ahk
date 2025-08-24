@@ -244,37 +244,37 @@ NextStep:
 
    sectionColor := "cFF4500"
    Gui, Font, s10 cWhite, Segoe UI
-   Gui, Add, GroupBox, x255 y55 w180 h50 %sectionColor%, % currentDictionary.CardDetection
+   Gui, Add, GroupBox, x255 y65 w180 h50 %sectionColor%, % currentDictionary.CardDetection
    
-   Gui, Add, Button, x275 y75 w140 h25 gShowCardDetection vCardDetectionButton BackgroundTrans, Loading...
+   Gui, Add, Button, x275 y85 w140 h25 gShowCardDetection vCardDetectionButton BackgroundTrans, Loading...
    
    UpdateCardDetectionButtonText()
 
    sectionColor := "c4169E1"
    Gui, Font, s10 cWhite, Segoe UI
-   Gui, Add, GroupBox, x255 y110 w180 h50 %sectionColor%, % currentDictionary.SaveForTrade
+   Gui, Add, GroupBox, x255 y130 w180 h50 %sectionColor%, % currentDictionary.SaveForTrade
    
-   Gui, Add, Button, x275 y130 w140 h25 gShowS4TSettings vS4TButton BackgroundTrans, Loading...
+   Gui, Add, Button, x275 y150 w140 h25 gShowS4TSettings vS4TButton BackgroundTrans, Loading...
    
    UpdateS4TButtonText()
 
    sectionColor := "cWhite"
    Gui, Font, s10 cWhite, Segoe UI
-   Gui, Add, GroupBox, x255 y165 w180 h50 %sectionColor%, % currentDictionary.GroupSettings
+   Gui, Add, GroupBox, x255 y195 w180 h50 %sectionColor%, % currentDictionary.GroupSettings
 
-   Gui, Add, Button, x275 y185 w140 h25 gShowGroupRerollSettings vGroupRerollButton BackgroundTrans, Loading...
+   Gui, Add, Button, x275 y215 w140 h25 gShowGroupRerollSettings vGroupRerollButton BackgroundTrans, Loading...
 
    UpdateGroupRerollButtonText()
 
    Gui, Font, s10 cWhite, Segoe UI
    sectionColor := "c9370DB"
-   Gui, Add, GroupBox, x255 y220 w180 h100 %sectionColor%, % currentDictionary.TimeSettings
-   Gui, Add, Text, x270 y245 %sectionColor%, % currentDictionary.Txt_Delay
-   Gui, Add, Edit, vDelay w30 x400 y245 h20 -E0x200 Background2A2A2A cWhite Center, %Delay%
-   Gui, Add, Text, x270 y270 %sectionColor%, % currentDictionary.Txt_SwipeSpeed
-   Gui, Add, Edit, vswipeSpeed w30 x400 y270 h20 -E0x200 Background2A2A2A cWhite Center, %swipeSpeed%
-   Gui, Add, Text, x270 y295 %sectionColor%, % currentDictionary.Txt_WaitTime
-   Gui, Add, Edit, vwaitTime w30 x400 y295 h20 -E0x200 Background2A2A2A cWhite Center, %waitTime%
+   Gui, Add, GroupBox, x255 y260 w180 h100 %sectionColor%, % currentDictionary.TimeSettings
+   Gui, Add, Text, x270 y285 %sectionColor%, % currentDictionary.Txt_Delay
+   Gui, Add, Edit, vDelay w30 x400 y285 h20 -E0x200 Background2A2A2A cWhite Center, %Delay%
+   Gui, Add, Text, x270 y310 %sectionColor%, % currentDictionary.Txt_SwipeSpeed
+   Gui, Add, Edit, vswipeSpeed w30 x400 y310 h20 -E0x200 Background2A2A2A cWhite Center, %swipeSpeed%
+   Gui, Add, Text, x270 y335 %sectionColor%, % currentDictionary.Txt_WaitTime
+   Gui, Add, Edit, vwaitTime w30 x400 y335 h20 -E0x200 Background2A2A2A cWhite Center, %waitTime%
 
    sectionColor := "cFF69B4"
    Gui, Font, s10 cWhite, Segoe UI
@@ -623,11 +623,12 @@ ShowCardDetection:
     yPos := 15
     
     Gui, CardDetect:Add, Text, x15 y%yPos% cWhite, Min GP 2★:
-    Gui, CardDetect:Add, Edit, vminStars_Popup w40 x100 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %minStars%
+    Gui, CardDetect:Add, Edit, vminStars_Popup w20 x140 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %minStars%
     yPos += 25
 
     Gui, CardDetect:Add, Text, x15 y%yPos% cWhite, Min GP 2★ (Shiny):
-    Gui, CardDetect:Add, Edit, vminStarsShiny_Popup w40 x100 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %minStarsShiny%
+    Gui, CardDetect:Add, Edit, vminStarsShiny_Popup w20 x140 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %minStarsShiny%
+    yPos += 25
       
     Gui, CardDetect:Add, Checkbox, % (FullArtCheck ? "Checked" : "") " vFullArtCheck_Popup x15 y" . yPos . " cWhite", Single Full Art 2★
     yPos += 25
