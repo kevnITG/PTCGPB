@@ -415,11 +415,13 @@ SortByDropdownHandler:
 return
 
 UpdatePackSelectionButtonText() {
-    global HoOh, Lugia, Eevee, Buzzwole, Solgaleo, Lunala, Shining, Arceus
+    global Springs, HoOh, Lugia, Eevee, Buzzwole, Solgaleo, Lunala, Shining, Arceus
     global Palkia, Dialga, Pikachu, Charizard, Mewtwo, Mew, currentDictionary
     
     selectedPacks := []
 
+   if (Springs)
+        selectedPacks.Push(currentDictionary.Txt_Springs)
     if (HoOh)
         selectedPacks.Push(currentDictionary.Txt_HoOh)
     if (Lugia)
@@ -488,8 +490,10 @@ ShowPackSelection:
     Gui, PackSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Pack Selection
     Gui, PackSelect:Color, 1E1E1E, 333333
     Gui, PackSelect:Font, s10 cWhite, Segoe UI
-    
+
     yPos := 10
+    Gui, PackSelect:Add, Checkbox, % (Springs ? "Checked" : "") " vSprings_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Springs
+    yPos += 25
     Gui, PackSelect:Add, Checkbox, % (HoOh ? "Checked" : "") " vHoOh_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_HoOh
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (Lugia ? "Checked" : "") " vLugia_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Lugia
@@ -529,6 +533,7 @@ return
 ApplyPackSelection:
     Gui, PackSelect:Submit, NoHide
     
+    Springs := Springs_Popup
     HoOh := HoOh_Popup
     Lugia := Lugia_Popup
     Eevee := Eevee_Popup
@@ -1213,6 +1218,8 @@ Save:
   confirmMsg .= "`n"
   
   confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
+  if (Springs)
+    confirmMsg .= "• " . currentDictionary.Txt_Springs . "`n"
   if (HoOh)
     confirmMsg .= "• " . currentDictionary.Txt_HoOh . "`n"
   if (Lugia)
@@ -1653,8 +1660,9 @@ LoadSettingsFromIni() {
       IniRead, Lunala, Settings.ini, UserSettings, Lunala, 0
       IniRead, Buzzwole, Settings.ini, UserSettings, Buzzwole, 0
       IniRead, Eevee, Settings.ini, UserSettings, Eevee, 0
-      IniRead, HoOh, Settings.ini, UserSettings, HoOh, 1
-      IniRead, Lugia, Settings.ini, UserSettings, Lugia, 1
+      IniRead, HoOh, Settings.ini, UserSettings, HoOh, 0
+      IniRead, Lugia, Settings.ini, UserSettings, Lugia, 0
+      IniRead, Springs, Settings.ini, UserSettings, Springs, 1
       
       IniRead, CheckShinyPackOnly, Settings.ini, UserSettings, CheckShinyPackOnly, 0
       IniRead, TrainerCheck, Settings.ini, UserSettings, TrainerCheck, 0
@@ -1707,6 +1715,7 @@ LoadSettingsFromIni() {
       IniRead, minStarsA3b, Settings.ini, UserSettings, minStarsA3b, 0
       IniRead, minStarsA4HoOh, Settings.ini, UserSettings, minStarsA4HoOh, 0
       IniRead, minStarsA4Lugia, Settings.ini, UserSettings, minStarsA4Lugia, 0
+      IniRead, minStarsA4Springs, Settings.ini, UserSettings, minStarsA4Springs, 0
       
       IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
@@ -1798,7 +1807,7 @@ SaveAllSettings() {
    global autoLaunchMonitor, autoUseGPTest, TestTime, groupRerollEnabled
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
-   global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, slowMotion, ocrLanguage, clientLanguage
+   global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, slowMotion, ocrLanguage, clientLanguage
    global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, isDarkTheme
    global useBackgroundImage, tesseractPath, debugMode, useTesseract, statusMessage
    global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards
@@ -1850,6 +1859,7 @@ SaveAllSettings() {
    iniContent .= "Eevee=" Eevee "`n"
    iniContent .= "HoOh=" HoOh "`n"
    iniContent .= "Lugia=" Lugia "`n"
+   iniContent .= "Springs=" Springs "`n"
    iniContent .= "CheckShinyPackOnly=" CheckShinyPackOnly "`n"
    iniContent .= "TrainerCheck=" TrainerCheck "`n"
    iniContent .= "FullArtCheck=" FullArtCheck "`n"
@@ -1953,6 +1963,7 @@ SaveAllSettings() {
    iniContent_Second .= "minStarsA3b=" minStarsA3b "`n"
    iniContent_Second .= "minStarsA4HoOh=" minStarsA4HoOh "`n"
    iniContent_Second .= "minStarsA4Lugia=" minStarsA4Lugia "`n"
+   iniContent_Second .= "minStarsA4Springs=" minStarsA4Springs "`n"
    iniContent_Second .= "s4tWPMinCards=" s4tWPMinCards "`n"
    iniContent_Second .= "s4tDiscordUserId=" s4tDiscordUserId "`n"
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"
@@ -1993,7 +2004,7 @@ StartBot() {
    global mainIdsURL, showcaseEnabled, defaultLanguage, scaleParam, FriendID
    global heartBeat, heartBeatName, heartBeatWebhookURL, heartBeatDelay, debugMode
    global Shining, Arceus, Palkia, Dialga, Mew, Pikachu, Charizard, Mewtwo
-   global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, packMethod, nukeAccount
+   global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, packMethod, nukeAccount
    global SelectedMonitorIndex, localVersion, githubUser, rerollTime, PackGuiBuild
    
    PackGuiBuild := 0
@@ -2146,6 +2157,8 @@ StartBot() {
       Selected.Push("HoOh")
    if(Lugia)
       Selected.Push("Lugia")
+   if(Springs)
+      Selected.Push("Springs")
    
    for index, value in Selected {
       if(index = Selected.MaxIndex())

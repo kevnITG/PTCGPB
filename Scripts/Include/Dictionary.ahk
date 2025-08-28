@@ -98,6 +98,7 @@
         Lang["Txt_claimSpecialMissions"] := "Claim Special Missions"
         Lang["SortByText"] := "Sort By:"
 
+        Lang["Txt_Springs"] := "Springs"
         Lang["Txt_HoOh"] := "Ho-Oh"
         Lang["Txt_Lugia"] := "Lugia"
         Lang["Txt_Eevee"] := "Eevee"
@@ -141,7 +142,7 @@
         Lang["Txt_showcaseEnabled"] := "Collect 5 Daily Shop Tickets"
         Lang["Txt_Disabled"] := "Disabled"
     } else if (Language = 2) {
-        ;; 中文 GUI Text
+        ;; 中文 Chinese GUI Text
         Lang["fail_fetch"] := "無法取得發行資訊。" ; checkForUpdate
         Lang["fail_url"] := "無法在發行資訊中找到 ZIP 下載連結。"
         Lang["fail_version"] := "無法取得版本資訊。"
@@ -237,6 +238,7 @@
         Lang["Txt_claimSpecialMissions"] := "領取特殊任務"
         Lang["SortByText"] := "注入排序："
 
+        Lang["Txt_Springs"] := "未知水域"
         Lang["Txt_HoOh"] := "鳳王"
         Lang["Txt_Lugia"] := "洛奇亞"
         Lang["Txt_Eevee"] := "伊布"
@@ -280,7 +282,7 @@
         Lang["Txt_showcaseEnabled"] := "使用 showcase_ids.txt"
         Lang["Txt_Disabled"] := "已停用"
     } else if (Language = 3) {
-        ;; 日本語 GUI Text
+        ;; 日本語 Japanese GUI Text
         Lang["fail_fetch"] := "新しいリリース情報が見つかりませんでした。" ; checkForUpdate
         Lang["fail_url"] := "リリース情報にZIPダウンロードURLが見つかりません。"
         Lang["fail_version"] := "バージョン情報の取得に失敗しました。"
@@ -376,6 +378,7 @@
         Lang["Txt_claimSpecialMissions"] := "イベント"
         Lang["SortByText"] := "注入序列："
 
+        Lang["Txt_Springs"] := "未知なる水域"
         Lang["Txt_HoOh"] := "ホウオウ"
         Lang["Txt_Lugia"] := "ルギア"
         Lang["Txt_Eevee"] := "イーブイ"
@@ -419,7 +422,7 @@
         Lang["Txt_showcaseEnabled"] := "showcase_ids.txt を使用"
         Lang["Txt_Disabled"] := "無効"
     } else if (Language = 4) {
-        ;; Deutsch GUI Text
+        ;; Deutsch German GUI Text
         Lang["fail_fetch"] := "Abrufen der Versionsinformationen fehlgeschlagen." ; checkForUpdate
         Lang["fail_url"] := "Die ZIP-Download-URL konnte in dieser Version nicht gefunden werden."
         Lang["fail_version"] := "Versionsinformationen konnten nicht abgerufen werden."
@@ -516,7 +519,8 @@
         Lang["Txt_openExtraPack"] := "Extra-Pack öffnen"
         Lang["Txt_claimSpecialMissions"] := "Spezialmissionen"
         Lang["SortByText"] := "Sortieren nach:"
-        
+
+        Lang["Txt_Springs"] := "Verborgene Quelle"
         Lang["Txt_HoOh"] := "Ho-Oh"
         Lang["Txt_Lugia"] := "Lugia"
         Lang["Txt_Eevee"] := "Evoli"
