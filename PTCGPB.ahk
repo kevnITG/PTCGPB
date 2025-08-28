@@ -420,7 +420,7 @@ UpdatePackSelectionButtonText() {
     
     selectedPacks := []
 
-   if (Springs)
+    if (Springs)
         selectedPacks.Push(currentDictionary.Txt_Springs)
     if (HoOh)
         selectedPacks.Push(currentDictionary.Txt_HoOh)
@@ -710,9 +710,9 @@ UpdateGroupRerollButtonText() {
     statusText .= "`n" . idsStatus . " ids API " . vipStatus . " vip_ids API"
     
     if (autoUseGPTest)
-        statusText .= "`n• Auto GPTest"
+        statusText .= "`n- Auto GPTest"
     if (applyRoleFilters)
-        statusText .= "`n• Role-Based filters"
+        statusText .= "`n- Role-Based filters"
     
     Gui, Font, s7 cLime, Segoe UI
     GuiControl, Font, GroupRerollButton
@@ -1219,35 +1219,35 @@ Save:
   
   confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
   if (Springs)
-    confirmMsg .= "• " . currentDictionary.Txt_Springs . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Springs . "`n"
   if (HoOh)
-    confirmMsg .= "• " . currentDictionary.Txt_HoOh . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_HoOh . "`n"
   if (Lugia)
-    confirmMsg .= "• " . currentDictionary.Txt_Lugia . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Lugia . "`n"
   if (Eevee) 
-    confirmMsg .= "• " . currentDictionary.Txt_Eevee . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Eevee . "`n"
   if (Buzzwole)
-    confirmMsg .= "• " . currentDictionary.Txt_Buzzwole . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Buzzwole . "`n"
   if (Solgaleo)
-    confirmMsg .= "• " . currentDictionary.Txt_Solgaleo . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Solgaleo . "`n"
   if (Lunala)
-    confirmMsg .= "• " . currentDictionary.Txt_Lunala . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Lunala . "`n"
   if (Shining)
-    confirmMsg .= "• " . currentDictionary.Txt_Shining . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Shining . "`n"
   if (Arceus)
-    confirmMsg .= "• " . currentDictionary.Txt_Arceus . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Arceus . "`n"
   if (Palkia)
-    confirmMsg .= "• " . currentDictionary.Txt_Palkia . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Palkia . "`n"
   if (Dialga)
-    confirmMsg .= "• " . currentDictionary.Txt_Dialga . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Dialga . "`n"
   if (Pikachu)
-    confirmMsg .= "• " . currentDictionary.Txt_Pikachu . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Pikachu . "`n"
   if (Charizard)
-    confirmMsg .= "• " . currentDictionary.Txt_Charizard . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Charizard . "`n"
   if (Mewtwo)
-    confirmMsg .= "• " . currentDictionary.Txt_Mewtwo . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Mewtwo . "`n"
   if (Mew)
-    confirmMsg .= "• " . currentDictionary.Txt_Mew . "`n"
+    confirmMsg .= "- " . currentDictionary.Txt_Mew . "`n"
   
   additionalSettings := ""
   if (packMethod)
@@ -1261,7 +1261,7 @@ Save:
   if (claimSpecialMissions)
     additionalSettings .= SetUpDictionary.Confirm_ClaimMissions . "`n"
   if (showcaseEnabled)
-    additionalSettings .= "• Showcase Likes`n"
+    additionalSettings .= "- Showcase Likes`n"
   if (injectMethod) {
     additionalSettings .= SetUpDictionary.Confirm_SortBy . " "
     if (injectSortMethod = "ModifiedAsc")
@@ -1306,15 +1306,15 @@ Save:
     confirmMsg .= "`n" . SetUpDictionary.Confirm_SaveForTrade . ": " . SetUpDictionary.Confirm_Enabled . "`n"
     s4tSettings := ""
     if (s4t1Star)
-      s4tSettings .= "• 1 Star`n"
+      s4tSettings .= "- 1 Star`n"
     if (s4t3Dmnd)
-      s4tSettings .= "• 3 Diamond`n"
+      s4tSettings .= "- 3 Diamond`n"
     if (s4t4Dmnd)
-      s4tSettings .= "• 4 Diamond`n"
+      s4tSettings .= "- 4 Diamond`n"
     if (s4tWP)
-      s4tSettings .= "• " . SetUpDictionary.Confirm_WonderPick . " (" . s4tWPMinCards . " " . SetUpDictionary.Confirm_MinCards . ")`n"
+      s4tSettings .= "- " . SetUpDictionary.Confirm_WonderPick . " (" . s4tWPMinCards . " " . SetUpDictionary.Confirm_MinCards . ")`n"
     if (s4tSilent)
-      s4tSettings .= "• " . SetUpDictionary.Confirm_SilentPings . "`n"
+      s4tSettings .= "- " . SetUpDictionary.Confirm_SilentPings . "`n"
     confirmMsg .= s4tSettings
   }
   
@@ -2710,4 +2710,3 @@ KillAllScripts() {
    Run, https://discord.com/invite/C9Nyf7P4sT
    Return
 }
-
