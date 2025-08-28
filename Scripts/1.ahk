@@ -1,4 +1,4 @@
-﻿#Include %A_ScriptDir%\Include\Logging.ahk
+#Include %A_ScriptDir%\Include\Logging.ahk
 #Include %A_ScriptDir%\Include\ADB.ahk
 #Include %A_ScriptDir%\Include\Gdip_All.ahk
 #Include %A_ScriptDir%\Include\Gdip_Imagesearch.ahk
@@ -3989,17 +3989,16 @@ SelectPack(HG := false) {
     packy := HomeScreenAllPackY
     if (openPack == "HoOh") {
         packx := RightPackX
-        } else if (openPack == "Springs") {
+    } else if (openPack == "Springs") {
             packx := MiddlePackX
-        } else if (openPack == "Eevee") {
+    } else {
             packx := LeftPackX
-        }
     }
 	
 	if(openPack == "Eevee" || openPack == "HoOh" || openPack == "Springs") {
 		PackIsInHomeScreen := 1
-	} else {
-		PackIsInHomeScreen := 0
+    } else {
+        PackIsInHomeScreen := 0
 	}
 	
 	if(openPack == "Springs") {
@@ -4087,11 +4086,11 @@ SelectPack(HG := false) {
         if (openPack = "Shining" || openPack = "Solgaleo" || openPack = "Lunala" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
             X := 266
             Y1 := 430
-            Y2 := 350
+            Y2 := 50 ; changed from 350
             
-            Loop, 4 {
+            Loop, 5 {
                 adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
-                Sleep, 500 ;
+                Sleep, 300 ;
             }
 			if (openPack = "Shining") {
                 packx := SelectExpansionRightCollumnMiddleX
