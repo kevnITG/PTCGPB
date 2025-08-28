@@ -72,11 +72,11 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v7.0.0alpha"
+   ,localVersion := "v7.0.1"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
-   ,intro := "Wisdom of Sea and Sky"
+   ,intro := "Secluded Springs"
 
 global GUI_WIDTH := 790
 global GUI_HEIGHT := 370
@@ -2710,3 +2710,4 @@ KillAllScripts() {
    Run, https://discord.com/invite/C9Nyf7P4sT
    Return
 }
+
