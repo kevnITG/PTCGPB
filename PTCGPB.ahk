@@ -1,4 +1,4 @@
-﻿DisplayPackStatus(Message, X := 0, Y := 625) {
+DisplayPackStatus(Message, X := 0, Y := 625) {
    global SelectedMonitorIndex
    static GuiName := "ScreenPackStatus"
    
@@ -1318,9 +1318,12 @@ Save:
     confirmMsg .= s4tSettings
   }
   
-  if (sendAccountXml || s4tSendAccountXml) {
+  if (s4tSendAccountXml && s4tEnabled) {
     confirmMsg .= "`n" . SetUpDictionary.Confirm_XMLWarning . "`n"
-  }
+   }
+  if (sendAccountXml) {
+    confirmMsg .= "`n" . SetUpDictionary.Confirm_XMLWarning . "`n"
+   }
   
   confirmMsg .= "`n" . SetUpDictionary.Confirm_StartBot
   
