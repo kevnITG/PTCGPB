@@ -4299,9 +4299,12 @@ HourglassOpening(HG := false, NEIRestart := true) {
             }
 			if(cantOpenMorePacks)
 				return
+            if(failSafeTime >= 45) {
+                restartGameInstance("Stuck waiting for HourglassPack")
+                return
+            }
             adbClick_wbb(146, 439)
             Delay(1)
-            failSafeTime := (A_TickCount - failSafe) // 1000
             CreateStatusMessage("Waiting for HourglassPack`n(" . failSafeTime . "/45 seconds)")
         }
         failSafe := A_TickCount
