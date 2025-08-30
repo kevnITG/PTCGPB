@@ -1042,6 +1042,7 @@ AddFriends(renew := false, getFC := false) {
         Loop {
             adbClick_wbb(232, 453)
             if(FindOrLoseImage(165, 250, 190, 275, , "Send", 0, failSafeTime)) {
+                Delay(1) ; otherwise it will sometimes click before UI finishes loading
                 adbClick_wbb(243, 258)
                 adbClick_wbb(243, 258)
                 adbClick_wbb(243, 258)
@@ -1054,7 +1055,7 @@ AddFriends(renew := false, getFC := false) {
                 if(renew){
                     FindImageAndClick(135, 355, 160, 385, , "Remove", 193, 258)
                     FindImageAndClick(165, 250, 190, 275, , "Send", 200, 372)
-                    Delay(2) ; otherwise it will click before UI finishes loading
+                    Delay(1) ; otherwise it will sometimes click before UI finishes loading
                     adbClick_wbb(243, 258)
                     adbClick_wbb(243, 258)
                     adbClick_wbb(243, 258)
@@ -1202,25 +1203,6 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         confirmed := vPosXY
     } else if(!confirmed && vRet = GDEL && GDEL = 0) {
         confirmed := true
-    }
-
-    ; detect if no free packs are available, such as user loaded account without free packs
-    IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
-    if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount) {
-        ; Don't trigger this during Hourglass opening, only free packs
-        if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
-        } else {
-            Path = %imagePath%HourglassPack.png
-            pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
-            if(vRet = 1) {
-                cantOpenMorePacks := 1
-                    if(injectMethod && loadedAccount) {
-                    MarkAccountAsUsed()
-                    }
-                return 0
-            }
-        }
     }
 
     ; Handle 7/2025 trade news update popup, remove later patch
@@ -1527,26 +1509,6 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 adbClick_wbb(139, 386)
             }
             Sleep, 5000 ; longer sleep time to allow reloading, previously 1000ms
-        }
-
-
-        ; detect if no free packs are available, such as user loaded account without free packs
-        IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
-        if((imageName = "Skip2" || imageName = "Pack") && spendHourGlass = 0 && injectMethod && loadedAccount) {
-            ; Don't trigger this during Hourglass opening, only free packs
-            if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
-            } else {
-                Path = %imagePath%HourglassPack.png
-                pNeedle := GetNeedle(Path)
-                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 64, 446, 89, 475, 20)
-                if(vRet = 1) {
-                    cantOpenMorePacks := 1
-                        if(injectMethod && loadedAccount) {
-                        MarkAccountAsUsed()
-                        }
-                    return 0
-                }
-            }
         }
 
         ; Search for 7/2025 trade news update popup; can be removed later patch
@@ -4380,6 +4342,9 @@ HourglassOpening(HG := false, NEIRestart := true) {
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Pack`n(" . failSafeTime . "/45 seconds)")
         if(failSafeTime > 45)
+            if(injectMethod && loadedAccount && friended) {
+                IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+            }
             restartGameInstance("Stuck at Pack")
     }
 
