@@ -669,7 +669,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         AppendToJsonFile(packsThisRun)
 		
         ; Check for 40 first to quit	
-        if (deleteMethod = "Inject 13-39P" || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum) {
+        if (deleteMethod = "Inject 13-39P" && accountOpenPacks >= maxAccountPackNum) {
             if (injectMethod && loadedAccount) {
                 if (!keepAccount) {
                     MarkAccountAsUsed() 
@@ -4344,11 +4344,12 @@ HourglassOpening(HG := false, NEIRestart := true) {
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Pack`n(" . failSafeTime . "/45 seconds)")
-        if(failSafeTime > 45)
+        if(failSafeTime > 45) {
             if(injectMethod && loadedAccount && friended) {
                 IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
             }
             restartGameInstance("Stuck at Pack")
+        }
     }
 
     if(setSpeed > 1) {
