@@ -328,6 +328,10 @@ NextStep:
    Gui, Font, s10 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.0.0 (kevinnnn)"
 
+   ; Special missions collection
+   Gui, Add, Button, x621 y160 w155 h20 gClearSpecialMissionHistory BackgroundTrans, Clear Special Mission History
+   Gui, Add, Checkbox, % (claimSpecialMissions ? "Checked" : "") " vclaimSpecialMissions gclaimSpecialMissionsHandler x621 y185 cWhite", Collect 2025.09 Event Missions
+
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
    Gui, Add, Button, x621 y240 w155 h40 gLaunchAllMumu BackgroundTrans, % currentDictionary.btn_mumu
    Gui, Add, Button, gSave x621 y290 w155 h40, Start Bot
@@ -518,7 +522,7 @@ ShowPackSelection:
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (Charizard ? "Checked" : "") " vCharizard_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Charizard
     yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Mewtwo ? "Checked" : "") " vMetwo_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Mewtwo
+    Gui, PackSelect:Add, Checkbox, % (Mewtwo ? "Checked" : "") " vMewtwo_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Mewtwo
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (Pikachu ? "Checked" : "") " vPikachu_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Pikachu
     yPos += 35
@@ -1198,6 +1202,48 @@ discordSettings:
     GuiControl, Hide, hbDelay
   }
 return
+
+claimSpecialMissionsHandler:
+    Gui, Submit, NoHide
+    IniWrite, %claimSpecialMissions%, Settings.ini, UserSettings, claimSpecialMissions
+    return
+
+ClearSpecialMissionHistory:
+    MsgBox, 4, Clear Special Mission History, Reset ALL /Accounts/Saved/ .xml files Special Mission completion history? This will remove the 'X' suffix from all filenames so that PTCGPB will try collecting Special Missions again on all accounts.
+    IfMsgBox, Yes
+    {
+        baseDir := A_ScriptDir . "\Accounts\Saved"
+        
+        filesProcessed := 0
+        
+        ; Process all XML files in base directory and subdirectories
+        Loop, Files, %baseDir%\*.xml, R
+        {
+            filePath := A_LoopFileFullPath
+            fileName := A_LoopFileName
+            fileDir := A_LoopFileDir
+            
+            ; Check if filename contains (X) or ends with X before .xml
+            if (InStr(fileName, "(") && InStr(fileName, "X") && InStr(fileName, ")"))
+            {
+                ; Remove X from metadata in parentheses
+                newFileName := RegExReplace(fileName, "\(([^X)]*)?X([^)]*)?\)", "($1$2)")
+                ; Clean up empty parentheses
+                newFileName := RegExReplace(newFileName, "\(\)", "")
+                
+                if (newFileName != fileName)
+                {
+                    newFilePath := fileDir . "\" . newFileName
+                    FileMove, %filePath%, %newFilePath%
+                    if (!ErrorLevel)
+                        filesProcessed++
+                }
+            }
+        }
+        
+        MsgBox, 64, Clear Special Mission History Complete
+    }
+    return
 
 Save:
   Gui, Submit, NoHide
@@ -1884,6 +1930,7 @@ SaveAllSettings() {
    iniContent .= "heartBeat=" heartBeat "`n"
    iniContent .= "menuExpanded=" menuExpanded "`n"
    iniContent .= "groupRerollEnabled=" groupRerollEnabled "`n"
+   iniContent .= "claimSpecialMissions=" claimSpecialMissions "`n"
    
    originalDeleteMethod := deleteMethod
    deleteMethod := MigrateDeleteMethod(deleteMethod)

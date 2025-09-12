@@ -613,7 +613,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         ; Special missions
         IniRead, claimSpecialMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, claimSpecialMissions, 0
-        if (claimSpecialMissions = 1 && !specialMissionsDone && !(deleteMethod = "Inject 13-39P" && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
+        if (claimSpecialMissions = 1 && !specialMissionsDone && (deleteMethod = "Inject 13-39P" || deleteMethod = "Inject Wonderpick 39P+")) {
             GoToMain()
             HomeAndMission(1)
             GetEventRewards(true) ; collects all the Special mission hourglass
