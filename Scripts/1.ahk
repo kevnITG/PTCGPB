@@ -40,7 +40,7 @@ avgtotalSeconds := 0
 global accountOpenPacks, accountFileName, accountFileNameOrig, accountFileNameTmp, accountHasPackInfo, ocrSuccess, packsInPool, packsThisRun, aminutes, aseconds, rerolls, rerollStartTime, maxAccountPackNum, cantOpenMorePacks, rerolls_local, rerollStartTime_local
 
 cantOpenMorePacks := 0
-maxAccountPackNum := 40
+maxAccountPackNum := 9999
 aminutes := 0
 aseconds := 0
 
@@ -4658,7 +4658,7 @@ CreateAccountList(instance) {
     if (deleteMethod = "Inject 13-39P") {
         parseInjectType := "Inject 13-39P"
         minPacks := 0
-        maxPacks := 38
+        maxPacks := 9999
     }
     else if (deleteMethod = "Inject Missions") {
         parseInjectType := "Inject Missions"
@@ -5141,7 +5141,7 @@ GetEventRewards(frommain := true){
         CreateStatusMessage("Waiting for Trace`n(" . failSafeTime . "/45 seconds)")
         Delay(1)
     }
-    adbClick_wbb(50, 465)
+    adbClick_wbb(120, 465)
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{

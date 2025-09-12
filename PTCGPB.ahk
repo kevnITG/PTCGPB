@@ -329,9 +329,11 @@ NextStep:
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.0.0 (kevinnnn)"
 
    ; Special missions collection
+   Gui, Font, s7 cWhite
    Gui, Add, Button, x621 y160 w155 h20 gClearSpecialMissionHistory BackgroundTrans, Clear Special Mission History
    Gui, Add, Checkbox, % (claimSpecialMissions ? "Checked" : "") " vclaimSpecialMissions gclaimSpecialMissionsHandler x621 y185 cWhite", Collect 2025.09 Event Missions
 
+   Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
    Gui, Add, Button, x621 y240 w155 h40 gLaunchAllMumu BackgroundTrans, % currentDictionary.btn_mumu
    Gui, Add, Button, gSave x621 y290 w155 h40, Start Bot
@@ -1205,6 +1207,11 @@ return
 
 claimSpecialMissionsHandler:
     Gui, Submit, NoHide
+    if (claimSpecialMissions = "" || claimSpecialMissions = 0)
+        claimSpecialMissions := 0
+    else
+        claimSpecialMissions := 1
+    
     IniWrite, %claimSpecialMissions%, Settings.ini, UserSettings, claimSpecialMissions
     return
 
@@ -1241,7 +1248,7 @@ ClearSpecialMissionHistory:
             }
         }
         
-        MsgBox, 64, Clear Special Mission History Complete
+        MsgBox, 64, Clear Special Mission History Complete, Done
     }
     return
 
@@ -1696,6 +1703,7 @@ LoadSettingsFromIni() {
       IniRead, openExtraPack, Settings.ini, UserSettings, openExtraPack, 0
       IniRead, injectSortMethod, Settings.ini, UserSettings, injectSortMethod, ModifiedAsc
       IniRead, godPack, Settings.ini, UserSettings, godPack, Continue
+      IniRead, claimSpecialMissions, Settings.ini, UserSettings, claimSpecialMissions, 0
       
       IniRead, Palkia, Settings.ini, UserSettings, Palkia, 0
       IniRead, Dialga, Settings.ini, UserSettings, Dialga, 0
@@ -1867,6 +1875,7 @@ SaveAllSettings() {
    global minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b
    global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA3b
    global menuExpanded
+   global claimSpecialMissions
 
    if (deleteMethod != "Inject Wonderpick 39P+") {
        packMethod := false
