@@ -72,7 +72,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v7.0.2"
+   ,localVersion := "v7.0.3alpha"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -326,12 +326,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.0.0 (kevinnnn)"
-
-   ; Special missions collection
-   Gui, Font, s7 cWhite
-   Gui, Add, Button, x621 y160 w155 h20 gClearSpecialMissionHistory BackgroundTrans, Clear Special Mission History
-   Gui, Add, Checkbox, % (claimSpecialMissions ? "Checked" : "") " vclaimSpecialMissions gclaimSpecialMissionsHandler x621 y185 cWhite", Collect 2025.09 Event Missions
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.0.3a (kevinnnn)"
 
    Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
@@ -381,7 +376,7 @@ deleteSettings:
     GuiControl, Hide, FriendID
     GuiControl, Show, spendHourGlass
     GuiControl, Hide, packMethod
-    GuiControl, Hide, openExtraPack
+    GuiControl, Show, openExtraPack
     GuiControl, Hide, nukeAccount
     GuiControl, Show, SortByText
     GuiControl, Show, SortByDropdown
@@ -1066,7 +1061,24 @@ ShowToolsAndSystemSettings:
     yPos += 20
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (showcaseEnabled ? "Checked" : "") " vshowcaseEnabled_Popup x15 y" . yPos . " cWhite", 5x Showcase Likes
     yPos += 20
+    
+    ; NEW: Add Claim Daily Mission checkbox
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (claimDailyMission ? "Checked" : "") " vclaimDailyMission_Popup x15 y" . yPos . " cWhite", Claim Daily Mission
+    yPos += 20
+    
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x15 y" . yPos . " cWhite", 1x speed (no speedmod)
+    yPos += 25
+    
+    ; NEW: Add Clear Special Mission History button
+    Gui, ToolsAndSystemSelect:Add, Button, x15 y%yPos% w200 h20 gClearSpecialMissionHistory, Clear Special Mission History
+    yPos += 25
+    
+    ; NEW: Add Collect Event Missions checkbox
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (claimSpecialMissions ? "Checked" : "") " vclaimSpecialMissions_Popup x15 y" . yPos . " cWhite", Collect 2025.09 Event Missions
+    yPos += 20
+    
+    ; NEW: Add Wonderpick for Event Missions checkbox (indented)
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (wonderpickForEventMissions ? "Checked" : "") " vwonderpickForEventMissions_Popup x30 y" . yPos . " cWhite", WonderpickForEventMissions
     yPos += 25
     
     sectionColor := "c4169E1"
@@ -1161,7 +1173,10 @@ ApplyToolsAndSystemSettings:
     debugMode := debugMode_Popup
     statusMessage := statusMessage_Popup
     showcaseEnabled := showcaseEnabled_Popup
+    claimDailyMission := claimDailyMission_Popup
     slowMotion := slowMotion_Popup
+    claimSpecialMissions := claimSpecialMissions_Popup
+    wonderpickForEventMissions := wonderpickForEventMissions_Popup
     
     SelectedMonitorIndex := SelectedMonitorIndex_Popup
     defaultLanguage := defaultLanguage_Popup
@@ -1179,7 +1194,10 @@ ApplyToolsAndSystemSettings:
     GuiControl,, debugMode, %debugMode%
     GuiControl,, statusMessage, %statusMessage%
     GuiControl,, showcaseEnabled, %showcaseEnabled%
+    GuiControl,, claimDailyMission, %claimDailyMission% 
     GuiControl,, slowMotion, %slowMotion%
+    GuiControl,, claimSpecialMissions, %claimSpecialMissions%
+    GuiControl,, wonderpickForEventMissions, %wonderpickForEventMissions%
 return
 
 CancelToolsAndSystemSettings:
@@ -1252,6 +1270,7 @@ ClearSpecialMissionHistory:
     }
     return
 
+    
 Save:
   Gui, Submit, NoHide
   
@@ -1704,6 +1723,8 @@ LoadSettingsFromIni() {
       IniRead, injectSortMethod, Settings.ini, UserSettings, injectSortMethod, ModifiedAsc
       IniRead, godPack, Settings.ini, UserSettings, godPack, Continue
       IniRead, claimSpecialMissions, Settings.ini, UserSettings, claimSpecialMissions, 0
+      IniRead, claimDailyMission, Settings.ini, UserSettings, claimDailyMission, 0
+      IniRead, wonderpickForEventMissions, Settings.ini, UserSettings, wonderpickForEventMissions, 0
       
       IniRead, Palkia, Settings.ini, UserSettings, Palkia, 0
       IniRead, Dialga, Settings.ini, UserSettings, Dialga, 0
@@ -1875,7 +1896,7 @@ SaveAllSettings() {
    global minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b
    global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA3b
    global menuExpanded
-   global claimSpecialMissions
+   global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
 
    if (deleteMethod != "Inject Wonderpick 39P+") {
        packMethod := false
@@ -1940,7 +1961,9 @@ SaveAllSettings() {
    iniContent .= "menuExpanded=" menuExpanded "`n"
    iniContent .= "groupRerollEnabled=" groupRerollEnabled "`n"
    iniContent .= "claimSpecialMissions=" claimSpecialMissions "`n"
-   
+   iniContent .= "claimDailyMission=" claimDailyMission "`n"
+   iniContent .= "wonderpickForEventMissions=" wonderpickForEventMissions "`n"
+
    originalDeleteMethod := deleteMethod
    deleteMethod := MigrateDeleteMethod(deleteMethod)
    if (deleteMethod = "" || deleteMethod = "ERROR") {

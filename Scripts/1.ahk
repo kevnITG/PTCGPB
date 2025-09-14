@@ -24,6 +24,8 @@ global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgale
 global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a
 global DeadCheck
 global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards, s4tDiscordWebhookURL, s4tDiscordUserId, s4tSendAccountXml
+global claimDailyMission, wonderpickForEventMissions
+
 global avgtotalSeconds
 global verboseLogging := false
 global showcaseEnabled
@@ -152,6 +154,9 @@ IniRead, claimSpecialMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, clai
 IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
 IniRead, openExtraPack, %A_ScriptDir%\..\Settings.ini, UserSettings, openExtraPack, 0
 IniRead, verboseLogging, %A_ScriptDir%\..\Settings.ini, UserSettings, debugMode, 0
+IniRead, claimDailyMission, %A_ScriptDir%\..\Settings.ini, UserSettings, claimDailyMission, 0
+IniRead, wonderpickForEventMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, wonderpickForEventMissions, 0
+
 
 IniRead, s4tEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tEnabled, 0
 IniRead, s4tSilent, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tSilent, 1
@@ -500,20 +505,39 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             }
         }
 
-            ; claim daily hg mission before opening hgpack to prevent server crash during hgpack opening
-        if(deleteMethod = "Inject Wonderpick 39P+" && openExtraPack) {
+        ; Daily Mission 4hg collection and/or extra 3rd pack opening
+        if((deleteMethod = "Inject Wonderpick 39P+" || deleteMethod = "Inject 13-39P") && (claimDailyMission || openExtraPack)) {
             
-            ; Remove & add friends between 2nd free pack & HG pack if 1-pack method is enabled
-            if(packMethod) {
-                friendsAdded := AddFriends(true)
+            ; If only claiming daily missions (no extra pack)
+            if(claimDailyMission && !openExtraPack) {
+                GoToMain()
+                GetAllRewards(false, true)
             }
+            ; If only opening extra pack (no daily mission claim)
+            else if(!claimDailyMission && openExtraPack) {
+                ; Remove & add friends between 2nd free pack & HG pack if 1-pack method is enabled
+                if(packMethod) {
+                    friendsAdded := AddFriends(true)
+                    SelectPack("HGPack")
+                }
+                if(!cantOpenMorePacks) {
+                    HourglassOpening(true)
+                }
+            }
+            ; If both settings are enabled (original functionality)
+            else if(claimDailyMission && openExtraPack) {
+                ; Remove & add friends between 2nd free pack & HG pack if 1-pack method is enabled
+                if(packMethod) {
+                    friendsAdded := AddFriends(true)
+                }
 
-            GoToMain()
-            GetAllRewards(false, true)
-            GoToMain()
-            SelectPack("HGPack")
-            if(!cantOpenMorePacks) {
-                PackOpening()
+                GoToMain()
+                GetAllRewards(false, true)
+                GoToMain()
+                SelectPack("HGPack")
+                if(!cantOpenMorePacks) {
+                    HourglassOpening(true)
+                }
             }
         }
 
@@ -610,6 +634,12 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         }
 
         EndOfRun:
+
+        if(wonderpickForEventMissions) {
+            GoToMain()
+            FindImageAndClick(240, 80, 265, 100, , "WonderPick", 59, 429) ;click until in wonderpick Screen
+            DoWonderPickOnly()
+        }
 
         ; Special missions
         IniRead, claimSpecialMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, claimSpecialMissions, 0
@@ -3995,7 +4025,7 @@ SelectPack(HG := false) {
 			else if(FindOrLoseImage(175, 165, 255, 235, , "Hourglass3", 0)) {
 				;TODO hourglass tutorial still broken after injection
 				Delay(3)
-				adbClick_wbb(146, 441) ; 146 440
+				adbClick_wbb(146, 441)
 				Delay(3)
 				adbClick_wbb(146, 441)
 				Delay(3)
@@ -4005,7 +4035,7 @@ SelectPack(HG := false) {
 				FindImageAndClick(98, 184, 151, 224, , "Hourglass1", 168, 438, 500, 5) ;stop at hourglasses tutorial 2
 				Delay(1)
 
-				adbClick_wbb(203, 436) ; 203 436
+				adbClick_wbb(203, 436)
 				FindImageAndClick(236, 198, 266, 226, , "Hourglass2", 180, 436, 500) ;stop at hourglasses tutorial 2 180 to 203?
 			}
 
@@ -4129,7 +4159,7 @@ SelectPack(HG := false) {
             }
 			if(cantOpenMorePacks)
 				return
-            adbClick_wbb(146, 439)
+            adbClick_wbb(161, 423)
             Delay(1)
             failSafeTime := (A_TickCount - failSafe) // 1000
             CreateStatusMessage("Waiting for HourglassPack3`n(" . failSafeTime . "/45 seconds)")
@@ -4150,23 +4180,22 @@ SelectPack(HG := false) {
         failSafe := A_TickCount
         failSafeTime := 0
         Loop {
-            if(FindImageAndClick(233, 486, 272, 519, , "Skip2", 151, 420)) { ;click on open button until skip button appears
+            adbClick_wbb(151, 420)  ; open button
+            
+            if(FindOrLoseImage(233, 486, 272, 519, , "Skip2", 0)) {
                 break
             } else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
                 cantOpenMorePacks := 1
-            ; } else if(FindOrLoseImage(191, 393, 211, 411, , "Shop", 0, failSafeTime)) {
-            ;     SelectPack("HGPack")
+            } else if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
+                adbClick_wbb(205, 458)  ; Handle unexpected HG pack confirmation
             } else {
-                ; if this is not supposed to be an HGPack, but HGPack confirmation pops up unexpectedly, handle Open button
-                if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
-                    adbClick_wbb(205, 458)
-                }
+                adbClick_wbb(200, 451)  ; Additional fallback click
             }
+        
             if(cantOpenMorePacks)
                 return
                 
             Delay(1)
-            adbClick_wbb(200, 451) ; for hourglass?
             failSafeTime := (A_TickCount - failSafe) // 1000
             CreateStatusMessage("Waiting for Skip2`n(" . failSafeTime . "/45 seconds)")
         }
@@ -4178,15 +4207,16 @@ PackOpening() {
     failSafeTime := 0
     Loop {
         adbClick_wbb(146, 439)
-		;stuck here if not enough items for the second pack
         Delay(1)
         if(FindOrLoseImage(225, 273, 235, 290, , "Pack", 0, failSafeTime)) {
             break ;wait for pack to be ready to Trace and click skip
-		} else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
-			cantOpenMorePacks := 1
-		} else {
+        } else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
+            cantOpenMorePacks := 1
+        } else if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
+            adbClick_wbb(205, 458) ; handle unexpected no packs available
+        } else {
             adbClick_wbb(239, 497)
-		}
+        }
 		
 		if(cantOpenMorePacks)
 			return
@@ -5084,8 +5114,10 @@ setMetaData() {
 }
 
 SpendAllHourglass() {
-    HomeAndMission(1)
-    
+    GoToMain()
+    GetAllRewards(false, true)
+    GoToMain()    
+
     SelectPack("HGPack")
     if(cantOpenMorePacks)
         return
@@ -5096,7 +5128,18 @@ SpendAllHourglass() {
     
     ; Keep opening packs until we can't anymore
     while (!cantOpenMorePacks && (friendIDs || friendID != "" || accountOpenPacks < maxAccountPackNum)) {
-        HourglassOpening(true)
+        if(packMethod) {
+            ; For packMethod=true: remove/re-add friends between each pack
+            friendsAdded := AddFriends(true)  ; true parameter removes and re-adds friends
+            SelectPack("HGPack")
+            if(cantOpenMorePacks)
+                break
+            PackOpening()  ; Use PackOpening since we just selected the pack
+        } else {
+            ; For packMethod=false: direct hourglass opening
+            HourglassOpening(true)
+        }
+        
         if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
             break
     }
