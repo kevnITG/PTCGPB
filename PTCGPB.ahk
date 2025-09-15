@@ -72,7 +72,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v7.0.3alpha"
+   ,localVersion := "v7.0.3beta"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -210,7 +210,7 @@ NextStep:
 
    Gui, Add, Checkbox, % (packMethod ? "Checked" : "") " vpackMethod x20 y240 " . sectionColor . ((deleteMethod = "Inject Wonderpick 39P+") ? "" : " Hidden"), % currentDictionary.Txt_packMethod
    Gui, Add, Checkbox, % (nukeAccount ? "Checked" : "") " vnukeAccount x20 y240 " . sectionColor . ((deleteMethod = "Create Bots (13P)")? "": " Hidden"), % currentDictionary.Txt_nukeAccount
-   Gui, Add, Checkbox, % (openExtraPack ? "Checked" : "") " vopenExtraPack gopenExtraPackSettings x20 y260 " . sectionColor . ((deleteMethod = "Inject Wonderpick 39P+") ? "" : " Hidden"), % currentDictionary.Txt_openExtraPack
+   Gui, Add, Checkbox, % (openExtraPack ? "Checked" : "") " vopenExtraPack gopenExtraPackSettings x20 y260 " . sectionColor . ((deleteMethod = "Inject Wonderpick 39P+" || deleteMethod = "Inject 13-39P") ? "" : " Hidden"), % currentDictionary.Txt_openExtraPack
    Gui, Add, Checkbox, % (spendHourGlass ? "Checked" : "") " vspendHourGlass gspendHourGlassSettings x20 y280 " . sectionColor . ((deleteMethod = "Create Bots (13P)")? " Hidden":""), % currentDictionary.Txt_spendHourGlass
 
    Gui, Add, Text, x20 y305 %sectionColor% vSortByText, % currentDictionary.SortByText
@@ -326,7 +326,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.0.3a (kevinnnn)"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.0.3b (kevinnnn)"
 
    Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
@@ -890,7 +890,7 @@ ShowSystemSettings:
     }
     Gui, SystemSettingsSelect:Add, DropDownList, vocrLanguage_Popup choose%defaultOcrLang% x60 y%yPos% w50 Background2A2A2A cWhite, %ocrLanguageList%
     
-    Gui, SystemSettingsSelect:Add, Text, x125 y%yPos% %sectionColor%, Client:
+    Gui, SystemSettingsSelect:Add, Text, x125 y%yPos% %sectionColor%, Client: 
     clientLanguageList := "en|es|fr|de|it|pt|jp|ko|cn"
     defaultClientLang := 1
     if (clientLanguage != "") {
@@ -1053,38 +1053,43 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Color, 1E1E1E, 333333
     Gui, ToolsAndSystemSelect:Font, s10 cWhite, Segoe UI
     
+    col1X := 15
+    col1W := 190
     yPos := 15
     
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (debugMode ? "Checked" : "") " vdebugMode_Popup x15 y" . yPos . " cWhite", Debug Mode
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (debugMode ? "Checked" : "") " vdebugMode_Popup x" . col1X . " y" . yPos . " cWhite", Debug Mode
     yPos += 20
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (statusMessage ? "Checked" : "") " vstatusMessage_Popup x15 y" . yPos . " cWhite", Status Messages
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (statusMessage ? "Checked" : "") " vstatusMessage_Popup x" . col1X . " y" . yPos . " cWhite", Status Messages
     yPos += 20
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (showcaseEnabled ? "Checked" : "") " vshowcaseEnabled_Popup x15 y" . yPos . " cWhite", 5x Showcase Likes
-    yPos += 20
-    
-    ; NEW: Add Claim Daily Mission checkbox
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (claimDailyMission ? "Checked" : "") " vclaimDailyMission_Popup x15 y" . yPos . " cWhite", Claim Daily Mission
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (showcaseEnabled ? "Checked" : "") " vshowcaseEnabled_Popup x" . col1X . " y" . yPos . " cWhite", 5x Showcase Likes
     yPos += 20
     
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x15 y" . yPos . " cWhite", 1x speed (no speedmod)
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (claimDailyMission ? "Checked" : "") " vclaimDailyMission_Popup x" . col1X . " y" . yPos . " cWhite", Claim Daily 4 Hourglasses
+    yPos += 20
+    
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x" . col1X . " y" . yPos . " cWhite", 1x speed (no speedmod)
+    yPos += 35
+    
+    sectionColor := "cWhite"
+    eventMissionBoxH := 90
+    Gui, ToolsAndSystemSelect:Add, GroupBox, x%col1X% y%yPos% w%col1W% h%eventMissionBoxH% %sectionColor%, Special Event Missions
+    yPos += 20
+    
+    Gui, ToolsAndSystemSelect:Add, Button, x25 y%yPos% w170 h20 gClearSpecialMissionHistory BackgroundTrans, Reset Claim Status
     yPos += 25
     
-    ; NEW: Add Clear Special Mission History button
-    Gui, ToolsAndSystemSelect:Add, Button, x15 y%yPos% w200 h20 gClearSpecialMissionHistory, Clear Special Mission History
-    yPos += 25
-    
-    ; NEW: Add Collect Event Missions checkbox
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (claimSpecialMissions ? "Checked" : "") " vclaimSpecialMissions_Popup x15 y" . yPos . " cWhite", Collect 2025.09 Event Missions
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (claimSpecialMissions ? "Checked" : "") " vclaimSpecialMissions_Popup x25 y" . yPos . " cWhite", Claim Rewards
     yPos += 20
     
-    ; NEW: Add Wonderpick for Event Missions checkbox (indented)
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (wonderpickForEventMissions ? "Checked" : "") " vwonderpickForEventMissions_Popup x30 y" . yPos . " cWhite", WonderpickForEventMissions
-    yPos += 25
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (wonderpickForEventMissions ? "Checked" : "") " vwonderpickForEventMissions_Popup x40 y" . yPos . " cWhite", Wonderpick
     
-    sectionColor := "c4169E1"
+    col2X := 220
+    col2W := 190
+    yPos2 := 15
+    sectionColor := "cWhite"
     
-    Gui, ToolsAndSystemSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_Monitor
-    yPos += 20
+    Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%yPos2% %sectionColor%, % currentDictionary.Txt_Monitor
+    yPos2 += 20
     SysGet, MonitorCount, MonitorCount
     MonitorOptions := ""
     Loop, %MonitorCount% {
@@ -1093,28 +1098,29 @@ ShowToolsAndSystemSettings:
         MonitorOptions .= (A_Index > 1 ? "|" : "") "" A_Index ": (" MonitorRight - MonitorLeft "x" MonitorBottom - MonitorTop ")"
     }
     SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
-    Gui, ToolsAndSystemSelect:Add, DropDownList, x15 y%yPos% w100 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
+    Gui, ToolsAndSystemSelect:Add, DropDownList, x%col2X% y%yPos2% w100 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     
-    Gui, ToolsAndSystemSelect:Add, Text, x125 y%yPos% %sectionColor%, % currentDictionary.Txt_Scale
+    Gui, ToolsAndSystemSelect:Add, Text, x325 y15 %sectionColor%, % currentDictionary.Txt_Scale
     if (defaultLanguage = "Scale125") {
         defaultLang := 1
     } else if (defaultLanguage = "Scale100") {
         defaultLang := 2
     }
-    Gui, ToolsAndSystemSelect:Add, DropDownList, x125 y%yPos% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125|Scale100
-    yPos += 25
+    Gui, ToolsAndSystemSelect:Add, DropDownList, x325 y%yPos2% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125|Scale100
+    yPos2 += 25
     
-    yPos += 5
-    Gui, ToolsAndSystemSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_RowGap
-    Gui, ToolsAndSystemSelect:Add, Edit, vRowGap_Popup w50 x80 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %RowGap%
-    yPos += 20
+    rowGapY := yPos2 + 2
+    Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%rowGapY% %sectionColor%, % currentDictionary.Txt_RowGap
+    Gui, ToolsAndSystemSelect:Add, Edit, vRowGap_Popup w25 x300 y%rowGapY% h20 -E0x200 Background2A2A2A cWhite Center, %RowGap%
+    yPos2 += 25
     
-    Gui, ToolsAndSystemSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_FolderPath
-    yPos += 20
-    Gui, ToolsAndSystemSelect:Add, Edit, vfolderPath_Popup w180 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, %folderPath%
-    yPos += 25
+    Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%yPos2% %sectionColor%, % currentDictionary.Txt_FolderPath
+    yPos2 += 20
+    Gui, ToolsAndSystemSelect:Add, Edit, vfolderPath_Popup w170 x%col2X% y%yPos2% h20 -E0x200 Background2A2A2A cWhite, %folderPath%
+    yPos2 += 25
     
-    Gui, ToolsAndSystemSelect:Add, Text, x15 y%yPos% %sectionColor%, OCR:
+    ocrTextY := yPos2 + 2
+    Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%ocrTextY% %sectionColor%, OCR:
     ocrLanguageList := "en|zh|es|de|fr|ja|ru|pt|ko|it|tr|pl|nl|sv|ar|uk|id|vi|th|he|cs|no|da|fi|hu|el|zh-TW"
     defaultOcrLang := 1
     if (ocrLanguage != "") {
@@ -1128,9 +1134,10 @@ ShowToolsAndSystemSettings:
             }
         }
     }
-    Gui, ToolsAndSystemSelect:Add, DropDownList, vocrLanguage_Popup choose%defaultOcrLang% x45 y%yPos% w50 Background2A2A2A cWhite, %ocrLanguageList%
+    Gui, ToolsAndSystemSelect:Add, DropDownList, vocrLanguage_Popup choose%defaultOcrLang% x255 y%yPos2% w40 Background2A2A2A cWhite, %ocrLanguageList%
     
-    Gui, ToolsAndSystemSelect:Add, Text, x105 y%yPos% %sectionColor%, Client:
+    clientTextY := yPos2 + 2
+    Gui, ToolsAndSystemSelect:Add, Text, x305 y%clientTextY% %sectionColor%, Client:
     clientLanguageList := "en|es|fr|de|it|pt|jp|ko|cn"
     defaultClientLang := 1
     if (clientLanguage != "") {
@@ -1144,27 +1151,34 @@ ShowToolsAndSystemSettings:
             }
         }
     }
-    Gui, ToolsAndSystemSelect:Add, DropDownList, vclientLanguage_Popup choose%defaultClientLang% x145 y%yPos% w50 Background2A2A2A cWhite, %clientLanguageList%
-    yPos += 25
+    Gui, ToolsAndSystemSelect:Add, DropDownList, vclientLanguage_Popup choose%defaultClientLang% x345 y%yPos2% w40 Background2A2A2A cWhite, %clientLanguageList%
+    yPos2 += 25
     
-    yPos += 5
-    Gui, ToolsAndSystemSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_InstanceLaunchDelay
-    Gui, ToolsAndSystemSelect:Add, Edit, vinstanceLaunchDelay_Popup w50 x140 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %instanceLaunchDelay%
-    yPos += 20
+    Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%yPos2% %sectionColor%, % currentDictionary.Txt_InstanceLaunchDelay
+    Gui, ToolsAndSystemSelect:Add, Edit, vinstanceLaunchDelay_Popup w30 x355 y%yPos2% h20 -E0x200 Background2A2A2A cWhite Center, %instanceLaunchDelay%
+    yPos2 += 25
     
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (autoLaunchMonitor ? "Checked" : "") " vautoLaunchMonitor_Popup x15 y" . yPos . " " . sectionColor, % currentDictionary.Txt_autoLaunchMonitor
-    yPos += 25
+    autoMonitorY := yPos2 - 5
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (autoLaunchMonitor ? "Checked" : "") " vautoLaunchMonitor_Popup x" . col2X . " y" . autoMonitorY . " " . sectionColor, % currentDictionary.Txt_autoLaunchMonitor
+    yPos2 += 20
     
-    Gui, ToolsAndSystemSelect:Add, Button, x15 y%yPos% w170 h30 gRunXMLSortTool, XML Sort Tool
-    yPos += 35
-    Gui, ToolsAndSystemSelect:Add, Button, x15 y%yPos% w170 h30 gRunXMLDuplicateTool, XML Duplicate Tool
-    yPos += 40
+    Gui, ToolsAndSystemSelect:Font, s8 cWhite, Segoe UI
+    xmlSortY := yPos2 - 5
+    Gui, ToolsAndSystemSelect:Add, Button, x%col2X% y%xmlSortY% w170 h20 gRunXMLSortTool BackgroundTrans, XML Sort Tool
+    yPos2 += 20
+    xmlDupY := yPos2 - 5
+    Gui, ToolsAndSystemSelect:Add, Button, x%col2X% y%xmlDupY% w170 h20 gRunXMLDuplicateTool BackgroundTrans, XML Duplicate Tool
+    yPos2 += 25
     
-    Gui, ToolsAndSystemSelect:Add, Button, x15 y%yPos% w70 h30 gApplyToolsAndSystemSettings, Apply
-    Gui, ToolsAndSystemSelect:Add, Button, x95 y%yPos% w70 h30 gCancelToolsAndSystemSettings, Cancel
-    yPos += 40
+    Gui, ToolsAndSystemSelect:Font, s10 cWhite, Segoe UI
     
-    Gui, ToolsAndSystemSelect:Show, x%popupX% y%popupY% w220 h%yPos%
+    finalY := yPos2
+    buttonY := finalY - 5
+    Gui, ToolsAndSystemSelect:Add, Button, x140 y%buttonY% w70 h30 gApplyToolsAndSystemSettings, Apply
+    Gui, ToolsAndSystemSelect:Add, Button, x220 y%buttonY% w70 h30 gCancelToolsAndSystemSettings, Cancel
+    finalY += 35
+    
+    Gui, ToolsAndSystemSelect:Show, x%popupX% y%popupY% w410 h%finalY%
 return
 
 ApplyToolsAndSystemSettings:
