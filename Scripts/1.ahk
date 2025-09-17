@@ -5215,8 +5215,9 @@ GetAllRewards(tomain := true, dailies := false) {
     }
     Loop {
         Delay(2)
-        adbClick(172, 427)
-        
+        adbClick(174, 427)
+        adbClick(174, 427) ; changed 2px right & added 2nd click
+        Delay(1) ; new Delay
         if(dailies) {
             FindImageAndClick(73, 151, 210, 173, , "CollectDailies", 250, 135, 500)
         }
