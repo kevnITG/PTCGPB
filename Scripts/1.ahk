@@ -536,7 +536,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
                 GoToMain()
                 SelectPack("HGPack")
                 if(!cantOpenMorePacks) {
-                    HourglassOpening(true)
+                    PackOpening()
                 }
             }
         }
@@ -4122,7 +4122,7 @@ SelectPack(HG := false) {
                 packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
             } else if (openPack == "HoOh") {
 				packy := SelectExpansionFirstRowY
-                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionRight
+                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionLeft
             } else if (openPack == "Lugia") {
 				packy := SelectExpansionFirstRowY
                 packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionRight
