@@ -72,7 +72,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v7.1.0"
+   ,localVersion := "v7.1.1"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -330,7 +330,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.1.0 (kevinnnn)"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.1.1 (kevinnnn)"
 
    Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
