@@ -20,16 +20,18 @@ DllCall("AllocConsole")
 WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
-global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs
+global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
 global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a
 global DeadCheck
 global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards, s4tDiscordWebhookURL, s4tDiscordUserId, s4tSendAccountXml
 global claimDailyMission, wonderpickForEventMissions
+global checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode, isCurrentlyDoingWPCheck := false
 
 global avgtotalSeconds
 global verboseLogging := false
 global showcaseEnabled
 global currentPackIs6Card := false
+global currentPackIs4Card := false
 global injectSortMethod := "ModifiedAsc"  ; Default sort method (oldest accounts first)
 global injectMinPacks := 0       ; Minimum pack count for injection (0 = no minimum)
 global injectMaxPacks := 39      ; Maximum pack count for injection (default for regular Inject 13-39P)
@@ -83,6 +85,7 @@ IniRead, rowGap, %A_ScriptDir%\..\Settings.ini, UserSettings, rowGap, 100
 IniRead, SelectedMonitorIndex, %A_ScriptDir%\..\Settings.ini, UserSettings, SelectedMonitorIndex, 1
 IniRead, swipeSpeed, %A_ScriptDir%\..\Settings.ini, UserSettings, swipeSpeed, 300
 IniRead, deleteMethod, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod, Create Bots (13P)
+
     ; support to convert old settings.ini deleteMethods to new nomenclature
     originalDeleteMethod := deleteMethod
     deleteMethod := MigrateDeleteMethod(deleteMethod)
@@ -111,7 +114,8 @@ IniRead, PseudoGodPack, %A_ScriptDir%\..\Settings.ini, UserSettings, PseudoGodPa
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsShiny, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsShiny, 0
 
-IniRead, Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, Springs, 1
+IniRead, Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, Deluxe, 1
+IniRead, Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, Springs, 0
 IniRead, HoOh, %A_ScriptDir%\..\Settings.ini, UserSettings, HoOh, 0
 IniRead, Lugia, %A_ScriptDir%\..\Settings.ini, UserSettings, Lugia, 0
 IniRead, Eevee, %A_ScriptDir%\..\Settings.ini, UserSettings, Eevee, 0
@@ -142,6 +146,7 @@ IniRead, minStarsA3b, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA3b, 
 IniRead, minStarsA4HoOh, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4HoOh, 0
 IniRead, minStarsA4Lugia, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Lugia, 0
 IniRead, minStarsA4Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Springs, 0
+IniRead, minStarsA4Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Deluxe, 0
 
 IniRead, slowMotion, %A_ScriptDir%\..\Settings.ini, UserSettings, slowMotion, 0
 IniRead, DeadCheck, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck, 0
@@ -156,7 +161,9 @@ IniRead, openExtraPack, %A_ScriptDir%\..\Settings.ini, UserSettings, openExtraPa
 IniRead, verboseLogging, %A_ScriptDir%\..\Settings.ini, UserSettings, debugMode, 0
 IniRead, claimDailyMission, %A_ScriptDir%\..\Settings.ini, UserSettings, claimDailyMission, 0
 IniRead, wonderpickForEventMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, wonderpickForEventMissions, 0
-
+IniRead, checkWPthanks, %A_ScriptDir%\..\Settings.ini, UserSettings, checkWPthanks, 0
+    wpThanksSavedUsername := ""
+    wpThanksSavedFriendCode := ""
 
 IniRead, s4tEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tEnabled, 0
 IniRead, s4tSilent, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tSilent, 1
@@ -179,8 +186,8 @@ if(s4tEnabled){
     maxAccountPackNum := 9999
 }
 
-pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs"]
-shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1}
+pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe"]
+shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1}
 
 packArray := []  ; Initialize an empty array
 
@@ -429,6 +436,16 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             
             ; If we reach here, we have a valid loaded account for injection
             LogToFile("Successfully loaded account for injection: " . accountFileName)
+        }
+
+            ; Check if the account loaded is to check for wonderpick thanks (godpack testing)
+        if(injectMethod && loadedAccount) {
+            if(CheckWonderPickThanks()) {
+                ; WP thanks check was performed, mark account as used and continue to next iteration
+                MarkAccountAsUsed()
+                loadedAccount := false
+                continue  ; Skip to next iteration of main loop
+            }
         }
 
         FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
@@ -1236,7 +1253,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     }
 
     ; Handle 7/2025 trade news update popup, remove later patch
-    if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account") {
+    if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll") {
         Path = %imagePath%Privacy.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
@@ -1542,7 +1559,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         }
 
         ; Search for 7/2025 trade news update popup; can be removed later patch
-        if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account") {
+        if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll") {
             Path = %imagePath%Privacy.png
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
@@ -1723,11 +1740,43 @@ DirectlyPositionWindow() {
     
     return true
 }
-restartGameInstance(reason, RL := true) {
-    global friended, scriptName, packsThisRun, injectMethod, loadedAccount, DeadCheck, starCount, packsInPool, openPack, invalid, accountFile, username, stopToggle
-	
-	;Screenshot("restartGameInstance")
 
+restartGameInstance(reason, RL := true) {
+    global friended, scriptName, packsThisRun, injectMethod, loadedAccount, DeadCheck, starCount, packsInPool, openPack, invalid, accountFile, username, stopToggle, accountFileName
+    global isCurrentlyDoingWPCheck
+    
+    ; Check if we're currently doing a WP thanks check (use the proper flag)
+    if (isCurrentlyDoingWPCheck) {
+        CreateStatusMessage("WP Thanks check encountered issue: " . reason . ". Removing W flag and continuing...",,,, false)
+        LogToFile("WP Thanks check encountered issue (" . reason . ") for account: " . accountFileName . ". Removing W flag.")
+        
+        ; Remove W flag and send warning
+        RemoveWFlagFromAccount()
+        SendWPStuckWarning(reason)
+        
+        ; Clear the flag since we're exiting the WP check
+        isCurrentlyDoingWPCheck := false
+        
+        ; Don't deadcheck (which would remove friends of potential godpacks) - just mark account as used and continue
+        if (injectMethod && loadedAccount) {
+            MarkAccountAsUsed()
+            loadedAccount := false
+        }
+        
+        ; Restart without deadcheck
+        waitadb()
+        adbShell.StdIn.WriteLine("am force-stop jp.pokemon.pokemontcgp")
+        waitadb()
+        Sleep, 2000
+        clearMissionCache()
+        adbShell.StdIn.WriteLine("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
+        waitadb()
+        Sleep, 5000
+        
+        return  ; Exit early to continue with next account
+    }
+    
+    ; Original restartGameInstance logic for non-WP checks
     if (Debug)
         CreateStatusMessage("Restarting game reason:`n" . reason)
     else if (InStr(reason, "Stuck"))
@@ -1742,7 +1791,6 @@ restartGameInstance(reason, RL := true) {
         
         if (stopToggle) {
             CreateStatusMessage("Stopping...",,,, false)
-            ;TODO force stop, remove account
             ExitApp
         }
 
@@ -1752,37 +1800,29 @@ restartGameInstance(reason, RL := true) {
         adbShell.StdIn.WriteLine("am force-stop jp.pokemon.pokemontcgp")
         waitadb()
         Sleep, 2000
-        ;MsgBox, 1
         clearMissionCache()
         if (!RL && DeadCheck = 0) {
-            ;MsgBox, 2
             adbShell.StdIn.WriteLine("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data
-            ;MsgBox, 3
-            ;TODO improve friend list cluter with deadcheck/stuck at, for injection. need to check also loadAccount at the beggining
-            }
-            waitadb()
-            Sleep, 500
-            adbShell.StdIn.WriteLine("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
-            waitadb()
-            Sleep, 5000
+        }
+        waitadb()
+        Sleep, 500
+        adbShell.StdIn.WriteLine("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
+        waitadb()
+        Sleep, 5000
+        
         if (RL) {
-            
             AppendToJsonFile(packsThisRun)
-            ;if(!injectMethod || !loadedAccount) 
             if(!injectMethod) {
                 if (menuDeleteStart()) {
                     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
                     logMessage := "\n" . username . "\n[" . (starCount ? starCount : "0") . "/5][" . (packsInPool ? packsInPool : 0) . "P][" . openPack . "] " . (invalid ? invalid . " God Pack" : "Some sort of pack") . " found in instance: " . scriptName . "\nFile name: " . accountFile . "\nGot stuck doing something. Check Log_" . scriptName . ".txt."
                     LogToFile(Trim(StrReplace(logMessage, "\n", " ")))
-                    ; Logging to Discord is temporarily disabled until all of the scenarios which could cause the script to end up here are fully understood.
-                    ;LogToDiscord(logMessage,, true)
                 }
             }
             LogToFile("Restarted game for instance " . scriptName . ". Reason: " reason, "Restart.txt")
 
             if (stopToggle) {
                 CreateStatusMessage("Stopping...",,,, false)
-                ;TODO force stop, remove account
                 ExitApp
             }
             
@@ -1791,7 +1831,6 @@ restartGameInstance(reason, RL := true) {
 
         if (stopToggle) {
             CreateStatusMessage("Stopping...",,,, false)
-            ;TODO force stop, remove account
             ExitApp
         }
     }
@@ -1937,6 +1976,7 @@ menuDeleteStart() {
 CheckPack() {
 
     currentPackIs6Card := false ; reset before each pack check
+    
     ; Update pack count.
     accountOpenPacks += 1
     if (injectMethod && loadedAccount)
@@ -1954,10 +1994,14 @@ CheckPack() {
             break
         Delay(1)
     }
-    currentPackIs6Card := DetectSixCardPack()
+
+    currentPackIs4Card := DetectFourCardPack()
+    if (!currentPackIs4Card) {
+        currentPackIs6Card := DetectSixCardPack()
+    }
     
     ; Determine total cards in pack for 4-diamond s4t calculations
-    totalCardsInPack := currentPackIs6Card ? 6 : 5
+    totalCardsInPack := currentPackIs6Card ? 6 : (currentPackIs4Card ? 4 : 5)
 
     foundLabel := false
 
@@ -2260,68 +2304,12 @@ DetectSixCardPack() {
     return true  ; Return true = 6-card pack
 }
 
-FoundStars(star) {
-    global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack
-
-    ; Not dead.
-    IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
-
-    ; Keep account.
-    keepAccount := true
-
-    screenShot := Screenshot(star)
-    accountFullPath := ""
-    accountFile := saveAccount(star, accountFullPath)
-    friendCode := getFriendCode()
-
-    ; Pull back screenshot of the friend code/name (good for inject method)
-    Sleep, 5000
-    fcScreenshot := Screenshot("FRIENDCODE")
-
-    tempDir := A_ScriptDir . "\..\Screenshots\temp"
-    if !FileExist(tempDir)
-        FileCreateDir, %tempDir%
-
-    usernameScreenshotFile := tempDir . "\" . winTitle . "_Username.png"
-    adbTakeScreenshot(usernameScreenshotFile)
-    Sleep, 100 
-
-    if(star = "Crown" || star = "Immersive" || star = "Shiny")
-        RemoveFriends()
-    else {
-        ; If we're doing the inject method, try to OCR our Username
-        try {
-            if (injectMethod && IsFunc("ocr")) {
-                playerName := ""
-                allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+"
-                usernamePattern := "[\w-]+"
-
-                if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
-                username := playerName
-                }
-            }
-        } catch e {
-            LogToFile("Failed to OCR the friend code: " . e.message, "OCR.txt")
-        }
+DetectFourCardPack() {
+    global openPack
+    if (openPack = "Deluxe") {
+        return true
     }
-
-    if (FileExist(usernameScreenshotFile)) {
-        FileDelete, %usernameScreenshotFile%
-    }
-
-    CreateStatusMessage(star . " found!",,,, false)
-
-    statusMessage := star . " found"
-    if (username)
-        statusMessage .= " by " . username
-    if (friendCode)
-        statusMessage .= " (" . friendCode . ")"
-
-    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFile name: " . accountFile . "\nBacking up to the Accounts\\SpecificCards folder and continuing..."
-    LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""), fcScreenshot)
-    LogToFile(StrReplace(logMessage, "\n", " "), "GPlog.txt")
-    ;if(star != "Crown" && star != "Immersive" && star != "Shiny")
-        ;ChooseTag()
+    return false
 }
 
 FindBorders(prefix) {
@@ -2329,15 +2317,22 @@ FindBorders(prefix) {
     count := 0
     searchVariation := 40
     searchVariation6Card := 60 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
-    
+    searchVariation4Card := 100
+
     if (prefix = "shiny2star") { ; some aren't being detected at lower variations
         searchVariation := 75
         searchVariation6Card := 75 
     }
     
     is6CardPack := currentPackIs6Card
+    is4CardPack := currentPackIs4Card
     
-    if (is6CardPack) {
+    if (is4CardPack) {
+        borderCoords := [[70, 284, 123, 286]      ; Top row card 1 (left position)
+            ,[155, 284, 208, 286]                 ; Top row card 2 (right position)
+            ,[70, 399, 123, 401]                  ; Bottom row card 1
+            ,[155, 399, 208, 401]]                ; Bottom row card 2
+    } else if (is6CardPack) {
         borderCoords := [[30, 284, 83, 286]      ; Top row card 1
             ,[113, 284, 166, 286]                ; Top row card 2  
             ,[196, 284, 249, 286]                ; Top row card 3
@@ -2355,7 +2350,12 @@ FindBorders(prefix) {
     
     ; Changed Shiny 2star needles to improve detection after hours of testing previous needles.
     if (prefix = "shiny2star") {
-        if (is6CardPack) {
+        if (is4CardPack) {
+            borderCoords := [[110, 175, 140, 187]    ; Top row card 1
+                ,[192, 175, 223, 187]                ; Top row card 2
+                ,[110, 293, 140, 305]                ; Bottom row card 1
+                ,[192, 293, 223, 305]]               ; Bottom row card 2       
+        } else if (is6CardPack) {
             borderCoords := [[74, 175, 97, 187]
                 ,[153, 175, 180, 187]
                 ,[237, 175, 262, 187]
@@ -2500,7 +2500,9 @@ FindGodPack(invalidPack := false) {
     requiredStars := minStars ; Default to general minStars
 
     ; Check specific selections first, then default to shiny
-        if (openPack == "Springs") {
+        if (openPack == "Deluxe") {
+            requiredStars := minStarsA4Deluxe
+        } else if (openPack == "Springs") {
             requiredStars := minStarsA4Springs
         } else if (openPack == "HoOh") {
             requiredStars := minStarsA4HoOh
@@ -2534,7 +2536,6 @@ FindGodPack(invalidPack := false) {
             requiredStars := minStarsShiny
         }
     
-    
     ; Check if pack meets minimum stars requirement
     if (!invalidPack) {
         ; Calculate tempStarCount by counting only valid 2-star cards for minimum check
@@ -2557,13 +2558,97 @@ FindGodPack(invalidPack := false) {
     return keepAccount
 }
 
+FoundStars(star) {
+    global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack, deleteMethod, checkWPthanks
+    global wpThanksSavedUsername, wpThanksSavedFriendCode, username, friendCode
+
+    ; Not dead.
+    IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+
+    ; Keep account.
+    keepAccount := true
+
+    screenShot := Screenshot(star)
+    accountFullPath := ""
+    
+    ; Determine if this should get (W) flag for wonderpick thanks checking
+    shouldAddWFlag := false
+    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 39P+" && injectMethod && loadedAccount) {
+        if (star = "Double two star" || star = "Trainer" || star = "Rainbow" || star = "Full Art") {
+            shouldAddWFlag := true
+        }
+    }
+    
+    accountFile := saveAccount(star, accountFullPath, "", shouldAddWFlag)
+    
+    ; Add (W) flag to original account file in Saved folder if needed
+    if (shouldAddWFlag) {
+        AddWFlag()
+    }
+    
+    friendCode := getFriendCode()
+
+    ; Pull back screenshot of the friend code/name (good for inject method)
+    Sleep, 5000
+    fcScreenshot := Screenshot("FRIENDCODE")
+
+    tempDir := A_ScriptDir . "\..\Screenshots\temp"
+    if !FileExist(tempDir)
+        FileCreateDir, %tempDir%
+
+    usernameScreenshotFile := tempDir . "\" . winTitle . "_Username.png"
+    adbTakeScreenshot(usernameScreenshotFile)
+    Sleep, 100 
+
+    if(star = "Crown" || star = "Immersive" || star = "Shiny")
+        RemoveFriends()
+    else {
+        ; If we're doing the inject method, try to OCR our Username
+        try {
+            if (injectMethod && IsFunc("ocr")) {
+                playerName := ""
+                allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+"
+                usernamePattern := "[\w-]+"
+
+                if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
+                username := playerName
+                }
+            }
+        } catch e {
+            LogToFile("Failed to OCR the friend code: " . e.message, "OCR.txt")
+        }
+    }
+
+    ; Store username and friend code for WP thanks checking using centralized system
+    if (shouldAddWFlag) {
+        SaveWPMetadata(accountFileName, username, friendCode)
+    }
+
+    if (FileExist(usernameScreenshotFile)) {
+        FileDelete, %usernameScreenshotFile%
+    }
+
+    CreateStatusMessage(star . " found!",,,, false)
+
+    statusMessage := star . " found"
+    if (username)
+        statusMessage .= " by " . username
+    if (friendCode)
+        statusMessage .= " (" . friendCode . ")"
+
+    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFile name: " . accountFile . "\nBacking up to the Accounts\\SpecificCards folder and continuing..."
+    LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""), fcScreenshot)
+    LogToFile(StrReplace(logMessage, "\n", " "), "GPlog.txt")
+}
+
 GodPackFound(validity) {
-    global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack
+    global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack, deleteMethod, checkWPthanks
+    global wpThanksSavedUsername, wpThanksSavedFriendCode, username, friendCode, loadedAccount
 
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
 
     if(validity = "Valid") {
-        Praise := ["Congrats!", "Congratulations!", "GG!", "Whoa!", "Praise Helix! ༼ つ ◕_◕ ༽つ", "Way to go!", "You did it!", "Awesome!", "Nice!", "Cool!", "You deserve it!", "Keep going!", "This one has to be live!", "No duds, no duds, no duds!", "Fantastic!", "Bravo!", "Excellent work!", "Impressive!", "You're amazing!", "Well done!", "You're crushing it!", "Keep up the great work!", "You're unstoppable!", "Exceptional!", "You nailed it!", "Hats off to you!", "Sweet!", "Kudos!", "Phenomenal!", "Boom! Nailed it!", "Marvelous!", "Outstanding!", "Legendary!", "Youre a rock star!", "Unbelievable!", "Keep shining!", "Way to crush it!", "You're on fire!", "Killing it!", "Top-notch!", "Superb!", "Epic!", "Cheers to you!", "Thats the spirit!", "Magnificent!", "Youre a natural!", "Gold star for you!", "You crushed it!", "Incredible!", "Shazam!", "You're a genius!", "Top-tier effort!", "This is your moment!", "Powerful stuff!", "Wicked awesome!", "Props to you!", "Big win!", "Yesss!", "Champion vibes!", "Spectacular!"]
+        Praise := ["Congrats!", "Congratulations!", "GG!", "Whoa!", "Praise Helix!", "Way to go!", "You did it!", "Awesome!", "Nice!", "Cool!", "You deserve it!", "Keep going!", "This one has to be live!", "No duds, no duds, no duds!", "Fantastic!", "Bravo!", "Excellent work!", "Impressive!", "You're amazing!", "Well done!", "You're crushing it!", "Keep up the great work!", "You're unstoppable!", "Exceptional!", "You nailed it!", "Hats off to you!", "Sweet!", "Kudos!", "Phenomenal!", "Boom! Nailed it!", "Marvelous!", "Outstanding!", "Legendary!", "Youre a rock star!", "Unbelievable!", "Keep shining!", "Way to crush it!", "You're on fire!", "Killing it!", "Top-notch!", "Superb!", "Epic!", "Cheers to you!", "Thats the spirit!", "Magnificent!", "Youre a natural!", "Gold star for you!", "You crushed it!", "Incredible!", "Shazam!", "You're a genius!", "Top-tier effort!", "This is your moment!", "Powerful stuff!", "Wicked awesome!", "Props to you!", "Big win!", "Yesss!", "Champion vibes!", "Spectacular!"]
         invalid := ""
     } else {
         Praise := ["Uh-oh!", "Oops!", "Not quite!", "Better luck next time!", "Yikes!", "That didn't go as planned.", "Try again!", "Almost had it!", "Not your best effort.", "Keep practicing!", "Oh no!", "Close, but no cigar.", "You missed it!", "Needs work!", "Back to the drawing board!", "Whoops!", "That's rough!", "Don't give up!", "Ouch!", "Swing and a miss!", "Room for improvement!", "Could be better.", "Not this time.", "Try harder!", "Missed the mark.", "Keep at it!", "Bummer!", "That's unfortunate.", "So close!", "Gotta do better!"]
@@ -2579,7 +2664,20 @@ GodPackFound(validity) {
     
     screenShot := Screenshot(validity)
     accountFullPath := ""
-    accountFile := saveAccount(validity, accountFullPath)
+    
+    ; Determine if this should get (W) flag for wonderpick thanks checking
+    shouldAddWFlag := false
+    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 39P+" && validity = "Valid" && injectMethod && loadedAccount) {
+        shouldAddWFlag := true
+    }
+    
+    accountFile := saveAccount(validity, accountFullPath, "", shouldAddWFlag)
+    
+    ; Add (W) flag to original account file in Saved folder if needed
+    if (shouldAddWFlag) {
+        AddWflag()
+    }
+    
     friendCode := getFriendCode()
 
     ; Pull screenshot of the Friend code page; wait so we don't get the clipboard pop up; good for the inject method
@@ -2609,6 +2707,11 @@ GodPackFound(validity) {
         LogToFile("Failed to OCR the friend code: " . e.message, "OCR.txt")
     }
 
+    ; Store username and friend code for WP thanks checking using centralized system
+    if (shouldAddWFlag) {
+        SaveWPMetadata(accountFileName, username, friendCode)
+    }
+
     if (FileExist(usernameScreenshotFile)) {
         FileDelete, %usernameScreenshotFile%
     }
@@ -2623,6 +2726,106 @@ GodPackFound(validity) {
         ;ChooseTag()
     } else if (!InvalidCheck) {
         LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""))
+    }
+}
+
+CleanupWPMetadata() {
+    global winTitle
+    
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    metadataFile := saveDir . "\wp_metadata.txt"
+    
+    if (!FileExist(metadataFile)) {
+        return
+    }
+    
+    FileRead, metadataContent, %metadataFile%
+    updatedMetadata := ""
+    removedCount := 0
+    keptCount := 0
+    
+    Loop, Parse, metadataContent, `n, `r
+    {
+        if (A_LoopField = "") {
+            continue
+        }
+        
+        parts := StrSplit(A_LoopField, "|")
+        if (parts.Length() >= 3) {
+            accountFileName := parts[1]
+            accountFilePath := saveDir . "\" . accountFileName
+            
+            ; Only keep metadata for accounts that still exist
+            if (FileExist(accountFilePath)) {
+                updatedMetadata .= A_LoopField . "`n"
+                keptCount++
+            } else {
+                removedCount++
+                LogToFile("Removed WP metadata for non-existent account: " . accountFileName)
+            }
+        }
+    }
+    
+    ; Write cleaned metadata
+    FileDelete, %metadataFile%
+    if (updatedMetadata != "") {
+        FileAppend, %updatedMetadata%, %metadataFile%
+    }
+    
+    LogToFile("WP Metadata cleanup: Kept " . keptCount . " entries, removed " . removedCount . " entries")
+}
+
+AddWflag() {
+    global accountFileName, winTitle
+    
+    if (!accountFileName) {
+        LogToFile("AddWflag: No accountFileName available")
+        return
+    }
+    
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    oldFilePath := saveDir . "\" . accountFileName
+    
+    ; Check if file exists
+    if (!FileExist(oldFilePath)) {
+        LogToFile("AddWflag: File not found: " . oldFilePath)
+        return
+    }
+    
+    ; Skip if already has W flag
+    if (InStr(accountFileName, "W")) {
+        LogToFile("AddWflag: File already has W flag: " . accountFileName)
+        return
+    }
+    
+    ; Add W to the metadata
+    newFileName := accountFileName
+    if (InStr(accountFileName, "(")) {
+        ; File has existing metadata - add W to it
+        parts1 := StrSplit(accountFileName, "(")
+        leftPart := parts1[1]
+        
+        if (InStr(parts1[2], ")")) {
+            parts2 := StrSplit(parts1[2], ")")
+            metadata := parts2[1]
+            rightPart := parts2[2]
+            
+            ; Add W to existing metadata
+            newMetadata := metadata . "W"
+            newFileName := leftPart . "(" . newMetadata . ")" . rightPart
+        }
+    } else {
+        ; File has no metadata - add (W)
+        nameAndExtension := StrSplit(accountFileName, ".")
+        newFileName := nameAndExtension[1] . "(W).xml"
+    }
+    
+    ; Rename the file
+    if (newFileName != accountFileName) {
+        newFilePath := saveDir . "\" . newFileName
+        FileMove, %oldFilePath%, %newFilePath%
+        LogToFile("Added W flag to original account: " . accountFileName . " -> " . newFileName)
+        accountFileName := newFileName
     }
 }
 
@@ -2779,7 +2982,7 @@ MarkAccountAsUsed() {
     currentLoadedAccountIndex := 0
 }
 
-saveAccount(file := "Valid", ByRef filePath := "", packDetails := "") {
+saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag := false) {
 
     filePath := ""
 
@@ -2795,12 +2998,21 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "") {
 			metadata .= "X"
         if(accountHasPackInTesting)
             metadata .= "T"
+        if(addWFlag)
+            metadata .= "W"
 			
         saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
         filePath := saveDir . "\" . accountOpenPacks . "P_" . A_Now . "_" . winTitle . "(" . metadata . ").xml"
     } else if (file = "Valid" || file = "Invalid") {
+        metadata := ""
+        if(addWFlag)
+            metadata .= "W"
+        
         saveDir := A_ScriptDir "\..\Accounts\GodPacks\"
-        xmlFile := A_Now . "_" . winTitle . "_" . file . "_" . packsInPool . "_packs.xml"
+        xmlFile := A_Now . "_" . winTitle . "_" . file . "_" . packsInPool . "_packs"
+        if(metadata != "")
+            xmlFile .= "(" . metadata . ")"
+        xmlFile .= ".xml"
         filePath := saveDir . xmlFile
     } else if (file = "Tradeable") {
         saveDir := A_ScriptDir "\..\Accounts\Trades\"
@@ -2808,8 +3020,15 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "") {
         xmlFile := A_Now . "_" . winTitle . (packDetails ? "_" . packDetails : "") . "_" . packsInPool . "_packs.xml"
         filePath := saveDir . xmlFile
     } else {
+        metadata := ""
+        if(addWFlag)
+            metadata .= "W"
+        
         saveDir := A_ScriptDir "\..\Accounts\SpecificCards\"
-        xmlFile := A_Now . "_" . winTitle . "_" . file . "_" . packsInPool . "_packs.xml"
+        xmlFile := A_Now . "_" . winTitle . "_" . file . "_" . packsInPool . "_packs"
+        if(metadata != "")
+            xmlFile .= "(" . metadata . ")"
+        xmlFile .= ".xml"
         filePath := saveDir . xmlFile
     }
 
@@ -3979,27 +4198,27 @@ SelectPack(HG := false) {
 	inselectexpansionscreen := 0
 	
     packy := HomeScreenAllPackY
-    if (openPack == "HoOh") {
+    if (openPack == "Springs") {
         packx := RightPackX
-    } else if (openPack == "Springs") {
+    } else if (openPack == "Deluxe") {
             packx := MiddlePackX
     } else {
             packx := LeftPackX
     }
 	
-	if(openPack == "Eevee" || openPack == "HoOh" || openPack == "Springs") {
+	if(openPack == "Deluxe" || openPack == "HoOh" || openPack == "Springs") {
 		PackIsInHomeScreen := 1
     } else {
         PackIsInHomeScreen := 0
 	}
 	
-	if(openPack == "Springs") {
+	if(openPack == "Deluxe") {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
 	}
 		
-	if (openPack == "Springs" || openPack == "HoOh" || openPack == "Lugia") {
+	if (openPack == "Springs" || openPack == "Deluxe") {
 		packInTopRowsOfSelectExpansion := 1
 	} else {
 		packInTopRowsOfSelectExpansion := 0
@@ -4075,7 +4294,7 @@ SelectPack(HG := false) {
 	}
 	
 	if(inselectexpansionscreen) {
-        if (openPack = "Shining" || openPack = "Solgaleo" || openPack = "Lunala" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
+        ; if (openPack = "Shining" || openPack = "Solgaleo" || openPack = "Lunala" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
             X := 266
             Y1 := 430
             Y2 := 50 ; changed from 350
@@ -4084,52 +4303,54 @@ SelectPack(HG := false) {
                 adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
                 Sleep, 300 ;
             }
-			if (openPack = "Shining") {
+            if (openPack == "Buzzwole") { ; NEEDS UPDATED SWIPES 2025.09.29
+                packx := SelectExpansionLeftCollumnMiddleX
+                packy := 130
+            } else if (openPack = "Solgaleo") { ; NEEDS UPDATED SWIPES 2025.09.29
+                packx := SelectExpansionRightCollumnMiddleX ; + 2PackExpansionLeft
+                packy := 130
+            } else if (openPack = "Lunala") { ; NEEDS UPDATED SWIPES 2025.09.29
+                packx := SelectExpansionRightCollumnMiddleX ; + 2PackExpansionRight
+                packy := 130
+            } else if (openPack = "Shining") {
+                packx := SelectExpansionLeftCollumnMiddleX
+                packy := 130
+			} else if (openPack = "Arceus") {
                 packx := SelectExpansionRightCollumnMiddleX
                 packy := 130
-            } else if (openPack = "Solgaleo") {
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
-                packy := 130
-            } else if (openPack = "Lunala") {
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
-                packy := 130
-            }
-			if (openPack = "Arceus") {
-                packx := SelectExpansionLeftCollumnMiddleX
-                packy := 275
             } else if (openPack = "Dialga") {
-                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionLeft
+                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
                 packy := 275
             } else if (openPack = "Palkia") {
-                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionRight
+                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
                 packy := 275
             } else if (openPack = "Mew") {
-                packx := SelectExpansionLeftCollumnMiddleX
-                packy := 400
+                packx := SelectExpansionRightCollumnMiddleX
+                packy := 275
             } else if (openPack = "Charizard") {
-                packx := SelectExpansionRightCollumnMiddleX + 3PackExpansionLeft
+                packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionLeft
                 packy := 400
             } else if (openPack = "Mewtwo") {
-                packx := SelectExpansionRightCollumnMiddleX
+                packx := SelectExpansionLeftCollumnMiddleX
                 packy := 400
             } else if (openPack = "Pikachu") {
-                packx := SelectExpansionRightCollumnMiddleX + 3PackExpansionRight
+                packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionRight
                 packy := 400
             }
         } else { ; No swipe, inital screen
-            if (openPack == "Springs") {
+            if (openPack == "Deluxe") {
 				packy := SelectExpansionFirstRowY
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
+                packx := SelectExpansionLeftCollumnMiddleX                
+            } else if (openPack == "Springs") {
+				packy := SelectExpansionFirstRowY
+                packx := SelectExpansionRightCollumnMiddleX
             } else if (openPack == "HoOh") {
-				packy := SelectExpansionFirstRowY
-                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionLeft
-            } else if (openPack == "Lugia") {
-				packy := SelectExpansionFirstRowY
-                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionRight
-            } else if (openPack == "Eevee") {
 				packy := SelectExpansionSecondRowY
-                packx := SelectExpansionLeftCollumnMiddleX
-            } else if (openPack == "Buzzwole") {
+                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
+            } else if (openPack == "Lugia") {
+				packy := SelectExpansionSecondRowY
+                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
+            } else if (openPack == "Eevee") {
 				packy := SelectExpansionSecondRowY
                 packx := SelectExpansionRightCollumnMiddleX
             }
@@ -4200,7 +4421,6 @@ SelectPack(HG := false) {
             CreateStatusMessage("Waiting for Skip2`n(" . failSafeTime . "/45 seconds)")
         }
     }
-}
 
 PackOpening() {
     failSafe := A_TickCount
@@ -4603,10 +4823,11 @@ CompareIndicesByPacksDesc(packs, a, b) {
 }
 
 CreateAccountList(instance) {
-    global injectSortMethod, deleteMethod, winTitle, verboseLogging
+    global injectSortMethod, deleteMethod, winTitle, verboseLogging, checkWPthanks
     
     ; Clean up stale used accounts first
     CleanupUsedAccounts()
+    CleanupWPMetadata() ; clean up wonderpick testing account metadata
     
     saveDir := A_ScriptDir "\..\Accounts\Saved\" . instance
     outputTxt := saveDir . "\list.txt"
@@ -4727,10 +4948,46 @@ CreateAccountList(instance) {
     fileNames := []
     fileTimes := []
     packCounts := []
+    wFlagFiles := []  ; Separate array for W flag files
     
-    ; First pass: gather all eligible files with their timestamps
+    ; First pass: gather W flag files that are ready for checking
+    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 39P+") {
+        Loop, %saveDir%\*.xml {
+            if (InStr(A_LoopFileName, "W")) {
+                xml := saveDir . "\" . A_LoopFileName
+                
+                ; Get file modification time
+                modTime := ""
+                FileGetTime, modTime, %xml%, M
+                
+                ; Calculate minutes difference
+                minutesDiff := A_Now
+                timeVar := modTime
+                EnvSub, minutesDiff, %timeVar%, Minutes
+                
+                if (InStr(A_LoopFileName, "W2")) {
+                    ; Second check - wait 12 hours (720 minutes)
+                    if (minutesDiff >= 720) {
+                        wFlagFiles.Push(A_LoopFileName)
+                    }
+                } else {
+                    ; First check - wait 30 minutes
+                    if (minutesDiff >= 30) {
+                        wFlagFiles.Push(A_LoopFileName)
+                    }
+                }
+            }
+        }
+    }
+    
+    ; Second pass: gather all other eligible files with their timestamps
     Loop, %saveDir%\*.xml {
         xml := saveDir . "\" . A_LoopFileName
+        
+        ; Skip W flag files as they're handled separately
+        if (InStr(A_LoopFileName, "W")) {
+            continue
+        }
         
         ; Skip if this account was recently used (unless we just cleared the log)
         if (usedAccounts.HasKey(A_LoopFileName)) {
@@ -4756,7 +5013,8 @@ CreateAccountList(instance) {
         }
 
         ; Check if account has "T" flag and needs more time (always 5 days)
-        if(InStr(A_LoopFileName, "(") && InStr(A_LoopFileName, "T")) {
+        ; BUT skip this check if account also has "W" flag (W takes precedence)
+        if(InStr(A_LoopFileName, "(") && InStr(A_LoopFileName, "T") && !InStr(A_LoopFileName, "W")) {
             if(hoursDiff < 5*24) {  ; Always 5 days for T-flagged accounts
                 if (verboseLogging)
                     LogToFile("Skipping account with T flag (testing): " . A_LoopFileName . " (age: " . hoursDiff . " hours, needs 5 days)")
@@ -4793,14 +5051,15 @@ CreateAccountList(instance) {
     
     ; Log counts
     totalEligible := (fileNames.MaxIndex() ? fileNames.MaxIndex() : 0)
+    totalWFlags := (wFlagFiles.MaxIndex() ? wFlagFiles.MaxIndex() : 0)
     
     if (forceRegeneration) {
-        LogToFile("FORCED REGENERATION: Found " . totalEligible . " eligible files (cleared used accounts, maintained strict age requirements)")
+        LogToFile("FORCED REGENERATION: Found " . totalEligible . " eligible files + " . totalWFlags . " W flag files (cleared used accounts, maintained strict age requirements)")
     } else {
-        LogToFile("Found " . totalEligible . " eligible files (>= 24 hours old, not recently used, packs: " . minPacks . "-" . maxPacks . ")")
+        LogToFile("Found " . totalEligible . " eligible files + " . totalWFlags . " W flag files (>= 24 hours old, not recently used, packs: " . minPacks . "-" . maxPacks . ")")
     }
     
-    ; Sort files based on selected method
+    ; Sort regular files based on selected method
     if (fileNames.MaxIndex() > 0) {
         sortMethod := (injectSortMethod) ? injectSortMethod : "ModifiedAsc"
         
@@ -4816,9 +5075,22 @@ CreateAccountList(instance) {
             ; Default to ModifiedAsc if unknown sort method
             SortArraysByProperty(fileNames, fileTimes, packCounts, "time", 1)
         }
-        
-        ; Prepare content for output files
-        outputContent := ""
+    }
+    
+    ; Prepare content for output files - W flag files first, then regular files
+    outputContent := ""
+    
+    ; Add W flag files first (highest priority)
+    if (wFlagFiles.MaxIndex() > 0) {
+        For i, fileName in wFlagFiles {
+            outputContent .= fileName . "`n"
+            if (verboseLogging && i <= 5)
+                LogToFile("  W-" . i . ": " . fileName . " (WP Thanks Check)")
+        }
+    }
+    
+    ; Add regular files
+    if (fileNames.MaxIndex() > 0) {
         For i, fileName in fileNames {
             outputContent .= fileName . "`n"
             
@@ -4833,13 +5105,15 @@ CreateAccountList(instance) {
                     LogToFile("  ... (showing first 10 files only)")
             }
         }
-        
-        ; Write sorted files to output files
+    }
+    
+    ; Write sorted files to output files
+    if (outputContent != "") {
         FileAppend, %outputContent%, %outputTxt%
         FileAppend, %outputContent%, %outputTxt_current%
         
-        LogToFile("Successfully wrote " . fileNames.MaxIndex() . " files to lists")
-        } else {
+        LogToFile("Successfully wrote " . (totalEligible + totalWFlags) . " files to lists (" . totalWFlags . " W flags + " . totalEligible . " regular)")
+    } else {
         ; Create empty files to prevent repeated regeneration attempts
         FileAppend, "", %outputTxt%
         FileAppend, "", %outputTxt_current%
@@ -4852,9 +5126,10 @@ CreateAccountList(instance) {
     LogToFile("List generation completed at: " . A_Now)
     
     ; Log summary statistics
-    if (totalEligible > 0) {
+    if (totalEligible > 0 || totalWFlags > 0) {
         LogToFile("=== ACCOUNT LIST SUMMARY ===")
         LogToFile("Total eligible accounts: " . totalEligible)
+        LogToFile("W flag accounts ready: " . totalWFlags)
         LogToFile("Injection method: " . parseInjectType)
         LogToFile("Pack range: " . minPacks . "-" . maxPacks)
         LogToFile("Sort method: " . sortMethod)
@@ -5270,6 +5545,297 @@ GoToMain(fromSocial := false) {
     pToken := Gdip_Startup()
     Screenshot_dev()
 return
+
+SaveWPMetadata(accountFileName, username, friendCode) {
+    global winTitle
+    
+    ; Use the instance folder where accounts are actually loaded from
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    metadataFile := saveDir . "\wp_metadata.txt"
+    
+    ; Read existing metadata
+    existingMetadata := ""
+    if (FileExist(metadataFile)) {
+        FileRead, existingMetadata, %metadataFile%
+    }
+    
+    ; Prepare new entry
+    newEntry := accountFileName . "|" . username . "|" . friendCode
+    
+    ; Check if entry already exists for this account
+    updatedMetadata := ""
+    entryExists := false
+    
+    Loop, Parse, existingMetadata, `n, `r
+    {
+        if (A_LoopField = "") {
+            continue
+        }
+        
+        parts := StrSplit(A_LoopField, "|")
+        if (parts.Length() >= 3 && parts[1] = accountFileName) {
+            ; Update existing entry
+            updatedMetadata .= newEntry . "`n"
+            entryExists := true
+        } else {
+            ; Keep existing entry
+            updatedMetadata .= A_LoopField . "`n"
+        }
+    }
+    
+    ; Add new entry if it didn't exist
+    if (!entryExists) {
+        updatedMetadata .= newEntry . "`n"
+    }
+    
+    ; Write updated metadata
+    FileDelete, %metadataFile%
+    FileAppend, %updatedMetadata%, %metadataFile%
+    
+    LogToFile("Saved WP metadata to centralized file: " . accountFileName . " (User: " . username . ", FC: " . friendCode . ")")
+}
+
+LoadWPMetadata(accountFileName, ByRef username, ByRef friendCode) {
+    global winTitle
+    
+    ; Use the instance folder where accounts are actually loaded from
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    metadataFile := saveDir . "\wp_metadata.txt"
+    
+    ; Default values
+    username := "Unknown"
+    friendCode := "Unknown"
+    
+    if (FileExist(metadataFile)) {
+        FileRead, metadataContent, %metadataFile%
+        
+        ; Parse the content to find the specific account
+        Loop, Parse, metadataContent, `n, `r
+        {
+            if (A_LoopField = "") {
+                continue
+            }
+            
+            parts := StrSplit(A_LoopField, "|")
+            if (parts.Length() >= 3 && parts[1] = accountFileName) {
+                username := parts[2]
+                friendCode := parts[3]
+                LogToFile("Loaded WP metadata from centralized file: " . accountFileName . " (User: " . username . ", FC: " . friendCode . ")")
+                return
+            }
+        }
+        
+        LogToFile("No WP metadata found for account: " . accountFileName . " in centralized file")
+    } else {
+        LogToFile("No centralized WP metadata file found: " . metadataFile)
+    }
+}
+
+CheckWonderPickThanks() {
+    global accountFileName, checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode
+    global discordWebhookURL, discordUserId, scriptName, packsInPool, openPack, scaleParam
+    global username, friendCode, isCurrentlyDoingWPCheck
+    
+    if (!InStr(accountFileName, "W")) {
+        return false  ; Not a W flag account
+    }
+    
+    ; Set flag to indicate we're actively doing a WP check
+    isCurrentlyDoingWPCheck := true
+    
+    isSecondCheck := InStr(accountFileName, "W2")
+    checkStage := isSecondCheck ? "FINAL" : "FIRST"
+    
+    CreateStatusMessage("Checking WonderPick Thanks (" . checkStage ") for account...",,,, false)
+    LogToFile("Starting WonderPick " . checkStage . " check for: " . accountFileName)
+    
+    ; Load username and friend code from centralized metadata
+    LoadWPMetadata(accountFileName, wpThanksSavedUsername, wpThanksSavedFriendCode)
+    
+    ; Set speed to 3x
+    FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000)
+    FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180)
+    Delay(1)
+    adbClick_wbb(41, 296)
+    Delay(1)
+    
+    ; Navigate to gifts/mail screen with timeout protection
+    try {
+        FindImageAndClick(240, 70, 270, 110, , "Mail", 34, 518, 1000)
+        Delay(3)
+        FindImageAndClick(164, 431, 224, 460, , "ClaimAll", 247, 93, 1000)
+        Delay(20)
+    } catch e {
+        ; If anything fails during navigation, handle gracefully
+        LogToFile("WP Thanks check failed during navigation for: " . accountFileName . " - " . e.message)
+        RemoveWFlagFromAccount()
+        SendWPStuckWarning("Navigation Error")
+        isCurrentlyDoingWPCheck := false  ; Clear flag before returning
+        return true
+    }
+    
+    thanksFound := false
+    screenshotPath := ""
+    
+    if(FindOrLoseImage(25, 137, 57, 161, 140, "ShopTicket", 0)) {
+        thanksFound := true
+        LogToFile("ShopTicket found")
+        
+        ; Take screenshot BEFORE clicking for LIVE packs
+        screenshotPath := Screenshot("WP_THANKS_LIVE", "WonderPickThanks")
+        
+        adbClick(212, 427)
+    }
+    
+    if (thanksFound) {
+        CreateStatusMessage("Shop Ticket gift found! Pack is likely LIVE",,,, false)
+        LogToFile("Shop Ticket found for account: " . accountFileName . " (User: " . wpThanksSavedUsername . ", FC: " . wpThanksSavedFriendCode . ")")
+        Delay(20)
+        
+        ; For LIVE packs, remove W flag completely (no second check needed)
+        RemoveWFlagFromAccount()
+        LogToFile("LIVE pack found, removed W flag completely from: " . accountFileName)
+        
+    } else {
+        CreateStatusMessage("Shop Ticket not found. Pack is likely DEAD",,,, false)
+        LogToFile("No WonderPick Thanks found for account: " . accountFileName . " (User: " . wpThanksSavedUsername . ", FC: " . wpThanksSavedFriendCode . ")")
+        Delay(5)
+        
+        ; Handle flag conversion or removal for DEAD packs
+        if (isSecondCheck) {
+            ; This was the final check - remove W2 flag completely
+            RemoveWFlagFromAccount()
+            LogToFile("Final WonderPick check completed, removed W2 flag from: " . accountFileName)
+        } else {
+            ; This was the first check - convert W to W2 for second check
+            ConvertWToW2Flag()
+            LogToFile("First WonderPick check completed, converted W to W2 flag for: " . accountFileName)
+        }
+    }
+    
+    ; Send Discord notification
+    SendWPThanksReport(thanksFound, checkStage, screenshotPath)
+    
+    ; Clear flag before returning
+    isCurrentlyDoingWPCheck := false
+    
+    return true
+}
+
+SendWPStuckWarning(stuckAt) {
+    global wpThanksSavedUsername, wpThanksSavedFriendCode, accountFileName, scriptName
+    global discordWebhookURL, discordUserId
+    
+    displayUsername := (wpThanksSavedUsername != "") ? wpThanksSavedUsername : "Unknown"
+    displayFriendCode := (wpThanksSavedFriendCode != "") ? wpThanksSavedFriendCode : "Unknown"
+    
+    discordMessage := "**[WP CHECK STUCK]** " . displayUsername . " " . displayFriendCode . " - Bot got stuck at '" . stuckAt . "' during WonderPick thanks check. Removed W flag and continuing. Please check manually if this account received WonderPick thanks. Account: " . accountFileName
+    
+    ; Send with ping to alert user
+    LogToDiscord(discordMessage, "", true, "", "", discordWebhookURL, discordUserId)
+    LogToFile("WP thanks check stuck warning sent for: " . accountFileName . " (stuck at: " . stuckAt . ")")
+}
+
+ConvertWToW2Flag() {
+    global accountFileName, winTitle
+    
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    oldFilePath := saveDir . "\" . accountFileName
+    
+    ; Check if file exists and has W flag (but not W2)
+    if (!FileExist(oldFilePath) || !InStr(accountFileName, "W") || InStr(accountFileName, "W2")) {
+        return
+    }
+    
+    ; Convert W to W2 in the metadata
+    newFileName := StrReplace(accountFileName, "W", "W2")
+    
+    ; Rename the file
+    if (newFileName != accountFileName) {
+        newFilePath := saveDir . "\" . newFileName
+        FileMove, %oldFilePath%, %newFilePath%
+        LogToFile("Converted W to W2 flag: " . accountFileName . " -> " . newFileName)
+        accountFileName := newFileName
+    }
+}
+
+SendWPThanksReport(thanksFound, checkStage := "FIRST", screenshotPath := "") {
+    global wpThanksSavedUsername, wpThanksSavedFriendCode, accountFileName, scriptName
+    global discordWebhookURL, discordUserId
+    
+    ; Use the freshly obtained values
+    displayUsername := (wpThanksSavedUsername != "") ? wpThanksSavedUsername : "Unknown"
+    displayFriendCode := (wpThanksSavedFriendCode != "") ? wpThanksSavedFriendCode : "Unknown"
+    
+    if (thanksFound) {
+        ; LIVE pack messaging - don't include <@> in message since LogToDiscord handles pinging
+        discordMessage := "**[LIVE]** " . displayUsername . " " . displayFriendCode . " " . accountFileName
+        
+        ; Send with screenshot and ping user (LogToDiscord will handle the @mention)
+        LogToDiscord(discordMessage, screenshotPath, true, "", "", discordWebhookURL, discordUserId)
+    } else {
+        ; DEAD pack messaging - don't include <@> in message
+        if (checkStage = "FIRST") {
+            discordMessage := displayUsername . " " . displayFriendCode . " did not receive any wonderpick thanks. [LIKELY DEAD] - checking again in 12 hours to confirm."
+        } else {
+            discordMessage := displayUsername . " " . displayFriendCode . " did not receive any wonderpick thanks after 12 hours. [LIKELY DEAD] - will not be checked again."
+        }
+        
+        ; Send without pinging (empty user ID parameter)
+        LogToDiscord(discordMessage, "", true, "", "", discordWebhookURL, "")
+    }
+    
+    status := thanksFound ? "LIVE" : "DEAD"
+    LogToFile("WP Thanks " . checkStage . " report sent: " . status . " for " . accountFileName . " (Username: " . displayUsername . ", FriendCode: " . displayFriendCode . ")")
+}
+
+RemoveWFlagFromAccount() {
+    global accountFileName, winTitle
+    
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    oldFilePath := saveDir . "\" . accountFileName
+    
+    ; Check if file exists and has any W flag
+    if (!FileExist(oldFilePath) || !InStr(accountFileName, "W")) {
+        LogToFile("RemoveWFlagFromAccount: No W flag found or file doesn't exist: " . accountFileName)
+        return
+    }
+    
+    ; Remove W from the metadata
+    newFileName := accountFileName
+    if (InStr(accountFileName, "(")) {
+        ; Extract metadata and remove W or W2
+        parts1 := StrSplit(accountFileName, "(")
+        leftPart := parts1[1]
+        
+        if (InStr(parts1[2], ")")) {
+            parts2 := StrSplit(parts1[2], ")")
+            metadata := parts2[1]
+            rightPart := parts2[2]
+            
+            ; Remove both W2 and W from metadata
+            newMetadata := StrReplace(metadata, "W2", "")
+            newMetadata := StrReplace(newMetadata, "W", "")
+            
+            ; Reconstruct filename
+            if (newMetadata = "") {
+                newFileName := leftPart . rightPart
+            } else {
+                newFileName := leftPart . "(" . newMetadata . ")" . rightPart
+            }
+        }
+    }
+    
+    ; Rename the file if it changed
+    if (newFileName != accountFileName) {
+        newFilePath := saveDir . "\" . newFileName
+        FileMove, %oldFilePath%, %newFilePath%
+        LogToFile("Removed W flag: " . accountFileName . " -> " . newFileName)
+        accountFileName := newFileName
+    } else {
+        LogToFile("RemoveWFlagFromAccount: No changes needed for: " . accountFileName)
+    }
+}
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ; Find Card Count and OCR Helper Functions

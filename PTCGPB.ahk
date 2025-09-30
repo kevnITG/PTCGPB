@@ -72,11 +72,11 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v7.0.4"
+   ,localVersion := "v7.1.0"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
-   ,intro := "Secluded Springs"
+   ,intro := "Deluxe"
 
 global GUI_WIDTH := 790
 global GUI_HEIGHT := 370
@@ -93,6 +93,10 @@ if (!settingsLoaded) {
    CreateDefaultSettingsFile()
    LoadSettingsFromIni()
 }
+Deluxe := 0 ; TEMPORARILY DISABLED DELUXE (in development)
+Buzzwole := 0 ; TEMPORARILY DISABLED BUZZWOLE (in development)
+Solgaleo := 0 ; TEMPORARILY DISABLED SOLGALEO (in development)
+Lunala := 0 ; TEMPORARILY DISABLED LUNALA (in development)
 
 if (!IsLanguageSet) {
    Gui, Add, Text,, Select Language
@@ -326,7 +330,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.0.4 (kevinnnn)"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.1.0 (kevinnnn)"
 
    Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
@@ -416,11 +420,13 @@ SortByDropdownHandler:
 return
 
 UpdatePackSelectionButtonText() {
-    global Springs, HoOh, Lugia, Eevee, Buzzwole, Solgaleo, Lunala, Shining, Arceus
+    global Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole, Solgaleo, Lunala, Shining, Arceus
     global Palkia, Dialga, Pikachu, Charizard, Mewtwo, Mew, currentDictionary
     
     selectedPacks := []
 
+    if (Deluxe)
+         selectedPacks.Push(currentDictionary.Txt_Deluxe)
     if (Springs)
         selectedPacks.Push(currentDictionary.Txt_Springs)
     if (HoOh)
@@ -485,7 +491,7 @@ ShowPackSelection:
     WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
     
     popupX := mainWinX + 275 + 140 + 10
-    popupY := mainWinY + 18 + 30
+    popupY := mainWinY + 18 + 30 + 25
     
     Gui, PackSelect:Destroy
     Gui, PackSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Pack Selection
@@ -493,6 +499,8 @@ ShowPackSelection:
     Gui, PackSelect:Font, s10 cWhite, Segoe UI
 
     yPos := 10
+    Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x10 y" . yPos . " cWhite Disabled", % currentDictionary.Txt_Deluxe
+    yPos += 25    
     Gui, PackSelect:Add, Checkbox, % (Springs ? "Checked" : "") " vSprings_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Springs
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (HoOh ? "Checked" : "") " vHoOh_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_HoOh
@@ -501,11 +509,11 @@ ShowPackSelection:
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (Eevee ? "Checked" : "") " vEevee_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Eevee
     yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Buzzwole ? "Checked" : "") " vBuzzwole_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Buzzwole
+    Gui, PackSelect:Add, Checkbox, % (Buzzwole ? "Checked" : "") " vBuzzwole_Popup x10 y" . yPos . " cWhite Disabled", % currentDictionary.Txt_Buzzwole
     yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Solgaleo ? "Checked" : "") " vSolgaleo_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Solgaleo
+    Gui, PackSelect:Add, Checkbox, % (Solgaleo ? "Checked" : "") " vSolgaleo_Popup x10 y" . yPos . " cWhite Disabled", % currentDictionary.Txt_Solgaleo
     yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Lunala ? "Checked" : "") " vLunala_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Lunala
+    Gui, PackSelect:Add, Checkbox, % (Lunala ? "Checked" : "") " vLunala_Popup x10 y" . yPos . " cWhite Disabled", % currentDictionary.Txt_Lunala
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (Shining ? "Checked" : "") " vShining_Popup x10 y" . yPos . " cWhite", Shining Revelry
     yPos += 25
@@ -534,13 +542,15 @@ return
 ApplyPackSelection:
     Gui, PackSelect:Submit, NoHide
     
+   
+    Deluxe := 0 ; TEMPORARILY DISABLED (in development)
     Springs := Springs_Popup
     HoOh := HoOh_Popup
     Lugia := Lugia_Popup
     Eevee := Eevee_Popup
-    Buzzwole := Buzzwole_Popup
-    Solgaleo := Solgaleo_Popup
-    Lunala := Lunala_Popup
+    Buzzwole := 0 ; Temp disabled
+    Solgaleo := 0 ; Temp disabled
+    Lunala := 0 ; Temp disabled
     Shining := Shining_Popup
     Arceus := Arceus_Popup
     Dialga := Dialga_Popup
@@ -1067,6 +1077,9 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (claimDailyMission ? "Checked" : "") " vclaimDailyMission_Popup x" . col1X . " y" . yPos . " cWhite", Claim Daily 4 Hourglasses
     yPos += 20
     
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (checkWPthanks ? "Checked" : "") " vcheckWPthanks_Popup x" . col1X . " y" . yPos . " cWhite", Check for Wonderpick Thanks
+    yPos += 20
+    
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x" . col1X . " y" . yPos . " cWhite", 1x speed (no speedmod)
     yPos += 35
     
@@ -1200,6 +1213,7 @@ ApplyToolsAndSystemSettings:
     clientLanguage := clientLanguage_Popup
     instanceLaunchDelay := instanceLaunchDelay_Popup
     autoLaunchMonitor := autoLaunchMonitor_Popup
+    checkWPthanks := checkWPthanks_Popup
     
     Gui, ToolsAndSystemSelect:Destroy
     
@@ -1212,6 +1226,7 @@ ApplyToolsAndSystemSettings:
     GuiControl,, slowMotion, %slowMotion%
     GuiControl,, claimSpecialMissions, %claimSpecialMissions%
     GuiControl,, wonderpickForEventMissions, %wonderpickForEventMissions%
+    GuiControl,, checkWPthanks, %checkWPthanks%
 return
 
 CancelToolsAndSystemSettings:
@@ -1304,6 +1319,8 @@ Save:
   confirmMsg .= "`n"
   
   confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
+  if (Deluxe)
+    confirmMsg .= "• " . currentDictionary.Txt_Deluxe . "`n"
   if (Springs)
     confirmMsg .= "• " . currentDictionary.Txt_Springs . "`n"
   if (HoOh)
@@ -1617,11 +1634,19 @@ BalanceXMLs:
             continue
          }
          
+         ; Uncomment below version to sort by file last modified dates
+         ; seenFiles[fileName] := {Time: fileTime, Path: filePath}
+         ; fileList .= fileTime "`t" filePath "`n"
+
+         ; Below version is to sort by pack count instead (evenly distribute higher pack counts amongst instances)
+         RegExMatch(fileName, "(\d+)P_", packMatch)
+         packCount := packMatch1 ? packMatch1 : 0
+
          seenFiles[fileName] := {Time: fileTime, Path: filePath}
-         fileList .= fileTime "`t" filePath "`n"
+         fileList .= packCount "`t" filePath "`n"
       }
       
-      ToolTip, Sorting by modified date
+      ToolTip, Sorting by pack count
       Sort, fileList, R
       
       ToolTip, Distributing XMLs between folders...please wait
@@ -1739,6 +1764,7 @@ LoadSettingsFromIni() {
       IniRead, claimSpecialMissions, Settings.ini, UserSettings, claimSpecialMissions, 0
       IniRead, claimDailyMission, Settings.ini, UserSettings, claimDailyMission, 0
       IniRead, wonderpickForEventMissions, Settings.ini, UserSettings, wonderpickForEventMissions, 0
+      IniRead, checkWPthanks, Settings.ini, UserSettings, checkWPthanks, 0
       
       IniRead, Palkia, Settings.ini, UserSettings, Palkia, 0
       IniRead, Dialga, Settings.ini, UserSettings, Dialga, 0
@@ -1754,7 +1780,8 @@ LoadSettingsFromIni() {
       IniRead, Eevee, Settings.ini, UserSettings, Eevee, 0
       IniRead, HoOh, Settings.ini, UserSettings, HoOh, 0
       IniRead, Lugia, Settings.ini, UserSettings, Lugia, 0
-      IniRead, Springs, Settings.ini, UserSettings, Springs, 1
+      IniRead, Springs, Settings.ini, UserSettings, Springs, 0
+      IniRead, Deluxe, Settings.ini, UserSettings, Deluxe, 1
       
       IniRead, CheckShinyPackOnly, Settings.ini, UserSettings, CheckShinyPackOnly, 0
       IniRead, TrainerCheck, Settings.ini, UserSettings, TrainerCheck, 0
@@ -1808,6 +1835,7 @@ LoadSettingsFromIni() {
       IniRead, minStarsA4HoOh, Settings.ini, UserSettings, minStarsA4HoOh, 0
       IniRead, minStarsA4Lugia, Settings.ini, UserSettings, minStarsA4Lugia, 0
       IniRead, minStarsA4Springs, Settings.ini, UserSettings, minStarsA4Springs, 0
+      IniRead, minStarsA4Deluxe, Settings.ini, UserSettings, minStarsA4Deluxe, 0
       
       IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
@@ -1883,6 +1911,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "maxWaitHours=24`n"
       iniContent .= "menuExpanded=True`n"
       iniContent .= "groupRerollEnabled=0`n"
+      iniContent .= "checkWPthanks=0`n"
       
       FileAppend, %iniContent%, Settings.ini, UTF-16
       return true
@@ -1899,7 +1928,7 @@ SaveAllSettings() {
    global autoLaunchMonitor, autoUseGPTest, TestTime, groupRerollEnabled
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
-   global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, slowMotion, ocrLanguage, clientLanguage
+   global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, slowMotion, ocrLanguage, clientLanguage
    global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, isDarkTheme
    global useBackgroundImage, tesseractPath, debugMode, useTesseract, statusMessage
    global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards
@@ -1911,6 +1940,7 @@ SaveAllSettings() {
    global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA3b
    global menuExpanded
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
+   global checkWPthanks
 
    if (deleteMethod != "Inject Wonderpick 39P+") {
        packMethod := false
@@ -1953,6 +1983,7 @@ SaveAllSettings() {
    iniContent .= "HoOh=" HoOh "`n"
    iniContent .= "Lugia=" Lugia "`n"
    iniContent .= "Springs=" Springs "`n"
+   iniContent .= "Deluxe=" Deluxe "`n"
    iniContent .= "CheckShinyPackOnly=" CheckShinyPackOnly "`n"
    iniContent .= "TrainerCheck=" TrainerCheck "`n"
    iniContent .= "FullArtCheck=" FullArtCheck "`n"
@@ -1977,6 +2008,7 @@ SaveAllSettings() {
    iniContent .= "claimSpecialMissions=" claimSpecialMissions "`n"
    iniContent .= "claimDailyMission=" claimDailyMission "`n"
    iniContent .= "wonderpickForEventMissions=" wonderpickForEventMissions "`n"
+   iniContent .= "checkWPthanks=" checkWPthanks "`n"
 
    originalDeleteMethod := deleteMethod
    deleteMethod := MigrateDeleteMethod(deleteMethod)
@@ -2060,6 +2092,7 @@ SaveAllSettings() {
    iniContent_Second .= "minStarsA4HoOh=" minStarsA4HoOh "`n"
    iniContent_Second .= "minStarsA4Lugia=" minStarsA4Lugia "`n"
    iniContent_Second .= "minStarsA4Springs=" minStarsA4Springs "`n"
+   iniContent_Second .= "minStarsA4Deluxe=" minStarsA4Deluxe "`n"
    iniContent_Second .= "s4tWPMinCards=" s4tWPMinCards "`n"
    iniContent_Second .= "s4tDiscordUserId=" s4tDiscordUserId "`n"
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"
@@ -2100,7 +2133,7 @@ StartBot() {
    global mainIdsURL, showcaseEnabled, defaultLanguage, scaleParam, FriendID
    global heartBeat, heartBeatName, heartBeatWebhookURL, heartBeatDelay, debugMode
    global Shining, Arceus, Palkia, Dialga, Mew, Pikachu, Charizard, Mewtwo
-   global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, packMethod, nukeAccount
+   global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, packMethod, nukeAccount
    global SelectedMonitorIndex, localVersion, githubUser, rerollTime, PackGuiBuild
    
    PackGuiBuild := 0
@@ -2255,7 +2288,9 @@ StartBot() {
       Selected.Push("Lugia")
    if(Springs)
       Selected.Push("Springs")
-   
+   if(Deluxe)
+      Selected.Push("Deluxe")
+
    for index, value in Selected {
       if(index = Selected.MaxIndex())
          commaSeparate := ","
