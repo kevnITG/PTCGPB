@@ -4294,7 +4294,7 @@ SelectPack(HG := false) {
 	}
 	
 	if(inselectexpansionscreen) {
-        ; if (openPack = "Shining" || openPack = "Solgaleo" || openPack = "Lunala" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
+        if (openPack = "Buzzwole" || openPack = "Shining" || openPack = "Solgaleo" || openPack = "Lunala" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
             X := 266
             Y1 := 430
             Y2 := 50 ; changed from 350
@@ -4421,6 +4421,7 @@ SelectPack(HG := false) {
             CreateStatusMessage("Waiting for Skip2`n(" . failSafeTime . "/45 seconds)")
         }
     }
+}
 
 PackOpening() {
     failSafe := A_TickCount

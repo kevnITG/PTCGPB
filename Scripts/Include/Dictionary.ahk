@@ -98,7 +98,7 @@
         Lang["Txt_claimSpecialMissions"] := "Claim Special Missions"
         Lang["SortByText"] := "Sort By:"
 
-        Lang["Txt_Deluxe"] := "Deluxe (disabled)"
+        Lang["Txt_Deluxe"] := "Deluxe"
         Lang["Txt_Springs"] := "Springs"
         Lang["Txt_HoOh"] := "Ho-Oh"
         Lang["Txt_Lugia"] := "Lugia"
@@ -239,7 +239,7 @@
         Lang["Txt_claimSpecialMissions"] := "領取特殊任務"
         Lang["SortByText"] := "注入排序："
 
-        Lang["Txt_Deluxe"] := "Deluxe (disabled)"
+        Lang["Txt_Deluxe"] := "Deluxe"
         Lang["Txt_Springs"] := "未知水域"
         Lang["Txt_HoOh"] := "鳳王"
         Lang["Txt_Lugia"] := "洛奇亞"
@@ -380,7 +380,7 @@
         Lang["Txt_claimSpecialMissions"] := "イベント"
         Lang["SortByText"] := "注入序列："
 
-        Lang["Txt_Deluxe"] := "Deluxe (disabled)"
+        Lang["Txt_Deluxe"] := "Deluxe"
         Lang["Txt_Springs"] := "未知なる水域"
         Lang["Txt_HoOh"] := "ホウオウ"
         Lang["Txt_Lugia"] := "ルギア"
@@ -523,7 +523,7 @@
         Lang["Txt_claimSpecialMissions"] := "Spezialmissionen"
         Lang["SortByText"] := "Sortieren nach:"
 
-        Lang["Txt_Deluxe"] := "Deluxe (disabled)"
+        Lang["Txt_Deluxe"] := "Deluxe"
         Lang["Txt_Springs"] := "Verborgene Quelle"
         Lang["Txt_HoOh"] := "Ho-Oh"
         Lang["Txt_Lugia"] := "Lugia"

@@ -93,7 +93,7 @@ if (!settingsLoaded) {
    CreateDefaultSettingsFile()
    LoadSettingsFromIni()
 }
-Deluxe := 0 ; TEMPORARILY DISABLED DELUXE (in development)
+; Deluxe := 0 ; TEMPORARILY DISABLED DELUXE (in development)
 Buzzwole := 0 ; TEMPORARILY DISABLED BUZZWOLE (in development)
 Solgaleo := 0 ; TEMPORARILY DISABLED SOLGALEO (in development)
 Lunala := 0 ; TEMPORARILY DISABLED LUNALA (in development)
@@ -499,7 +499,7 @@ ShowPackSelection:
     Gui, PackSelect:Font, s10 cWhite, Segoe UI
 
     yPos := 10
-    Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x10 y" . yPos . " cWhite Disabled", % currentDictionary.Txt_Deluxe
+    Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Deluxe
     yPos += 25    
     Gui, PackSelect:Add, Checkbox, % (Springs ? "Checked" : "") " vSprings_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Springs
     yPos += 25
@@ -543,7 +543,7 @@ ApplyPackSelection:
     Gui, PackSelect:Submit, NoHide
     
    
-    Deluxe := 0 ; TEMPORARILY DISABLED (in development)
+    Deluxe := Deluxe_Popup
     Springs := Springs_Popup
     HoOh := HoOh_Popup
     Lugia := Lugia_Popup
