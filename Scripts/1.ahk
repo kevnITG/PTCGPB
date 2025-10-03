@@ -2317,7 +2317,7 @@ FindBorders(prefix) {
     count := 0
     searchVariation := 40
     searchVariation6Card := 60 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
-    searchVariation4Card := 100
+    searchVariation4Card := 40 ;
 
     if (prefix = "shiny2star") { ; some aren't being detected at lower variations
         searchVariation := 75
@@ -2434,6 +2434,27 @@ FindBorders(prefix) {
             imageIndex := A_Index - 3  ; Card 4 -> uses Card 1 needle, 5->2, 6->3
             imageName := prefix . imageIndex
             currentSearchVariation := searchVariation6Card
+        } else if (is4CardPack) {
+            ; 4-card pack (Deluxe) - special needle logic
+            if (A_Index <= 2) {
+                ; Slots 1 and 2 - try deluxe-specific needle first, fall back to regular
+                deluxeImageName := "deluxe" . prefix . A_Index
+                regularImageName := prefix . A_Index
+                
+                ; Check if deluxe-specific needle exists
+                deluxePath := A_ScriptDir . "\" . defaultLanguage . "\" . deluxeImageName . ".png"
+                if (FileExist(deluxePath)) {
+                    imageName := deluxeImageName
+                } else {
+                    imageName := regularImageName
+                }
+            } else {
+                ; Slots 3 and 4 - reuse needles from regular 5-card pack slots 4 and 5
+                ; Deluxe slot 3 (A_Index=3) uses regular slot 4 needle
+                ; Deluxe slot 4 (A_Index=4) uses regular slot 5 needle
+                imageName := prefix . (A_Index + 1)
+            }
+            currentSearchVariation := searchVariation4Card
         } else {
             ; Top row of 6-card pack, or any position in 5-card pack, use the 'real' needles
             imageName := prefix . A_Index
@@ -4294,25 +4315,42 @@ SelectPack(HG := false) {
 	}
 	
 	if(inselectexpansionscreen) {
-        if (openPack = "Buzzwole" || openPack = "Shining" || openPack = "Solgaleo" || openPack = "Lunala" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
+        ; packs that can be opened after 1 swipe down
+        if (openPack = "Buzzwole" || openPack = "Solgaleo" || openPack = "Lunala") {
             X := 266
             Y1 := 430
-            Y2 := 50 ; changed from 350
+            Y2 := 50
+
+            Loop, 1 {
+                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
+                Sleep, 300 ;
+            }
+
+            if (openPack == "Buzzwole") {
+                packx := SelectExpansionLeftCollumnMiddleX
+                packy := 438
+            } else if (openPack = "Solgaleo") {
+                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionLeft
+                packy := 438
+            } else if (openPack = "Lunala") {
+                packx := 209 ;custom click to avoid accidentally clicking Points UI after
+                ; packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionRight
+                packy := 438
+            }
+        }
+
+        ; packs that can be opened after fully swiping down
+        if (openPack = "Shining" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
             
+            X := 266
+            Y1 := 430
+            Y2 := 50
+    
             Loop, 5 {
                 adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
                 Sleep, 300 ;
             }
-            if (openPack == "Buzzwole") { ; NEEDS UPDATED SWIPES 2025.09.29
-                packx := SelectExpansionLeftCollumnMiddleX
-                packy := 130
-            } else if (openPack = "Solgaleo") { ; NEEDS UPDATED SWIPES 2025.09.29
-                packx := SelectExpansionRightCollumnMiddleX ; + 2PackExpansionLeft
-                packy := 130
-            } else if (openPack = "Lunala") { ; NEEDS UPDATED SWIPES 2025.09.29
-                packx := SelectExpansionRightCollumnMiddleX ; + 2PackExpansionRight
-                packy := 130
-            } else if (openPack = "Shining") {
+            if (openPack = "Shining") {
                 packx := SelectExpansionLeftCollumnMiddleX
                 packy := 130
 			} else if (openPack = "Arceus") {

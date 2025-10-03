@@ -72,7 +72,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v7.1.1"
+   ,localVersion := "v7.1.2"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -93,10 +93,6 @@ if (!settingsLoaded) {
    CreateDefaultSettingsFile()
    LoadSettingsFromIni()
 }
-; Deluxe := 0 ; TEMPORARILY DISABLED DELUXE (in development)
-Buzzwole := 0 ; TEMPORARILY DISABLED BUZZWOLE (in development)
-Solgaleo := 0 ; TEMPORARILY DISABLED SOLGALEO (in development)
-Lunala := 0 ; TEMPORARILY DISABLED LUNALA (in development)
 
 if (!IsLanguageSet) {
    Gui, Add, Text,, Select Language
@@ -330,7 +326,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.1.1 (kevinnnn)"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.1.2 (kevinnnn)"
 
    Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
@@ -509,11 +505,11 @@ ShowPackSelection:
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (Eevee ? "Checked" : "") " vEevee_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Eevee
     yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Buzzwole ? "Checked" : "") " vBuzzwole_Popup x10 y" . yPos . " cWhite Disabled", % currentDictionary.Txt_Buzzwole
+    Gui, PackSelect:Add, Checkbox, % (Buzzwole ? "Checked" : "") " vBuzzwole_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Buzzwole
     yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Solgaleo ? "Checked" : "") " vSolgaleo_Popup x10 y" . yPos . " cWhite Disabled", % currentDictionary.Txt_Solgaleo
+    Gui, PackSelect:Add, Checkbox, % (Solgaleo ? "Checked" : "") " vSolgaleo_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Solgaleo
     yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Lunala ? "Checked" : "") " vLunala_Popup x10 y" . yPos . " cWhite Disabled", % currentDictionary.Txt_Lunala
+    Gui, PackSelect:Add, Checkbox, % (Lunala ? "Checked" : "") " vLunala_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Lunala
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (Shining ? "Checked" : "") " vShining_Popup x10 y" . yPos . " cWhite", Shining Revelry
     yPos += 25
@@ -548,9 +544,9 @@ ApplyPackSelection:
     HoOh := HoOh_Popup
     Lugia := Lugia_Popup
     Eevee := Eevee_Popup
-    Buzzwole := 0 ; Temp disabled
-    Solgaleo := 0 ; Temp disabled
-    Lunala := 0 ; Temp disabled
+    Buzzwole := Buzzwole_Popup
+    Solgaleo := Solgaleo_Popup
+    Lunala := Lunala_Popup
     Shining := Shining_Popup
     Arceus := Arceus_Popup
     Dialga := Dialga_Popup
