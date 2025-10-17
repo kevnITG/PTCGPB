@@ -72,7 +72,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v7.1.2"
+   ,localVersion := "v7.1.3"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -200,17 +200,17 @@ NextStep:
 
    if (deleteMethod = "Create Bots (13P)")
    defaultDelete := 1
-   else if (deleteMethod = "Inject 13-39P")
+   else if (deleteMethod = "Inject 13P+")
    defaultDelete := 2
    else if (deleteMethod = "Inject Missions")
    defaultDelete := 2
-   else if (deleteMethod = "Inject Wonderpick 39P+")
+   else if (deleteMethod = "Inject Wonderpick 96P+")
    defaultDelete := 3
-   Gui, Add, DropDownList, vdeleteMethod gdeleteSettings choose%defaultDelete% x20 y210 w200 Background2A2A2A cWhite, Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+
+   Gui, Add, DropDownList, vdeleteMethod gdeleteSettings choose%defaultDelete% x20 y210 w200 Background2A2A2A cWhite, Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+
 
-   Gui, Add, Checkbox, % (packMethod ? "Checked" : "") " vpackMethod x20 y240 " . sectionColor . ((deleteMethod = "Inject Wonderpick 39P+") ? "" : " Hidden"), % currentDictionary.Txt_packMethod
-   Gui, Add, Checkbox, % (nukeAccount ? "Checked" : "") " vnukeAccount x20 y240 " . sectionColor . ((deleteMethod = "Create Bots (13P)")? "": " Hidden"), % currentDictionary.Txt_nukeAccount
-   Gui, Add, Checkbox, % (openExtraPack ? "Checked" : "") " vopenExtraPack gopenExtraPackSettings x20 y260 " . sectionColor . ((deleteMethod = "Inject Wonderpick 39P+" || deleteMethod = "Inject 13-39P") ? "" : " Hidden"), % currentDictionary.Txt_openExtraPack
+   Gui, Add, Checkbox, % (packMethod ? "Checked" : "") " vpackMethod x20 y240 " . sectionColor . ((deleteMethod = "Inject Wonderpick 96P+") ? "" : " Hidden"), % currentDictionary.Txt_packMethod
+   ; Gui, Add, Checkbox, % (nukeAccount ? "Checked" : "") " vnukeAccount x20 y240 " . sectionColor . ((deleteMethod = "Create Bots (13P)")? "": " Hidden"), % currentDictionary.Txt_nukeAccount
+   Gui, Add, Checkbox, % (openExtraPack ? "Checked" : "") " vopenExtraPack gopenExtraPackSettings x20 y260 " . sectionColor . ((deleteMethod = "Inject Wonderpick 96P+" || deleteMethod = "Inject 13P+") ? "" : " Hidden"), % currentDictionary.Txt_openExtraPack
    Gui, Add, Checkbox, % (spendHourGlass ? "Checked" : "") " vspendHourGlass gspendHourGlassSettings x20 y280 " . sectionColor . ((deleteMethod = "Create Bots (13P)")? " Hidden":""), % currentDictionary.Txt_spendHourGlass
 
    Gui, Add, Text, x20 y305 %sectionColor% vSortByText, % currentDictionary.SortByText
@@ -326,7 +326,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.1.2 (kevinnnn)"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.1.3 (kevinnnn)"
 
    Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
@@ -356,17 +356,18 @@ deleteSettings:
     GuiControl, Hide, spendHourGlass
     GuiControl, Hide, packMethod
     GuiControl, Hide, openExtraPack
-    GuiControl, Show, nukeAccount
+    ; GuiControl, Show, nukeAccount
     GuiControl, Hide, SortByText
     GuiControl, Hide, SortByDropdown
     GuiControl, Show, AccountNameText
     GuiControl, Show, AccountName
-  } else if (deleteMethod = "Inject Wonderpick 39P+") {
+    nukeAccount := false
+  } else if (deleteMethod = "Inject Wonderpick 96P+") {
     GuiControl, Show, FriendID
     GuiControl, Show, spendHourGlass
     GuiControl, Show, packMethod
     GuiControl, Show, openExtraPack
-    GuiControl, Hide, nukeAccount
+    ; GuiControl, Hide, nukeAccount
     GuiControl, Show, SortByText
     GuiControl, Show, SortByDropdown
     GuiControl, Hide, AccountNameText
@@ -377,7 +378,7 @@ deleteSettings:
     GuiControl, Show, spendHourGlass
     GuiControl, Hide, packMethod
     GuiControl, Show, openExtraPack
-    GuiControl, Hide, nukeAccount
+    ; GuiControl, Hide, nukeAccount
     GuiControl, Show, SortByText
     GuiControl, Show, SortByDropdown
     GuiControl, Hide, AccountNameText
@@ -1076,7 +1077,7 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (checkWPthanks ? "Checked" : "") " vcheckWPthanks_Popup x" . col1X . " y" . yPos . " cWhite", Check for Wonderpick Thanks
     yPos += 20
     
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x" . col1X . " y" . yPos . " cWhite", 1x speed (no speedmod)
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x" . col1X . " y" . yPos . " cWhite", No Speedmod Menu Clicks
     yPos += 35
     
     sectionColor := "cWhite"
@@ -1090,7 +1091,7 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (claimSpecialMissions ? "Checked" : "") " vclaimSpecialMissions_Popup x25 y" . yPos . " cWhite", Claim Rewards
     yPos += 20
     
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (wonderpickForEventMissions ? "Checked" : "") " vwonderpickForEventMissions_Popup x40 y" . yPos . " cWhite", Wonderpick
+    ; Gui, ToolsAndSystemSelect:Add, Checkbox, % (wonderpickForEventMissions ? "Checked" : "") " vwonderpickForEventMissions_Popup x40 y" . yPos . " cWhite", Wonderpick
     
     col2X := 220
     col2W := 190
@@ -1199,7 +1200,7 @@ ApplyToolsAndSystemSettings:
     claimDailyMission := claimDailyMission_Popup
     slowMotion := slowMotion_Popup
     claimSpecialMissions := claimSpecialMissions_Popup
-    wonderpickForEventMissions := wonderpickForEventMissions_Popup
+    ; wonderpickForEventMissions := wonderpickForEventMissions_Popup
     
     SelectedMonitorIndex := SelectedMonitorIndex_Popup
     defaultLanguage := defaultLanguage_Popup
@@ -1221,7 +1222,7 @@ ApplyToolsAndSystemSettings:
     GuiControl,, claimDailyMission, %claimDailyMission% 
     GuiControl,, slowMotion, %slowMotion%
     GuiControl,, claimSpecialMissions, %claimSpecialMissions%
-    GuiControl,, wonderpickForEventMissions, %wonderpickForEventMissions%
+    ; GuiControl,, wonderpickForEventMissions, %wonderpickForEventMissions%
     GuiControl,, checkWPthanks, %checkWPthanks%
 return
 
@@ -1351,8 +1352,8 @@ Save:
   additionalSettings := ""
   if (packMethod)
     additionalSettings .= SetUpDictionary.Confirm_1PackMethod . "`n"
-  if (nukeAccount && !injectMethod)
-    additionalSettings .= SetUpDictionary.Confirm_MenuDelete . "`n"
+  ; if (nukeAccount && !injectMethod)
+    ; additionalSettings .= SetUpDictionary.Confirm_MenuDelete . "`n"
   if (openExtraPack)
     additionalSettings .= SetUpDictionary.Confirm_openExtraPack . "`n"
   if (spendHourGlass)
@@ -1694,11 +1695,15 @@ MigrateDeleteMethod(oldMethod) {
     if (oldMethod = "13 Pack") {
         return "Create Bots (13P)"
     } else if (oldMethod = "Inject") {
-        return "Inject 13-39P"
+        return "Inject 13P+"
     } else if (oldMethod = "Inject for Reroll") {
-        return "Inject Wonderpick 39P+"
+        return "Inject Wonderpick 96P+"
     } else if (oldMethod = "Inject Missions") {
-        return "Inject 13-39P"
+        return "Inject 13P+"
+    } else if (oldMethod = "Inject 13-39P") {
+        return "Inject 13P+"
+    } else if (oldMethod = "Inject Wonderpick 39P+") {
+        return "Inject Wonderpick 96P+"
     }
     return oldMethod
 }
@@ -1726,8 +1731,8 @@ LoadSettingsFromIni() {
       IniRead, TestTime, Settings.ini, UserSettings, TestTime, 3600
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
       IniRead, waitTime, Settings.ini, UserSettings, waitTime, 3
-      IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 250
-      IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 0
+      IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 500
+      IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 1 ; default is now OFF for no-mod-menu support
       
       IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
       IniRead, defaultLanguage, Settings.ini, UserSettings, defaultLanguage, Scale125
@@ -1753,13 +1758,15 @@ LoadSettingsFromIni() {
         }
       IniRead, packMethod, Settings.ini, UserSettings, packMethod, 0
       IniRead, nukeAccount, Settings.ini, UserSettings, nukeAccount, 0
+      nukeAccount := 0 ; forced to always be disabled
       IniRead, spendHourGlass, Settings.ini, UserSettings, spendHourGlass, 0
       IniRead, openExtraPack, Settings.ini, UserSettings, openExtraPack, 0
-      IniRead, injectSortMethod, Settings.ini, UserSettings, injectSortMethod, ModifiedAsc
+      IniRead, injectSortMethod, Settings.ini, UserSettings, injectSortMethod, PacksDesc
       IniRead, godPack, Settings.ini, UserSettings, godPack, Continue
       IniRead, claimSpecialMissions, Settings.ini, UserSettings, claimSpecialMissions, 0
       IniRead, claimDailyMission, Settings.ini, UserSettings, claimDailyMission, 0
       IniRead, wonderpickForEventMissions, Settings.ini, UserSettings, wonderpickForEventMissions, 0
+      wonderpickForEventMissions := 0 ; forced turned off during Sneak Peek for now...
       IniRead, checkWPthanks, Settings.ini, UserSettings, checkWPthanks, 0
       
       IniRead, Palkia, Settings.ini, UserSettings, Palkia, 0
@@ -1776,8 +1783,8 @@ LoadSettingsFromIni() {
       IniRead, Eevee, Settings.ini, UserSettings, Eevee, 0
       IniRead, HoOh, Settings.ini, UserSettings, HoOh, 0
       IniRead, Lugia, Settings.ini, UserSettings, Lugia, 0
-      IniRead, Springs, Settings.ini, UserSettings, Springs, 0
-      IniRead, Deluxe, Settings.ini, UserSettings, Deluxe, 1
+      IniRead, Springs, Settings.ini, UserSettings, Springs, 1
+      IniRead, Deluxe, Settings.ini, UserSettings, Deluxe, 0
       
       IniRead, CheckShinyPackOnly, Settings.ini, UserSettings, CheckShinyPackOnly, 0
       IniRead, TrainerCheck, Settings.ini, UserSettings, TrainerCheck, 0
@@ -1848,7 +1855,7 @@ LoadSettingsFromIni() {
       if (s4tWPMinCards < 1 || s4tWPMinCards > 2)
          s4tWPMinCards := 1
          
-      validMethods := "Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+"
+      validMethods := "Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+"
       if (!InStr(validMethods, deleteMethod)) {
          deleteMethod := "Create Bots (13P)"
          IniWrite, %deleteMethod%, Settings.ini, UserSettings, deleteMethod
@@ -1881,7 +1888,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "instanceStartDelay=10`n"
       iniContent .= "defaultLanguage=Scale125`n"
       iniContent .= "SelectedMonitorIndex=1`n"
-      iniContent .= "swipeSpeed=250`n"
+      iniContent .= "swipeSpeed=500`n"
       iniContent .= "runMain=0`n"
       iniContent .= "Mains=0`n"
       iniContent .= "autoUseGPTest=0`n"
@@ -1902,7 +1909,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "variablePackCount=15`n"
       iniContent .= "claimSpecialMissions=0`n"
       iniContent .= "spendHourGlass=0`n"
-      iniContent .= "injectSortMethod=ModifiedAsc`n"
+      iniContent .= "injectSortMethod=PacksDesc`n"
       iniContent .= "waitForEligibleAccounts=1`n"
       iniContent .= "maxWaitHours=24`n"
       iniContent .= "menuExpanded=True`n"
@@ -1938,7 +1945,7 @@ SaveAllSettings() {
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
    global checkWPthanks
 
-   if (deleteMethod != "Inject Wonderpick 39P+") {
+   if (deleteMethod != "Inject Wonderpick 96P+") {
        packMethod := false
    }
    
@@ -2003,7 +2010,7 @@ SaveAllSettings() {
    iniContent .= "groupRerollEnabled=" groupRerollEnabled "`n"
    iniContent .= "claimSpecialMissions=" claimSpecialMissions "`n"
    iniContent .= "claimDailyMission=" claimDailyMission "`n"
-   iniContent .= "wonderpickForEventMissions=" wonderpickForEventMissions "`n"
+   ; iniContent .= "wonderpickForEventMissions=" wonderpickForEventMissions "`n"
    iniContent .= "checkWPthanks=" checkWPthanks "`n"
 
    originalDeleteMethod := deleteMethod
@@ -2011,7 +2018,7 @@ SaveAllSettings() {
    if (deleteMethod = "" || deleteMethod = "ERROR") {
       deleteMethod := "Create Bots (13P)"
    }
-   validMethods := "Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+"
+   validMethods := "Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+"
    if (!InStr(validMethods, deleteMethod)) {
       deleteMethod := "Create Bots (13P)"
    }
@@ -2033,7 +2040,7 @@ SaveAllSettings() {
    else if (SortByDropdown = "Most Packs First")
       injectSortMethod := "PacksDesc"
    iniContent_Second := "deleteMethod=" deleteMethod "`n"
-   if (deleteMethod = "Inject Wonderpick 39P+") {
+   if (deleteMethod = "Inject Wonderpick 96P+") {
       iniContent_Second .= "FriendID=" FriendID "`n"
       iniContent_Second .= "mainIdsURL=" mainIdsURL "`n"
    } else {

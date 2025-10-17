@@ -34,7 +34,7 @@ global currentPackIs6Card := false
 global currentPackIs4Card := false
 global injectSortMethod := "ModifiedAsc"  ; Default sort method (oldest accounts first)
 global injectMinPacks := 0       ; Minimum pack count for injection (0 = no minimum)
-global injectMaxPacks := 39      ; Maximum pack count for injection (default for regular Inject 13-39P)
+global injectMaxPacks := 39      ; Maximum pack count for injection (default for regular Inject 13P+)
 
 global waitForEligibleAccounts := 1  ; Enable/disable waiting (1 = wait, 0 = stop script)
 global maxWaitHours := 24             ; Maximum hours to wait before giving up (0 = wait forever)
@@ -91,7 +91,7 @@ IniRead, deleteMethod, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
     deleteMethod := MigrateDeleteMethod(deleteMethod)
     if (deleteMethod != originalDeleteMethod) {
         IniWrite, %deleteMethod%, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
-        validMethods := "Create Bots (13P)|Inject 13-39P|Inject Wonderpick 39P+"
+        validMethods := "Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+"
         if (!InStr(validMethods, deleteMethod)) {
             deleteMethod := "Create Bots (13P)"
             IniWrite, %deleteMethod%, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
@@ -288,11 +288,11 @@ MigrateDeleteMethod(oldMethod) {
     if (oldMethod = "13 Pack") {
         return "Create Bots (13P)"
     } else if (oldMethod = "Inject") {
-        return "Inject 13-39P" 
+        return "Inject 13P+" 
     } else if (oldMethod = "Inject for Reroll") {
-        return "Inject Wonderpick 39P+"
+        return "Inject Wonderpick 96P+"
     } else if (oldMethod = "Inject Missions") {
-        return "Inject 13-39P"
+        return "Inject 13P+"
     }
     return oldMethod
 }
@@ -523,7 +523,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         }
 
         ; Daily Mission 4hg collection and/or extra 3rd pack opening
-        if((deleteMethod = "Inject Wonderpick 39P+" || deleteMethod = "Inject 13-39P") && (claimDailyMission || openExtraPack)) {
+        if((deleteMethod = "Inject Wonderpick 96P+" || deleteMethod = "Inject 13P+") && (claimDailyMission || openExtraPack)) {
             
             ; If only claiming daily missions (no extra pack)
             if(claimDailyMission && !openExtraPack) {
@@ -560,7 +560,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         MidOfRun:
 		
-        if(deleteMethod = "Inject 13-39P" || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)
+        if(deleteMethod = "Inject 13P+" || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)
             Goto, EndOfRun
 
         if (checkShouldDoMissions()) {
@@ -660,7 +660,8 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         ; Special missions
         IniRead, claimSpecialMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, claimSpecialMissions, 0
-        if (claimSpecialMissions = 1 && !specialMissionsDone && (deleteMethod = "Inject 13-39P" || deleteMethod = "Inject Wonderpick 39P+")) {
+        if (claimSpecialMissions = 1 && (deleteMethod = "Inject 13P+" || deleteMethod = "Inject Wonderpick 96P+")) {
+            ; removed check for !specialMissionsDone := 1 so that users don't need to constantly reset claim status on accounts.
             GoToMain()
             HomeAndMission(1)
             GetEventRewards(true) ; collects all the Special mission hourglass
@@ -672,11 +673,11 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         
         ; Hourglass spending
         IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 0
-        if (spendHourGlass = 1 && !(deleteMethod = "Inject 13-39P" && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
+        if (spendHourGlass = 1 && !(deleteMethod = "Inject 13P+" && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
             SpendAllHourglass()
         }
 
-        ; Friend removal for inject wonderpick 39P+
+        ; Friend removal for Inject Wonderpick 96P+
         if (injectMethod && friended && !keepAccount) {
             RemoveFriends()
         }
@@ -716,7 +717,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         AppendToJsonFile(packsThisRun)
 		
         ; Check for 40 first to quit	
-        if (deleteMethod = "Inject 13-39P" && accountOpenPacks >= maxAccountPackNum) {
+        if (deleteMethod = "Inject 13P+" && accountOpenPacks >= maxAccountPackNum) {
             if (injectMethod && loadedAccount) {
                 if (!keepAccount) {
                     MarkAccountAsUsed() 
@@ -2594,7 +2595,7 @@ FoundStars(star) {
     
     ; Determine if this should get (W) flag for wonderpick thanks checking
     shouldAddWFlag := false
-    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 39P+" && injectMethod && loadedAccount) {
+    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 96P+" && injectMethod && loadedAccount) {
         if (star = "Double two star" || star = "Trainer" || star = "Rainbow" || star = "Full Art") {
             shouldAddWFlag := true
         }
@@ -2688,7 +2689,7 @@ GodPackFound(validity) {
     
     ; Determine if this should get (W) flag for wonderpick thanks checking
     shouldAddWFlag := false
-    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 39P+" && validity = "Valid" && injectMethod && loadedAccount) {
+    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 96P+" && validity = "Valid" && injectMethod && loadedAccount) {
         shouldAddWFlag := true
     }
     
@@ -4942,11 +4943,11 @@ CreateAccountList(instance) {
     if (!injectSortMethod)
         injectSortMethod := "ModifiedAsc"
     
-    parseInjectType := "Inject 13-39P"  ; Default
+    parseInjectType := "Inject 13P+"  ; Default
     
     ; Determine injection type and pack ranges
-    if (deleteMethod = "Inject 13-39P") {
-        parseInjectType := "Inject 13-39P"
+    if (deleteMethod = "Inject 13P+") {
+        parseInjectType := "Inject 13P+"
         minPacks := 0
         maxPacks := 9999
     }
@@ -4955,8 +4956,8 @@ CreateAccountList(instance) {
         minPacks := 0
         maxPacks := 38
     }
-    else if (deleteMethod = "Inject Wonderpick 39P+") {
-        parseInjectType := "Inject Wonderpick 39P+"
+    else if (deleteMethod = "Inject Wonderpick 96P+") {
+        parseInjectType := "Inject Wonderpick 96P+"
         minPacks := 35
         maxPacks := 9999
     }
@@ -4990,7 +4991,7 @@ CreateAccountList(instance) {
     wFlagFiles := []  ; Separate array for W flag files
     
     ; First pass: gather W flag files that are ready for checking
-    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 39P+") {
+    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 96P+") {
         Loop, %saveDir%\*.xml {
             if (InStr(A_LoopFileName, "W")) {
                 xml := saveDir . "\" . A_LoopFileName
@@ -5199,7 +5200,7 @@ checkShouldDoMissions() {
             LogToFile("Executing missions for Inject Missions method (user setting enabled)")
         return true
     }
-    else if (deleteMethod = "Inject 13-39P" || deleteMethod = "Inject Wonderpick 39P+") {
+    else if (deleteMethod = "Inject 13P+" || deleteMethod = "Inject Wonderpick 96P+") {
         if(verboseLogging)
             LogToFile("Skipping missions for " . deleteMethod . " method - missions only run for 'Inject Missions'")
         return false
@@ -5471,7 +5472,6 @@ GetEventRewards(frommain := true){
     }
     Delay(4)
     
-    ; ADD LEVEL UP CHECK
     LevelUp()
     
     if(setSpeed > 1) {
@@ -5491,20 +5491,22 @@ GetEventRewards(frommain := true){
                 else
                         FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
             }
-                adbClick_wbb(41, 296)
+                ; adbClick_wbb(41, 296)
                 break
             }
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Trace`n(" . failSafeTime . "/45 seconds)")
         Delay(1)
     }
-    adbClick_wbb(120, 465)
+    ; pick ONE of these two click locations based upon which events are currently going on.
+    ; adbClick_wbb(120, 465) ; used to click the middle mission button
+    adbClick_wbb(25, 465) ;used to click the left-most mission button
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
-        Delay(2)
+        Delay(5)
         adbClick_wbb(172, 427) ;clicks complete all and ok
-        Delay(2)
+        Delay(5)
         adbClick_wbb(152, 464) ;when to many rewards ok button goes lower
         if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
             break
