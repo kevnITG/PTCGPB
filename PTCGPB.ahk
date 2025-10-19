@@ -171,7 +171,7 @@ NextStep:
    MainGuiName := SGUI
 
    sectionColor := "cWhite"
-   Gui, Add, GroupBox, x5 y0 w240 h50 %sectionColor%, Friend ID
+   Gui, Add, GroupBox, x5 y0 w240 h50 %sectionColor%, Friend ID (Wonderpick mode only)
    if(FriendID = "ERROR" || FriendID = "")
      FriendID =
    Gui, Add, Edit, vFriendID w180 x35 y20 h20 -E0x200 Background2A2A2A cWhite, %FriendID%
@@ -982,39 +982,28 @@ ShowS4TSettings:
     
     yPos := 15
     Gui, S4TSettingsSelect:Add, Checkbox, % (s4tEnabled ? "Checked" : "") " vs4tEnabled_Popup x15 y" . yPos . " cWhite", Enable S4T
-    yPos += 30
+    yPos += 25
     
-    ; Diamond cards section
-    Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% cGray, Diamond Cards:
-    yPos += 20
-    Gui, S4TSettingsSelect:Add, Checkbox, % (s4t1Star ? "Checked" : "") " vs4t1Star_Popup x15 y" . yPos . " " . sectionColor, 1 ★
-    yPos += 20
-    Gui, S4TSettingsSelect:Add, Checkbox, % (s4t4Dmnd ? "Checked" : "") " vs4t4Dmnd_Popup x15 y" . yPos . " " . sectionColor, 4 ◆◆◆◆
-    yPos += 20
-    Gui, S4TSettingsSelect:Add, Checkbox, % (s4t3Dmnd ? "Checked" : "") " vs4t3Dmnd_Popup x15 y" . yPos . " " . sectionColor, 3 ◆◆◆
-    yPos += 30
-    
-    ; 2-Star cards section
-    Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% cGray, 2-Star Cards:
-    yPos += 20
-    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tTrainer ? "Checked" : "") " vs4tTrainer_Popup x15 y" . yPos . " " . sectionColor, Trainer 2★
-    yPos += 20
-    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tRainbow ? "Checked" : "") " vs4tRainbow_Popup x15 y" . yPos . " " . sectionColor, Rainbow 2★
-    yPos += 20
-    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tFullArt ? "Checked" : "") " vs4tFullArt_Popup x15 y" . yPos . " " . sectionColor, Full Art 2★
-    yPos += 30
-    
-    ; Special cards section
-    Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% cGray, Special Cards:
-    yPos += 20
-    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tCrown ? "Checked" : "") " vs4tCrown_Popup x15 y" . yPos . " " . sectionColor, Crown Rare
-    yPos += 20
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4t3Dmnd ? "Checked" : "") " vs4t3Dmnd_Popup x15 y" . yPos . " " . sectionColor, ◆◆◆
+    yPos += 18
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4t4Dmnd ? "Checked" : "") " vs4t4Dmnd_Popup x15 y" . yPos . " " . sectionColor, ◆◆◆◆
+    yPos += 18
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4t1Star ? "Checked" : "") " vs4t1Star_Popup x15 y" . yPos . " " . sectionColor, ★
+    yPos += 18
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tShiny1Star ? "Checked" : "") " vs4tShiny1Star_Popup x15 y" . yPos . " " . sectionColor, ★ Shiny
+    yPos += 18
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tTrainer ? "Checked" : "") " vs4tTrainer_Popup x15 y" . yPos . " " . sectionColor, ★★ Trainer
+    yPos += 18
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tRainbow ? "Checked" : "") " vs4tRainbow_Popup x15 y" . yPos . " " . sectionColor, ★★ Rainbow
+    yPos += 18
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tFullArt ? "Checked" : "") " vs4tFullArt_Popup x15 y" . yPos . " " . sectionColor, ★★ Full Art
+    yPos += 18
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tShiny2Star ? "Checked" : "") " vs4tShiny2Star_Popup x15 y" . yPos . " " . sectionColor, ★★ Shiny
+    yPos += 18
     Gui, S4TSettingsSelect:Add, Checkbox, % (s4tImmersive ? "Checked" : "") " vs4tImmersive_Popup x15 y" . yPos . " " . sectionColor, Immersive
-    yPos += 20
-    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tShiny1Star ? "Checked" : "") " vs4tShiny1Star_Popup x15 y" . yPos . " " . sectionColor, Shiny 1★
-    yPos += 20
-    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tShiny2Star ? "Checked" : "") " vs4tShiny2Star_Popup x15 y" . yPos . " " . sectionColor, Shiny 2★
-    yPos += 35
+    yPos += 18
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tCrown ? "Checked" : "") " vs4tCrown_Popup x15 y" . yPos . " " . sectionColor, ♚ Crown Rare
+    yPos += 25
     
     ; Wonderpick section
     Gui, S4TSettingsSelect:Add, Checkbox, % (s4tWP ? "Checked" : "") " vs4tWP_Popup x15 y" . yPos . " cWhite", % currentDictionary.Txt_s4tWP
@@ -1856,7 +1845,7 @@ LoadSettingsFromIni() {
       IniRead, PseudoGodPack, Settings.ini, UserSettings, PseudoGodPack, 0
       
       IniRead, s4tEnabled, Settings.ini, UserSettings, s4tEnabled, 0
-      IniRead, s4tSilent, Settings.ini, UserSettings, s4tSilent, 1
+      IniRead, s4tSilent, Settings.ini, UserSettings, s4tSilent, 0
       IniRead, s4t3Dmnd, Settings.ini, UserSettings, s4t3Dmnd, 0
       IniRead, s4t4Dmnd, Settings.ini, UserSettings, s4t4Dmnd, 0
       IniRead, s4t1Star, Settings.ini, UserSettings, s4t1Star, 0
