@@ -24,6 +24,7 @@ global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgale
 global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a
 global DeadCheck
 global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards, s4tDiscordWebhookURL, s4tDiscordUserId, s4tSendAccountXml
+global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star
 global claimDailyMission, wonderpickForEventMissions
 global checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode, isCurrentlyDoingWPCheck := false
 
@@ -171,6 +172,13 @@ IniRead, s4t3Dmnd, %A_ScriptDir%\..\Settings.ini, UserSettings, s4t3Dmnd, 0
 IniRead, s4t4Dmnd, %A_ScriptDir%\..\Settings.ini, UserSettings, s4t4Dmnd, 0
 IniRead, s4t1Star, %A_ScriptDir%\..\Settings.ini, UserSettings, s4t1Star, 0
 IniRead, s4tGholdengo, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tGholdengo, 0
+IniRead, s4tTrainer, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tTrainer, 0
+IniRead, s4tRainbow, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tRainbow, 0
+IniRead, s4tFullArt, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tFullArt, 0
+IniRead, s4tCrown, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tCrown, 0
+IniRead, s4tImmersive, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tImmersive, 0
+IniRead, s4tShiny1Star, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tShiny1Star, 0
+IniRead, s4tShiny2Star, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tShiny2Star, 0
 IniRead, s4tWP, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tWP, 0
 IniRead, s4tWPMinCards, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tWPMinCards, 1
 IniRead, s4tDiscordWebhookURL, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tDiscordWebhookURL
@@ -1985,8 +1993,13 @@ CheckPack() {
     
     packsInPool += 1
     packsThisRun += 1
-        
-    if(!friendIDs && friendID = "" && !s4tEnabled && !ImmersiveCheck && !CrownCheck && !ShinyCheck)
+    
+    ; kevinnnn: I disabled card detection for Create Bots and Inject 13P+
+    ; Only run detection for Inject Wonderpick 96P+
+    skipCardDetection := (deleteMethod = "Create Bots (13P)" || deleteMethod = "Inject 13P+")
+    
+    ; If not doing card detection and no friends, just return early
+    if(skipCardDetection && !friendIDs && friendID = "" && !s4tEnabled)
         return false
 
     ; Wait for cards to render before checking.
@@ -2004,122 +2017,31 @@ CheckPack() {
     ; Determine total cards in pack for 4-diamond s4t calculations
     totalCardsInPack := currentPackIs6Card ? 6 : (currentPackIs4Card ? 4 : 5)
 
-    foundLabel := false
-
-    ; Before doing anything else, check if the current pack is valid.
-    foundShiny := FindBorders("shiny2star") + FindBorders("shiny1star")
-    foundCrown := FindBorders("crown")
-    foundImmersive := FindBorders("immersive")
-    foundInvalid := foundShiny + foundCrown + foundImmersive
-
-    if (foundInvalid) {
-        ; Pack is invalid...
-        foundInvalidGP := FindGodPack(true) ; GP is never ignored
-
-        if (foundInvalidGP){
-            restartGameInstance("Invalid God Pack Found.", "GodPack")
-        }
-        if (!foundInvalidGP && !InvalidCheck) {
-            ; If not a GP and not "ignore invalid packs" , check what cards the current pack contains which make it invalid, and if user want to save them.
-            if (ShinyCheck && foundShiny && !foundLabel)
-                foundLabel := "Shiny"
-            if (ImmersiveCheck && foundImmersive && !foundLabel)
-                foundLabel := "Immersive"
-            if (CrownCheck && foundCrown && !foundLabel)
-                foundLabel := "Crown"
-
-            ; Report invalid cards found.
-            if (foundLabel) {
-                FoundStars(foundLabel)
-                restartGameInstance(foundLabel . " found. Continuing...", "GodPack")
-            }
-        }
-
-        IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
-        return
-    }
-
-    ; Check for god pack. if found we know its not invalid
-    foundGP := FindGodPack()
-
-    if (foundGP) {
-        if (loadedAccount) {
-            ;accountFoundGP() 
-            accountHasPackInTesting := 1 
-            setMetaData()               
-            IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
-        }
-
-        restartGameInstance("God Pack found. Continuing...", "GodPack")
-        return
-    }
-
-    ; if not invalid and no GP, Check for 2-star cards.
-    if (!CheckShinyPackOnly || shinyPacks.HasKey(openPack)) {
-        foundTrainer := false
-        foundRainbow := false
-        foundFullArt := false
-        2starCount := false
-
-        if (PseudoGodPack && !foundLabel) {
-            foundTrainer := FindBorders("trainer")
-            foundRainbow := FindBorders("rainbow")
-            foundFullArt := FindBorders("fullart")
-            2starCount := foundTrainer + foundRainbow + foundFullArt
-            if (2starCount > 1)
-                foundLabel := "Double two star"
-        }
-        if (TrainerCheck && !foundLabel) {
-            if(!PseudoGodPack)
-                foundTrainer := FindBorders("trainer")
-            if (foundTrainer)
-                foundLabel := "Trainer"
-        }
-        if (RainbowCheck && !foundLabel) {
-            if(!PseudoGodPack)
-                foundRainbow := FindBorders("rainbow")
-            if (foundRainbow)
-                foundLabel := "Rainbow"
-        }
-        if (FullArtCheck && !foundLabel) {
-            if(!PseudoGodPack)
-                foundFullArt := FindBorders("fullart")
-            if (foundFullArt)
-                foundLabel := "Full Art"
-        }
-
-        if (foundLabel) {
-            if (loadedAccount) {
-                ;accountFoundGP()
-                accountHasPackInTesting := 1
-                setMetaData()
-                IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
-            }
-
-            FoundStars(foundLabel)
-            restartGameInstance(foundLabel . " found. Continuing...", "GodPack")
-        }
-    }
-
-    ; Check for tradeable cards.
+    ; NEW: Check for s4t tradeable cards FIRST (before invalid/godpack checks)
+    ; This allows s4t to work even on "invalid" packs with crowns/immersives/etc
     if (s4tEnabled) {
         found3Dmnd := 0
         found4Dmnd := 0
         found1Star := 0
         foundGimmighoul := 0
+        foundCrown := 0
+        foundImmersive := 0
+        foundShiny1Star := 0
+        foundShiny2Star := 0
+        foundTrainer := 0
+        foundRainbow := 0
+        foundFullArt := 0
 
+        ; Check all border types for s4t
         if (s4t3Dmnd) {
-            found3Dmnd += FindBorders("3diamond")
+            found3Dmnd := FindBorders("3diamond")
         }
         if (s4t1Star) {
-            found1Star += FindBorders("1star")
+            found1Star := FindBorders("1star")
         }
-
         if (s4t4Dmnd) {
-            ; Detecting a 4-diamond EX card isn't possible using a needle.
-            ; Start with total cards (5 or 6) and subtract other card types as efficiently as possible.
+            ; Detecting a 4-diamond EX card by subtracting other types
             found4Dmnd := totalCardsInPack - FindBorders("normal")
-
             if (found4Dmnd > 0) {
                 if (s4t3Dmnd)
                     found4Dmnd -= found3Dmnd
@@ -2132,50 +2054,70 @@ CheckPack() {
                 else
                     found4Dmnd -= FindBorders("1star")
             }
-
-            if (found4Dmnd > 0 && PseudoGodPack) {
-                found4Dmnd -= 2starCount
-            } else {
-                if (found4Dmnd > 0) {
-                    if (TrainerCheck)
-                        found4Dmnd -= foundTrainer
-                    else
-                        found4Dmnd -= FindBorders("trainer")
-                }
-                if (found4Dmnd > 0) {
-                    if (RainbowCheck)
-                        found4Dmnd -= foundRainbow
-                    else
-                        found4Dmnd -= FindBorders("rainbow")
-                }
-                if (found4Dmnd > 0) {
-                    if (FullArtCheck)
-                        found4Dmnd -= foundFullArt
-                    else
-                        found4Dmnd -= FindBorders("fullart")
-                }
+            if (found4Dmnd > 0) {
+                found4Dmnd -= FindBorders("trainer")
+                found4Dmnd -= FindBorders("rainbow")
+                found4Dmnd -= FindBorders("fullart")
             }
         }
-
         if (s4tGholdengo && openPack = "Shining") {
-            foundGimmighoul += FindCard("gimmighoul")
+            foundGimmighoul := FindCard("gimmighoul")
+        }
+        
+        if (s4tCrown) {
+                foundCrown := FindBorders("crown")
+            }
+        if (s4tImmersive) {
+            foundImmersive := FindBorders("immersive")
+        }
+        if (s4tShiny1Star) {
+            foundShiny1Star := FindBorders("shiny1star")
+        }
+        if (s4tShiny2Star) {
+            foundShiny2Star := FindBorders("shiny2star")
+        }
+        if (s4tTrainer) {
+            foundTrainer := FindBorders("trainer")
+        }
+        if (s4tRainbow) {
+            foundRainbow := FindBorders("rainbow")
+        }
+        if (s4tFullArt) {
+            foundFullArt := FindBorders("fullart")
         }
 
-        foundTradeable := found3Dmnd + found4Dmnd + found1Star + foundGimmighoul
+        foundTradeable := found3Dmnd + found4Dmnd + found1Star + foundGimmighoul + foundCrown + foundImmersive + foundShiny1Star + foundShiny2Star + foundTrainer + foundRainbow + foundFullArt
 
-        if (foundTradeable > 0)
-            FoundTradeable(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul)
+        if (foundTradeable > 0) {
+            FoundTradeable(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
+        }
     }
-}
+    
+    ; Skip rest of card detection if this is Create Bots or Inject 13P+
+    if (skipCardDetection) {
+        return false
+    }
 
-FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighoul := 0) {
-    ; Not dead.
+    foundLabel := false
+
+    ; Check if the current pack is valid (for Inject Wonderpick 96P+ only now)
+    foundShiny := FindBorders("shiny2star") + FindBorders("shiny1star")
+    foundCrown := FindBorders("crown")
+    foundImmersive := FindBorders("immersive")
+    foundInvalid := foundShiny + foundCrown + foundImmersive
+
+    if (foundInvalid) {
+        ; Pack is invalid...
+        foundInvalidGP := FindGodPack(true) ; GP is never ignored
+
+        if (foundInvalid
+
+FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighoul := 0, foundCrown := 0, foundImmersive := 0, foundShiny1Star := 0, foundShiny2Star := 0, foundTrainer := 0, foundRainbow := 0, foundFullArt := 0) {
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
 
-    ; Keep account.
     keepAccount := true
 
-    foundTradeable := found3Dmnd + found4Dmnd + found1Star + foundGimmighoul
+    foundTradeable := found3Dmnd + found4Dmnd + found1Star + foundGimmighoul + foundCrown + foundImmersive + foundShiny1Star + foundShiny2Star + foundTrainer + foundRainbow + foundFullArt
 
     if (s4tWP && s4tWPMinCards = 2 && foundTradeable < 2) {
         CreateStatusMessage("s4t: insufficient cards (" . foundTradeable . "/2)",,,, false)
@@ -2202,6 +2144,34 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         packDetailsFile .= "GimmighoulX" . foundGimmighoul . "_"
         packDetailsMessage .= "Gimmighoul (x" . foundGimmighoul . "), "
     }
+    if (foundCrown > 0) {
+        packDetailsFile .= "CrownX" . foundCrown . "_"
+        packDetailsMessage .= "Crown (x" . foundCrown . "), "
+    }
+    if (foundImmersive > 0) {
+        packDetailsFile .= "ImmersiveX" . foundImmersive . "_"
+        packDetailsMessage .= "Immersive (x" . foundImmersive . "), "
+    }
+    if (foundShiny1Star > 0) {
+        packDetailsFile .= "Shiny1StarX" . foundShiny1Star . "_"
+        packDetailsMessage .= "Shiny 1-Star (x" . foundShiny1Star . "), "
+    }
+    if (foundShiny2Star > 0) {
+        packDetailsFile .= "Shiny2StarX" . foundShiny2Star . "_"
+        packDetailsMessage .= "Shiny 2-Star (x" . foundShiny2Star . "), "
+    }
+    if (foundTrainer > 0) {
+        packDetailsFile .= "TrainerX" . foundTrainer . "_"
+        packDetailsMessage .= "Trainer (x" . foundTrainer . "), "
+    }
+    if (foundRainbow > 0) {
+        packDetailsFile .= "RainbowX" . foundRainbow . "_"
+        packDetailsMessage .= "Rainbow (x" . foundRainbow . "), "
+    }
+    if (foundFullArt > 0) {
+        packDetailsFile .= "FullArtX" . foundFullArt . "_"
+        packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
+    }
 
     packDetailsFile := RTrim(packDetailsFile, "_")
     packDetailsMessage := RTrim(packDetailsMessage, ", ")
@@ -2216,68 +2186,52 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
     if (friendCode)
         statusMessage .= " (" . friendCode . ")"
 
-    if (!s4tWP || (s4tWP && foundTradeable < s4tWPMinCards)) {
-        CreateStatusMessage("Tradeable cards found! Continuing...",,,, false)
+    ; NEW: Always just backup and continue, never end the run for s4t
+    CreateStatusMessage("Tradeable cards found! Backing up and continuing...",,,, false)
 
-        logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") File name: " . accountFile . " Screenshot file: " . screenShotFileName . " Backing up to the Accounts\\Trades folder and continuing..."
-        LogToFile(logMessage, "S4T.txt")
+    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") File name: " . accountFile . " Screenshot file: " . screenShotFileName . " Backing up to the Accounts\\Trades folder and continuing..."
+    LogToFile(logMessage, "S4T.txt")
 
-        if (!s4tSilent && s4tDiscordWebhookURL) {
-            discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFile . "\nBacking up to the Accounts\\Trades folder and continuing..."
+    if (!s4tSilent && s4tDiscordWebhookURL) {
+        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFile . "\nBacking up to the Accounts\\Trades folder and continuing..."
+        
+        ; Get friend code for screenshot if WP enabled
+        if (s4tWP && foundTradeable >= s4tWPMinCards) {
+            friendCode := getFriendCode()
+            Sleep, 5000
+            fcScreenshot := Screenshot("FRIENDCODE", "Trades")
+            
+            ; Try OCR for username if available
+            tempDir := A_ScriptDir . "\..\Screenshots\temp"
+            if !FileExist(tempDir)
+                FileCreateDir, %tempDir%
+            usernameScreenshotFile := tempDir . "\" . winTitle . "_Username.png"
+            adbTakeScreenshot(usernameScreenshotFile)
+            Sleep, 100 
+            try {
+                if (injectMethod && IsFunc("ocr")) {
+                    playerName := ""
+                    allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+"
+                    usernamePattern := "[\w-]+"
+                    if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
+                        username := playerName
+                    }
+                }
+            } catch e {
+                LogToFile("Failed to OCR username: " . e.message, "OCR.txt")
+            }
+            if (FileExist(usernameScreenshotFile)) {
+                FileDelete, %usernameScreenshotFile%
+            }
+            
+            LogToDiscord(discordMessage, screenShot, true, (s4tSendAccountXml ? accountFullPath : ""), fcScreenshot, s4tDiscordWebhookURL, s4tDiscordUserId)
+        } else {
             LogToDiscord(discordMessage, screenShot, true, (s4tSendAccountXml ? accountFullPath : ""),, s4tDiscordWebhookURL, s4tDiscordUserId)
         }
-
-        return
     }
 
-    ; WonderPick logic: foundTradeable >= s4tWPMinCards
-    friendCode := getFriendCode()
-
-    Sleep, 5000
-    fcScreenshot := Screenshot("FRIENDCODE", "Trades")
-
-    tempDir := A_ScriptDir . "\..\Screenshots\temp"
-    if !FileExist(tempDir)
-        FileCreateDir, %tempDir%
-
-    usernameScreenshotFile := tempDir . "\" . winTitle . "_Username.png"
-    adbTakeScreenshot(usernameScreenshotFile)
-    Sleep, 100 
-
-    ; If we're doing the inject method, try to OCR our Username
-    try {
-        if (injectMethod && IsFunc("ocr")) {
-            playerName := ""
-            allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+"
-            usernamePattern := "[\w-]+"
-
-            if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
-            username := playerName
-            }
-        }
-    } catch e {
-        LogToFile("Failed to OCR the friend code: " . e.message, "OCR.txt")
-    }
-
-    if (FileExist(usernameScreenshotFile)) {
-        FileDelete, %usernameScreenshotFile%
-    }
-
-    statusMessage := "Tradeable cards found"
-    if (username)
-        statusMessage .= " by " . username
-    if (friendCode)
-        statusMessage .= " (" . friendCode . ")"
-
-    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFile name: " . accountFile . "\nScreenshot file: " . screenShotFileName . "\nBacking up to the Accounts\\Trades folder and continuing..."
-    LogToFile(StrReplace(logMessage, "\n", " "), "S4T.txt")
-
-    if (s4tDiscordWebhookURL) {
-        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFile . "\nBacking up to the Accounts\\Trades folder and continuing..."
-        LogToDiscord(discordMessage, screenShot, true, (s4tSendAccountXml ? accountFullPath : ""), fcScreenshot, s4tDiscordWebhookURL, s4tDiscordUserId)
-    }
-
-    restartGameInstance("Tradeable cards found. Continuing...", "GodPack")
+    ; NEW: Don't call restartGameInstance - just return and continue the run
+    return
 }
 
 DetectSixCardPack() {
@@ -2323,6 +2277,7 @@ FindBorders(prefix) {
     if (prefix = "shiny2star") { ; some aren't being detected at lower variations
         searchVariation := 75
         searchVariation6Card := 75 
+        searchVariation4Card := 75
     }
     
     is6CardPack := currentPackIs6Card
@@ -2603,7 +2558,6 @@ FoundStars(star) {
     
     accountFile := saveAccount(star, accountFullPath, "", shouldAddWFlag)
     
-    ; Add (W) flag to original account file in Saved folder if needed
     if (shouldAddWFlag) {
         AddWFlag()
     }
@@ -2774,16 +2728,25 @@ CleanupWPMetadata() {
         
         parts := StrSplit(A_LoopField, "|")
         if (parts.Length() >= 3) {
-            accountFileName := parts[1]
-            accountFilePath := saveDir . "\" . accountFileName
+            metadataKey := parts[1]  ; This is the timestamp+suffix portion
             
-            ; Only keep metadata for accounts that still exist
-            if (FileExist(accountFilePath)) {
+            ; NEW: Look for any file ending with this timestamp+suffix
+            ; The key is like "20250119123045_1(W).xml"
+            searchPattern := "*P" . metadataKey  ; Matches any pack count prefix
+            
+            foundFile := false
+            Loop, Files, %saveDir%\%searchPattern%
+            {
+                foundFile := true
+                break
+            }
+            
+            if (foundFile) {
                 updatedMetadata .= A_LoopField . "`n"
                 keptCount++
             } else {
                 removedCount++
-                LogToFile("Removed WP metadata for non-existent account: " . accountFileName)
+                LogToFile("Removed WP metadata for non-existent account key: " . metadataKey)
             }
         }
     }
@@ -5594,16 +5557,24 @@ SaveWPMetadata(accountFileName, username, friendCode) {
     saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
     metadataFile := saveDir . "\wp_metadata.txt"
     
+    ; NEW: Strip the pack count prefix to get just timestamp+suffix
+    metadataKey := accountFileName
+    if (InStr(accountFileName, "P")) {
+        accountParts := StrSplit(accountFileName, "P")
+        metadataKey := accountParts[2]  ; e.g., "_20250119123045_1(W).xml"
+        metadataKey := LTrim(metadataKey, "_")  ; Remove leading underscore if present
+    }
+    
     ; Read existing metadata
     existingMetadata := ""
     if (FileExist(metadataFile)) {
         FileRead, existingMetadata, %metadataFile%
     }
     
-    ; Prepare new entry
-    newEntry := accountFileName . "|" . username . "|" . friendCode
+    ; Prepare new entry using the timestamp-based key
+    newEntry := metadataKey . "|" . username . "|" . friendCode
     
-    ; Check if entry already exists for this account
+    ; Check if entry already exists for this key
     updatedMetadata := ""
     entryExists := false
     
@@ -5614,7 +5585,7 @@ SaveWPMetadata(accountFileName, username, friendCode) {
         }
         
         parts := StrSplit(A_LoopField, "|")
-        if (parts.Length() >= 3 && parts[1] = accountFileName) {
+        if (parts.Length() >= 3 && parts[1] = metadataKey) {
             ; Update existing entry
             updatedMetadata .= newEntry . "`n"
             entryExists := true
@@ -5633,7 +5604,7 @@ SaveWPMetadata(accountFileName, username, friendCode) {
     FileDelete, %metadataFile%
     FileAppend, %updatedMetadata%, %metadataFile%
     
-    LogToFile("Saved WP metadata to centralized file: " . accountFileName . " (User: " . username . ", FC: " . friendCode . ")")
+    LogToFile("Saved WP metadata (key: " . metadataKey . "): User=" . username . ", FC=" . friendCode)
 }
 
 LoadWPMetadata(accountFileName, ByRef username, ByRef friendCode) {
@@ -5647,10 +5618,18 @@ LoadWPMetadata(accountFileName, ByRef username, ByRef friendCode) {
     username := "Unknown"
     friendCode := "Unknown"
     
+    ; NEW: Strip the pack count prefix to get just timestamp+suffix
+    metadataKey := accountFileName
+    if (InStr(accountFileName, "P")) {
+        accountParts := StrSplit(accountFileName, "P")
+        metadataKey := accountParts[2]  ; e.g., "_20250119123045_1(W).xml"
+        metadataKey := LTrim(metadataKey, "_")  ; Remove leading underscore if present
+    }
+    
     if (FileExist(metadataFile)) {
         FileRead, metadataContent, %metadataFile%
         
-        ; Parse the content to find the specific account
+        ; Parse the content to find the specific account by timestamp key
         Loop, Parse, metadataContent, `n, `r
         {
             if (A_LoopField = "") {
@@ -5658,17 +5637,17 @@ LoadWPMetadata(accountFileName, ByRef username, ByRef friendCode) {
             }
             
             parts := StrSplit(A_LoopField, "|")
-            if (parts.Length() >= 3 && parts[1] = accountFileName) {
+            if (parts.Length() >= 3 && parts[1] = metadataKey) {
                 username := parts[2]
                 friendCode := parts[3]
-                LogToFile("Loaded WP metadata from centralized file: " . accountFileName . " (User: " . username . ", FC: " . friendCode . ")")
+                LogToFile("Loaded WP metadata (key: " . metadataKey . "): User=" . username . ", FC=" . friendCode)
                 return
             }
         }
         
-        LogToFile("No WP metadata found for account: " . accountFileName . " in centralized file")
+        LogToFile("No WP metadata found for key: " . metadataKey)
     } else {
-        LogToFile("No centralized WP metadata file found: " . metadataFile)
+        LogToFile("No WP metadata file found: " . metadataFile)
     }
 }
 

@@ -51,7 +51,7 @@
         Lang["BotSettings"] := "Bot Settings"
         Lang["TimeSettings"] := "Time Settings"
         Lang["PackHeading"] := "Pack Selection"
-        Lang["CardDetection"] := "Card Detection"
+        Lang["CardDetection"] := "InjectWP Card Detection"
         Lang["SaveForTrade"] := "Save for Trade"
         Lang["GroupSettings"] := "Group Settings"
         Lang["DiscordSettingsHeading"] := "Discord Settings"

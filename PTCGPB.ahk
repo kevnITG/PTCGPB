@@ -72,7 +72,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v7.1.3"
+   ,localVersion := "v8.0.0"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -326,7 +326,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv7.1.3 (kevinnnn)"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv8.0.0 (kevinnnn)"
 
    Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
@@ -362,6 +362,7 @@ deleteSettings:
     GuiControl, Show, AccountNameText
     GuiControl, Show, AccountName
     nukeAccount := false
+    FriendID := ""
   } else if (deleteMethod = "Inject Wonderpick 96P+") {
     GuiControl, Show, FriendID
     GuiControl, Show, spendHourGlass
@@ -384,6 +385,7 @@ deleteSettings:
     GuiControl, Hide, AccountNameText
     GuiControl, Hide, AccountName
     nukeAccount := false
+    FriendID := ""  ; NEW: Clear Friend ID for Inject 13P+
   }
 return
 
@@ -623,13 +625,20 @@ UpdateCardDetectionButtonText() {
 }
 
 ShowCardDetection:
+    Gui, Submit, NoHide
+    
+    if (deleteMethod = "Create Bots (13P)" || deleteMethod = "Inject 13P+") {
+        MsgBox, 64, InjectWP Card Detection, Wonderpick Card Detection is for 'Inject Wonderpick 96P+'' mode.`n`nTo find cards to trade, use 'Save for Trade' settings instead.
+        return
+    }
+    
     WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
     
     popupX := mainWinX + 275 + 140 + 10
     popupY := mainWinY + 73 + 30
     
     Gui, CardDetect:Destroy
-    Gui, CardDetect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Card Detection Settings
+    Gui, CardDetect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Wonderpick Card Detection Settings
     Gui, CardDetect:Color, 1E1E1E, 333333
     Gui, CardDetect:Font, s10 cWhite, Segoe UI
     
@@ -799,6 +808,7 @@ return
 
 UpdateS4TButtonText() {
     global s4tEnabled, s4t1Star, s4t3Dmnd, s4t4Dmnd, currentDictionary
+    global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star
     
     if (!s4tEnabled) {
         Gui, Font, s8 cRed, Segoe UI
@@ -814,25 +824,31 @@ UpdateS4TButtonText() {
         enabledOptions.Push("4◆")
     if (s4t3Dmnd)
         enabledOptions.Push("3◆")
+    if (s4tTrainer)
+        enabledOptions.Push("Trainer")
+    if (s4tRainbow)
+        enabledOptions.Push("Rainbow")
+    if (s4tFullArt)
+        enabledOptions.Push("Full Art")
+    if (s4tCrown)
+        enabledOptions.Push("Crown")
+    if (s4tImmersive)
+        enabledOptions.Push("Immersive")
+    if (s4tShiny1Star)
+        enabledOptions.Push("Shiny1★")
+    if (s4tShiny2Star)
+        enabledOptions.Push("Shiny2★")
     
     statusText := currentDictionary.Txt_S4TEnabled
     if (enabledOptions.Length() > 0) {
-        statusText .= "`n" . Join(enabledOptions, ", ")
+        statusText .= "`n" . enabledOptions[1]
+        if (enabledOptions.Length() > 1)
+            statusText .= " +" . (enabledOptions.Length() - 1) . " more"
     }
     
     Gui, Font, s8 cLime, Segoe UI
     GuiControl, Font, S4TButton
     GuiControl,, S4TButton, %statusText%
-}
-
-Join(array, delimiter) {
-    result := ""
-    for index, value in array {
-        if (index > 1)
-            result .= delimiter
-        result .= value
-    }
-    return result
 }
 
 ShowSystemSettings:
@@ -968,19 +984,46 @@ ShowS4TSettings:
     Gui, S4TSettingsSelect:Add, Checkbox, % (s4tEnabled ? "Checked" : "") " vs4tEnabled_Popup x15 y" . yPos . " cWhite", Enable S4T
     yPos += 30
     
+    ; Diamond cards section
+    Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% cGray, Diamond Cards:
+    yPos += 20
     Gui, S4TSettingsSelect:Add, Checkbox, % (s4t1Star ? "Checked" : "") " vs4t1Star_Popup x15 y" . yPos . " " . sectionColor, 1 ★
     yPos += 20
     Gui, S4TSettingsSelect:Add, Checkbox, % (s4t4Dmnd ? "Checked" : "") " vs4t4Dmnd_Popup x15 y" . yPos . " " . sectionColor, 4 ◆◆◆◆
     yPos += 20
     Gui, S4TSettingsSelect:Add, Checkbox, % (s4t3Dmnd ? "Checked" : "") " vs4t3Dmnd_Popup x15 y" . yPos . " " . sectionColor, 3 ◆◆◆
+    yPos += 30
+    
+    ; 2-Star cards section
+    Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% cGray, 2-Star Cards:
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tTrainer ? "Checked" : "") " vs4tTrainer_Popup x15 y" . yPos . " " . sectionColor, Trainer 2★
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tRainbow ? "Checked" : "") " vs4tRainbow_Popup x15 y" . yPos . " " . sectionColor, Rainbow 2★
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tFullArt ? "Checked" : "") " vs4tFullArt_Popup x15 y" . yPos . " " . sectionColor, Full Art 2★
+    yPos += 30
+    
+    ; Special cards section
+    Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% cGray, Special Cards:
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tCrown ? "Checked" : "") " vs4tCrown_Popup x15 y" . yPos . " " . sectionColor, Crown Rare
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tImmersive ? "Checked" : "") " vs4tImmersive_Popup x15 y" . yPos . " " . sectionColor, Immersive
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tShiny1Star ? "Checked" : "") " vs4tShiny1Star_Popup x15 y" . yPos . " " . sectionColor, Shiny 1★
+    yPos += 20
+    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tShiny2Star ? "Checked" : "") " vs4tShiny2Star_Popup x15 y" . yPos . " " . sectionColor, Shiny 2★
     yPos += 35
     
+    ; Wonderpick section
     Gui, S4TSettingsSelect:Add, Checkbox, % (s4tWP ? "Checked" : "") " vs4tWP_Popup x15 y" . yPos . " cWhite", % currentDictionary.Txt_s4tWP
     yPos += 20
     Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_s4tWPMinCards
     Gui, S4TSettingsSelect:Add, Edit, cFDFDFD w40 x135 y%yPos% h20 vs4tWPMinCards_Popup -E0x200 Background2A2A2A Center cWhite, %s4tWPMinCards%
     yPos += 30
     
+    ; Discord settings
     if(StrLen(s4tDiscordUserId) < 3)
         s4tDiscordUserId := ""
     if(StrLen(s4tDiscordWebhookURL) < 3)
@@ -1005,7 +1048,7 @@ ShowS4TSettings:
     Gui, S4TSettingsSelect:Add, Button, x95 y%yPos% w70 h30 gCancelS4TSettings, Cancel
     yPos += 40
     
-    Gui, S4TSettingsSelect:Show, x%popupX% y%popupY% w185 h%yPos%
+    Gui, S4TSettingsSelect:Show, x%popupX% y%popupY% w200 h%yPos%
 return
 
 ApplyS4TSettings:
@@ -1015,6 +1058,13 @@ ApplyS4TSettings:
     s4t1Star := s4t1Star_Popup
     s4t4Dmnd := s4t4Dmnd_Popup
     s4t3Dmnd := s4t3Dmnd_Popup
+    s4tTrainer := s4tTrainer_Popup
+    s4tRainbow := s4tRainbow_Popup
+    s4tFullArt := s4tFullArt_Popup
+    s4tCrown := s4tCrown_Popup
+    s4tImmersive := s4tImmersive_Popup
+    s4tShiny1Star := s4tShiny1Star_Popup
+    s4tShiny2Star := s4tShiny2Star_Popup
     s4tWP := s4tWP_Popup
     s4tWPMinCards := s4tWPMinCards_Popup
     s4tDiscordUserId := s4tDiscordUserId_Popup
@@ -1035,6 +1085,13 @@ ApplyS4TSettings:
     GuiControl,, s4t1Star, %s4t1Star%
     GuiControl,, s4t4Dmnd, %s4t4Dmnd%
     GuiControl,, s4t3Dmnd, %s4t3Dmnd%
+    GuiControl,, s4tTrainer, %s4tTrainer%
+    GuiControl,, s4tRainbow, %s4tRainbow%
+    GuiControl,, s4tFullArt, %s4tFullArt%
+    GuiControl,, s4tCrown, %s4tCrown%
+    GuiControl,, s4tImmersive, %s4tImmersive%
+    GuiControl,, s4tShiny1Star, %s4tShiny1Star%
+    GuiControl,, s4tShiny2Star, %s4tShiny2Star%
     GuiControl,, s4tWP, %s4tWP%
     GuiControl,, s4tWPMinCards, %s4tWPMinCards%
     GuiControl,, s4tDiscordUserId, %s4tDiscordUserId%
@@ -1378,29 +1435,31 @@ Save:
     confirmMsg .= "`n" . SetUpDictionary.Confirm_AdditionalSettings . "`n" . additionalSettings
   }
   
-  cardDetection := ""
-  if (FullArtCheck)
-    cardDetection .= SetUpDictionary.Confirm_SingleFullArt . "`n"
-  if (TrainerCheck)
-    cardDetection .= SetUpDictionary.Confirm_SingleTrainer . "`n"
-  if (RainbowCheck)
-    cardDetection .= SetUpDictionary.Confirm_SingleRainbow . "`n"
-  if (PseudoGodPack)
-    cardDetection .= SetUpDictionary.Confirm_Double2Star . "`n"
-  if (CrownCheck)
-    cardDetection .= SetUpDictionary.Confirm_SaveCrowns . "`n"
-  if (ShinyCheck)
-    cardDetection .= SetUpDictionary.Confirm_SaveShiny . "`n"
-  if (ImmersiveCheck)
-    cardDetection .= SetUpDictionary.Confirm_SaveImmersives . "`n"
-  if (CheckShinyPackOnly)
-    cardDetection .= SetUpDictionary.Confirm_OnlyShinyPacks . "`n"
-  if (InvalidCheck)
-    cardDetection .= SetUpDictionary.Confirm_IgnoreInvalid . "`n"
-    
-  if (cardDetection != "") {
-    confirmMsg .= "`n" . SetUpDictionary.Confirm_CardDetection . "`n" . cardDetection
-  }
+   cardDetection := ""
+   if (deleteMethod = "Inject Wonderpick 96P+") {
+   if (FullArtCheck)
+      cardDetection .= SetUpDictionary.Confirm_SingleFullArt . "`n"
+   if (TrainerCheck)
+      cardDetection .= SetUpDictionary.Confirm_SingleTrainer . "`n"
+   if (RainbowCheck)
+      cardDetection .= SetUpDictionary.Confirm_SingleRainbow . "`n"
+   if (PseudoGodPack)
+      cardDetection .= SetUpDictionary.Confirm_Double2Star . "`n"
+   if (CrownCheck)
+      cardDetection .= SetUpDictionary.Confirm_SaveCrowns . "`n"
+   if (ShinyCheck)
+      cardDetection .= SetUpDictionary.Confirm_SaveShiny . "`n"
+   if (ImmersiveCheck)
+      cardDetection .= SetUpDictionary.Confirm_SaveImmersives . "`n"
+   if (CheckShinyPackOnly)
+      cardDetection .= SetUpDictionary.Confirm_OnlyShinyPacks . "`n"
+   if (InvalidCheck)
+      cardDetection .= SetUpDictionary.Confirm_IgnoreInvalid . "`n"
+      
+   if (cardDetection != "") {
+      confirmMsg .= "`n" . SetUpDictionary.Confirm_CardDetection . "`n" . cardDetection
+   }
+   }
   
   if (s4tEnabled) {
     confirmMsg .= "`n" . SetUpDictionary.Confirm_SaveForTrade . ": " . SetUpDictionary.Confirm_Enabled . "`n"
@@ -1802,6 +1861,13 @@ LoadSettingsFromIni() {
       IniRead, s4t4Dmnd, Settings.ini, UserSettings, s4t4Dmnd, 0
       IniRead, s4t1Star, Settings.ini, UserSettings, s4t1Star, 0
       IniRead, s4tGholdengo, Settings.ini, UserSettings, s4tGholdengo, 0
+      IniRead, s4tTrainer, Settings.ini, UserSettings, s4tTrainer, 0
+      IniRead, s4tRainbow, Settings.ini, UserSettings, s4tRainbow, 0
+      IniRead, s4tFullArt, Settings.ini, UserSettings, s4tFullArt, 0
+      IniRead, s4tCrown, Settings.ini, UserSettings, s4tCrown, 0
+      IniRead, s4tImmersive, Settings.ini, UserSettings, s4tImmersive, 0
+      IniRead, s4tShiny1Star, Settings.ini, UserSettings, s4tShiny1Star, 0
+      IniRead, s4tShiny2Star, Settings.ini, UserSettings, s4tShiny2Star, 0
       IniRead, s4tWP, Settings.ini, UserSettings, s4tWP, 0
       IniRead, s4tWPMinCards, Settings.ini, UserSettings, s4tWPMinCards, 1
       IniRead, s4tDiscordWebhookURL, Settings.ini, UserSettings, s4tDiscordWebhookURL, ""
@@ -1936,6 +2002,7 @@ SaveAllSettings() {
    global useBackgroundImage, tesseractPath, debugMode, useTesseract, statusMessage
    global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards
    global s4tDiscordUserId, s4tDiscordWebhookURL, s4tSendAccountXml, minStarsShiny, instanceLaunchDelay, applyRoleFilters, mainIdsURL, vipIdsURL
+   global s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star, s4tTrainer, s4tRainbow, s4tFullArt
    global spendHourGlass, openExtraPack, injectSortMethod, rowGap, SortByDropdown
    global waitForEligibleAccounts, maxWaitHours, skipMissionsInjectMissions
    global minStarsEnabled, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a
@@ -2002,6 +2069,13 @@ SaveAllSettings() {
    iniContent .= "s4t4Dmnd=" s4t4Dmnd "`n"
    iniContent .= "s4t1Star=" s4t1Star "`n"
    iniContent .= "s4tGholdengo=" s4tGholdengo "`n"
+   iniContent .= "s4tTrainer=" s4tTrainer "`n"
+   iniContent .= "s4tRainbow=" s4tRainbow "`n"
+   iniContent .= "s4tFullArt=" s4tFullArt "`n"
+   iniContent .= "s4tCrown=" s4tCrown "`n"
+   iniContent .= "s4tImmersive=" s4tImmersive "`n"
+   iniContent .= "s4tShiny1Star=" s4tShiny1Star "`n"
+   iniContent .= "s4tShiny2Star=" s4tShiny2Star "`n"
    iniContent .= "s4tWP=" s4tWP "`n"
    iniContent .= "s4tSendAccountXml=" s4tSendAccountXml "`n"
    iniContent .= "sendAccountXml=" sendAccountXml "`n"
