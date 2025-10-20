@@ -1994,11 +1994,11 @@ CheckPack() {
     packsInPool += 1
     packsThisRun += 1
     
-    ; kevinnnn: I disabled card detection for Create Bots and Inject 13P+
+    ; NEW: Disable card detection for Create Bots and Inject 13P+
     ; Only run detection for Inject Wonderpick 96P+
     skipCardDetection := (deleteMethod = "Create Bots (13P)" || deleteMethod = "Inject 13P+")
     
-    ; If not doing card detection and no friends, just return early
+    ; If not doing card detection and no friends and s4t disabled, just return early
     if(skipCardDetection && !friendIDs && friendID = "" && !s4tEnabled)
         return false
 
@@ -2032,7 +2032,7 @@ CheckPack() {
         foundRainbow := 0
         foundFullArt := 0
 
-        ; Check all border types for s4t
+        ; Check all border types for s4t (only if enabled)
         if (s4t3Dmnd) {
             found3Dmnd := FindBorders("3diamond")
         }
@@ -2064,9 +2064,10 @@ CheckPack() {
             foundGimmighoul := FindCard("gimmighoul")
         }
         
+        ; NEW: Only check if the specific card type is enabled
         if (s4tCrown) {
-                foundCrown := FindBorders("crown")
-            }
+            foundCrown := FindBorders("crown")
+        }
         if (s4tImmersive) {
             foundImmersive := FindBorders("immersive")
         }
@@ -2089,7 +2090,9 @@ CheckPack() {
         foundTradeable := found3Dmnd + found4Dmnd + found1Star + foundGimmighoul + foundCrown + foundImmersive + foundShiny1Star + foundShiny2Star + foundTrainer + foundRainbow + foundFullArt
 
         if (foundTradeable > 0) {
+            ; NEW: Call FoundTradeable without ending the run
             FoundTradeable(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
+            ; Don't return - continue with the rest of the run
         }
     }
     
@@ -2110,7 +2113,89 @@ CheckPack() {
         ; Pack is invalid...
         foundInvalidGP := FindGodPack(true) ; GP is never ignored
 
-        if (foundInvalid
+        if (foundInvalidGP){
+            restartGameInstance("Invalid God Pack Found.", "GodPack")
+        }
+        if (!foundInvalidGP && !InvalidCheck) {
+            ; If not a GP and not "ignore invalid packs", check what cards the current pack contains which make it invalid
+            if (ShinyCheck && foundShiny && !foundLabel)
+                foundLabel := "Shiny"
+            if (ImmersiveCheck && foundImmersive && !foundLabel)
+                foundLabel := "Immersive"
+            if (CrownCheck && foundCrown && !foundLabel)
+                foundLabel := "Crown"
+
+            ; Report invalid cards found.
+            if (foundLabel) {
+                FoundStars(foundLabel)
+                restartGameInstance(foundLabel . " found. Continuing...", "GodPack")
+            }
+        }
+
+        IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+        return
+    }
+
+    ; Check for god pack. if found we know its not invalid
+    foundGP := FindGodPack()
+
+    if (foundGP) {
+        if (loadedAccount) {
+            accountHasPackInTesting := 1  ; T flag ONLY for godpacks
+            setMetaData()               
+            IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+        }
+
+        restartGameInstance("God Pack found. Continuing...", "GodPack")
+        return
+    }
+
+    ; Check for 2-star cards (for Inject Wonderpick 96P+ only now)
+    if (!CheckShinyPackOnly || shinyPacks.HasKey(openPack)) {
+        foundTrainer := false
+        foundRainbow := false
+        foundFullArt := false
+        2starCount := false
+
+        if (PseudoGodPack && !foundLabel) {
+            foundTrainer := FindBorders("trainer")
+            foundRainbow := FindBorders("rainbow")
+            foundFullArt := FindBorders("fullart")
+            2starCount := foundTrainer + foundRainbow + foundFullArt
+            if (2starCount > 1)
+                foundLabel := "Double two star"
+        }
+        if (TrainerCheck && !foundLabel) {
+            if(!PseudoGodPack)
+                foundTrainer := FindBorders("trainer")
+            if (foundTrainer)
+                foundLabel := "Trainer"
+        }
+        if (RainbowCheck && !foundLabel) {
+            if(!PseudoGodPack)
+                foundRainbow := FindBorders("rainbow")
+            if (foundRainbow)
+                foundLabel := "Rainbow"
+        }
+        if (FullArtCheck && !foundLabel) {
+            if(!PseudoGodPack)
+                foundFullArt := FindBorders("fullart")
+            if (foundFullArt)
+                foundLabel := "Full Art"
+        }
+
+        if (foundLabel) {
+            if (loadedAccount) {
+                ; NEW: Do NOT add T flag for single 2-star cards
+                ; Only godpacks get the T flag now
+                IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+            }
+
+            FoundStars(foundLabel)
+            restartGameInstance(foundLabel . " found. Continuing...", "GodPack")
+        }
+    }
+}
 
 FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighoul := 0, foundCrown := 0, foundImmersive := 0, foundShiny1Star := 0, foundShiny2Star := 0, foundTrainer := 0, foundRainbow := 0, foundFullArt := 0) {
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
@@ -3744,56 +3829,56 @@ Delay(n) {
 DoTutorial() {
     FindImageAndClick(105, 396, 121, 406, , "Country", 143, 370) ;select month and year and click
 
-    Delay(1)
+    Delay(3)
     adbClick_wbb(80, 400)
-    Delay(1)
+    Delay(3)
     adbClick_wbb(80, 375)
-    Delay(1)
+    Delay(3)
     failSafe := A_TickCount
     failSafeTime := 0
 
     Loop {
-        Delay(1)
+        Delay(3)
         if(FindImageAndClick(100, 386, 138, 416, , "Month", , , , 1, failSafeTime))
             break
-        Delay(1)
+        Delay(3)
         adbClick_wbb(142, 159)
-        Delay(1)
+        Delay(3)
         adbClick_wbb(80, 400)
-        Delay(1)
+        Delay(3)
         adbClick_wbb(80, 375)
-        Delay(1)
+        Delay(3)
         adbClick_wbb(82, 422)
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Month`n(" . failSafeTime . "/45 seconds)")
     } ;select month and year and click
 
     adbClick_wbb(200, 400)
-    Delay(1)
+    Delay(3)
     adbClick_wbb(200, 375)
-    Delay(1)
+    Delay(3)
     failSafe := A_TickCount
     failSafeTime := 0
     Loop { ;select month and year and click
-        Delay(1)
+        Delay(3)
         if(FindImageAndClick(148, 384, 256, 419, , "Year", , , , 1, failSafeTime))
             break
-        Delay(1)
+        Delay(3)
         adbClick_wbb(142, 159)
-        Delay(1)
+        Delay(3)
         adbClick_wbb(142, 159)
-        Delay(1)
+        Delay(3)
         adbClick_wbb(200, 400)
-        Delay(1)
+        Delay(3)
         adbClick_wbb(200, 375)
-        Delay(1)
+        Delay(3)
         adbClick_wbb(142, 159)
-        Delay(1)
+        Delay(3)
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Year`n(" . failSafeTime . "/45 seconds)")
     } ;select month and year and click
 
-    Delay(1)
+    Delay(3)
     if(FindOrLoseImage(93, 471, 122, 485, , "CountrySelect", 0)) {
         FindImageAndClick(110, 134, 164, 160, , "CountrySelect2", 141, 237, 500)
         failSafe := A_TickCount
@@ -3807,7 +3892,7 @@ DoTutorial() {
                 adbClick_wbb(140, 474)
             else if(birthFound)
                 break
-            Delay(2)
+            Delay(3)
             failSafeTime := (A_TickCount - failSafe) // 1000
             CreateStatusMessage("Waiting for country select for " . failSafeTime . "/45 seconds")
         }
@@ -3827,13 +3912,13 @@ DoTutorial() {
 
     FindImageAndClick(210, 285, 250, 315, , "TosScreen", 142, 486, 1000) ;wait to be at the tos screen, click X
 
-    Delay(1)
+    Delay(3)
     adbClick_wbb(261, 374)
 
-    Delay(1)
+    Delay(3)
     adbClick_wbb(261, 406)
 
-    Delay(1)
+    Delay(3)
     adbClick_wbb(145, 484)
 
     failSafe := A_TickCount
