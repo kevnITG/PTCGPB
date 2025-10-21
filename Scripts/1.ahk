@@ -5216,7 +5216,8 @@ DoWonderPickOnly() {
     Loop {
         adbClick_wbb(80, 390) ; first wonderpick slot
         adbClick_wbb(80, 460) ; backup, second wonderpick slot
-        if(FindOrLoseImage(25, 405, 68, 457, , "noWPEnergy", 1, failSafeTime)) {
+        if(FindOrLoseImage(37, 424, 57, 446, , "noWPenergy", 0, failSafeTime)) {
+            Sleep, 2000
             CreateStatusMessage("No WonderPick Energy left!",,,, false)
             Sleep, 2000
             adbClick_wbb(137, 505)
