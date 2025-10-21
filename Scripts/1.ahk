@@ -5216,7 +5216,29 @@ DoWonderPickOnly() {
     Loop {
         adbClick_wbb(80, 390) ; first wonderpick slot
         adbClick_wbb(80, 460) ; backup, second wonderpick slot
-        
+        if(FindOrLoseImage(25, 405, 68, 457, , "noWPEnergy", 1, failSafeTime)) {
+            CreateStatusMessage("No WonderPick Energy left!",,,, false)
+            Sleep, 2000
+            adbClick_wbb(137, 505)
+            Sleep, 4000
+            adbClick_wbb(35, 515)
+            Sleep, 4000
+            Loop {
+                Delay(1)
+                if(FindOrLoseImage(191, 393, 211, 411, , "Shop", 0, failSafeTime))
+                    break
+                else if(FindOrLoseImage(233, 486, 272, 519, , "Skip", 0, failSafeTime))
+                    adbClick_wbb(239, 497)
+                else if(FindOrLoseImage(160, 330, 200, 370, , "Card", 0, failSafeTime)) {
+                    adbClick_wbb(183, 350) ; click card
+                }
+                else
+                    adbInputEvent("111") ;send ESC
+                    Delay(1)
+                failSafeTime := (A_TickCount - failSafe) // 1000
+                CreateStatusMessage("Waiting for Shop`n(" . failSafeTime . "/45 seconds)")
+            }
+        }
         if(FindOrLoseImage(240, 80, 265, 100, , "WonderPick", 1, failSafeTime)) {
             clickButton := FindOrLoseImage(100, 367, 190, 480, 100, "Button", 0, failSafeTime)
             if(clickButton) {
