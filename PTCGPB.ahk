@@ -37,6 +37,39 @@
    }
 }
 
+ClearCardDetectionSettings() {
+    global FullArtCheck, TrainerCheck, RainbowCheck, PseudoGodPack
+    global CheckShinyPackOnly, InvalidCheck, CrownCheck, ShinyCheck, ImmersiveCheck
+    global minStars, minStarsShiny
+    
+    FullArtCheck := 0
+    TrainerCheck := 0
+    RainbowCheck := 0
+    PseudoGodPack := 0
+    CheckShinyPackOnly := 0  ; Always cleared
+    InvalidCheck := 0
+    CrownCheck := 0
+    ShinyCheck := 0
+    ImmersiveCheck := 0
+    minStars := 0
+    minStarsShiny := 0  ; Cleared along with minStars
+    
+    ; Update GUI controls if they exist
+    GuiControl,, FullArtCheck, 0
+    GuiControl,, TrainerCheck, 0
+    GuiControl,, RainbowCheck, 0
+    GuiControl,, PseudoGodPack, 0
+    GuiControl,, CheckShinyPackOnly, 0
+    GuiControl,, InvalidCheck, 0
+    GuiControl,, CrownCheck, 0
+    GuiControl,, ShinyCheck, 0
+    GuiControl,, ImmersiveCheck, 0
+    GuiControl,, minStars, 0
+    GuiControl,, minStarsShiny, 0
+    
+    UpdateCardDetectionButtonText()
+}
+
 #NoEnv
 #MaxHotkeysPerInterval 99000000
 #HotkeyInterval 99000000
@@ -351,6 +384,11 @@ return
 
 deleteSettings:
   Gui, Submit, NoHide
+
+   if (deleteMethod != "Inject Wonderpick 96P+") {
+    ClearCardDetectionSettings()
+   }
+
   if (deleteMethod = "Create Bots (13P)") {
     GuiControl, Hide, FriendID
     GuiControl, Hide, spendHourGlass
@@ -571,8 +609,8 @@ CancelPackSelection:
 return
 
 UpdateCardDetectionButtonText() {
-    global FullArtCheck, TrainerCheck, RainbowCheck, PseudoGodPack, CheckShinyPackOnly
-    global InvalidCheck, CrownCheck, ShinyCheck, ImmersiveCheck, minStars, minStarsShiny
+    global FullArtCheck, TrainerCheck, RainbowCheck, PseudoGodPack
+    global InvalidCheck, CrownCheck, ShinyCheck, ImmersiveCheck, minStars
     global currentDictionary
     
     enabledOptions := []
@@ -591,16 +629,12 @@ UpdateCardDetectionButtonText() {
         enabledOptions.Push("Save Shiny")
     if (ImmersiveCheck)
         enabledOptions.Push("Save Immersives")
-    if (CheckShinyPackOnly)
-        enabledOptions.Push("Only Shiny Packs")
     if (InvalidCheck)
         enabledOptions.Push("Ignore Invalid")
     
     statusText := ""
-    if (minStars > 0 || minStarsShiny > 0) {
+    if (minStars > 0) {
         statusText .= "Min GP 2★: " . minStars
-        if (minStarsShiny > 0)
-            statusText .= " (Shiny: " . minStarsShiny . ")"
     }
     
     if (enabledOptions.Length() > 0) {
@@ -615,7 +649,7 @@ UpdateCardDetectionButtonText() {
         statusText .= "No options selected"
     }
     
-    if (statusText = "No options selected" && minStars = 0 && minStarsShiny = 0) {
+    if (statusText = "No options selected" && minStars = 0) {
         statusText := "Configure settings..."
     }
     
@@ -647,10 +681,6 @@ ShowCardDetection:
     Gui, CardDetect:Add, Text, x15 y%yPos% cWhite, Min GP 2★:
     Gui, CardDetect:Add, Edit, vminStars_Popup w20 x140 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %minStars%
     yPos += 25
-
-    Gui, CardDetect:Add, Text, x15 y%yPos% cWhite, Min GP 2★ (Shiny):
-    Gui, CardDetect:Add, Edit, vminStarsShiny_Popup w20 x140 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %minStarsShiny%
-    yPos += 25
       
     Gui, CardDetect:Add, Checkbox, % (FullArtCheck ? "Checked" : "") " vFullArtCheck_Popup x15 y" . yPos . " cWhite", Single Full Art 2★
     yPos += 25
@@ -659,8 +689,6 @@ ShowCardDetection:
     Gui, CardDetect:Add, Checkbox, % (RainbowCheck ? "Checked" : "") " vRainbowCheck_Popup x15 y" . yPos . " cWhite", Single Rainbow 2★
     yPos += 25
     Gui, CardDetect:Add, Checkbox, % (PseudoGodPack ? "Checked" : "") " vPseudoGodPack_Popup x15 y" . yPos . " cWhite", Double 2★
-    yPos += 25
-    Gui, CardDetect:Add, Checkbox, % (CheckShinyPackOnly ? "Checked" : "") " vCheckShinyPackOnly_Popup x15 y" . yPos . " cWhite", Only for Shiny Packs
     yPos += 25
     Gui, CardDetect:Add, Checkbox, % (InvalidCheck ? "Checked" : "") " vInvalidCheck_Popup x15 y" . yPos . " cWhite", Ignore Invalid Packs
     yPos += 35
@@ -686,12 +714,12 @@ ApplyCardDetection:
     Gui, CardDetect:Submit, NoHide
     
     minStars := minStars_Popup
-    minStarsShiny := minStarsShiny_Popup
+    minStarsShiny := minStars_Popup  ; Use same value for shiny packs
     FullArtCheck := FullArtCheck_Popup
     TrainerCheck := TrainerCheck_Popup
     RainbowCheck := RainbowCheck_Popup
     PseudoGodPack := PseudoGodPack_Popup
-    CheckShinyPackOnly := CheckShinyPackOnly_Popup
+    CheckShinyPackOnly := 0  ; Always disabled
     InvalidCheck := InvalidCheck_Popup
     CrownCheck := CrownCheck_Popup
     ShinyCheck := ShinyCheck_Popup
@@ -1137,7 +1165,7 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (claimSpecialMissions ? "Checked" : "") " vclaimSpecialMissions_Popup x25 y" . yPos . " cWhite", Claim Rewards
     yPos += 20
     
-    ; Gui, ToolsAndSystemSelect:Add, Checkbox, % (wonderpickForEventMissions ? "Checked" : "") " vwonderpickForEventMissions_Popup x40 y" . yPos . " cWhite", Wonderpick
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (wonderpickForEventMissions ? "Checked" : "") " vwonderpickForEventMissions_Popup x40 y" . yPos . " cWhite", Wonderpick
     
     col2X := 220
     col2W := 190
@@ -1246,7 +1274,7 @@ ApplyToolsAndSystemSettings:
     claimDailyMission := claimDailyMission_Popup
     slowMotion := slowMotion_Popup
     claimSpecialMissions := claimSpecialMissions_Popup
-    ; wonderpickForEventMissions := wonderpickForEventMissions_Popup
+    wonderpickForEventMissions := wonderpickForEventMissions_Popup
     
     SelectedMonitorIndex := SelectedMonitorIndex_Popup
     defaultLanguage := defaultLanguage_Popup
@@ -1268,7 +1296,7 @@ ApplyToolsAndSystemSettings:
     GuiControl,, claimDailyMission, %claimDailyMission% 
     GuiControl,, slowMotion, %slowMotion%
     GuiControl,, claimSpecialMissions, %claimSpecialMissions%
-    ; GuiControl,, wonderpickForEventMissions, %wonderpickForEventMissions%
+    GuiControl,, wonderpickForEventMissions, %wonderpickForEventMissions%
     GuiControl,, checkWPthanks, %checkWPthanks%
 return
 
@@ -1814,7 +1842,7 @@ LoadSettingsFromIni() {
       IniRead, claimSpecialMissions, Settings.ini, UserSettings, claimSpecialMissions, 0
       IniRead, claimDailyMission, Settings.ini, UserSettings, claimDailyMission, 0
       IniRead, wonderpickForEventMissions, Settings.ini, UserSettings, wonderpickForEventMissions, 0
-      wonderpickForEventMissions := 0 ; forced turned off during Sneak Peek for now...
+      ; wonderpickForEventMissions := 0 ; forced turned off during Sneak Peek for now...
       IniRead, checkWPthanks, Settings.ini, UserSettings, checkWPthanks, 0
       
       IniRead, Palkia, Settings.ini, UserSettings, Palkia, 0
@@ -1916,6 +1944,21 @@ LoadSettingsFromIni() {
          IniWrite, %deleteMethod%, Settings.ini, UserSettings, deleteMethod
       }
 
+      ; clear card detection when not wonderpicking
+      if (deleteMethod != "Inject Wonderpick 96P+") {
+         FullArtCheck := 0
+         TrainerCheck := 0
+         RainbowCheck := 0
+         PseudoGodPack := 0
+         CheckShinyPackOnly := 0
+         InvalidCheck := 0
+         CrownCheck := 0
+         ShinyCheck := 0
+         ImmersiveCheck := 0
+         minStars := 0
+         minStarsShiny := 0
+      }
+
       return true
    } else {
       return false
@@ -1977,6 +2020,7 @@ CreateDefaultSettingsFile() {
    return false
 }
 
+
 SaveAllSettings() {
    global IsLanguageSet, defaultBotLanguage, BotLanguage, currentfont, FontColor
    global CurrentTheme, shownLicense
@@ -2003,6 +2047,18 @@ SaveAllSettings() {
 
    if (deleteMethod != "Inject Wonderpick 96P+") {
        packMethod := false
+       ; Clear card detection settings
+       FullArtCheck := 0
+       TrainerCheck := 0
+       RainbowCheck := 0
+       PseudoGodPack := 0
+       CheckShinyPackOnly := 0
+       InvalidCheck := 0
+       CrownCheck := 0
+       ShinyCheck := 0
+       ImmersiveCheck := 0
+       minStars := 0
+       minStarsShiny := 0
    }
    
    iniContent := "[UserSettings]`n"
@@ -2073,7 +2129,7 @@ SaveAllSettings() {
    iniContent .= "groupRerollEnabled=" groupRerollEnabled "`n"
    iniContent .= "claimSpecialMissions=" claimSpecialMissions "`n"
    iniContent .= "claimDailyMission=" claimDailyMission "`n"
-   ; iniContent .= "wonderpickForEventMissions=" wonderpickForEventMissions "`n"
+   iniContent .= "wonderpickForEventMissions=" wonderpickForEventMissions "`n"
    iniContent .= "checkWPthanks=" checkWPthanks "`n"
 
    originalDeleteMethod := deleteMethod

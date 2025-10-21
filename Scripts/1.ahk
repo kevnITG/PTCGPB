@@ -2624,16 +2624,13 @@ FoundStars(star) {
     global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack, deleteMethod, checkWPthanks
     global wpThanksSavedUsername, wpThanksSavedFriendCode, username, friendCode
 
-    ; Not dead.
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
-
-    ; Keep account.
     keepAccount := true
 
     screenShot := Screenshot(star)
     accountFullPath := ""
     
-    ; Determine if this should get (W) flag for wonderpick thanks checking
+    ; Determine if this should get (W) flag
     shouldAddWFlag := false
     if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 96P+" && injectMethod && loadedAccount) {
         if (star = "Double two star" || star = "Trainer" || star = "Rainbow" || star = "Full Art") {
@@ -2648,8 +2645,7 @@ FoundStars(star) {
     }
     
     friendCode := getFriendCode()
-
-    ; Pull back screenshot of the friend code/name (good for inject method)
+    
     Sleep, 5000
     fcScreenshot := Screenshot("FRIENDCODE")
 
@@ -2664,7 +2660,7 @@ FoundStars(star) {
     if(star = "Crown" || star = "Immersive" || star = "Shiny")
         RemoveFriends()
     else {
-        ; If we're doing the inject method, try to OCR our Username
+        ; OCR username
         try {
             if (injectMethod && IsFunc("ocr")) {
                 playerName := ""
@@ -2672,29 +2668,35 @@ FoundStars(star) {
                 usernamePattern := "[\w-]+"
 
                 if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
-                username := playerName
+                    username := playerName
                 }
             }
         } catch e {
-            LogToFile("Failed to OCR the friend code: " . e.message, "OCR.txt")
+            LogToFile("Failed to OCR username: " . e.message, "OCR.txt")
         }
-    }
-
-    ; Store username and friend code for WP thanks checking using centralized system
-    if (shouldAddWFlag) {
-        SaveWPMetadata(accountFileName, username, friendCode)
     }
 
     if (FileExist(usernameScreenshotFile)) {
         FileDelete, %usernameScreenshotFile%
     }
 
+    ; Validate before saving metadata
+    if (username = "" || !username)
+        username := "Unknown"
+    if (friendCode = "" || !friendCode)
+        friendCode := "Unknown"
+    
+    ; Save metadata
+    if (shouldAddWFlag) {
+        success := SaveWPMetadata(accountFileName, username, friendCode)
+    }
+
     CreateStatusMessage(star . " found!",,,, false)
 
     statusMessage := star . " found"
-    if (username)
+    if (username && username != "Unknown")
         statusMessage .= " by " . username
-    if (friendCode)
+    if (friendCode && friendCode != "Unknown")
         statusMessage .= " (" . friendCode . ")"
 
     logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFile name: " . accountFile . "\nBacking up to the Accounts\\SpecificCards folder and continuing..."
@@ -2719,14 +2721,11 @@ GodPackFound(validity) {
     Random, rand, 1, Randmax
     Interjection := Praise[rand]
     
-    ; Calculate star count by only counting valid 2-star cards (fullart, rainbow, trainer)
-    ; Don't subtract invalid cards, instead count only the valid ones
     starCount := FindBorders("fullart") + FindBorders("rainbow") + FindBorders("trainer")
     
     screenShot := Screenshot(validity)
     accountFullPath := ""
     
-    ; Determine if this should get (W) flag for wonderpick thanks checking
     shouldAddWFlag := false
     if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 96P+" && validity = "Valid" && injectMethod && loadedAccount) {
         shouldAddWFlag := true
@@ -2734,14 +2733,12 @@ GodPackFound(validity) {
     
     accountFile := saveAccount(validity, accountFullPath, "", shouldAddWFlag)
     
-    ; Add (W) flag to original account file in Saved folder if needed
     if (shouldAddWFlag) {
         AddWflag()
     }
     
     friendCode := getFriendCode()
 
-    ; Pull screenshot of the Friend code page; wait so we don't get the clipboard pop up; good for the inject method
     Sleep, 5000
     fcScreenshot := Screenshot("FRIENDCODE")
 
@@ -2753,7 +2750,6 @@ GodPackFound(validity) {
     adbTakeScreenshot(usernameScreenshotFile)
     Sleep, 100 
 
-    ; If we're doing the inject method, try to OCR our Username
     try {
         if (injectMethod && IsFunc("ocr")) {
             playerName := ""
@@ -2761,88 +2757,43 @@ GodPackFound(validity) {
             usernamePattern := "[\w-]+"
 
             if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
-            username := playerName
+                username := playerName
             }
         }
     } catch e {
-        LogToFile("Failed to OCR the friend code: " . e.message, "OCR.txt")
-    }
-
-    ; Store username and friend code for WP thanks checking using centralized system
-    if (shouldAddWFlag) {
-        SaveWPMetadata(accountFileName, username, friendCode)
+        LogToFile("Failed to OCR username: " . e.message, "OCR.txt")
     }
 
     if (FileExist(usernameScreenshotFile)) {
         FileDelete, %usernameScreenshotFile%
     }
 
+    ; Validate before saving
+    if (username = "" || !username)
+        username := "Unknown"
+    if (friendCode = "" || !friendCode)
+        friendCode := "Unknown"
+    
+    if (shouldAddWFlag) {
+        success := SaveWPMetadata(accountFileName, username, friendCode)
+    }
+
     CreateStatusMessage(Interjection . (invalid ? " " . invalid : "") . " God Pack found!",,,, false)
-    logMessage := Interjection . "\n" . username . " (" . friendCode . ")\n[" . starCount . "/5][" . packsInPool . "P][" . openPack . "] " . invalid . " God Pack found in instance: " . scriptName . "\nFile name: " . accountFile . "\nBacking up to the Accounts\\GodPacks folder and continuing..."
+    
+    logMessage := Interjection . "\n"
+    if (username && username != "Unknown")
+        logMessage .= username
+    if (friendCode && friendCode != "Unknown")
+        logMessage .= " (" . friendCode . ")"
+    logMessage .= "\n[" . starCount . "/5][" . packsInPool . "P][" . openPack . "] " . invalid . " God Pack found in instance: " . scriptName . "\nFile name: " . accountFile . "\nBacking up to the Accounts\\GodPacks folder and continuing..."
+    
     LogToFile(StrReplace(logMessage, "\n", " "), "GPlog.txt")
 
-    ; Adjust the below to only send a 'ping' to Discord friends on Valid packs
     if (validity = "Valid") {
         LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""), fcScreenshot)
-        ;ChooseTag()
     } else if (!InvalidCheck) {
         LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""))
     }
-}
-
-CleanupWPMetadata() {
-    global winTitle
-    
-    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
-    metadataFile := saveDir . "\wp_metadata.txt"
-    
-    if (!FileExist(metadataFile)) {
-        return
-    }
-    
-    FileRead, metadataContent, %metadataFile%
-    updatedMetadata := ""
-    removedCount := 0
-    keptCount := 0
-    
-    Loop, Parse, metadataContent, `n, `r
-    {
-        if (A_LoopField = "") {
-            continue
-        }
-        
-        parts := StrSplit(A_LoopField, "|")
-        if (parts.Length() >= 3) {
-            metadataKey := parts[1]  ; This is the timestamp+suffix portion
-            
-            ; NEW: Look for any file ending with this timestamp+suffix
-            ; The key is like "20250119123045_1(W).xml"
-            searchPattern := "*P" . metadataKey  ; Matches any pack count prefix
-            
-            foundFile := false
-            Loop, Files, %saveDir%\%searchPattern%
-            {
-                foundFile := true
-                break
-            }
-            
-            if (foundFile) {
-                updatedMetadata .= A_LoopField . "`n"
-                keptCount++
-            } else {
-                removedCount++
-                LogToFile("Removed WP metadata for non-existent account key: " . metadataKey)
-            }
-        }
-    }
-    
-    ; Write cleaned metadata
-    FileDelete, %metadataFile%
-    if (updatedMetadata != "") {
-        FileAppend, %updatedMetadata%, %metadataFile%
-    }
-    
-    LogToFile("WP Metadata cleanup: Kept " . keptCount . " entries, removed " . removedCount . " entries")
 }
 
 AddWflag() {
@@ -4915,7 +4866,6 @@ CreateAccountList(instance) {
     
     ; Clean up stale used accounts first
     CleanupUsedAccounts()
-    CleanupWPMetadata() ; clean up wonderpick testing account metadata
     
     saveDir := A_ScriptDir "\..\Accounts\Saved\" . instance
     outputTxt := saveDir . "\list.txt"
@@ -5303,12 +5253,13 @@ DoWonderPickOnly() {
 	;TODO thanks and wonder pick 5 times for missions
     Loop {
         adbClick_wbb(146, 494)
+        Delay(1)
         if(FindOrLoseImage(233, 486, 272, 519, , "Skip", 0, failSafeTime) || FindOrLoseImage(240, 80, 265, 100, , "WonderPick", 0, failSafeTime))
             break
         if(FindOrLoseImage(160, 330, 200, 370, , "Card", 0, failSafeTime)) {
             adbClick_wbb(183, 350) ; click card
         }
-        delay(1)
+        Delay(1)
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Shop`n(" . failSafeTime . "/45 seconds)")
     }
@@ -5316,13 +5267,17 @@ DoWonderPickOnly() {
     failSafe := A_TickCount
     failSafeTime := 0
     Loop {
-        Delay(2)
+        Delay(1)
         if(FindOrLoseImage(191, 393, 211, 411, , "Shop", 0, failSafeTime))
             break
         else if(FindOrLoseImage(233, 486, 272, 519, , "Skip", 0, failSafeTime))
             adbClick_wbb(239, 497)
+        else if(FindOrLoseImage(160, 330, 200, 370, , "Card", 0, failSafeTime)) {
+            adbClick_wbb(183, 350) ; click card
+        }
         else
             adbInputEvent("111") ;send ESC
+            Delay(1)
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Shop`n(" . failSafeTime . "/45 seconds)")
     }
@@ -5547,8 +5502,8 @@ GetEventRewards(frommain := true){
         Delay(1)
     }
     ; pick ONE of these two click locations based upon which events are currently going on.
-    ; adbClick_wbb(120, 465) ; used to click the middle mission button
-    adbClick_wbb(25, 465) ;used to click the left-most mission button
+    adbClick_wbb(120, 465) ; used to click the middle mission button
+    ; adbClick_wbb(25, 465) ;used to click the left-most mission button
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
@@ -5638,28 +5593,35 @@ return
 SaveWPMetadata(accountFileName, username, friendCode) {
     global winTitle
     
-    ; Use the instance folder where accounts are actually loaded from
     saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    
+    if !FileExist(saveDir) {
+        FileCreateDir, %saveDir%
+    }
+    
     metadataFile := saveDir . "\wp_metadata.txt"
     
-    ; NEW: Strip the pack count prefix to get just timestamp+suffix
+    if (username = "" || username = "ERROR")
+        username := "Unknown"
+    if (friendCode = "" || friendCode = "ERROR")
+        friendCode := "Unknown"
+    
     metadataKey := accountFileName
     if (InStr(accountFileName, "P")) {
         accountParts := StrSplit(accountFileName, "P")
-        metadataKey := accountParts[2]  ; e.g., "_20250119123045_1(W).xml"
-        metadataKey := LTrim(metadataKey, "_")  ; Remove leading underscore if present
+        if (accountParts.Length() >= 2) {
+            metadataKey := accountParts[2]  ; e.g., "_20250430105516_3(W).xml"
+            metadataKey := LTrim(metadataKey, "_")  ; Remove leading underscore
+        }
     }
     
-    ; Read existing metadata
     existingMetadata := ""
     if (FileExist(metadataFile)) {
         FileRead, existingMetadata, %metadataFile%
     }
     
-    ; Prepare new entry using the timestamp-based key
     newEntry := metadataKey . "|" . username . "|" . friendCode
     
-    ; Check if entry already exists for this key
     updatedMetadata := ""
     entryExists := false
     
@@ -5670,7 +5632,7 @@ SaveWPMetadata(accountFileName, username, friendCode) {
         }
         
         parts := StrSplit(A_LoopField, "|")
-        if (parts.Length() >= 3 && parts[1] = metadataKey) {
+        if (parts.Length() >= 1 && parts[1] = metadataKey) {
             ; Update existing entry
             updatedMetadata .= newEntry . "`n"
             entryExists := true
@@ -5680,22 +5642,25 @@ SaveWPMetadata(accountFileName, username, friendCode) {
         }
     }
     
-    ; Add new entry if it didn't exist
     if (!entryExists) {
         updatedMetadata .= newEntry . "`n"
     }
     
-    ; Write updated metadata
     FileDelete, %metadataFile%
     FileAppend, %updatedMetadata%, %metadataFile%
     
-    LogToFile("Saved WP metadata (key: " . metadataKey . "): User=" . username . ", FC=" . friendCode)
+    if (!FileExist(metadataFile)) {
+        return false
+    }
+    
+    FileGetSize, fileSize, %metadataFile%
+
+    return true
 }
 
 LoadWPMetadata(accountFileName, ByRef username, ByRef friendCode) {
     global winTitle
     
-    ; Use the instance folder where accounts are actually loaded from
     saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
     metadataFile := saveDir . "\wp_metadata.txt"
     
@@ -5703,36 +5668,103 @@ LoadWPMetadata(accountFileName, ByRef username, ByRef friendCode) {
     username := "Unknown"
     friendCode := "Unknown"
     
-    ; NEW: Strip the pack count prefix to get just timestamp+suffix
     metadataKey := accountFileName
     if (InStr(accountFileName, "P")) {
         accountParts := StrSplit(accountFileName, "P")
-        metadataKey := accountParts[2]  ; e.g., "_20250119123045_1(W).xml"
-        metadataKey := LTrim(metadataKey, "_")  ; Remove leading underscore if present
+        if (accountParts.Length() >= 2) {
+            metadataKey := accountParts[2]
+            metadataKey := LTrim(metadataKey, "_")
+        }
+    }
+
+    if (!FileExist(metadataFile)) {
+        return false
     }
     
-    if (FileExist(metadataFile)) {
-        FileRead, metadataContent, %metadataFile%
-        
-        ; Parse the content to find the specific account by timestamp key
-        Loop, Parse, metadataContent, `n, `r
-        {
-            if (A_LoopField = "") {
-                continue
-            }
-            
-            parts := StrSplit(A_LoopField, "|")
-            if (parts.Length() >= 3 && parts[1] = metadataKey) {
-                username := parts[2]
-                friendCode := parts[3]
-                LogToFile("Loaded WP metadata (key: " . metadataKey . "): User=" . username . ", FC=" . friendCode)
-                return
-            }
+    FileRead, metadataContent, %metadataFile%
+    
+    ; Parse to find the account
+    Loop, Parse, metadataContent, `n, `r
+    {
+        if (A_LoopField = "") {
+            continue
         }
         
-        LogToFile("No WP metadata found for key: " . metadataKey)
-    } else {
-        LogToFile("No WP metadata file found: " . metadataFile)
+        parts := StrSplit(A_LoopField, "|")
+        if (parts.Length() >= 3 && parts[1] = metadataKey) {
+            username := parts[2]
+            friendCode := parts[3]
+            
+            if (username = "")
+                username := "Unknown"
+            if (friendCode = "")
+                friendCode := "Unknown"
+            
+            return true
+        }
+    }
+    
+    return false
+}
+
+CleanupWPMetadata() {
+    global winTitle, verboseLogging
+    
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    metadataFile := saveDir . "\wp_metadata.txt"
+    
+    if (!FileExist(metadataFile)) {
+        return
+    }
+    
+    FileRead, metadataContent, %metadataFile%
+    if (metadataContent = "") {
+        return
+    }
+    
+    updatedMetadata := ""
+    removedCount := 0
+    keptCount := 0
+    
+    Loop, Parse, metadataContent, `n, `r
+    {
+        if (A_LoopField = "") {
+            continue
+        }
+        
+        parts := StrSplit(A_LoopField, "|")
+        if (parts.Length() >= 3) {
+            metadataKey := parts[1]  ; e.g., "20250428041228_2(BW).xml"
+            
+            ; Search for the account file with any pack count prefix
+            searchPattern := "*P_" . metadataKey
+            
+            foundFile := false
+            Loop, Files, %saveDir%\%searchPattern%
+            {
+                ; Check if file still has W or W2 flag
+                if (InStr(A_LoopFileName, "W")) {
+                    foundFile := true
+                    break
+                }
+            }
+            
+            ; If no matching file with W flag found, remove metadata
+            if (foundFile) {
+                updatedMetadata .= A_LoopField . "`n"
+                keptCount++
+            } else {
+                removedCount++
+            }
+        }
+    }
+    
+    ; Only rewrite file if we actually removed something
+    if (removedCount > 0) {
+        FileDelete, %metadataFile%
+        if (updatedMetadata != "") {
+            FileAppend, %updatedMetadata%, %metadataFile%
+        }
     }
 }
 
@@ -5905,6 +5937,8 @@ RemoveWFlagFromAccount() {
         LogToFile("RemoveWFlagFromAccount: No W flag found or file doesn't exist: " . accountFileName)
         return
     }
+
+    isFinalCheck := InStr(accountFileName, "W2")
     
     ; Remove W from the metadata
     newFileName := accountFileName
@@ -5937,8 +5971,60 @@ RemoveWFlagFromAccount() {
         FileMove, %oldFilePath%, %newFilePath%
         LogToFile("Removed W flag: " . accountFileName . " -> " . newFileName)
         accountFileName := newFileName
-    } else {
-        LogToFile("RemoveWFlagFromAccount: No changes needed for: " . accountFileName)
+        
+        ; ONLY cleanup metadata on final check (W2 removal), not on first check (W to W2 conversion)
+        if (isFinalCheck) {
+            CleanupSingleAccountMetadata(newFileName)
+        }
+    }
+}
+
+CleanupSingleAccountMetadata(accountFileName) {
+    global winTitle
+    
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    metadataFile := saveDir . "\wp_metadata.txt"
+    
+    if (!FileExist(metadataFile)) {
+        return
+    }
+    
+    ; Get the metadata key from the filename
+    metadataKey := accountFileName
+    if (InStr(accountFileName, "P")) {
+        accountParts := StrSplit(accountFileName, "P")
+        if (accountParts.Length() >= 2) {
+            metadataKey := accountParts[2]
+            metadataKey := LTrim(metadataKey, "_")
+        }
+    }
+    
+    FileRead, metadataContent, %metadataFile%
+    updatedMetadata := ""
+    removed := false
+    
+    Loop, Parse, metadataContent, `n, `r
+    {
+        if (A_LoopField = "") {
+            continue
+        }
+        
+        parts := StrSplit(A_LoopField, "|")
+        if (parts.Length() >= 1 && parts[1] = metadataKey) {
+            ; Skip this entry (remove it)
+            removed := true
+        } else {
+            ; Keep this entry
+            updatedMetadata .= A_LoopField . "`n"
+        }
+    }
+    
+    ; Rewrite file if we removed something
+    if (removed) {
+        FileDelete, %metadataFile%
+        if (updatedMetadata != "") {
+            FileAppend, %updatedMetadata%, %metadataFile%
+        }
     }
 }
 
