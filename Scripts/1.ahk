@@ -5214,7 +5214,8 @@ DoWonderPickOnly() {
     failSafe := A_TickCount
     failSafeTime := 0
     Loop {
-        adbClick_wbb(80, 460)
+        adbClick_wbb(80, 390) ; first wonderpick slot
+        adbClick_wbb(80, 460) ; backup, second wonderpick slot
         
         if(FindOrLoseImage(240, 80, 265, 100, , "WonderPick", 1, failSafeTime)) {
             clickButton := FindOrLoseImage(100, 367, 190, 480, 100, "Button", 0, failSafeTime)
