@@ -4219,7 +4219,7 @@ SelectPack(HG := false) {
 	
     packy := HomeScreenAllPackY
     if (openPack == "Deluxe") {
-        packx := MiddlePackX
+        packx := RightPackX
     } else if (openPack == "MegaGyarados") {
             packx := MiddlePackX
     } else {
@@ -4232,7 +4232,7 @@ SelectPack(HG := false) {
         PackIsInHomeScreen := 0
 	}
 	
-	if(openPack == "Deluxe") {
+	if(openPack == "MegaGyarados") {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
@@ -5466,8 +5466,8 @@ HasFlagInMetadata(fileName, flag) {
 }
 
 SpendAllHourglass() {
-    GoToMain()
-    GetAllRewards(false, true)
+    ; GoToMain()
+    ; GetAllRewards(false, true)
     GoToMain()    
 
     SelectPack("HGPack")
