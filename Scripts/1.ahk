@@ -20,8 +20,8 @@ DllCall("AllocConsole")
 WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
-global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
-global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a
+global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria
+global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
 global DeadCheck
 global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards, s4tDiscordWebhookURL, s4tDiscordUserId, s4tSendAccountXml
 global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star
@@ -115,7 +115,10 @@ IniRead, PseudoGodPack, %A_ScriptDir%\..\Settings.ini, UserSettings, PseudoGodPa
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsShiny, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsShiny, 0
 
-IniRead, Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, Deluxe, 1
+IniRead, MegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaGyarados, 1
+IniRead, MegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaBlaziken, 1
+IniRead, MegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaAltaria, 1
+IniRead, Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, Deluxe, 0
 IniRead, Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, Springs, 0
 IniRead, HoOh, %A_ScriptDir%\..\Settings.ini, UserSettings, HoOh, 0
 IniRead, Lugia, %A_ScriptDir%\..\Settings.ini, UserSettings, Lugia, 0
@@ -148,6 +151,9 @@ IniRead, minStarsA4HoOh, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4
 IniRead, minStarsA4Lugia, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Lugia, 0
 IniRead, minStarsA4Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Springs, 0
 IniRead, minStarsA4Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Deluxe, 0
+IniRead, minStarsMegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaGyarados, 0
+IniRead, minStarsMegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaBlaziken, 0
+IniRead, minStarsMegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaAltaria, 0
 
 IniRead, slowMotion, %A_ScriptDir%\..\Settings.ini, UserSettings, slowMotion, 0
 IniRead, DeadCheck, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck, 0
@@ -194,8 +200,8 @@ if(s4tEnabled){
     maxAccountPackNum := 9999
 }
 
-pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe"]
-shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1}
+pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria"]
+shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1, "MegaGyarados": 1, "MegaBlaziken": 1, "MegaAltaria": 1}
 
 packArray := []  ; Initialize an empty array
 
@@ -2090,9 +2096,8 @@ CheckPack() {
         foundTradeable := found3Dmnd + found4Dmnd + found1Star + foundGimmighoul + foundCrown + foundImmersive + foundShiny1Star + foundShiny2Star + foundTrainer + foundRainbow + foundFullArt
 
         if (foundTradeable > 0) {
-            ; NEW: Call FoundTradeable without ending the run
             FoundTradeable(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
-            ; Don't return - continue with the rest of the run
+            ; Continue with the rest of the run in s4t mode; don't return early.
         }
     }
     
@@ -2150,7 +2155,7 @@ CheckPack() {
         return
     }
 
-    ; Check for 2-star cards (for Inject Wonderpick 96P+ only now)
+    ; Check for 2-star cards (for Inject Wonderpick 96P+ only) 
     if (!CheckShinyPackOnly || shinyPacks.HasKey(openPack)) {
         foundTrainer := false
         foundRainbow := false
@@ -2562,7 +2567,13 @@ FindGodPack(invalidPack := false) {
     requiredStars := minStars ; Default to general minStars
 
     ; Check specific selections first, then default to shiny
-        if (openPack == "Deluxe") {
+        if (openPack == "MegaGyarados") {
+            requiredStars := minStarsMegaGyarados
+        } else if (openPack == "MegaBlaziken") {
+            requiredStars := minStarsMegaBlaziken
+        } else if (openPack == "MegaAltaria") {
+            requiredStars := minStarsMegaAltaria
+        } else if (openPack == "Deluxe") {
             requiredStars := minStarsA4Deluxe
         } else if (openPack == "Springs") {
             requiredStars := minStarsA4Springs
@@ -2814,7 +2825,7 @@ AddWflag() {
     }
     
     ; Skip if already has W flag
-    if (InStr(accountFileName, "W")) {
+    if (HasFlagInMetadata(accountFileName, "W")) {
         LogToFile("AddWflag: File already has W flag: " . accountFileName)
         return
     }
@@ -3348,16 +3359,16 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
     ; Define folder and file paths
     fileDir := A_ScriptDir "\..\Screenshots"
     if !FileExist(fileDir)
-        FileCreateDir, fileDir
+        FileCreateDir, %fileDir%
     if (subDir) {
         fileDir .= "\" . subDir
 		if !FileExist(fileDir)
-			FileCreateDir, fileDir
+			FileCreateDir, %fileDir%
     }
 	if (filename = "PACKSTATS") {
         fileDir .= "\temp"
 		if !FileExist(fileDir)
-			FileCreateDir, fileDir
+			FileCreateDir, %fileDir%
 	}
 
     ; File path for saving the screenshot locally
@@ -4219,27 +4230,27 @@ SelectPack(HG := false) {
 	inselectexpansionscreen := 0
 	
     packy := HomeScreenAllPackY
-    if (openPack == "Springs") {
+    if (openPack == "Deluxe") {
         packx := RightPackX
-    } else if (openPack == "Deluxe") {
+    } else if (openPack == "MegaGyarados") {
             packx := MiddlePackX
-    } else {
+    } else if (openPack == "Springs")
             packx := LeftPackX
     }
 	
-	if(openPack == "Deluxe" || openPack == "HoOh" || openPack == "Springs") {
+	if(openPack == "Deluxe" || openPack == "MegaGyarados" || openPack == "Springs") {
 		PackIsInHomeScreen := 1
     } else {
         PackIsInHomeScreen := 0
 	}
 	
-	if(openPack == "Deluxe") {
+	if(openPack == "MegaGyarados") {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
 	}
 		
-	if (openPack == "Springs" || openPack == "Deluxe") {
+	if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria" || openPack == "Deluxe") {
 		packInTopRowsOfSelectExpansion := 1
 	} else {
 		packInTopRowsOfSelectExpansion := 0
@@ -4290,9 +4301,9 @@ SelectPack(HG := false) {
 				packy := PackScreenAllPackY ; Y coordinate is lower when in pack select screen then in home screen
 				
 				if(packx != MiddlePackX) { ; if it is already the middle Pack, no need to click again
-					Delay(5) ; lowered from 10 to 5 to speed up inject users
+					Delay(5)
 					adbClick_wbb(packx, packy) 
-					Delay(5) ; lowered from 10 to 5 to speed up inject users
+					Delay(5)
 				}
 			} else {
 				FindImageAndClick(115, 140, 160, 155, , "SelectExpansion", 248, 459, 1000) ; if selected pack is not the latest pack click directly select other boosters
@@ -4326,21 +4337,16 @@ SelectPack(HG := false) {
                 Sleep, 300 ;
             }
 
-            if (openPack == "Buzzwole") {
+            if (openPack == "Eevee") {
                 packx := SelectExpansionLeftCollumnMiddleX
                 packy := 438
-            } else if (openPack = "Solgaleo") {
-                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionLeft
+            } else if (openPack == "Buzzwole") {
+                packx := SelectExpansionRightCollumnMiddleX
                 packy := 438
-            } else if (openPack = "Lunala") {
-                packx := 209 ;custom click to avoid accidentally clicking Points UI after
-                ; packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionRight
-                packy := 438
-            }
         }
 
         ; packs that can be opened after fully swiping down
-        if (openPack = "Shining" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
+        if (openPack = "Solgaleo" || "Lunala" || "Shining" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
             
             X := 266
             Y1 := 430
@@ -4350,47 +4356,59 @@ SelectPack(HG := false) {
                 adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
                 Sleep, 300 ;
             }
-            if (openPack = "Shining") {
-                packx := SelectExpansionLeftCollumnMiddleX
+            if (openPack = "Solgaleo") {
+                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
+                packy := 130
+            } else if (openPack = "Lunala") {
+                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
+                packy := 130
+            } else if (openPack = "Shining") {
+                packx := SelectExpansionRightCollumnMiddleX
                 packy := 130
 			} else if (openPack = "Arceus") {
-                packx := SelectExpansionRightCollumnMiddleX
-                packy := 130
+                packx := SelectExpansionLeftCollumnMiddleX
+                packy := 275
             } else if (openPack = "Dialga") {
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
+                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionLeft
                 packy := 275
             } else if (openPack = "Palkia") {
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
+                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionRight
                 packy := 275
             } else if (openPack = "Mew") {
-                packx := SelectExpansionRightCollumnMiddleX
-                packy := 275
-            } else if (openPack = "Charizard") {
-                packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionLeft
-                packy := 400
-            } else if (openPack = "Mewtwo") {
                 packx := SelectExpansionLeftCollumnMiddleX
                 packy := 400
+            } else if (openPack = "Charizard") {
+                packx := SelectExpansionRightCollumnMiddleX + 3PackExpansionLeft
+                packy := 400
+            } else if (openPack = "Mewtwo") {
+                packx := SelectExpansionRightCollumnMiddleX
+                packy := 400
             } else if (openPack = "Pikachu") {
-                packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionRight
+                packx := SelectExpansionRightCollumnMiddleX + 3PackExpansionRight
                 packy := 400
             }
         } else { ; No swipe, inital screen
-            if (openPack == "Deluxe") {
+            if (openPack == "MegaGyarados") {
+                packy := SelectExpansionFirstRowY
+                packx := SelectExpansionLeftCollumnLeftX
+            } else if (openPack == "MegaBlaziken") {
+                packy := SelectExpansionFirstRowY
+                packx := SelectExpansionLeftCollumnMiddleX
+            } else if (openPack == "MegaAltaria") {
+                packy := SelectExpansionFirstRowY
+                packx := SelectExpansionLeftCollumnRightX
+            } else if (openPack == "Deluxe") {
 				packy := SelectExpansionFirstRowY
-                packx := SelectExpansionLeftCollumnMiddleX                
+                packx := SelectExpansionRightCollumnMiddleX                
             } else if (openPack == "Springs") {
-				packy := SelectExpansionFirstRowY
-                packx := SelectExpansionRightCollumnMiddleX
+				packy := SelectExpansionSecondRowY
+                packx := SelectExpansionLeftCollumnMiddleX
             } else if (openPack == "HoOh") {
 				packy := SelectExpansionSecondRowY
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
+                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionLeft
             } else if (openPack == "Lugia") {
 				packy := SelectExpansionSecondRowY
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
-            } else if (openPack == "Eevee") {
-				packy := SelectExpansionSecondRowY
-                packx := SelectExpansionRightCollumnMiddleX
+                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionRight
             }
         }
         FindImageAndClick(233, 400, 264, 428, , "Points", packx, packy)
@@ -5287,7 +5305,7 @@ DoWonderPickOnly() {
         }
         else
             adbInputEvent("111") ;send ESC
-            Delay(1)
+            Delay(4)
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Shop`n(" . failSafeTime . "/45 seconds)")
     }
@@ -5439,6 +5457,25 @@ setMetaData() {
     accountNewFile := saveDir . "\" . AccountNewName
     FileMove, %accountFile% , %accountNewFile% 
     accountFileName := AccountNewName
+}
+
+ExtractMetadata(fileName) {
+    if (!InStr(fileName, "(")) {
+        return ""  ; No parentheses, no metadata
+    }
+    
+    parts1 := StrSplit(fileName, "(")
+    if (!InStr(parts1[2], ")")) {
+        return ""  ; No closing parenthesis
+    }
+    
+    parts2 := StrSplit(parts1[2], ")")
+    return parts2[1]  ; Return just the metadata between ( and )
+}
+
+HasFlagInMetadata(fileName, flag) {
+    metadata := ExtractMetadata(fileName)
+    return InStr(metadata, flag) > 0
 }
 
 SpendAllHourglass() {
@@ -5783,14 +5820,14 @@ CheckWonderPickThanks() {
     global discordWebhookURL, discordUserId, scriptName, packsInPool, openPack, scaleParam
     global username, friendCode, isCurrentlyDoingWPCheck
     
-    if (!InStr(accountFileName, "W")) {
+    if (!HasFlagInMetadata(accountFileName, "W")) {
         return false  ; Not a W flag account
     }
     
     ; Set flag to indicate we're actively doing a WP check
     isCurrentlyDoingWPCheck := true
     
-    isSecondCheck := InStr(accountFileName, "W2")
+    isSecondCheck := HasFlagInMetadata(accountFileName, "W2")
     checkStage := isSecondCheck ? "FINAL" : "FIRST"
     
     CreateStatusMessage("Checking WonderPick Thanks (" . checkStage ") for account...",,,, false)
@@ -5890,7 +5927,7 @@ ConvertWToW2Flag() {
     oldFilePath := saveDir . "\" . accountFileName
     
     ; Check if file exists and has W flag (but not W2)
-    if (!FileExist(oldFilePath) || !InStr(accountFileName, "W") || InStr(accountFileName, "W2")) {
+    if (!FileExist(oldFilePath) || !InStr(accountFileName, "W") || HasFlagInMetadata(accountFileName, "W2")) {
         return
     }
     
@@ -5948,7 +5985,7 @@ RemoveWFlagFromAccount() {
         return
     }
 
-    isFinalCheck := InStr(accountFileName, "W2")
+    isFinalCheck := HasFlagInMetadata(accountFileName, "W2")
     
     ; Remove W from the metadata
     newFileName := accountFileName

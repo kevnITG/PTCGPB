@@ -20,8 +20,9 @@ Gui, Color, 1E1E1E  ; Dark background color
 Gui, Font, cDCDCDC  ; Light text color
 
 ; Add a title with warning styling
-Gui, Add, Text, x10 y10 w450 cRed, This tool is to INJECT the account into the instance.
-Gui, Add, Text, x10 y+5 w450 cRed, It will OVERWRITE any current account in that instance and you will LOSE it!
+Gui, Add, Text, x10 y10 w450 cWhite, This tool is to INJECT (login to) the selected account.
+Gui, Add, Text, x10 y+5 w450 cRed, It will LOG OUT OF any current account in that instance.
+Gui, Add, Text, x10 y+5 w450 cWhite, Ensure you have the login info of the current account (either a .xml file, nintendo account link, etc.) or you will LOSE it.
 
 ; Create a horizontal line for visual separation
 Gui, Add, Text, x10 y+15 w450 h1 0x10 c3F3F3F ; Darker separator

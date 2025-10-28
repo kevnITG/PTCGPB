@@ -105,11 +105,11 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v8.0.0"
+   ,localVersion := "v8.0.1"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
-   ,intro := "Deluxe"
+   ,intro := "Mega Rising"
 
 global GUI_WIDTH := 790
 global GUI_HEIGHT := 370
@@ -399,6 +399,7 @@ deleteSettings:
     GuiControl, Hide, SortByDropdown
     GuiControl, Show, AccountNameText
     GuiControl, Show, AccountName
+    GuiControl, Hide, WaitTime
     nukeAccount := false
     FriendID := ""
   } else if (deleteMethod = "Inject Wonderpick 96P+") {
@@ -411,8 +412,9 @@ deleteSettings:
     GuiControl, Show, SortByDropdown
     GuiControl, Hide, AccountNameText
     GuiControl, Hide, AccountName
+    GuiControl, Show, WaitTime
     nukeAccount := false
-  } else {
+  } else if (deleteMethod = "Inject 13P_") {
     GuiControl, Hide, FriendID
     GuiControl, Show, spendHourGlass
     GuiControl, Hide, packMethod
@@ -422,6 +424,7 @@ deleteSettings:
     GuiControl, Show, SortByDropdown
     GuiControl, Hide, AccountNameText
     GuiControl, Hide, AccountName
+    GuiControl, Hide, WaitTime
     nukeAccount := false
     FriendID := ""  ; NEW: Clear Friend ID for Inject 13P+
   }
@@ -457,13 +460,19 @@ SortByDropdownHandler:
 return
 
 UpdatePackSelectionButtonText() {
-    global Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole, Solgaleo, Lunala, Shining, Arceus
+    global MegaGyarados, MegaBlaziken, MegaAltaria, Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole, Solgaleo, Lunala, Shining, Arceus
     global Palkia, Dialga, Pikachu, Charizard, Mewtwo, Mew, currentDictionary
     
     selectedPacks := []
 
+    if (MegaGyarados)
+        selectedPacks.Push(currentDictionary.Txt_MegaGyarados)
+    if (MegaBlaziken)
+        selectedPacks.Push(currentDictionary.Txt_MegaBlaziken)
+    if (MegaAltaria)
+        selectedPacks.Push(currentDictionary.Txt_MegaAltaria)
     if (Deluxe)
-         selectedPacks.Push(currentDictionary.Txt_Deluxe)
+        selectedPacks.Push(currentDictionary.Txt_Deluxe)
     if (Springs)
         selectedPacks.Push(currentDictionary.Txt_Springs)
     if (HoOh)
@@ -528,7 +537,7 @@ ShowPackSelection:
     WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
     
     popupX := mainWinX + 275 + 140 + 10
-    popupY := mainWinY + 18 + 30 + 25
+    popupY := mainWinY - 50
     
     Gui, PackSelect:Destroy
     Gui, PackSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Pack Selection
@@ -536,6 +545,12 @@ ShowPackSelection:
     Gui, PackSelect:Font, s10 cWhite, Segoe UI
 
     yPos := 10
+    Gui, PackSelect:Add, Checkbox, % (MegaGyarados ? "Checked" : "") " vMegaGyarados_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaGyarados
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (MegaBlaziken ? "Checked" : "") " vMegaBlaziken_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaBlaziken
+    yPos += 25
+    Gui, PackSelect:Add, Checkbox, % (MegaAltaria ? "Checked" : "") " vMegaAltaria_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaAltaria
+    yPos += 25
     Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Deluxe
     yPos += 25    
     Gui, PackSelect:Add, Checkbox, % (Springs ? "Checked" : "") " vSprings_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Springs
@@ -579,7 +594,9 @@ return
 ApplyPackSelection:
     Gui, PackSelect:Submit, NoHide
     
-   
+    MegaGyarados := MegaGyarados_Popup
+    MegaBlaziken := MegaBlaziken_Popup
+    MegaAltaria := MegaAltaria_Popup
     Deluxe := Deluxe_Popup
     Springs := Springs_Popup
     HoOh := HoOh_Popup
@@ -1058,8 +1075,8 @@ ShowS4TSettings:
     
     Gui, S4TSettingsSelect:Add, Checkbox, % (s4tSendAccountXml ? "Checked" : "") " vs4tSendAccountXml_Popup x15 y" . yPos . " " . sectionColor, % currentDictionary.Txt_s4tSendAccountXml
     yPos += 20
-    Gui, S4TSettingsSelect:Add, Checkbox, % (s4tSilent ? "Checked" : "") " vs4tSilent_Popup x15 y" . yPos . " " . sectionColor, Silent (No Ping)
-    yPos += 35
+    ; Gui, S4TSettingsSelect:Add, Checkbox, % (s4tSilent ? "Checked" : "") " vs4tSilent_Popup x15 y" . yPos . " " . sectionColor, Silent (No Ping)
+    ; yPos += 35
     
     Gui, S4TSettingsSelect:Add, Button, x15 y%yPos% w70 h30 gApplyS4TSettings, Apply
     Gui, S4TSettingsSelect:Add, Button, x95 y%yPos% w70 h30 gCancelS4TSettings, Cancel
@@ -1087,7 +1104,8 @@ ApplyS4TSettings:
     s4tDiscordUserId := s4tDiscordUserId_Popup
     s4tDiscordWebhookURL := s4tDiscordWebhookURL_Popup
     s4tSendAccountXml := s4tSendAccountXml_Popup
-    s4tSilent := s4tSilent_Popup
+    s4tSilent := 0
+    ; s4tSilent := s4tSilent_Popup
     
     if (s4tWPMinCards < 1)
         s4tWPMinCards := 1
@@ -1114,7 +1132,7 @@ ApplyS4TSettings:
     GuiControl,, s4tDiscordUserId, %s4tDiscordUserId%
     GuiControl,, s4tDiscordWebhookURL, %s4tDiscordWebhookURL%
     GuiControl,, s4tSendAccountXml, %s4tSendAccountXml%
-    GuiControl,, s4tSilent, %s4tSilent%
+    ; GuiControl,, s4tSilent, %s4tSilent%
     
     UpdateS4TButtonText()
 return
@@ -1390,6 +1408,12 @@ Save:
   confirmMsg .= "`n"
   
   confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
+  if (MegaGyarados)
+    confirmMsg .= "• " . currentDictionary.Txt_MegaGyarados . "`n"
+  if (MegaBlaziken)
+    confirmMsg .= "• " . currentDictionary.Txt_MegaBlaziken . "`n"
+  if (MegaAltaria)
+    confirmMsg .= "• " . currentDictionary.Txt_MegaAltaria . "`n"  
   if (Deluxe)
     confirmMsg .= "• " . currentDictionary.Txt_Deluxe . "`n"
   if (Springs)
@@ -1489,8 +1513,8 @@ Save:
       s4tSettings .= "• 4 Diamond`n"
     if (s4tWP)
       s4tSettings .= "• " . SetUpDictionary.Confirm_WonderPick . " (" . s4tWPMinCards . " " . SetUpDictionary.Confirm_MinCards . ")`n"
-    if (s4tSilent)
-      s4tSettings .= "• " . SetUpDictionary.Confirm_SilentPings . "`n"
+    ; if (s4tSilent)
+      ; s4tSettings .= "• " . SetUpDictionary.Confirm_SilentPings . "`n"
     confirmMsg .= s4tSettings
   }
   
@@ -1806,7 +1830,7 @@ LoadSettingsFromIni() {
       IniRead, autoLaunchMonitor, Settings.ini, UserSettings, autoLaunchMonitor, 1
       IniRead, TestTime, Settings.ini, UserSettings, TestTime, 3600
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
-      IniRead, waitTime, Settings.ini, UserSettings, waitTime, 3
+      IniRead, waitTime, Settings.ini, UserSettings, waitTime, 5
       IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 500
       IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 1 ; default is now OFF for no-mod-menu support
       
@@ -1859,8 +1883,11 @@ LoadSettingsFromIni() {
       IniRead, Eevee, Settings.ini, UserSettings, Eevee, 0
       IniRead, HoOh, Settings.ini, UserSettings, HoOh, 0
       IniRead, Lugia, Settings.ini, UserSettings, Lugia, 0
-      IniRead, Springs, Settings.ini, UserSettings, Springs, 1
+      IniRead, Springs, Settings.ini, UserSettings, Springs, 0
       IniRead, Deluxe, Settings.ini, UserSettings, Deluxe, 0
+      IniRead, MegaGyarados, Settings.ini, UserSettings, MegaGyarados, 1
+      IniRead, MegaBlaziken, Settings.ini, UserSettings, MegaBlaziken, 0
+      IniRead, MegaAltaria, Settings.ini, UserSettings, MegaAltaria, 0
       
       IniRead, CheckShinyPackOnly, Settings.ini, UserSettings, CheckShinyPackOnly, 0
       IniRead, TrainerCheck, Settings.ini, UserSettings, TrainerCheck, 0
@@ -1874,6 +1901,7 @@ LoadSettingsFromIni() {
       
       IniRead, s4tEnabled, Settings.ini, UserSettings, s4tEnabled, 0
       IniRead, s4tSilent, Settings.ini, UserSettings, s4tSilent, 0
+        s4tSilent := 0 ; always disable, removing feature for now. -Kevin
       IniRead, s4t3Dmnd, Settings.ini, UserSettings, s4t3Dmnd, 0
       IniRead, s4t4Dmnd, Settings.ini, UserSettings, s4t4Dmnd, 0
       IniRead, s4t1Star, Settings.ini, UserSettings, s4t1Star, 0
@@ -1922,6 +1950,9 @@ LoadSettingsFromIni() {
       IniRead, minStarsA4Lugia, Settings.ini, UserSettings, minStarsA4Lugia, 0
       IniRead, minStarsA4Springs, Settings.ini, UserSettings, minStarsA4Springs, 0
       IniRead, minStarsA4Deluxe, Settings.ini, UserSettings, minStarsA4Deluxe, 0
+      IniRead, minStarsMegaGyarados, Settings.ini, UserSettings, minStarsMegaGyarados, 0
+      IniRead, minStarsMegaBlaziken, Settings.ini, UserSettings, minStarsMegaBlaziken, 0
+      IniRead, minStarsMegaAltaria, Settings.ini, UserSettings, minStarsMegaAltaria, 0
       
       IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
@@ -1932,7 +1963,7 @@ LoadSettingsFromIni() {
       if (!IsNumeric(Columns) || Columns < 1)
          Columns := 5
       if (!IsNumeric(waitTime))
-         waitTime := 1
+         waitTime := 5
       if (!IsNumeric(Delay) || Delay < 10)
          Delay := 250
       if (s4tWPMinCards < 1 || s4tWPMinCards > 2)
@@ -2030,7 +2061,8 @@ SaveAllSettings() {
    global autoLaunchMonitor, autoUseGPTest, TestTime, groupRerollEnabled
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
-   global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, slowMotion, ocrLanguage, clientLanguage
+   global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
+   global MegaGyarados, MegaBlaziken, MegaAltaria, slowMotion, ocrLanguage, clientLanguage
    global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, isDarkTheme
    global useBackgroundImage, tesseractPath, debugMode, useTesseract, statusMessage
    global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards
@@ -2041,6 +2073,8 @@ SaveAllSettings() {
    global minStarsEnabled, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a
    global minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b
    global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA3b
+   global minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe
+   global minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
    global menuExpanded
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
    global checkWPthanks
@@ -2099,6 +2133,9 @@ SaveAllSettings() {
    iniContent .= "Lugia=" Lugia "`n"
    iniContent .= "Springs=" Springs "`n"
    iniContent .= "Deluxe=" Deluxe "`n"
+   iniContent .= "MegaGyarados=" MegaGyarados "`n"
+   iniContent .= "MegaBlaziken=" MegaBlaziken "`n"
+   iniContent .= "MegaAltaria=" MegaAltaria "`n"
    iniContent .= "CheckShinyPackOnly=" CheckShinyPackOnly "`n"
    iniContent .= "TrainerCheck=" TrainerCheck "`n"
    iniContent .= "FullArtCheck=" FullArtCheck "`n"
@@ -2109,7 +2146,7 @@ SaveAllSettings() {
    iniContent .= "ImmersiveCheck=" ImmersiveCheck "`n"
    iniContent .= "PseudoGodPack=" PseudoGodPack "`n"
    iniContent .= "s4tEnabled=" s4tEnabled "`n"
-   iniContent .= "s4tSilent=" s4tSilent "`n"
+   ; iniContent .= "s4tSilent=" s4tSilent "`n"
    iniContent .= "s4t3Dmnd=" s4t3Dmnd "`n"
    iniContent .= "s4t4Dmnd=" s4t4Dmnd "`n"
    iniContent .= "s4t1Star=" s4t1Star "`n"
@@ -2215,6 +2252,9 @@ SaveAllSettings() {
    iniContent_Second .= "minStarsA4Lugia=" minStarsA4Lugia "`n"
    iniContent_Second .= "minStarsA4Springs=" minStarsA4Springs "`n"
    iniContent_Second .= "minStarsA4Deluxe=" minStarsA4Deluxe "`n"
+   iniContent_Second .= "minStarsMegaGyarados=" minStarsMegaGyarados "`n"
+   iniContent_Second .= "minStarsMegaBlaziken=" minStarsMegaBlaziken "`n"
+   iniContent_Second .= "minStarsMegaMegaAltaria=" minStarsMegaAltaria "`n"
    iniContent_Second .= "s4tWPMinCards=" s4tWPMinCards "`n"
    iniContent_Second .= "s4tDiscordUserId=" s4tDiscordUserId "`n"
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"
@@ -2255,7 +2295,8 @@ StartBot() {
    global mainIdsURL, showcaseEnabled, defaultLanguage, scaleParam, FriendID
    global heartBeat, heartBeatName, heartBeatWebhookURL, heartBeatDelay, debugMode
    global Shining, Arceus, Palkia, Dialga, Mew, Pikachu, Charizard, Mewtwo
-   global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, packMethod, nukeAccount
+   global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
+   global MegaBlaziken, MegaGyarados, MegaAltaria, packMethod, nukeAccount
    global SelectedMonitorIndex, localVersion, githubUser, rerollTime, PackGuiBuild
    
    PackGuiBuild := 0
@@ -2412,6 +2453,12 @@ StartBot() {
       Selected.Push("Springs")
    if(Deluxe)
       Selected.Push("Deluxe")
+   if(MegaGyarados)
+      Selected.Push("MegaGyarados")
+   if(MegaBlaziken)
+      Selected.Push("MegaBlaziken")
+   if(MegaAltaria)
+      Selected.Push("MegaAltaria")
 
    for index, value in Selected {
       if(index = Selected.MaxIndex())
