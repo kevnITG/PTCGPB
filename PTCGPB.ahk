@@ -389,6 +389,8 @@ deleteSettings:
 
    if (deleteMethod != "Inject Wonderpick 96P+") {
     ClearCardDetectionSettings()
+    s4tWP := false
+    s4tWPMinCards := 1
    }
 
   if (deleteMethod = "Create Bots (13P)") {
@@ -1399,6 +1401,11 @@ ClearSpecialMissionHistory:
     
 Save:
   Gui, Submit, NoHide
+
+  if (deleteMethod != "Inject Wonderpick 96P+") {
+   s4tWP := false
+   s4tWPMinCards := 1
+  }
   
   SaveAllSettings()
   
