@@ -11,8 +11,8 @@ The new license applies to this and all future releases; unfortunately, previous
 
 ------------------------------------------
 
-*The bot will always be free and I will update it as long as this method is viable. I've spent many hours creating the PTCGPB, and if it’s helped you complete your collection, consider buying me a coffee to keep me going and adding new features!*
-https://buymeacoffee.com/aarturoo
+*Hi, I'm kevinnnn, the sole developer of PTCGP Bot since June 2025. Many community members have put countless hours into this bot. I now maintain it by myself since June 2025 and have put hundreds of hours into it myself. The bot will always be free, but you can "buy me a coffee" at:*
+https://ko-fi.com/kevnitg
 
 *Thanks for your support, and let’s keep those god packs coming!* 😄
 
@@ -20,11 +20,9 @@ https://buymeacoffee.com/aarturoo
 *Special thanks to all [contributors](https://github.com/Arturo-1212/PTCGPB/graphs/contributors)! Thanks to everyone else who has helped test or has contributed their suggestions to make the bot better!*
 
 **__What does this do?__**
-- The bot creates accounts and trains them so that they have opened at least 35 packs with stamina. After that, it rerolls accounts from your account pool to open the daily 2 packs looking for god packs. It will add your main account and friends before opening a pack so if it finds a god pack it appears in your wonder pick.
+Creates bots and looks for desireable cards to save and trade to your main account, or to wonderpick from your main account. Getting setup for wonderpick takes weeks of daily pulls to reach 96 packs opened before being elibile to be visible within Wonder Pick, but if you wish to simply find cards to trade to your main, you can get setup quickly! 
 
-Join the discord for an updated guide: https://discord.gg/C9Nyf7P4sT Translations are being worked on so if there isn't an updated guide in your language then use the express install English guide: https://discord.com/channels/1330305075393986703/1335717204989055087
-
-Check the wiki for instructions on how to install: https://github.com/Arturo-1212/PTCGPB/wiki/Pokemon-TCG-Pocket-Bot
+Join the discord for an updated guide, latest links, and support: https://discord.gg/C9Nyf7P4sT
 
 ## License
 This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
