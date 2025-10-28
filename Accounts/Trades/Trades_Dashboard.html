@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>save4trade database</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #fafafa;
+            padding: 20px;
+            font-weight: 300;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        .header {
+            background: #1a1a1a;
+            color: white;
+            padding: 24px 32px;
+            border-bottom: 1px solid #333;
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            font-weight: 300;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .header p {
+            font-size: 0.85em;
+            opacity: 0.7;
+            font-weight: 300;
+        }
+
+        .kofi-container {
+            margin-top: 14px;
+        }
+
+        .kofi-container a {
+            display: inline-block;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+
+        .kofi-container a:hover {
+            opacity: 1;
+        }
+
+        .kofi-container img {
+            height: 37px;
+            width: 185px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .stat-card {
+            padding: 12px 20px;
+            text-align: center;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .stat-card:last-child {
+            border-right: none;
+        }
+
+        .stat-card .number {
+            font-size: 2em;
+            font-weight: 300;
+            color: #1a1a1a;
+        }
+
+        .stat-card .label {
+            color: #999;
+            margin-top: 4px;
+            font-size: 0.75em;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+
+        .controls {
+            padding: 16px 24px;
+            background: #fafafa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group label {
+            font-weight: 400;
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            font-size: 0.85em;
+            font-family: inherit;
+            font-weight: 300;
+            background: white;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #1a1a1a;
+        }
+
+        .btn {
+            background: white;
+            color: #1a1a1a;
+            border: 1px solid #1a1a1a;
+            padding: 6px 16px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 400;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .btn.active {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .btn:disabled,
+        select:disabled,
+        input:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .view-mode-toggle.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .table-container {
+            padding: 24px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th {
+            background: #fafafa;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 400;
+            color: #666;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 0.8em;
+        }
+
+        th.col-time {
+            width: 90px;
+            font-size: 0.7em;
+        }
+
+        th.col-pack {
+            width: 110px;
+        }
+
+        th.col-xml {
+            width: 180px;
+            max-width: 180px;
+        }
+
+        th.col-cards {
+            max-width: 400px;
+        }
+
+        td.col-xml {
+            width: 180px;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        td.col-cards {
+            max-width: 400px;
+        }
+
+        th.col-account {
+            width: 180px;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.85em;
+            font-weight: 300;
+        }
+
+        tr:hover {
+            background: #fafafa;
+        }
+
+        tr.expandable {
+            cursor: pointer;
+        }
+
+        tr.expandable:hover {
+            background: #f0f0f0;
+        }
+
+        tr.detail-row {
+            background: #f9f9f9;
+        }
+
+        tr.detail-row td {
+            padding-left: 40px;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 0.8em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 0.75em;
+            font-weight: 400;
+            margin: 2px;
+            border: 1px solid;
+        }
+
+        .badge-pack {
+            background: #f0f0f0;
+            color: #1a1a1a;
+            border-color: #ddd;
+        }
+
+        .badge-card {
+            background: white;
+            color: #1a1a1a;
+            border-color: #999;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-weight: 300;
+        }
+
+        .empty-state h2 {
+            margin-bottom: 8px;
+            font-weight: 300;
+        }
+
+        #fileInput {
+            display: none;
+        }
+        
+        .export-btn {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .export-btn:hover {
+            background: #333;
+        }
+
+        .device-account {
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            font-size: 0.8em;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .time-cell {
+            font-size: 0.7em;
+            color: #999;
+        }
+
+        .expand-icon {
+            display: inline-block;
+            width: 16px;
+            text-align: center;
+            margin-right: 8px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .expand-icon.expanded {
+            transform: rotate(90deg);
+        }
+
+        .view-mode-toggle {
+            display: flex;
+            gap: 0;
+            border: 1px solid #1a1a1a;
+            border-radius: 0;
+            overflow: hidden;
+        }
+
+        .view-mode-toggle .btn {
+            border: none;
+            border-radius: 0;
+            border-right: 1px solid #1a1a1a;
+        }
+
+        .view-mode-toggle .btn:last-child {
+            border-right: none;
+        }
+
+        .summary-stats {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .summary-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>save4trade database</h1>
+            <p>for ptcgp bot (v8.0.1 kevinnnn)</p>
+            <div class="kofi-container">
+                <a href="https://ko-fi.com/kevnitg" target="_blank" rel="noopener noreferrer">
+                    <img src="../../GUI/images/support_me_on_kofi.png" alt="support me on ko-fi" />
+                </a>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="number" id="uniqueAccounts">0</div>
+                <div class="label">unique accounts</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalCards">0</div>
+                <div class="label">total cards</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="filter-group">
+                <button class="btn" onclick="document.getElementById('fileInput').click()">load csv</button>
+                <input type="file" id="fileInput" accept=".csv">
+                
+                <div class="view-mode-toggle disabled" id="viewModeToggle">
+                    <button class="btn active" onclick="setViewMode('aggregated')" disabled>aggregated</button>
+                    <button class="btn" onclick="setViewMode('detailed')" disabled>detailed</button>
+                </div>
+
+                <select id="packFilter" disabled>
+                    <option value="">all packs</option>
+                </select>
+
+                <select id="cardFilter" disabled>
+                    <option value="">all cards</option>
+                </select>
+
+                <input type="text" id="searchInput" placeholder="search account..." disabled>
+                
+                <button class="btn export-btn" onclick="exportFiltered()" id="exportBtn" disabled>export</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="mainTable">
+                <thead id="tableHead">
+                    <tr>
+                        <th class="col-pack">pack</th>
+                        <th>cards</th>
+                        <th>.xml filename</th>
+                        <th>device account</th>
+                        <th class="col-time">time</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <h2>no data loaded</h2>
+                            <p>click load csv to view database</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let filteredData = [];
+        let viewMode = 'aggregated';
+        let expandedAccounts = new Set();
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                parseCSV(event.target.result);
+            };
+            reader.readAsText(file);
+        });
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            
+            allData = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                const values = lines[i].split(',');
+                const row = {
+                    timestamp: values[0],
+                    originalFilename: values[1],
+                    cleanFilename: values[2],
+                    deviceAccount: values[3],
+                    packType: values[4],
+                    cardTypes: values[5] ? values[5].split('|') : [],
+                    cardCounts: values[6] ? values[6].split('|').map(Number) : []
+                };
+                allData.push(row);
+            }
+
+            filteredData = [...allData];
+            enableControls();
+            updateStats();
+            populateFilters();
+            renderTable();
+        }
+
+        function enableControls() {
+            document.getElementById('viewModeToggle').classList.remove('disabled');
+            document.querySelectorAll('#viewModeToggle .btn').forEach(btn => btn.disabled = false);
+            document.getElementById('packFilter').disabled = false;
+            document.getElementById('cardFilter').disabled = false;
+            document.getElementById('searchInput').disabled = false;
+            document.getElementById('exportBtn').disabled = false;
+        }
+
+        function updateStats() {
+            const uniqueAccounts = new Set(allData.map(row => row.deviceAccount)).size;
+            const totalCards = allData.reduce((sum, row) => 
+                sum + row.cardCounts.reduce((a, b) => a + b, 0), 0
+            );
+
+            document.getElementById('uniqueAccounts').textContent = uniqueAccounts;
+            document.getElementById('totalCards').textContent = totalCards;
+        }
+
+        function populateFilters() {
+            const packTypes = new Set(allData.map(row => row.packType));
+            const cardTypes = new Set();
+            allData.forEach(row => row.cardTypes.forEach(type => cardTypes.add(type)));
+
+            const packFilter = document.getElementById('packFilter');
+            packFilter.innerHTML = '<option value="">all packs</option>';
+            packTypes.forEach(pack => {
+                packFilter.innerHTML += `<option value="${pack}">${pack}</option>`;
+            });
+
+            const cardFilter = document.getElementById('cardFilter');
+            cardFilter.innerHTML = '<option value="">all cards</option>';
+            cardTypes.forEach(card => {
+                cardFilter.innerHTML += `<option value="${card}">${getCardDisplayName(card)}</option>`;
+            });
+
+            packFilter.addEventListener('change', applyFilters);
+            cardFilter.addEventListener('change', applyFilters);
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+        }
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            expandedAccounts.clear();
+            
+            document.querySelectorAll('.view-mode-toggle .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderTable();
+        }
+
+        function applyFilters() {
+            const packFilter = document.getElementById('packFilter').value;
+            const cardFilter = document.getElementById('cardFilter').value;
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+
+            filteredData = allData.filter(row => {
+                if (packFilter && row.packType !== packFilter) return false;
+                if (cardFilter && !row.cardTypes.includes(cardFilter)) return false;
+                if (searchText) {
+                    const searchableText = (row.cleanFilename + row.deviceAccount + row.originalFilename).toLowerCase();
+                    if (!searchableText.includes(searchText)) return false;
+                }
+                return true;
+            });
+
+            expandedAccounts.clear();
+            renderTable();
+        }
+
+        function getCardClass(cardType) {
+            return '';
+        }
+
+        function getCardDisplayName(cardType) {
+            const type = cardType.toLowerCase();
+            if (type === 'crown') return '👑 Crown';
+            if (type === 'fullart') return '★★ Full Art';
+            if (type === 'trainer') return '★★ Trainer';
+            if (type === 'rainbow') return '★★ Rainbow';
+            if (type === 'shiny1star') return '★ Shiny';
+            if (type === 'shiny2star') return '★★ Shiny';
+            if (type === 'immersive') return 'Immersive';
+            return cardType;
+        }
+
+        function aggregateByAccount(data) {
+            const accountMap = new Map();
+            
+            data.forEach(row => {
+                const key = row.deviceAccount;
+                if (!accountMap.has(key)) {
+                    accountMap.set(key, {
+                        deviceAccount: row.deviceAccount,
+                        firstSeen: row.timestamp,
+                        lastSeen: row.timestamp,
+                        totalPulls: 0,
+                        packTypes: new Set(),
+                        cards: new Map(),
+                        details: []
+                    });
+                }
+                
+                const account = accountMap.get(key);
+                account.totalPulls++;
+                account.packTypes.add(row.packType);
+                account.lastSeen = row.timestamp;
+                account.details.push(row);
+                
+                row.cardTypes.forEach((cardType, idx) => {
+                    const count = row.cardCounts[idx];
+                    if (account.cards.has(cardType)) {
+                        account.cards.set(cardType, account.cards.get(cardType) + count);
+                    } else {
+                        account.cards.set(cardType, count);
+                    }
+                });
+            });
+            
+            return Array.from(accountMap.values());
+        }
+
+        function toggleAccount(deviceAccount) {
+            if (expandedAccounts.has(deviceAccount)) {
+                expandedAccounts.delete(deviceAccount);
+            } else {
+                expandedAccounts.add(deviceAccount);
+            }
+            renderTable();
+        }
+
+        function renderTable() {
+            const thead = document.getElementById('tableHead');
+            const tbody = document.getElementById('tableBody');
+            
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <h2>no results</h2>
+                            <p>try different filters</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            if (viewMode === 'aggregated') {
+                renderAggregatedTable(thead, tbody);
+            } else {
+                renderDetailedTable(thead, tbody);
+            }
+        }
+
+        function renderAggregatedTable(thead, tbody) {
+            thead.innerHTML = `
+                <tr>
+                    <th class="col-account">device account</th>
+                    <th class="col-pack">pack</th>
+                    <th class="col-cards">cards collected</th>
+                    <th class="col-xml">.xml filename</th>
+                    <th class="col-time">first seen</th>
+                    <th class="col-time">last seen</th>
+                </tr>
+            `;
+
+            const aggregated = aggregateByAccount(filteredData);
+            tbody.innerHTML = '';
+            
+            aggregated.forEach(account => {
+                const tr = document.createElement('tr');
+                tr.className = 'expandable';
+                
+                const isExpanded = expandedAccounts.has(account.deviceAccount);
+                const expandIcon = isExpanded ? '▼' : '▶';
+                
+                const cardsHTML = Array.from(account.cards.entries())
+                    .map(([type, count]) => {
+                        return `<span class="summary-badge"><span class="badge badge-card">${getCardDisplayName(type)} ×${count}</span></span>`;
+                    })
+                    .join(' ');
+
+                const packsHTML = Array.from(account.packTypes)
+                    .map(pack => `<span class="badge badge-pack">${pack}</span>`)
+                    .join(' ');
+
+                const xmlFilenames = account.details.map(d => d.cleanFilename).join(', ');
+
+                tr.innerHTML = `
+                    <td class="device-account">
+                        <span class="expand-icon ${isExpanded ? 'expanded' : ''}">${expandIcon}</span>
+                        ${account.deviceAccount}
+                    </td>
+                    <td>${packsHTML}</td>
+                    <td class="col-cards"><div class="summary-stats">${cardsHTML}</div></td>
+                    <td class="col-xml">${xmlFilenames}</td>
+                    <td class="time-cell">${account.firstSeen.split(' ')[0]}</td>
+                    <td class="time-cell">${account.lastSeen.split(' ')[0]}</td>
+                `;
+                
+                tr.onclick = () => toggleAccount(account.deviceAccount);
+                tbody.appendChild(tr);
+
+                if (isExpanded) {
+                    account.details.forEach(detail => {
+                        const detailTr = document.createElement('tr');
+                        detailTr.className = 'detail-row';
+                        
+                        const detailCardsHTML = detail.cardTypes.map((type, idx) => {
+                            return `<span class="badge badge-card">${getCardDisplayName(type)} ×${detail.cardCounts[idx]}</span>`;
+                        }).join(' ');
+
+                        detailTr.innerHTML = `
+                            <td><span class="badge badge-pack">${detail.packType}</span></td>
+                            <td class="col-cards">${detailCardsHTML}</td>
+                            <td class="col-xml" title="${detail.originalFilename}">${detail.cleanFilename}</td>
+                            <td></td>
+                            <td></td>
+                            <td class="time-cell">${detail.timestamp}</td>
+                        `;
+                        
+                        tbody.appendChild(detailTr);
+                    });
+                }
+            });
+        }
+
+        function renderDetailedTable(thead, tbody) {
+            thead.innerHTML = `
+                <tr>
+                    <th class="col-pack">pack</th>
+                    <th>cards</th>
+                    <th>.xml filename</th>
+                    <th>device account</th>
+                    <th class="col-time">time</th>
+                </tr>
+            `;
+
+            tbody.innerHTML = '';
+            
+            filteredData.forEach(row => {
+                const cardsHTML = row.cardTypes.map((type, idx) => {
+                    return `<span class="badge badge-card">${getCardDisplayName(type)} ×${row.cardCounts[idx]}</span>`;
+                }).join(' ');
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="badge badge-pack">${row.packType}</span></td>
+                    <td>${cardsHTML}</td>
+                    <td title="${row.originalFilename}">${row.cleanFilename}</td>
+                    <td class="device-account">${row.deviceAccount}</td>
+                    <td class="time-cell">${row.timestamp}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function exportFiltered() {
+            if (filteredData.length === 0) {
+                alert('no data to export');
+                return;
+            }
+
+            const headers = 'Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts\n';
+            const rows = filteredData.map(row => 
+                `${row.timestamp},${row.originalFilename},${row.cleanFilename},${row.deviceAccount},${row.packType},${row.cardTypes.join('|')},${row.cardCounts.join('|')}`
+            ).join('\n');
+
+            const csv = headers + rows;
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `trades_export_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

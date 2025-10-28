@@ -20,8 +20,8 @@ DllCall("AllocConsole")
 WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
-global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
-global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a
+global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria
+global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
 global DeadCheck
 global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards, s4tDiscordWebhookURL, s4tDiscordUserId, s4tSendAccountXml
 global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star
@@ -115,7 +115,10 @@ IniRead, PseudoGodPack, %A_ScriptDir%\..\Settings.ini, UserSettings, PseudoGodPa
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsShiny, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsShiny, 0
 
-IniRead, Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, Deluxe, 1
+IniRead, MegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaGyarados, 1
+IniRead, MegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaBlaziken, 1
+IniRead, MegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaAltaria, 1
+IniRead, Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, Deluxe, 0
 IniRead, Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, Springs, 0
 IniRead, HoOh, %A_ScriptDir%\..\Settings.ini, UserSettings, HoOh, 0
 IniRead, Lugia, %A_ScriptDir%\..\Settings.ini, UserSettings, Lugia, 0
@@ -148,6 +151,9 @@ IniRead, minStarsA4HoOh, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4
 IniRead, minStarsA4Lugia, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Lugia, 0
 IniRead, minStarsA4Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Springs, 0
 IniRead, minStarsA4Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Deluxe, 0
+IniRead, minStarsMegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaGyarados, 0
+IniRead, minStarsMegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaBlaziken, 0
+IniRead, minStarsMegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaAltaria, 0
 
 IniRead, slowMotion, %A_ScriptDir%\..\Settings.ini, UserSettings, slowMotion, 0
 IniRead, DeadCheck, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck, 0
@@ -194,8 +200,8 @@ if(s4tEnabled){
     maxAccountPackNum := 9999
 }
 
-pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe"]
-shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1}
+pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria"]
+shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1, "MegaGyarados": 1, "MegaBlaziken": 1, "MegaAltaria": 1}
 
 packArray := []  ; Initialize an empty array
 
@@ -339,7 +345,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
     CreateStatusMessage("Account is stuck! Restarting and unfriending...")
     friended := true
     CreateStatusMessage("Stuck account still has friends. Unfriending accounts...")
-    FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
+    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
     if(setSpeed = 3)
         FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
     else
@@ -456,7 +462,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             }
         }
 
-        FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
+        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         if(setSpeed = 3)
             FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
         else
@@ -1207,7 +1213,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     static lastStatusTime := 0
 
     if(slowMotion) {
-        if(imageName = "Platin" || imageName = "One" || imageName = "Two" || imageName = "Three")
+        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three")
             return true
     }
     if(searchVariation = "")
@@ -1386,7 +1392,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
     global winTitle, failSafe, confirmed, slowMotion
 
     if(slowMotion) {
-        if(imageName = "Platin" || imageName = "One" || imageName = "Two" || imageName = "Three")
+        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three")
             return true
     }
     if(searchVariation = "")
@@ -1414,7 +1420,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         }
 
         clicky += 2 ; clicky offset
-        if (imageName = "Platin") { ; can't do text so purple box
+        if (imageName = "speedmodMenu") { ; can't do text so purple box
             X1 := 141
             Y1 := 189
             X2 := 208
@@ -1916,7 +1922,7 @@ menuDeleteStart() {
         return keepAccount
     }
     if(friended) {
-        FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
+        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         if(setSpeed = 3)
             FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
         else
@@ -2090,9 +2096,8 @@ CheckPack() {
         foundTradeable := found3Dmnd + found4Dmnd + found1Star + foundGimmighoul + foundCrown + foundImmersive + foundShiny1Star + foundShiny2Star + foundTrainer + foundRainbow + foundFullArt
 
         if (foundTradeable > 0) {
-            ; NEW: Call FoundTradeable without ending the run
             FoundTradeable(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
-            ; Don't return - continue with the rest of the run
+            ; Continue with the rest of the run in s4t mode; don't return early.
         }
     }
     
@@ -2150,7 +2155,7 @@ CheckPack() {
         return
     }
 
-    ; Check for 2-star cards (for Inject Wonderpick 96P+ only now)
+    ; Check for 2-star cards (for Inject Wonderpick 96P+ only) 
     if (!CheckShinyPackOnly || shinyPacks.HasKey(openPack)) {
         foundTrainer := false
         foundRainbow := false
@@ -2210,112 +2215,100 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         return 
     }
 
-    packDetailsFile := ""
-    packDetailsMessage := ""
-
+    cardTypes := []
+    cardCounts := []
+    
     if (found3Dmnd > 0) {
-        packDetailsFile .= "3DmndX" . found3Dmnd . "_"
-        packDetailsMessage .= "Three Diamond (x" . found3Dmnd . "), "
+        cardTypes.Push("3Diamond")
+        cardCounts.Push(found3Dmnd)
     }
     if (found4Dmnd > 0) {
-        packDetailsFile .= "4DmndX" . found4Dmnd . "_"
-        packDetailsMessage .= "Four Diamond EX (x" . found4Dmnd . "), "
+        cardTypes.Push("4Diamond")
+        cardCounts.Push(found4Dmnd)
     }
     if (found1Star > 0) {
-        packDetailsFile .= "1StarX" . found1Star . "_"
-        packDetailsMessage .= "One Star (x" . found1Star . "), "
+        cardTypes.Push("1Star")
+        cardCounts.Push(found1Star)
     }
     if (foundGimmighoul > 0) {
-        packDetailsFile .= "GimmighoulX" . foundGimmighoul . "_"
-        packDetailsMessage .= "Gimmighoul (x" . foundGimmighoul . "), "
+        cardTypes.Push("Gimmighoul")
+        cardCounts.Push(foundGimmighoul)
     }
     if (foundCrown > 0) {
-        packDetailsFile .= "CrownX" . foundCrown . "_"
-        packDetailsMessage .= "Crown (x" . foundCrown . "), "
+        cardTypes.Push("Crown")
+        cardCounts.Push(foundCrown)
     }
     if (foundImmersive > 0) {
-        packDetailsFile .= "ImmersiveX" . foundImmersive . "_"
-        packDetailsMessage .= "Immersive (x" . foundImmersive . "), "
+        cardTypes.Push("Immersive")
+        cardCounts.Push(foundImmersive)
     }
     if (foundShiny1Star > 0) {
-        packDetailsFile .= "Shiny1StarX" . foundShiny1Star . "_"
-        packDetailsMessage .= "Shiny 1-Star (x" . foundShiny1Star . "), "
+        cardTypes.Push("Shiny1Star")
+        cardCounts.Push(foundShiny1Star)
     }
     if (foundShiny2Star > 0) {
-        packDetailsFile .= "Shiny2StarX" . foundShiny2Star . "_"
-        packDetailsMessage .= "Shiny 2-Star (x" . foundShiny2Star . "), "
+        cardTypes.Push("Shiny2Star")
+        cardCounts.Push(foundShiny2Star)
     }
     if (foundTrainer > 0) {
-        packDetailsFile .= "TrainerX" . foundTrainer . "_"
-        packDetailsMessage .= "Trainer (x" . foundTrainer . "), "
+        cardTypes.Push("Trainer")
+        cardCounts.Push(foundTrainer)
     }
     if (foundRainbow > 0) {
-        packDetailsFile .= "RainbowX" . foundRainbow . "_"
-        packDetailsMessage .= "Rainbow (x" . foundRainbow . "), "
+        cardTypes.Push("Rainbow")
+        cardCounts.Push(foundRainbow)
     }
     if (foundFullArt > 0) {
-        packDetailsFile .= "FullArtX" . foundFullArt . "_"
-        packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
+        cardTypes.Push("FullArt")
+        cardCounts.Push(foundFullArt)
     }
 
-    packDetailsFile := RTrim(packDetailsFile, "_")
-    packDetailsMessage := RTrim(packDetailsMessage, ", ")
-
-    accountFullPath := ""
-    accountFile := saveAccount("Tradeable", accountFullPath, packDetailsFile)
+    deviceAccount := GetDeviceAccountFromXML()
+    
+    LogToTradesDatabase(deviceAccount, cardTypes, cardCounts)
+    
     screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
 
     statusMessage := "Tradeable cards found"
-    if (username)
-        statusMessage .= " by " . username
-    if (friendCode)
-        statusMessage .= " (" . friendCode . ")"
 
-    ; NEW: Always just backup and continue, never end the run for s4t
-    CreateStatusMessage("Tradeable cards found! Backing up and continuing...",,,, false)
+    CreateStatusMessage("Tradeable cards found! Logged to database and continuing...",,,, false)
 
-    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") File name: " . accountFile . " Screenshot file: " . screenShotFileName . " Backing up to the Accounts\\Trades folder and continuing..."
+    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") Logged to Trades Database. Screenshot file: " . screenShotFileName
     LogToFile(logMessage, "S4T.txt")
 
     if (!s4tSilent && s4tDiscordWebhookURL) {
-        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFile . "\nBacking up to the Accounts\\Trades folder and continuing..."
+        packDetailsMessage := ""
+        if (found3Dmnd > 0)
+            packDetailsMessage .= "Three Diamond (x" . found3Dmnd . "), "
+        if (found4Dmnd > 0)
+            packDetailsMessage .= "Four Diamond EX (x" . found4Dmnd . "), "
+        if (found1Star > 0)
+            packDetailsMessage .= "One Star (x" . found1Star . "), "
+        if (foundGimmighoul > 0)
+            packDetailsMessage .= "Gimmighoul (x" . foundGimmighoul . "), "
+        if (foundCrown > 0)
+            packDetailsMessage .= "Crown (x" . foundCrown . "), "
+        if (foundImmersive > 0)
+            packDetailsMessage .= "Immersive (x" . foundImmersive . "), "
+        if (foundShiny1Star > 0)
+            packDetailsMessage .= "Shiny 1-Star (x" . foundShiny1Star . "), "
+        if (foundShiny2Star > 0)
+            packDetailsMessage .= "Shiny 2-Star (x" . foundShiny2Star . "), "
+        if (foundTrainer > 0)
+            packDetailsMessage .= "Trainer (x" . foundTrainer . "), "
+        if (foundRainbow > 0)
+            packDetailsMessage .= "Rainbow (x" . foundRainbow . "), "
+        if (foundFullArt > 0)
+            packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
         
-        ; Get friend code for screenshot if WP enabled
-        if (s4tWP && foundTradeable >= s4tWPMinCards) {
-            friendCode := getFriendCode()
-            Sleep, 5000
-            fcScreenshot := Screenshot("FRIENDCODE", "Trades")
-            
-            ; Try OCR for username if available
-            tempDir := A_ScriptDir . "\..\Screenshots\temp"
-            if !FileExist(tempDir)
-                FileCreateDir, %tempDir%
-            usernameScreenshotFile := tempDir . "\" . winTitle . "_Username.png"
-            adbTakeScreenshot(usernameScreenshotFile)
-            Sleep, 100 
-            try {
-                if (injectMethod && IsFunc("ocr")) {
-                    playerName := ""
-                    allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+"
-                    usernamePattern := "[\w-]+"
-                    if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
-                        username := playerName
-                    }
-                }
-            } catch e {
-                LogToFile("Failed to OCR username: " . e.message, "OCR.txt")
-            }
-            if (FileExist(usernameScreenshotFile)) {
-                FileDelete, %usernameScreenshotFile%
-            }
-            
-            LogToDiscord(discordMessage, screenShot, true, (s4tSendAccountXml ? accountFullPath : ""), fcScreenshot, s4tDiscordWebhookURL, s4tDiscordUserId)
-        } else {
-            LogToDiscord(discordMessage, screenShot, true, (s4tSendAccountXml ? accountFullPath : ""),, s4tDiscordWebhookURL, s4tDiscordUserId)
-        }
-    }
+        packDetailsMessage := RTrim(packDetailsMessage, ", ")
+        
+        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nLogged to Trades Database and continuing..."
+        
+        LogToDiscord(discordMessage, screenShot, true, "",, s4tDiscordWebhookURL, s4tDiscordUserId)
+    
 
-    ; NEW: Don't call restartGameInstance - just return and continue the run
+    }
     return
 }
 
@@ -2562,7 +2555,13 @@ FindGodPack(invalidPack := false) {
     requiredStars := minStars ; Default to general minStars
 
     ; Check specific selections first, then default to shiny
-        if (openPack == "Deluxe") {
+        if (openPack == "MegaGyarados") {
+            requiredStars := minStarsMegaGyarados
+        } else if (openPack == "MegaBlaziken") {
+            requiredStars := minStarsMegaBlaziken
+        } else if (openPack == "MegaAltaria") {
+            requiredStars := minStarsMegaAltaria
+        } else if (openPack == "Deluxe") {
             requiredStars := minStarsA4Deluxe
         } else if (openPack == "Springs") {
             requiredStars := minStarsA4Springs
@@ -2814,7 +2813,7 @@ AddWflag() {
     }
     
     ; Skip if already has W flag
-    if (InStr(accountFileName, "W")) {
+    if (HasFlagInMetadata(accountFileName, "W")) {
         LogToFile("AddWflag: File already has W flag: " . accountFileName)
         return
     }
@@ -3348,16 +3347,16 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
     ; Define folder and file paths
     fileDir := A_ScriptDir "\..\Screenshots"
     if !FileExist(fileDir)
-        FileCreateDir, fileDir
+        FileCreateDir, %fileDir%
     if (subDir) {
         fileDir .= "\" . subDir
 		if !FileExist(fileDir)
-			FileCreateDir, fileDir
+			FileCreateDir, %fileDir%
     }
 	if (filename = "PACKSTATS") {
         fileDir .= "\temp"
 		if !FileExist(fileDir)
-			FileCreateDir, fileDir
+			FileCreateDir, %fileDir%
 	}
 
     ; File path for saving the screenshot locally
@@ -3920,7 +3919,7 @@ DoTutorial() {
     }
 
     if(setSpeed = 3){
-        FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
+        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
         adbClick_wbb(41, 296)
@@ -3930,7 +3929,7 @@ DoTutorial() {
     FindImageAndClick(110, 230, 182, 257, , "Welcome", 253, 506, 110) ;click through cutscene until welcome page
 
     if(setSpeed = 3){
-        FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
+        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
         Delay(1)
         adbClick_wbb(41, 296)
@@ -3998,7 +3997,7 @@ DoTutorial() {
 
     FindImageAndClick(225, 273, 235, 290, , "Pack", 140, 424) ;wait for pack to be ready  to trace
     if(setSpeed > 1) {
-        FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
+        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
     }
@@ -4023,7 +4022,7 @@ DoTutorial() {
 
     FindImageAndClick(34, 99, 74, 131, , "Swipe", 140, 375) ;click through cards until needing to swipe up
     if(setSpeed > 1) {
-        FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
+        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
     }
@@ -4092,7 +4091,7 @@ DoTutorial() {
 
     FindImageAndClick(225, 273, 235, 290, , "Pack", 239, 497) ;wait for pack to be ready  to Trace
     if(setSpeed > 1) {
-        FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
+        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
     }
@@ -4219,27 +4218,25 @@ SelectPack(HG := false) {
 	inselectexpansionscreen := 0
 	
     packy := HomeScreenAllPackY
-    if (openPack == "Springs") {
+    if (openPack == "Deluxe") {
         packx := RightPackX
-    } else if (openPack == "Deluxe") {
+    } else if (openPack == "MegaGyarados") {
             packx := MiddlePackX
     } else {
             packx := LeftPackX
     }
 	
-	if(openPack == "Deluxe" || openPack == "HoOh" || openPack == "Springs") {
+	if(openPack == "Deluxe" || openPack == "MegaGyarados" || openPack == "Springs") {
 		PackIsInHomeScreen := 1
     } else {
         PackIsInHomeScreen := 0
 	}
 	
-	if(openPack == "Deluxe") {
+	if(openPack == "MegaGyarados") {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
-	}
-		
-	if (openPack == "Springs" || openPack == "Deluxe") {
+	} 	if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria" || openPack == "Deluxe") {
 		packInTopRowsOfSelectExpansion := 1
 	} else {
 		packInTopRowsOfSelectExpansion := 0
@@ -4290,9 +4287,9 @@ SelectPack(HG := false) {
 				packy := PackScreenAllPackY ; Y coordinate is lower when in pack select screen then in home screen
 				
 				if(packx != MiddlePackX) { ; if it is already the middle Pack, no need to click again
-					Delay(5) ; lowered from 10 to 5 to speed up inject users
+					Delay(5)
 					adbClick_wbb(packx, packy) 
-					Delay(5) ; lowered from 10 to 5 to speed up inject users
+					Delay(5)
 				}
 			} else {
 				FindImageAndClick(115, 140, 160, 155, , "SelectExpansion", 248, 459, 1000) ; if selected pack is not the latest pack click directly select other boosters
@@ -4326,21 +4323,17 @@ SelectPack(HG := false) {
                 Sleep, 300 ;
             }
 
-            if (openPack == "Buzzwole") {
+            if (openPack == "Eevee") {
                 packx := SelectExpansionLeftCollumnMiddleX
                 packy := 438
-            } else if (openPack = "Solgaleo") {
-                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionLeft
-                packy := 438
-            } else if (openPack = "Lunala") {
-                packx := 209 ;custom click to avoid accidentally clicking Points UI after
-                ; packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionRight
+            } else if (openPack == "Buzzwole") {
+                packx := SelectExpansionRightCollumnMiddleX
                 packy := 438
             }
         }
 
         ; packs that can be opened after fully swiping down
-        if (openPack = "Shining" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
+        if (openPack = "Solgaleo" || "Lunala" || "Shining" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
             
             X := 266
             Y1 := 430
@@ -4350,47 +4343,59 @@ SelectPack(HG := false) {
                 adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
                 Sleep, 300 ;
             }
-            if (openPack = "Shining") {
-                packx := SelectExpansionLeftCollumnMiddleX
+            if (openPack = "Solgaleo") {
+                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
+                packy := 130
+            } else if (openPack = "Lunala") {
+                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
+                packy := 130
+            } else if (openPack = "Shining") {
+                packx := SelectExpansionRightCollumnMiddleX
                 packy := 130
 			} else if (openPack = "Arceus") {
-                packx := SelectExpansionRightCollumnMiddleX
-                packy := 130
+                packx := SelectExpansionLeftCollumnMiddleX
+                packy := 275
             } else if (openPack = "Dialga") {
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
+                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionLeft
                 packy := 275
             } else if (openPack = "Palkia") {
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
+                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionRight
                 packy := 275
             } else if (openPack = "Mew") {
-                packx := SelectExpansionRightCollumnMiddleX
-                packy := 275
-            } else if (openPack = "Charizard") {
-                packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionLeft
-                packy := 400
-            } else if (openPack = "Mewtwo") {
                 packx := SelectExpansionLeftCollumnMiddleX
                 packy := 400
+            } else if (openPack = "Charizard") {
+                packx := SelectExpansionRightCollumnMiddleX + 3PackExpansionLeft
+                packy := 400
+            } else if (openPack = "Mewtwo") {
+                packx := SelectExpansionRightCollumnMiddleX
+                packy := 400
             } else if (openPack = "Pikachu") {
-                packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionRight
+                packx := SelectExpansionRightCollumnMiddleX + 3PackExpansionRight
                 packy := 400
             }
         } else { ; No swipe, inital screen
-            if (openPack == "Deluxe") {
+            if (openPack == "MegaGyarados") {
+                packy := SelectExpansionFirstRowY
+                packx := SelectExpansionLeftCollumnLeftX
+            } else if (openPack == "MegaBlaziken") {
+                packy := SelectExpansionFirstRowY
+                packx := SelectExpansionLeftCollumnMiddleX
+            } else if (openPack == "MegaAltaria") {
+                packy := SelectExpansionFirstRowY
+                packx := SelectExpansionLeftCollumnRightX
+            } else if (openPack == "Deluxe") {
 				packy := SelectExpansionFirstRowY
-                packx := SelectExpansionLeftCollumnMiddleX                
+                packx := SelectExpansionRightCollumnMiddleX                
             } else if (openPack == "Springs") {
-				packy := SelectExpansionFirstRowY
-                packx := SelectExpansionRightCollumnMiddleX
+				packy := SelectExpansionSecondRowY
+                packx := SelectExpansionLeftCollumnMiddleX
             } else if (openPack == "HoOh") {
 				packy := SelectExpansionSecondRowY
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
+                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionLeft
             } else if (openPack == "Lugia") {
 				packy := SelectExpansionSecondRowY
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
-            } else if (openPack == "Eevee") {
-				packy := SelectExpansionSecondRowY
-                packx := SelectExpansionRightCollumnMiddleX
+                packx := SelectExpansionRightCollumnMiddleX + 2PackExpansionRight
             }
         }
         FindImageAndClick(233, 400, 264, 428, , "Points", packx, packy)
@@ -4490,7 +4495,7 @@ PackOpening() {
     }
 
     if(setSpeed > 1) {
-    FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
+    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
     FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
     }
@@ -4642,7 +4647,7 @@ HourglassOpening(HG := false, NEIRestart := true) {
     }
 
     if(setSpeed > 1) {
-    FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
+    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
     FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
     }
@@ -5287,7 +5292,7 @@ DoWonderPickOnly() {
         }
         else
             adbInputEvent("111") ;send ESC
-            Delay(1)
+            Delay(4)
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Shop`n(" . failSafeTime . "/45 seconds)")
     }
@@ -5441,9 +5446,28 @@ setMetaData() {
     accountFileName := AccountNewName
 }
 
+ExtractMetadata(fileName) {
+    if (!InStr(fileName, "(")) {
+        return ""  ; No parentheses, no metadata
+    }
+    
+    parts1 := StrSplit(fileName, "(")
+    if (!InStr(parts1[2], ")")) {
+        return ""  ; No closing parenthesis
+    }
+    
+    parts2 := StrSplit(parts1[2], ")")
+    return parts2[1]  ; Return just the metadata between ( and )
+}
+
+HasFlagInMetadata(fileName, flag) {
+    metadata := ExtractMetadata(fileName)
+    return InStr(metadata, flag) > 0
+}
+
 SpendAllHourglass() {
-    GoToMain()
-    GetAllRewards(false, true)
+    ; GoToMain()
+    ; GetAllRewards(false, true)
     GoToMain()    
 
     SelectPack("HGPack")
@@ -5488,7 +5512,7 @@ GetEventRewards(frommain := true){
     LevelUp()
     
     if(setSpeed > 1) {
-        FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000) ; click mod settings
+        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
     }
@@ -5783,14 +5807,14 @@ CheckWonderPickThanks() {
     global discordWebhookURL, discordUserId, scriptName, packsInPool, openPack, scaleParam
     global username, friendCode, isCurrentlyDoingWPCheck
     
-    if (!InStr(accountFileName, "W")) {
+    if (!HasFlagInMetadata(accountFileName, "W")) {
         return false  ; Not a W flag account
     }
     
     ; Set flag to indicate we're actively doing a WP check
     isCurrentlyDoingWPCheck := true
     
-    isSecondCheck := InStr(accountFileName, "W2")
+    isSecondCheck := HasFlagInMetadata(accountFileName, "W2")
     checkStage := isSecondCheck ? "FINAL" : "FIRST"
     
     CreateStatusMessage("Checking WonderPick Thanks (" . checkStage ") for account...",,,, false)
@@ -5800,7 +5824,7 @@ CheckWonderPickThanks() {
     LoadWPMetadata(accountFileName, wpThanksSavedUsername, wpThanksSavedFriendCode)
     
     ; Set speed to 3x
-    FindImageAndClick(25, 145, 70, 170, , "Platin", 18, 109, 2000)
+    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
     FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180)
     Delay(1)
     adbClick_wbb(41, 296)
@@ -5890,7 +5914,7 @@ ConvertWToW2Flag() {
     oldFilePath := saveDir . "\" . accountFileName
     
     ; Check if file exists and has W flag (but not W2)
-    if (!FileExist(oldFilePath) || !InStr(accountFileName, "W") || InStr(accountFileName, "W2")) {
+    if (!FileExist(oldFilePath) || !InStr(accountFileName, "W") || HasFlagInMetadata(accountFileName, "W2")) {
         return
     }
     
@@ -5948,7 +5972,7 @@ RemoveWFlagFromAccount() {
         return
     }
 
-    isFinalCheck := InStr(accountFileName, "W2")
+    isFinalCheck := HasFlagInMetadata(accountFileName, "W2")
     
     ; Remove W from the metadata
     newFileName := accountFileName
@@ -6192,4 +6216,228 @@ GetTextFromBitmap(pBitmap, charAllowList := "") {
 ; Escapes special characters in a string for use in a regular expression. 
 RegExEscape(str) {
     return RegExReplace(str, "([-[\]{}()*+?.,\^$|#\s])", "\$1")
+}
+; ========================================
+; DATABASE FUNCTIONS
+; ========================================
+
+GetDeviceAccountFromXML() {
+    global loadDir, accountFileName, adbPath, adbPort, scriptName, adbShell
+    
+    deviceAccount := ""
+    
+    if (loadDir && accountFileName) {
+        targetClean := RegExReplace(accountFileName, "^\d+P_", "")
+        targetClean := RegExReplace(targetClean, "_\d+(\([^)]+\))?\.xml$", "")
+        
+        Loop, Files, %loadDir%\*.xml
+        {
+            currentClean := RegExReplace(A_LoopFileName, "^\d+P_", "")
+            currentClean := RegExReplace(currentClean, "_\d+(\([^)]+\))?\.xml$", "")
+            
+            if (currentClean = targetClean) {
+                xmlPath := loadDir . "\" . A_LoopFileName
+                FileRead, xmlContent, %xmlPath%
+                
+                if (RegExMatch(xmlContent, "i)<string name=""deviceAccount"">([^<]+)</string>", match)) {
+                    deviceAccount := match1
+                    return deviceAccount
+                }
+                break
+            }
+        }
+    }
+    
+    tempDir := A_ScriptDir . "\temp"
+    if !FileExist(tempDir)
+        FileCreateDir, %tempDir%
+    
+    tempPath := tempDir . "\current_device_" . scriptName . ".xml"
+    
+    adbShell.StdIn.WriteLine("cp -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml /sdcard/deviceAccount.xml")
+    Sleep, 500
+    
+    RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " pull /sdcard/deviceAccount.xml """ . tempPath . """",, Hide
+    
+    Sleep, 500
+    
+    if (FileExist(tempPath)) {
+        FileRead, xmlContent, %tempPath%
+        
+        if (RegExMatch(xmlContent, "i)<string name=""deviceAccount"">([^<]+)</string>", match)) {
+            deviceAccount := match1
+        }
+        FileDelete, %tempPath%
+        
+        adbShell.StdIn.WriteLine("rm /sdcard/deviceAccount.xml")
+    }
+    
+    return deviceAccount
+}
+
+LogToTradesDatabase(deviceAccount, cardTypes, cardCounts) {
+    global scriptName, accountFileName, accountOpenPacks, openPack
+    
+    dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
+    
+    if (!FileExist(dbPath)) {
+        header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts`n"
+        FileAppend, %header%, %dbPath%
+    }
+    
+    cleanFilename := accountFileName
+    cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
+    cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]+\))?\.xml$", "")
+    
+    cardTypeStr := ""
+    cardCountStr := ""
+    
+    Loop, % cardTypes.Length() {
+        if (A_Index > 1) {
+            cardTypeStr .= "|"
+            cardCountStr .= "|"
+        }
+        cardTypeStr .= cardTypes[A_Index]
+        cardCountStr .= cardCounts[A_Index]
+    }
+    
+    timestamp := A_Now
+    FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
+    
+    csvRow := timestamp . ","
+        . accountFileName . ","
+        . cleanFilename . ","
+        . deviceAccount . ","
+        . openPack . ","
+        . cardTypeStr . ","
+        . cardCountStr . "`n"
+    
+    FileAppend, %csvRow%, %dbPath%
+    
+    UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp)
+}
+
+UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp) {
+    global scriptName, accountFileName, accountOpenPacks, openPack
+    
+    jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
+    
+    cleanFilename := accountFileName
+    cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
+    cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]+\))?\.xml$", "")
+    
+    jsonEntry := "{"
+        . """timestamp"": """ . timestamp . """, "
+        . """deviceAccount"": """ . deviceAccount . """, "
+        . """originalFilename"": """ . accountFileName . """, "
+        . """cleanFilename"": """ . cleanFilename . """, "
+        . """packType"": """ . openPack . """, "
+        . """cards"": ["
+    
+    Loop, % cardTypes.Length() {
+        if (A_Index > 1)
+            jsonEntry .= ", "
+        jsonEntry .= "{""type"": """ . cardTypes[A_Index] . """, ""count"": " . cardCounts[A_Index] . "}"
+    }
+    
+    jsonEntry .= "]}`n"
+    
+    FileAppend, %jsonEntry%, %jsonPath%
+}
+
+SearchTradesDatabase(searchPackType := "", searchCardType := "") {
+    dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
+    
+    if (!FileExist(dbPath))
+        return []
+    
+    results := []
+    FileRead, csvContent, %dbPath%
+    
+    Loop, Parse, csvContent, `n, `r
+    {
+        if (A_Index = 1)
+            continue
+            
+        if (A_LoopField = "")
+            continue
+        
+        fields := StrSplit(A_LoopField, ",")
+        
+        if (fields.Length() < 7)
+            continue
+        
+        packType := fields[5]
+        cardTypes := fields[6]
+        
+        if (searchPackType != "" && packType != searchPackType)
+            continue
+        
+        if (searchCardType != "" && !InStr(cardTypes, searchCardType))
+            continue
+        
+        result := {}
+        result.Timestamp := fields[1]
+        result.OriginalFilename := fields[2]
+        result.CleanFilename := fields[3]
+        result.DeviceAccount := fields[4]
+        result.PackType := fields[5]
+        result.CardTypes := fields[6]
+        result.CardCounts := fields[7]
+        
+        results.Push(result)
+    }
+    
+    return results
+}
+
+GetTradesDatabaseStats() {
+    dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
+    
+    if (!FileExist(dbPath))
+        return ""
+    
+    stats := {}
+    stats.TotalEntries := 0
+    stats.UniqueAccounts := {}
+    stats.PackTypes := {}
+    stats.CardTypes := {}
+    
+    FileRead, csvContent, %dbPath%
+    
+    Loop, Parse, csvContent, `n, `r
+    {
+        if (A_Index = 1)
+            continue
+            
+        if (A_LoopField = "")
+            continue
+        
+        stats.TotalEntries++
+        
+        fields := StrSplit(A_LoopField, ",")
+        
+        if (fields.Length() < 7)
+            continue
+        
+        deviceAccount := fields[4]
+        if (!stats.UniqueAccounts.HasKey(deviceAccount))
+            stats.UniqueAccounts[deviceAccount] := 0
+        stats.UniqueAccounts[deviceAccount]++
+        
+        packType := fields[5]
+        if (!stats.PackTypes.HasKey(packType))
+            stats.PackTypes[packType] := 0
+        stats.PackTypes[packType]++
+        
+        cardTypes := StrSplit(fields[6], "|")
+        Loop, % cardTypes.Length() {
+            cardType := cardTypes[A_Index]
+            if (!stats.CardTypes.HasKey(cardType))
+                stats.CardTypes[cardType] := 0
+            stats.CardTypes[cardType]++
+        }
+    }
+    
+    return stats
 }
