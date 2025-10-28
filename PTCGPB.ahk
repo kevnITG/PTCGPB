@@ -418,7 +418,7 @@ deleteSettings:
     GuiControl, Hide, AccountName
     GuiControl, Show, WaitTime
     nukeAccount := false
-  } else if (deleteMethod = "Inject 13P_") {
+  } else if (deleteMethod = "Inject 13P+") {
     GuiControl, Hide, FriendID
     GuiControl, Show, spendHourGlass
     GuiControl, Hide, packMethod
@@ -2165,7 +2165,7 @@ SaveAllSettings() {
    iniContent .= "ImmersiveCheck=" ImmersiveCheck "`n"
    iniContent .= "PseudoGodPack=" PseudoGodPack "`n"
    iniContent .= "s4tEnabled=" s4tEnabled "`n"
-   ; iniContent .= "s4tSilent=" s4tSilent "`n"
+   iniContent .= "s4tSilent=" s4tSilent "`n"
    iniContent .= "s4t3Dmnd=" s4t3Dmnd "`n"
    iniContent .= "s4t4Dmnd=" s4t4Dmnd "`n"
    iniContent .= "s4t1Star=" s4t1Star "`n"

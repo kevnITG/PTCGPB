@@ -2215,7 +2215,6 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         return 
     }
 
-    ; Build card type arrays for database
     cardTypes := []
     cardCounts := []
     
@@ -2271,10 +2270,6 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
     screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
 
     statusMessage := "Tradeable cards found"
-    if (username)
-        statusMessage .= " by " . username
-    if (friendCode)
-        statusMessage .= " (" . friendCode . ")"
 
     CreateStatusMessage("Tradeable cards found! Logged to database and continuing...",,,, false)
 
@@ -2282,44 +2277,38 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
     LogToFile(logMessage, "S4T.txt")
 
     if (!s4tSilent && s4tDiscordWebhookURL) {
-        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFile . "\nBacking up to the Accounts\\Trades folder and continuing..."
+        packDetailsMessage := ""
+        if (found3Dmnd > 0)
+            packDetailsMessage .= "Three Diamond (x" . found3Dmnd . "), "
+        if (found4Dmnd > 0)
+            packDetailsMessage .= "Four Diamond EX (x" . found4Dmnd . "), "
+        if (found1Star > 0)
+            packDetailsMessage .= "One Star (x" . found1Star . "), "
+        if (foundGimmighoul > 0)
+            packDetailsMessage .= "Gimmighoul (x" . foundGimmighoul . "), "
+        if (foundCrown > 0)
+            packDetailsMessage .= "Crown (x" . foundCrown . "), "
+        if (foundImmersive > 0)
+            packDetailsMessage .= "Immersive (x" . foundImmersive . "), "
+        if (foundShiny1Star > 0)
+            packDetailsMessage .= "Shiny 1-Star (x" . foundShiny1Star . "), "
+        if (foundShiny2Star > 0)
+            packDetailsMessage .= "Shiny 2-Star (x" . foundShiny2Star . "), "
+        if (foundTrainer > 0)
+            packDetailsMessage .= "Trainer (x" . foundTrainer . "), "
+        if (foundRainbow > 0)
+            packDetailsMessage .= "Rainbow (x" . foundRainbow . "), "
+        if (foundFullArt > 0)
+            packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
         
-        ; Get friend code for screenshot if WP enabled
-        if (s4tWP && foundTradeable >= s4tWPMinCards) {
-            friendCode := getFriendCode()
-            Sleep, 5000
-            fcScreenshot := Screenshot("FRIENDCODE", "Trades")
-            
-            ; Try OCR for username if available
-            tempDir := A_ScriptDir . "\..\Screenshots\temp"
-            if !FileExist(tempDir)
-                FileCreateDir, %tempDir%
-            usernameScreenshotFile := tempDir . "\" . winTitle . "_Username.png"
-            adbTakeScreenshot(usernameScreenshotFile)
-            Sleep, 100 
-            try {
-                if (injectMethod && IsFunc("ocr")) {
-                    playerName := ""
-                    allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+"
-                    usernamePattern := "[\w-]+"
-                    if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
-                        username := playerName
-                    }
-                }
-            } catch e {
-                LogToFile("Failed to OCR username: " . e.message, "OCR.txt")
-            }
-            if (FileExist(usernameScreenshotFile)) {
-                FileDelete, %usernameScreenshotFile%
-            }
-            
-            LogToDiscord(discordMessage, screenShot, true, (s4tSendAccountXml ? accountFullPath : ""), fcScreenshot, s4tDiscordWebhookURL, s4tDiscordUserId)
-        } else {
-            LogToDiscord(discordMessage, screenShot, true, (s4tSendAccountXml ? accountFullPath : ""),, s4tDiscordWebhookURL, s4tDiscordUserId)
-        }
-    }
+        packDetailsMessage := RTrim(packDetailsMessage, ", ")
+        
+        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nLogged to Trades Database and continuing..."
+        
+        LogToDiscord(discordMessage, screenShot, true, "",, s4tDiscordWebhookURL, s4tDiscordUserId)
+    
 
-    ; NEW: Don't call restartGameInstance - just return and continue the run
+    }
     return
 }
 
@@ -4230,10 +4219,10 @@ SelectPack(HG := false) {
 	
     packy := HomeScreenAllPackY
     if (openPack == "Deluxe") {
-        packx := RightPackX
+        packx := MiddlePackX
     } else if (openPack == "MegaGyarados") {
             packx := MiddlePackX
-    } else if (openPack == "Springs")
+    } else {
             packx := LeftPackX
     }
 	
@@ -4243,13 +4232,11 @@ SelectPack(HG := false) {
         PackIsInHomeScreen := 0
 	}
 	
-	if(openPack == "MegaGyarados") {
+	if(openPack == "Deluxe") {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
-	}
-		
-	if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria" || openPack == "Deluxe") {
+	} 	if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria" || openPack == "Deluxe") {
 		packInTopRowsOfSelectExpansion := 1
 	} else {
 		packInTopRowsOfSelectExpansion := 0
@@ -4342,6 +4329,7 @@ SelectPack(HG := false) {
             } else if (openPack == "Buzzwole") {
                 packx := SelectExpansionRightCollumnMiddleX
                 packy := 438
+            }
         }
 
         ; packs that can be opened after fully swiping down
@@ -6234,44 +6222,73 @@ RegExEscape(str) {
 ; ========================================
 
 GetDeviceAccountFromXML() {
-    ; Read the current loaded XML file from Saved/{instanceNumber}/ folder
-    global loadDir, accountFileName
+    global loadDir, accountFileName, adbPath, adbPort, scriptName, adbShell
     
-    if (!accountFileName)
-        return ""
+    deviceAccount := ""
     
-    xmlPath := loadDir . "\" . accountFileName
+    if (loadDir && accountFileName) {
+        targetClean := RegExReplace(accountFileName, "^\d+P_", "")
+        targetClean := RegExReplace(targetClean, "_\d+(\([^)]+\))?\.xml$", "")
+        
+        Loop, Files, %loadDir%\*.xml
+        {
+            currentClean := RegExReplace(A_LoopFileName, "^\d+P_", "")
+            currentClean := RegExReplace(currentClean, "_\d+(\([^)]+\))?\.xml$", "")
+            
+            if (currentClean = targetClean) {
+                xmlPath := loadDir . "\" . A_LoopFileName
+                FileRead, xmlContent, %xmlPath%
+                
+                if (RegExMatch(xmlContent, "i)<string name=""deviceAccount"">([^<]+)</string>", match)) {
+                    deviceAccount := match1
+                    return deviceAccount
+                }
+                break
+            }
+        }
+    }
     
-    if (!FileExist(xmlPath))
-        return ""
+    tempDir := A_ScriptDir . "\temp"
+    if !FileExist(tempDir)
+        FileCreateDir, %tempDir%
     
-    FileRead, xmlContent, %xmlPath%
+    tempPath := tempDir . "\current_device_" . scriptName . ".xml"
     
-    ; Extract deviceAccount value from XML
-    ; Example: <string name="deviceAccount">abc123def456</string>
-    if (RegExMatch(xmlContent, "i)<string name=""deviceAccount"">(.+?)</string>", match))
-        return match1
+    adbShell.StdIn.WriteLine("cp -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml /sdcard/deviceAccount.xml")
+    Sleep, 500
     
-    return ""
+    RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " pull /sdcard/deviceAccount.xml """ . tempPath . """",, Hide
+    
+    Sleep, 500
+    
+    if (FileExist(tempPath)) {
+        FileRead, xmlContent, %tempPath%
+        
+        if (RegExMatch(xmlContent, "i)<string name=""deviceAccount"">([^<]+)</string>", match)) {
+            deviceAccount := match1
+        }
+        FileDelete, %tempPath%
+        
+        adbShell.StdIn.WriteLine("rm /sdcard/deviceAccount.xml")
+    }
+    
+    return deviceAccount
 }
 
 LogToTradesDatabase(deviceAccount, cardTypes, cardCounts) {
-    global scriptName, accountFileName, accountOpenPacks, openPack, friendCode, username
+    global scriptName, accountFileName, accountOpenPacks, openPack
     
     dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
     
-    ; Create CSV header if file doesn't exist
     if (!FileExist(dbPath)) {
-        header := "Timestamp,InstanceName,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,FriendCode,Username`n"
+        header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts`n"
         FileAppend, %header%, %dbPath%
     }
     
     cleanFilename := accountFileName
-    cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")  ; Remove 34P_ prefix
-    cleanFilename := RegExReplace(cleanFilename, "_\([^)]+\)\.xml$", ".xml")  ; Remove _(BXW) suffix
-    cleanFilename := StrReplace(cleanFilename, ".xml", "")  ; Remove extension
+    cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
+    cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]+\))?\.xml$", "")
     
-    ; Build pipe-separated card type and count strings
     cardTypeStr := ""
     cardCountStr := ""
     
@@ -6284,55 +6301,37 @@ LogToTradesDatabase(deviceAccount, cardTypes, cardCounts) {
         cardCountStr .= cardCounts[A_Index]
     }
     
-    ; Prepare CSV row
     timestamp := A_Now
     FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
     
-    ; Escape commas in fields
-    friendCodeEsc := StrReplace(friendCode, ",", "")
-    usernameEsc := StrReplace(username, ",", "")
-    
     csvRow := timestamp . ","
-        . scriptName . ","
         . accountFileName . ","
         . cleanFilename . ","
         . deviceAccount . ","
         . openPack . ","
         . cardTypeStr . ","
-        . cardCountStr . ","
-        . friendCodeEsc . ","
-        . usernameEsc . "`n"
+        . cardCountStr . "`n"
     
     FileAppend, %csvRow%, %dbPath%
     
-    ; Also update JSON index
     UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp)
 }
 
 UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp) {
-    global scriptName, accountFileName, accountOpenPacks, openPack, friendCode, username
+    global scriptName, accountFileName, accountOpenPacks, openPack
     
     jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
     
-    ; For now, just create a simple append-only JSON log
-    ; A full implementation would need a JSON parser library
-    ; This is a simplified version - you may want to use a proper JSON library
-    
     cleanFilename := accountFileName
     cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
-    cleanFilename := RegExReplace(cleanFilename, "_\([^)]+\)\.xml$", ".xml")
-    cleanFilename := StrReplace(cleanFilename, ".xml", "")
+    cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]+\))?\.xml$", "")
     
-    ; Build simple JSON entry (basic format)
     jsonEntry := "{"
         . """timestamp"": """ . timestamp . """, "
         . """deviceAccount"": """ . deviceAccount . """, "
-        . """instanceName"": """ . scriptName . """, "
         . """originalFilename"": """ . accountFileName . """, "
         . """cleanFilename"": """ . cleanFilename . """, "
         . """packType"": """ . openPack . """, "
-        . """friendCode"": """ . friendCode . """, "
-        . """username"": """ . username . """, "
         . """cards"": ["
     
     Loop, % cardTypes.Length() {
@@ -6346,11 +6345,6 @@ UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp) {
     FileAppend, %jsonEntry%, %jsonPath%
 }
 
-; ========================================
-; QUERY/SEARCH FUNCTIONS
-; ========================================
-
-; Search database for accounts with specific card types
 SearchTradesDatabase(searchPackType := "", searchCardType := "") {
     dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
     
@@ -6362,41 +6356,34 @@ SearchTradesDatabase(searchPackType := "", searchCardType := "") {
     
     Loop, Parse, csvContent, `n, `r
     {
-        if (A_Index = 1)  ; Skip header
+        if (A_Index = 1)
             continue
             
         if (A_LoopField = "")
             continue
         
-        ; Parse CSV row
         fields := StrSplit(A_LoopField, ",")
         
-        if (fields.Length() < 10)
+        if (fields.Length() < 7)
             continue
         
-        packType := fields[6]
-        cardTypes := fields[7]
+        packType := fields[5]
+        cardTypes := fields[6]
         
-        ; Filter by pack type if specified
         if (searchPackType != "" && packType != searchPackType)
             continue
         
-        ; Filter by card type if specified
         if (searchCardType != "" && !InStr(cardTypes, searchCardType))
             continue
         
-        ; Add to results
         result := {}
         result.Timestamp := fields[1]
-        result.InstanceName := fields[2]
-        result.OriginalFilename := fields[3]
-        result.CleanFilename := fields[4]
-        result.DeviceAccount := fields[5]
-        result.PackType := fields[6]
-        result.CardTypes := fields[7]
-        result.CardCounts := fields[8]
-        result.FriendCode := fields[9]
-        result.Username := fields[10]
+        result.OriginalFilename := fields[2]
+        result.CleanFilename := fields[3]
+        result.DeviceAccount := fields[4]
+        result.PackType := fields[5]
+        result.CardTypes := fields[6]
+        result.CardCounts := fields[7]
         
         results.Push(result)
     }
@@ -6404,7 +6391,6 @@ SearchTradesDatabase(searchPackType := "", searchCardType := "") {
     return results
 }
 
-; Get summary statistics
 GetTradesDatabaseStats() {
     dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
     
@@ -6421,7 +6407,7 @@ GetTradesDatabaseStats() {
     
     Loop, Parse, csvContent, `n, `r
     {
-        if (A_Index = 1)  ; Skip header
+        if (A_Index = 1)
             continue
             
         if (A_LoopField = "")
@@ -6431,23 +6417,20 @@ GetTradesDatabaseStats() {
         
         fields := StrSplit(A_LoopField, ",")
         
-        if (fields.Length() < 10)
+        if (fields.Length() < 7)
             continue
         
-        ; Count unique accounts
-        deviceAccount := fields[5]
+        deviceAccount := fields[4]
         if (!stats.UniqueAccounts.HasKey(deviceAccount))
             stats.UniqueAccounts[deviceAccount] := 0
         stats.UniqueAccounts[deviceAccount]++
         
-        ; Count pack types
-        packType := fields[6]
+        packType := fields[5]
         if (!stats.PackTypes.HasKey(packType))
             stats.PackTypes[packType] := 0
         stats.PackTypes[packType]++
         
-        ; Count card types
-        cardTypes := StrSplit(fields[7], "|")
+        cardTypes := StrSplit(fields[6], "|")
         Loop, % cardTypes.Length() {
             cardType := cardTypes[A_Index]
             if (!stats.CardTypes.HasKey(cardType))
