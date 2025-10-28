@@ -359,7 +359,9 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv8.0.0 (kevinnnn)"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv8.0.1 (kevinnnn)"
+
+   Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
    Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
@@ -1056,6 +1058,12 @@ ShowS4TSettings:
     Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_s4tWPMinCards
     Gui, S4TSettingsSelect:Add, Edit, cFDFDFD w40 x135 y%yPos% h20 vs4tWPMinCards_Popup -E0x200 Background2A2A2A Center cWhite, %s4tWPMinCards%
     yPos += 30
+    if (deleteMethod != "Inject Wonderpick 96P+") {
+        GuiControl, S4TSettingsSelect:Hide, s4tWP_Popup
+        GuiControl, S4TSettingsSelect:Hide, s4tWPMinCardsText_Popup
+        GuiControl, S4TSettingsSelect:Hide, s4tWPMinCards_Popup
+        yPos -= 50  ; Adjust yPos since we're hiding these controls
+    }
     
     ; Discord settings
     if(StrLen(s4tDiscordUserId) < 3)
@@ -1635,12 +1643,16 @@ ArrangeWindows:
    }
 return
 
-OpenToolTip:
-   Run, https://mixman208.github.io/PTCGPB/
+DiscordLink:
+   Run, https://discord.com/invite/C9Nyf7P4sT
+Return
+
+BuyMeCoffee:
+   Run, https://ko-fi.com/kevnitg
 return
 
-OpenLink:
-   Run, https://buymeacoffee.com/aarturoo
+OpenToolTip:
+   Run, https://mixman208.github.io/PTCGPB/
 return
 
 OpenDiscord:
@@ -3002,8 +3014,5 @@ KillAllScripts() {
    
    Gui, PackStatusGUI:Destroy
 
-   Return
-   DiscordLink:
-   Run, https://discord.com/invite/C9Nyf7P4sT
    Return
 }
