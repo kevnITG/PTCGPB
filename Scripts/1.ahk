@@ -2215,59 +2215,59 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         return 
     }
 
-    packDetailsFile := ""
-    packDetailsMessage := ""
-
+    ; Build card type arrays for database
+    cardTypes := []
+    cardCounts := []
+    
     if (found3Dmnd > 0) {
-        packDetailsFile .= "3DmndX" . found3Dmnd . "_"
-        packDetailsMessage .= "Three Diamond (x" . found3Dmnd . "), "
+        cardTypes.Push("3Diamond")
+        cardCounts.Push(found3Dmnd)
     }
     if (found4Dmnd > 0) {
-        packDetailsFile .= "4DmndX" . found4Dmnd . "_"
-        packDetailsMessage .= "Four Diamond EX (x" . found4Dmnd . "), "
+        cardTypes.Push("4Diamond")
+        cardCounts.Push(found4Dmnd)
     }
     if (found1Star > 0) {
-        packDetailsFile .= "1StarX" . found1Star . "_"
-        packDetailsMessage .= "One Star (x" . found1Star . "), "
+        cardTypes.Push("1Star")
+        cardCounts.Push(found1Star)
     }
     if (foundGimmighoul > 0) {
-        packDetailsFile .= "GimmighoulX" . foundGimmighoul . "_"
-        packDetailsMessage .= "Gimmighoul (x" . foundGimmighoul . "), "
+        cardTypes.Push("Gimmighoul")
+        cardCounts.Push(foundGimmighoul)
     }
     if (foundCrown > 0) {
-        packDetailsFile .= "CrownX" . foundCrown . "_"
-        packDetailsMessage .= "Crown (x" . foundCrown . "), "
+        cardTypes.Push("Crown")
+        cardCounts.Push(foundCrown)
     }
     if (foundImmersive > 0) {
-        packDetailsFile .= "ImmersiveX" . foundImmersive . "_"
-        packDetailsMessage .= "Immersive (x" . foundImmersive . "), "
+        cardTypes.Push("Immersive")
+        cardCounts.Push(foundImmersive)
     }
     if (foundShiny1Star > 0) {
-        packDetailsFile .= "Shiny1StarX" . foundShiny1Star . "_"
-        packDetailsMessage .= "Shiny 1-Star (x" . foundShiny1Star . "), "
+        cardTypes.Push("Shiny1Star")
+        cardCounts.Push(foundShiny1Star)
     }
     if (foundShiny2Star > 0) {
-        packDetailsFile .= "Shiny2StarX" . foundShiny2Star . "_"
-        packDetailsMessage .= "Shiny 2-Star (x" . foundShiny2Star . "), "
+        cardTypes.Push("Shiny2Star")
+        cardCounts.Push(foundShiny2Star)
     }
     if (foundTrainer > 0) {
-        packDetailsFile .= "TrainerX" . foundTrainer . "_"
-        packDetailsMessage .= "Trainer (x" . foundTrainer . "), "
+        cardTypes.Push("Trainer")
+        cardCounts.Push(foundTrainer)
     }
     if (foundRainbow > 0) {
-        packDetailsFile .= "RainbowX" . foundRainbow . "_"
-        packDetailsMessage .= "Rainbow (x" . foundRainbow . "), "
+        cardTypes.Push("Rainbow")
+        cardCounts.Push(foundRainbow)
     }
     if (foundFullArt > 0) {
-        packDetailsFile .= "FullArtX" . foundFullArt . "_"
-        packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
+        cardTypes.Push("FullArt")
+        cardCounts.Push(foundFullArt)
     }
 
-    packDetailsFile := RTrim(packDetailsFile, "_")
-    packDetailsMessage := RTrim(packDetailsMessage, ", ")
-
-    accountFullPath := ""
-    accountFile := saveAccount("Tradeable", accountFullPath, packDetailsFile)
+    deviceAccount := GetDeviceAccountFromXML()
+    
+    LogToTradesDatabase(deviceAccount, cardTypes, cardCounts)
+    
     screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
 
     statusMessage := "Tradeable cards found"
@@ -2276,10 +2276,9 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
     if (friendCode)
         statusMessage .= " (" . friendCode . ")"
 
-    ; NEW: Always just backup and continue, never end the run for s4t
-    CreateStatusMessage("Tradeable cards found! Backing up and continuing...",,,, false)
+    CreateStatusMessage("Tradeable cards found! Logged to database and continuing...",,,, false)
 
-    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") File name: " . accountFile . " Screenshot file: " . screenShotFileName . " Backing up to the Accounts\\Trades folder and continuing..."
+    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") Logged to Trades Database. Screenshot file: " . screenShotFileName
     LogToFile(logMessage, "S4T.txt")
 
     if (!s4tSilent && s4tDiscordWebhookURL) {
@@ -6229,4 +6228,233 @@ GetTextFromBitmap(pBitmap, charAllowList := "") {
 ; Escapes special characters in a string for use in a regular expression. 
 RegExEscape(str) {
     return RegExReplace(str, "([-[\]{}()*+?.,\^$|#\s])", "\$1")
+}
+; ========================================
+; DATABASE FUNCTIONS
+; ========================================
+
+GetDeviceAccountFromXML() {
+    ; Read the current loaded XML file from Saved/{instanceNumber}/ folder
+    global loadDir, accountFileName
+    
+    if (!accountFileName)
+        return ""
+    
+    xmlPath := loadDir . "\" . accountFileName
+    
+    if (!FileExist(xmlPath))
+        return ""
+    
+    FileRead, xmlContent, %xmlPath%
+    
+    ; Extract deviceAccount value from XML
+    ; Example: <string name="deviceAccount">abc123def456</string>
+    if (RegExMatch(xmlContent, "i)<string name=""deviceAccount"">(.+?)</string>", match))
+        return match1
+    
+    return ""
+}
+
+LogToTradesDatabase(deviceAccount, cardTypes, cardCounts) {
+    global scriptName, accountFileName, accountOpenPacks, openPack, friendCode, username
+    
+    dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
+    
+    ; Create CSV header if file doesn't exist
+    if (!FileExist(dbPath)) {
+        header := "Timestamp,InstanceName,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,FriendCode,Username`n"
+        FileAppend, %header%, %dbPath%
+    }
+    
+    cleanFilename := accountFileName
+    cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")  ; Remove 34P_ prefix
+    cleanFilename := RegExReplace(cleanFilename, "_\([^)]+\)\.xml$", ".xml")  ; Remove _(BXW) suffix
+    cleanFilename := StrReplace(cleanFilename, ".xml", "")  ; Remove extension
+    
+    ; Build pipe-separated card type and count strings
+    cardTypeStr := ""
+    cardCountStr := ""
+    
+    Loop, % cardTypes.Length() {
+        if (A_Index > 1) {
+            cardTypeStr .= "|"
+            cardCountStr .= "|"
+        }
+        cardTypeStr .= cardTypes[A_Index]
+        cardCountStr .= cardCounts[A_Index]
+    }
+    
+    ; Prepare CSV row
+    timestamp := A_Now
+    FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
+    
+    ; Escape commas in fields
+    friendCodeEsc := StrReplace(friendCode, ",", "")
+    usernameEsc := StrReplace(username, ",", "")
+    
+    csvRow := timestamp . ","
+        . scriptName . ","
+        . accountFileName . ","
+        . cleanFilename . ","
+        . deviceAccount . ","
+        . openPack . ","
+        . cardTypeStr . ","
+        . cardCountStr . ","
+        . friendCodeEsc . ","
+        . usernameEsc . "`n"
+    
+    FileAppend, %csvRow%, %dbPath%
+    
+    ; Also update JSON index
+    UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp)
+}
+
+UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp) {
+    global scriptName, accountFileName, accountOpenPacks, openPack, friendCode, username
+    
+    jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
+    
+    ; For now, just create a simple append-only JSON log
+    ; A full implementation would need a JSON parser library
+    ; This is a simplified version - you may want to use a proper JSON library
+    
+    cleanFilename := accountFileName
+    cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
+    cleanFilename := RegExReplace(cleanFilename, "_\([^)]+\)\.xml$", ".xml")
+    cleanFilename := StrReplace(cleanFilename, ".xml", "")
+    
+    ; Build simple JSON entry (basic format)
+    jsonEntry := "{"
+        . """timestamp"": """ . timestamp . """, "
+        . """deviceAccount"": """ . deviceAccount . """, "
+        . """instanceName"": """ . scriptName . """, "
+        . """originalFilename"": """ . accountFileName . """, "
+        . """cleanFilename"": """ . cleanFilename . """, "
+        . """packType"": """ . openPack . """, "
+        . """friendCode"": """ . friendCode . """, "
+        . """username"": """ . username . """, "
+        . """cards"": ["
+    
+    Loop, % cardTypes.Length() {
+        if (A_Index > 1)
+            jsonEntry .= ", "
+        jsonEntry .= "{""type"": """ . cardTypes[A_Index] . """, ""count"": " . cardCounts[A_Index] . "}"
+    }
+    
+    jsonEntry .= "]}`n"
+    
+    FileAppend, %jsonEntry%, %jsonPath%
+}
+
+; ========================================
+; QUERY/SEARCH FUNCTIONS
+; ========================================
+
+; Search database for accounts with specific card types
+SearchTradesDatabase(searchPackType := "", searchCardType := "") {
+    dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
+    
+    if (!FileExist(dbPath))
+        return []
+    
+    results := []
+    FileRead, csvContent, %dbPath%
+    
+    Loop, Parse, csvContent, `n, `r
+    {
+        if (A_Index = 1)  ; Skip header
+            continue
+            
+        if (A_LoopField = "")
+            continue
+        
+        ; Parse CSV row
+        fields := StrSplit(A_LoopField, ",")
+        
+        if (fields.Length() < 10)
+            continue
+        
+        packType := fields[6]
+        cardTypes := fields[7]
+        
+        ; Filter by pack type if specified
+        if (searchPackType != "" && packType != searchPackType)
+            continue
+        
+        ; Filter by card type if specified
+        if (searchCardType != "" && !InStr(cardTypes, searchCardType))
+            continue
+        
+        ; Add to results
+        result := {}
+        result.Timestamp := fields[1]
+        result.InstanceName := fields[2]
+        result.OriginalFilename := fields[3]
+        result.CleanFilename := fields[4]
+        result.DeviceAccount := fields[5]
+        result.PackType := fields[6]
+        result.CardTypes := fields[7]
+        result.CardCounts := fields[8]
+        result.FriendCode := fields[9]
+        result.Username := fields[10]
+        
+        results.Push(result)
+    }
+    
+    return results
+}
+
+; Get summary statistics
+GetTradesDatabaseStats() {
+    dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
+    
+    if (!FileExist(dbPath))
+        return ""
+    
+    stats := {}
+    stats.TotalEntries := 0
+    stats.UniqueAccounts := {}
+    stats.PackTypes := {}
+    stats.CardTypes := {}
+    
+    FileRead, csvContent, %dbPath%
+    
+    Loop, Parse, csvContent, `n, `r
+    {
+        if (A_Index = 1)  ; Skip header
+            continue
+            
+        if (A_LoopField = "")
+            continue
+        
+        stats.TotalEntries++
+        
+        fields := StrSplit(A_LoopField, ",")
+        
+        if (fields.Length() < 10)
+            continue
+        
+        ; Count unique accounts
+        deviceAccount := fields[5]
+        if (!stats.UniqueAccounts.HasKey(deviceAccount))
+            stats.UniqueAccounts[deviceAccount] := 0
+        stats.UniqueAccounts[deviceAccount]++
+        
+        ; Count pack types
+        packType := fields[6]
+        if (!stats.PackTypes.HasKey(packType))
+            stats.PackTypes[packType] := 0
+        stats.PackTypes[packType]++
+        
+        ; Count card types
+        cardTypes := StrSplit(fields[7], "|")
+        Loop, % cardTypes.Length() {
+            cardType := cardTypes[A_Index]
+            if (!stats.CardTypes.HasKey(cardType))
+                stats.CardTypes[cardType] := 0
+            stats.CardTypes[cardType]++
+        }
+    }
+    
+    return stats
 }

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Save4Trade Database Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-card .label {
+            color: #666;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .table-container {
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin: 2px;
+        }
+
+        .badge-pack {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-card {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .badge-count {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state h2 {
+            margin-bottom: 10px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .export-btn {
+            background: #4caf50;
+        }
+
+        .export-btn:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎴 Save4Trade Database</h1>
+            <p>Track and manage your tradeable Pokémon TCG Pocket accounts</p>
+        </div>
+
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="number" id="totalEntries">0</div>
+                <div class="label">Total Finds</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="uniqueAccounts">0</div>
+                <div class="label">Unique Accounts</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalCards">0</div>
+                <div class="label">Total Cards</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="lastUpdate">Never</div>
+                <div class="label">Last Update</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="filter-group">
+                <div class="file-input-wrapper">
+                    <button class="btn">📁 Load CSV</button>
+                    <input type="file" id="fileInput" accept=".csv">
+                </div>
+                
+                <label>Pack Type:</label>
+                <select id="packFilter">
+                    <option value="">All Packs</option>
+                </select>
+
+                <label>Card Type:</label>
+                <select id="cardFilter">
+                    <option value="">All Cards</option>
+                </select>
+
+                <input type="text" id="searchInput" placeholder="Search username, friend code...">
+                
+                <button class="btn" onclick="applyFilters()">🔍 Filter</button>
+                <button class="btn export-btn" onclick="exportFiltered()">📥 Export CSV</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Instance</th>
+                        <th>Username</th>
+                        <th>Friend Code</th>
+                        <th>Pack Type</th>
+                        <th>Cards Found</th>
+                        <th>Filename</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <h2>No data loaded</h2>
+                            <p>Please load a CSV file to view your Save4Trade database</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let filteredData = [];
+
+        // Load CSV file
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                parseCSV(event.target.result);
+            };
+            reader.readAsText(file);
+        });
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const headers = lines[0].split(',');
+            
+            allData = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                const values = lines[i].split(',');
+                const row = {
+                    timestamp: values[0],
+                    instanceName: values[1],
+                    originalFilename: values[2],
+                    cleanFilename: values[3],
+                    deviceAccount: values[4],
+                    packType: values[5],
+                    cardTypes: values[6] ? values[6].split('|') : [],
+                    cardCounts: values[7] ? values[7].split('|').map(Number) : [],
+                    friendCode: values[8] || 'N/A',
+                    username: values[9] || 'Unknown'
+                };
+                allData.push(row);
+            }
+
+            filteredData = [...allData];
+            updateStats();
+            populateFilters();
+            renderTable();
+        }
+
+        function updateStats() {
+            const uniqueAccounts = new Set(allData.map(row => row.deviceAccount)).size;
+            const totalCards = allData.reduce((sum, row) => 
+                sum + row.cardCounts.reduce((a, b) => a + b, 0), 0
+            );
+            
+            const lastEntry = allData.length > 0 ? allData[allData.length - 1].timestamp : 'Never';
+
+            document.getElementById('totalEntries').textContent = allData.length;
+            document.getElementById('uniqueAccounts').textContent = uniqueAccounts;
+            document.getElementById('totalCards').textContent = totalCards;
+            document.getElementById('lastUpdate').textContent = lastEntry;
+        }
+
+        function populateFilters() {
+            const packTypes = new Set(allData.map(row => row.packType));
+            const cardTypes = new Set();
+            allData.forEach(row => row.cardTypes.forEach(type => cardTypes.add(type)));
+
+            const packFilter = document.getElementById('packFilter');
+            packFilter.innerHTML = '<option value="">All Packs</option>';
+            packTypes.forEach(pack => {
+                packFilter.innerHTML += `<option value="${pack}">${pack}</option>`;
+            });
+
+            const cardFilter = document.getElementById('cardFilter');
+            cardFilter.innerHTML = '<option value="">All Cards</option>';
+            cardTypes.forEach(card => {
+                cardFilter.innerHTML += `<option value="${card}">${card}</option>`;
+            });
+        }
+
+        function applyFilters() {
+            const packFilter = document.getElementById('packFilter').value;
+            const cardFilter = document.getElementById('cardFilter').value;
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+
+            filteredData = allData.filter(row => {
+                if (packFilter && row.packType !== packFilter) return false;
+                if (cardFilter && !row.cardTypes.includes(cardFilter)) return false;
+                if (searchText) {
+                    const searchableText = (row.username + row.friendCode + row.cleanFilename).toLowerCase();
+                    if (!searchableText.includes(searchText)) return false;
+                }
+                return true;
+            });
+
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <h2>No results found</h2>
+                            <p>Try adjusting your filters</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            filteredData.forEach(row => {
+                const cardsHTML = row.cardTypes.map((type, idx) => 
+                    `<span class="badge badge-card">${type}</span>` +
+                    `<span class="badge badge-count">×${row.cardCounts[idx]}</span>`
+                ).join(' ');
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.timestamp}</td>
+                    <td>${row.instanceName}</td>
+                    <td>${row.username}</td>
+                    <td>${row.friendCode}</td>
+                    <td><span class="badge badge-pack">${row.packType}</span></td>
+                    <td>${cardsHTML}</td>
+                    <td title="${row.originalFilename}">${row.cleanFilename}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function exportFiltered() {
+            if (filteredData.length === 0) {
+                alert('No data to export');
+                return;
+            }
+
+            const headers = 'Timestamp,InstanceName,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,FriendCode,Username\n';
+            const rows = filteredData.map(row => 
+                `${row.timestamp},${row.instanceName},${row.originalFilename},${row.cleanFilename},${row.deviceAccount},${row.packType},${row.cardTypes.join('|')},${row.cardCounts.join('|')},${row.friendCode},${row.username}`
+            ).join('\n');
+
+            const csv = headers + rows;
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Trades_Export_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
