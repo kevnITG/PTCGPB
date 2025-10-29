@@ -350,7 +350,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
     else
         FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
-    adbClick_wbb(41, 296)
+    adbClick_wbb(41, 339)
     Delay(1)
     RemoveFriends()
     if(injectMethod && loadedAccount && !keepAccount) {
@@ -468,7 +468,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         else
             FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
         Delay(1)
-        adbClick_wbb(41, 296)
+        adbClick_wbb(41, 339)
         Delay(1)
 
         cantOpenMorePacks := 0
@@ -1954,7 +1954,7 @@ menuDeleteStart() {
         else
             FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
         Delay(1)
-        adbClick_wbb(41, 296)
+        adbClick_wbb(41, 339)
         Delay(1)
     }
     failSafe := A_TickCount
@@ -3948,7 +3948,7 @@ DoTutorial() {
         FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
-        adbClick_wbb(41, 296)
+        adbClick_wbb(41, 339)
         Delay(1)
     }
 
@@ -3958,7 +3958,7 @@ DoTutorial() {
         FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
         Delay(1)
-        adbClick_wbb(41, 296)
+        adbClick_wbb(41, 339)
     }
     FindImageAndClick(190, 241, 225, 270, , "Name", 189, 438) ;wait for name input screen
     /* ; Picks Erika at creation - disabled
@@ -4039,7 +4039,7 @@ DoTutorial() {
                 else
                     FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click 2x
             }
-            adbClick_wbb(41, 296)
+            adbClick_wbb(41, 339)
             break
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
@@ -4064,7 +4064,7 @@ DoTutorial() {
                 else
                     FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
             }
-            adbClick_wbb(41, 296)
+            adbClick_wbb(41, 339)
             break
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
@@ -4133,7 +4133,7 @@ DoTutorial() {
                 else
                     FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
             }
-            adbClick_wbb(41, 296)
+            adbClick_wbb(41, 339)
             break
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
@@ -4537,7 +4537,7 @@ PackOpening() {
             else
                     FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
         }
-            adbClick_wbb(41, 296)
+            adbClick_wbb(41, 339)
             break
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
@@ -4689,7 +4689,7 @@ HourglassOpening(HG := false, NEIRestart := true) {
             else
                     FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
         }
-            adbClick_wbb(41, 296)
+            adbClick_wbb(41, 339)
             break
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
@@ -5554,7 +5554,7 @@ GetEventRewards(frommain := true){
                 else
                         FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
             }
-                ; adbClick_wbb(41, 296)
+                ; adbClick_wbb(41, 339)
                 break
             }
         failSafeTime := (A_TickCount - failSafe) // 1000
@@ -5853,7 +5853,7 @@ CheckWonderPickThanks() {
     FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
     FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180)
     Delay(1)
-    adbClick_wbb(41, 296)
+    adbClick_wbb(41, 339)
     Delay(1)
     
     ; Navigate to gifts/mail screen with timeout protection
