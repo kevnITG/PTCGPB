@@ -1147,7 +1147,7 @@ AddFriends(renew := false, getFC := false) {
 
 showcaseLikes() {
 	; Liking showcase script
-    FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 75, 410, 200)
+    FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 139, 335, 200)
 	Loop, Read, %A_ScriptDir%\..\showcase_ids.txt
 		{
 			showcaseID := Trim(A_LoopReadLine)
@@ -1349,6 +1349,24 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         TradeTutorial()
     }
 
+    Path = %imagePath%NoResponse.png
+    pNeedle := GetNeedle(Path)
+    ; ImageSearch within the region
+    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 38, 281, 57, 308, searchVariation)
+    if (vRet = 1) {
+        CreateStatusMessage("No response in " . scriptName . ". Clicking retry...",,,, false)
+        adbClick_wbb(46, 299)
+        Sleep, 1000
+    }
+    Path = %imagePath%NoResponseDark.png
+    pNeedle := GetNeedle(Path)
+    ; ImageSearch within the region
+    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 38, 281, 57, 308, searchVariation)
+    if (vRet = 1) {
+        CreateStatusMessage("No response in " . scriptName . ". Clicking retry...",,,, false)
+        adbClick_wbb(46, 299)
+        Sleep, 1000
+    }
     if(imageName = "Social" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "Points") { ;only look for deleted account on start up.
         Path = %imagePath%NoSave.png ; look for No Save Data error message > if loaded account > delete xml > reload
         pNeedle := GetNeedle(Path)
@@ -1371,6 +1389,14 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     }
     if(imageName = "Points" || imageName = "Home") { ;look for level up ok "button"
         LevelUp()
+    }
+    if (imageName = "Social" || imageName = "CommunityShowcase" || imageName = "Add" || imageName = "Search") {
+        Path = %imagePath%Tutorial.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 111, 115, 167, 121, searchVariation)
+        if (vRet = 1) {
+            adbClick_wbb(145, 451)
+        }
     }
 	;country for new accounts, social for inject with friend id, points for inject without friend id
     if(imageName = "Country" || imageName = "Social" || imageName = "Points")
@@ -1586,7 +1612,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             
             Path = %imagePath%Update.png
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 15, 180, 53, 228, searchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 20, 191, 36, 211, searchVariation)
             if (vRet = 1) {
                 adbClick_wbb(137, 485)
                 Gdip_DisposeImage(pBitmap)
