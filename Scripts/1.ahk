@@ -924,6 +924,7 @@ RemoveFriends() {
     }
     
     FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460)
+    Delay(1)
     FindImageAndClick(97, 452, 104, 476, 10, "requests", 174, 467)
     failSafe := A_TickCount
     failSafeTime := 0
@@ -935,7 +936,7 @@ RemoveFriends() {
         if (FindOrLoseImage(135, 355, 160, 385, , "Remove", 0, failSafeTime))
             adbClick(210, 372)
         failSafeTime := (A_TickCount - failSafe) // 1000
-        CreateStatusMessage("Waiting for clearaAll`n(" . failSafeTime . "/45 seconds)")
+        CreateStatusMessage("Waiting for clearAll`n(" . failSafeTime . "/45 seconds)")
     }
     FindImageAndClick(84, 463, 100, 475, 10, "Friends", 22, 464)
     friendsProcessed := 0
@@ -1278,6 +1279,15 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
 
     ; Handle 7/2025 trade news update popup, remove later patch
     if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll") {
+        Path = %imagePath%Privacy.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
+        if (vRet = 1) {
+            adbClick_wbb(137, 485)
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
         Path = %imagePath%Privacy.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
@@ -2385,9 +2395,9 @@ DetectFourCardPack() {
 FindBorders(prefix) {
     global currentPackIs6Card
     count := 0
-    searchVariation := 40
+    searchVariation := 60 ; raising for Mega since having issues...
     searchVariation6Card := 60 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
-    searchVariation4Card := 40 ;
+    searchVariation4Card := 60 ;
 
     if (prefix = "shiny2star") { ; some aren't being detected at lower variations
         searchVariation := 75
@@ -4271,7 +4281,7 @@ SelectPack(HG := false) {
     } else if (openPack == "MegaGyarados") {
             packx := LeftPackX
     } else {
-            packx := LeftPackX
+            packx := MiddlePackX
     }
 	
 	if(openPack == "MegaBlaziken" || openPack == "MegaGyarados" || openPack == "MegaAltaria") {
@@ -4280,7 +4290,7 @@ SelectPack(HG := false) {
         PackIsInHomeScreen := 0
 	}
 	
-	if(openPack == "MegaBlaziken") {
+	if(openPack == "MegaBlaziken" || openPack == "MegaGyarados" || openPack == "MegaAltaria") {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
@@ -4492,25 +4502,32 @@ SelectPack(HG := false) {
             failSafeTime := (A_TickCount - failSafe) // 1000
             CreateStatusMessage("Waiting for HourglassPack4`n(" . failSafeTime . "/45 seconds)")
         }
-    }
-    else { 
+    } else { 
         failSafe := A_TickCount
         failSafeTime := 0
+        failsafeClickExecuted := false  ; Flag to track if failsafe click has been executed
         Loop {
             adbClick_wbb(151, 420)  ; open button
             
-            if(FindOrLoseImage(225, 440, 285, 565, , "Skip2", 0)) {
+            if(FindOrLoseImage(233, 486, 272, 519, , "Skip2", 0)) {
                 break
             } else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
                 cantOpenMorePacks := 1
             } else if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
                 adbClick_wbb(205, 458)  ; Handle unexpected HG pack confirmation
-						} else if(FindOrLoseImage(225, 273, 235, 290, , "Pack", 0, failSafeTime)) {
-	            break ; missed skip2 and made it to pack screen
             } else {
                 adbClick_wbb(200, 451)  ; Additional fallback click
-                Delay(1
-                adbClick_wbb(151, 250) ; if pack is floating too high
+                Delay(1)
+                
+                ; Execute failsafe click only once after 10 seconds
+                failSafeTime := (A_TickCount - failSafe) // 1000
+                if (failSafeTime >= 10 && !failsafeClickExecuted) {
+                    CreateStatusMessage("Trying to click floating pack...")
+                    Sleep, 1000
+                    adbClick_wbb(151, 250) ; if pack is floating too high
+                    Sleep, 2000
+                    failsafeClickExecuted := true
+                }
             }
         
             if(cantOpenMorePacks)
