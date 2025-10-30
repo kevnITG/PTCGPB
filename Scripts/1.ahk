@@ -4505,9 +4505,11 @@ SelectPack(HG := false) {
                 cantOpenMorePacks := 1
             } else if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
                 adbClick_wbb(205, 458)  ; Handle unexpected HG pack confirmation
+						} else if(FindOrLoseImage(225, 273, 235, 290, , "Pack", 0, failSafeTime)) {
+	            break ; missed skip2 and made it to pack screen
             } else {
                 adbClick_wbb(200, 451)  ; Additional fallback click
-                Delay(0.5)
+                Delay(1
                 adbClick_wbb(151, 250) ; if pack is floating too high
             }
         
