@@ -4280,7 +4280,7 @@ SelectPack(HG := false) {
         PackIsInHomeScreen := 0
 	}
 	
-	if(openPack == "MegaGyarados") {
+	if(openPack == "MegaBlaziken") {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
@@ -4356,6 +4356,11 @@ SelectPack(HG := false) {
 	; if not the ones showing in home screen, click select other booster packs
     if (!PackIsInHomeScreen && !inselectexpansionscreen) {
         FindImageAndClick(115, 140, 160, 155, , "SelectExpansion", 248, 459, 1000)
+        Delay(4)
+        adbClick(165, 460) ; need more robust system later
+        adbClick(165, 450)
+        adbClick(165, 440)
+        Delay(4)
 		inselectexpansionscreen := 1
 	}
 	
