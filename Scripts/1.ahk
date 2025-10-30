@@ -1354,7 +1354,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             restartGameInstance("Stuck at " . imageName . "...")
         }
 
-    if(imageName = "Social" || imageName = "Add" || imageName = "Add2") {
+    if(imageName = "Social" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
         TradeTutorial()
     }
 
@@ -1709,7 +1709,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if(imageName = "Points" || imageName = "Home") { ;look for level up ok "button"
             LevelUp()
         }
-        if(imageName = "Social" || imageName = "Add" || imageName = "Add2") {
+        if(imageName = "Social" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
             TradeTutorial()
         }
         if(skip) {
@@ -4494,7 +4494,7 @@ SelectPack(HG := false) {
         Loop {
             adbClick_wbb(151, 420)  ; open button
             
-            if(FindOrLoseImage(233, 486, 272, 519, , "Skip2", 0)) {
+            if(FindOrLoseImage(225, 440, 285, 565, , "Skip2", 0)) {
                 break
             } else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
                 cantOpenMorePacks := 1
