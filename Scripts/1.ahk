@@ -4284,7 +4284,7 @@ SelectPack(HG := false) {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
-	} 	if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria" || openPack == "Deluxe") {
+	} 	if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") {
 		packInTopRowsOfSelectExpansion := 1
 	} else {
 		packInTopRowsOfSelectExpansion := 0
