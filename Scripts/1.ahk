@@ -4502,6 +4502,8 @@ SelectPack(HG := false) {
                 adbClick_wbb(205, 458)  ; Handle unexpected HG pack confirmation
             } else {
                 adbClick_wbb(200, 451)  ; Additional fallback click
+                Delay(0.5)
+                adbClick_wbb(151, 250) ; if pack is floating too high
             }
         
             if(cantOpenMorePacks)
