@@ -4266,15 +4266,15 @@ SelectPack(HG := false) {
 	inselectexpansionscreen := 0
 	
     packy := HomeScreenAllPackY
-    if (openPack == "Deluxe") {
+    if (openPack == "MegaAltaria") {
         packx := RightPackX
     } else if (openPack == "MegaGyarados") {
-            packx := MiddlePackX
+            packx := LeftPackX
     } else {
             packx := LeftPackX
     }
 	
-	if(openPack == "Deluxe" || openPack == "MegaGyarados" || openPack == "Springs") {
+	if(openPack == "MegaBlaziken" || openPack == "MegaGyarados" || openPack == "MegaAltaria") {
 		PackIsInHomeScreen := 1
     } else {
         PackIsInHomeScreen := 0
