@@ -1267,6 +1267,15 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         confirmed := true
     }
 
+    if (imageName = "Social" || imageName = "CommunityShowcase" || imageName = "Add" || imageName = "Search") {
+        Path = %imagePath%Tutorial.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 111, 115, 167, 121, searchVariation)
+        if (vRet = 1) {
+            adbClick_wbb(145, 451)
+        }
+    }
+
     ; Handle 7/2025 trade news update popup, remove later patch
     if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll") {
         Path = %imagePath%Privacy.png
@@ -1390,14 +1399,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     if(imageName = "Points" || imageName = "Home") { ;look for level up ok "button"
         LevelUp()
     }
-    if (imageName = "Social" || imageName = "CommunityShowcase" || imageName = "Add" || imageName = "Search") {
-        Path = %imagePath%Tutorial.png
-        pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 111, 115, 167, 121, searchVariation)
-        if (vRet = 1) {
-            adbClick_wbb(145, 451)
-        }
-    }
+
 	;country for new accounts, social for inject with friend id, points for inject without friend id
     if(imageName = "Country" || imageName = "Social" || imageName = "Points")
         FSTime := 90
@@ -1597,6 +1599,15 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 adbClick_wbb(139, 386)
             }
             Sleep, 5000 ; longer sleep time to allow reloading, previously 1000ms
+        }
+
+        if (imageName = "Social" || imageName = "CommunityShowcase" || imageName = "Add" || imageName = "Search") {
+            Path = %imagePath%Tutorial.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 111, 115, 167, 121, searchVariation)
+            if (vRet = 1) {
+                adbClick_wbb(145, 451)
+            }
         }
 
         ; Search for 7/2025 trade news update popup; can be removed later patch
@@ -3959,6 +3970,7 @@ DoTutorial() {
         FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
         Delay(1)
         adbClick_wbb(41, 339)
+        Delay(1)
     }
     FindImageAndClick(190, 241, 225, 270, , "Name", 189, 438) ;wait for name input screen
     /* ; Picks Erika at creation - disabled
@@ -4026,6 +4038,8 @@ DoTutorial() {
         FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
+        adbClick_wbb(41, 339)
+        Delay(1)
     }
     failSafe := A_TickCount
     failSafeTime := 0
@@ -4034,11 +4048,14 @@ DoTutorial() {
         Sleep, 10
         if(FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
             if(setSpeed > 1) {
-                if(setSpeed = 3)
+                if(setSpeed = 3) {
+                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
                     FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click 3x
-                else
+                } else {
+                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
                     FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click 2x
             }
+        }
             adbClick_wbb(41, 339)
             break
         }
@@ -4120,6 +4137,8 @@ DoTutorial() {
         FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
+        adbClick_wbb(41, 339)
+        Delay(1)
     }
     failSafe := A_TickCount
     failSafeTime := 0
@@ -4128,11 +4147,14 @@ DoTutorial() {
         Sleep, 10
         if(FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
             if(setSpeed > 1) {
-                if(setSpeed = 3)
+                if(setSpeed = 3) {
+                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
                     FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
-                else
+                } else {
+                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
                     FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
             }
+        }
             adbClick_wbb(41, 339)
             break
         }
@@ -4524,6 +4546,8 @@ PackOpening() {
     FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
     FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
+        adbClick_wbb(41, 339)
+        Delay(1)
     }
     failSafe := A_TickCount
     failSafeTime := 0
@@ -4532,10 +4556,13 @@ PackOpening() {
         Sleep, 10
         if (FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
         if(setSpeed > 1) {
-            if(setSpeed = 3)
+            if(setSpeed = 3) {
+                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
                     FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
-            else
+            } else {
+                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
                     FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
+            }
         }
             adbClick_wbb(41, 339)
             break
@@ -4676,6 +4703,8 @@ HourglassOpening(HG := false, NEIRestart := true) {
     FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
     FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
+        adbClick_wbb(41, 339)
+        Delay(1)
     }
     failSafe := A_TickCount
     failSafeTime := 0
@@ -4684,10 +4713,13 @@ HourglassOpening(HG := false, NEIRestart := true) {
         Sleep, 10
         if (FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
         if(setSpeed > 1) {
-            if(setSpeed = 3)
+            if(setSpeed = 3) {
+                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
                     FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
-            else
+            } else {
+                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
                     FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
+        }
         }
             adbClick_wbb(41, 339)
             break
@@ -5541,6 +5573,8 @@ GetEventRewards(frommain := true){
         FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
         Delay(1)
+        adbClick_wbb(41, 339)
+        Delay(1)
     }
     failSafe := A_TickCount
     failSafeTime := 0
@@ -5549,12 +5583,15 @@ GetEventRewards(frommain := true){
         Sleep, 10
         if (FindOrLoseImage(225, 444, 272, 470, , "Premium", 0, failSafeTime)){
             if(setSpeed > 1) {
-                if(setSpeed = 3)
-                        FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
-                else
-                        FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
+                if(setSpeed = 3) {
+                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
+                    FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
+                } else {
+                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
+                    FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
             }
-                ; adbClick_wbb(41, 339)
+            }
+                adbClick_wbb(41, 339)
                 break
             }
         failSafeTime := (A_TickCount - failSafe) // 1000
