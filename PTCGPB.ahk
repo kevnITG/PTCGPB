@@ -1,4 +1,4 @@
-﻿DisplayPackStatus(Message, X := 0, Y := 625) {
+DisplayPackStatus(Message, X := 0, Y := 625) {
    global SelectedMonitorIndex
    static GuiName := "ScreenPackStatus"
    
