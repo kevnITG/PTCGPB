@@ -205,6 +205,57 @@
             max-width: 400px;
         }
 
+        th.col-screenshot {
+            width: 140px;
+        }
+
+        td.col-screenshot {
+            width: 140px;
+            text-align: center;
+        }
+
+        .screenshot-thumb {
+            max-width: 120px;
+            max-height: 80px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .screenshot-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 10;
+            position: relative;
+        }
+
+        .screenshot-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            cursor: pointer;
+        }
+
+        .screenshot-modal img {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+            margin-top: 5%;
+        }
+
+        .no-screenshot {
+            color: #999;
+            font-size: 0.75em;
+            font-style: italic;
+        }
+
         td.col-xml {
             width: 180px;
             max-width: 180px;
@@ -405,6 +456,7 @@
                     <tr>
                         <th class="col-pack">pack</th>
                         <th>cards</th>
+                        <th class="col-screenshot">screenshot</th>
                         <th>.xml filename</th>
                         <th>device account</th>
                         <th class="col-time">time</th>
@@ -412,7 +464,7 @@
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="5" class="empty-state">
+                        <td colspan="6" class="empty-state">
                             <h2>no data loaded</h2>
                             <p>click load csv to view database</p>
                         </td>
@@ -448,6 +500,11 @@
                 if (!lines[i].trim()) continue;
                 
                 const values = lines[i].split(',');
+                
+                // Normalize screenshot path: convert backslashes to forward slashes and trim
+                let screenshotPath = values[7] || '';
+                screenshotPath = screenshotPath.replace(/\\/g, '/').trim();
+                
                 const row = {
                     timestamp: values[0],
                     originalFilename: values[1],
@@ -455,7 +512,8 @@
                     deviceAccount: values[3],
                     packType: values[4],
                     cardTypes: values[5] ? values[5].split('|') : [],
-                    cardCounts: values[6] ? values[6].split('|').map(Number) : []
+                    cardCounts: values[6] ? values[6].split('|').map(Number) : [],
+                    screenshotPath: screenshotPath
                 };
                 allData.push(row);
             }
@@ -607,7 +665,7 @@
             if (filteredData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="empty-state">
+                        <td colspan="6" class="empty-state">
                             <h2>no results</h2>
                             <p>try different filters</p>
                         </td>
@@ -629,6 +687,7 @@
                     <th class="col-account">device account</th>
                     <th class="col-pack">pack</th>
                     <th class="col-cards">cards collected</th>
+                    <th class="col-screenshot">screenshot</th>
                     <th class="col-xml">.xml filename</th>
                     <th class="col-time">first seen</th>
                     <th class="col-time">last seen</th>
@@ -656,6 +715,12 @@
                     .join(' ');
 
                 const xmlFilenames = account.details.map(d => d.cleanFilename).join(', ');
+                
+                // Get first available screenshot from account details
+                const firstScreenshot = account.details.find(d => d.screenshotPath)?.screenshotPath || '';
+                const accountScreenshotHTML = firstScreenshot
+                    ? `<img src="../../${firstScreenshot.replace(/\\/g, '/')}" alt="Screenshot" class="screenshot-thumb" data-screenshot-path="../../${firstScreenshot.replace(/\\/g, '/')}" />`
+                    : '<span class="no-screenshot">no image</span>';
 
                 tr.innerHTML = `
                     <td class="device-account">
@@ -664,6 +729,7 @@
                     </td>
                     <td>${packsHTML}</td>
                     <td class="col-cards"><div class="summary-stats">${cardsHTML}</div></td>
+                    <td class="col-screenshot">${accountScreenshotHTML}</td>
                     <td class="col-xml">${xmlFilenames}</td>
                     <td class="time-cell">${account.firstSeen.split(' ')[0]}</td>
                     <td class="time-cell">${account.lastSeen.split(' ')[0]}</td>
@@ -681,9 +747,15 @@
                             return `<span class="badge badge-card">${getCardDisplayName(type)} ×${detail.cardCounts[idx]}</span>`;
                         }).join(' ');
 
+                        const normalizedScreenshotPath = detail.screenshotPath ? `../../${detail.screenshotPath.replace(/\\/g, '/')}` : '';
+                        const screenshotHTML = detail.screenshotPath 
+                            ? `<img src="${normalizedScreenshotPath}" alt="Screenshot" class="screenshot-thumb" data-screenshot-path="${normalizedScreenshotPath}" />`
+                            : '<span class="no-screenshot">no image</span>';
+
                         detailTr.innerHTML = `
                             <td><span class="badge badge-pack">${detail.packType}</span></td>
                             <td class="col-cards">${detailCardsHTML}</td>
+                            <td class="col-screenshot">${screenshotHTML}</td>
                             <td class="col-xml" title="${detail.originalFilename}">${detail.cleanFilename}</td>
                             <td></td>
                             <td></td>
@@ -714,10 +786,16 @@
                     return `<span class="badge badge-card">${getCardDisplayName(type)} ×${row.cardCounts[idx]}</span>`;
                 }).join(' ');
 
+                const normalizedScreenshotPath = row.screenshotPath ? `../../${row.screenshotPath.replace(/\\/g, '/')}` : '';
+                const screenshotHTML = row.screenshotPath 
+                    ? `<img src="${normalizedScreenshotPath}" alt="Screenshot" class="screenshot-thumb" data-screenshot-path="${normalizedScreenshotPath}" />`
+                    : '<span class="no-screenshot">no image</span>';
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><span class="badge badge-pack">${row.packType}</span></td>
                     <td>${cardsHTML}</td>
+                    <td class="col-screenshot">${screenshotHTML}</td>
                     <td title="${row.originalFilename}">${row.cleanFilename}</td>
                     <td class="device-account">${row.deviceAccount}</td>
                     <td class="time-cell">${row.timestamp}</td>
@@ -732,9 +810,9 @@
                 return;
             }
 
-            const headers = 'Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts\n';
+            const headers = 'Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,ScreenshotPath\n';
             const rows = filteredData.map(row => 
-                `${row.timestamp},${row.originalFilename},${row.cleanFilename},${row.deviceAccount},${row.packType},${row.cardTypes.join('|')},${row.cardCounts.join('|')}`
+                `${row.timestamp},${row.originalFilename},${row.cleanFilename},${row.deviceAccount},${row.packType},${row.cardTypes.join('|')},${row.cardCounts.join('|')},${row.screenshotPath || ''}`
             ).join('\n');
 
             const csv = headers + rows;
@@ -746,6 +824,60 @@
             a.click();
             window.URL.revokeObjectURL(url);
         }
+
+        function showScreenshot(imagePath) {
+            // Ensure path uses forward slashes (extra safety check)
+            imagePath = (imagePath || '').replace(/\\/g, '/');
+            
+            const modal = document.getElementById('screenshotModal');
+            const modalImg = document.getElementById('modalScreenshot');
+            
+            if (!modal || !modalImg) {
+                console.error('Screenshot modal elements not found');
+                return;
+            }
+            
+            if (!imagePath) {
+                console.error('No image path provided');
+                return;
+            }
+            
+            modal.style.display = 'block';
+            modalImg.src = imagePath;
+            
+            // Handle image load errors
+            modalImg.onerror = function() {
+                console.error('Failed to load image:', imagePath);
+                modal.style.display = 'none';
+                alert('Failed to load screenshot.\nPath: ' + imagePath);
+            };
+            
+            // Reset error handler when image loads successfully
+            modalImg.onload = function() {
+                modalImg.onerror = null;
+            };
+        }
+
+        // Add event listeners for screenshot thumbnails (delegation pattern)
+        document.addEventListener('click', function(event) {
+            // Check if clicked element is a screenshot thumbnail
+            if (event.target.classList.contains('screenshot-thumb')) {
+                const imagePath = event.target.getAttribute('data-screenshot-path');
+                if (imagePath) {
+                    showScreenshot(imagePath);
+                }
+            }
+            
+            // Close modal when clicking outside the image
+            const modal = document.getElementById('screenshotModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
     </script>
+    <!-- Screenshot Modal -->
+    <div id="screenshotModal" class="screenshot-modal" onclick="this.style.display='none'">
+        <img id="modalScreenshot" src="" alt="Full screenshot">
+    </div>
 </body>
 </html>
