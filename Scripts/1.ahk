@@ -27,6 +27,7 @@ global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP,
 global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star
 global claimDailyMission, wonderpickForEventMissions
 global checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode, isCurrentlyDoingWPCheck := false
+global s4tPendingTradeables := []
 
 global avgtotalSeconds
 global verboseLogging := false
@@ -760,6 +761,11 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             if ((!injectMethod || !loadedAccount) && (!nukeAccount || keepAccount)) {
                 ; Save account for non-injection or when keeping account
                 saveAccount("All")
+
+                ; if Create Bots + FoundTradeable, log to database and push discord webhook message(s)
+                if (!loadDir && s4tPendingTradeables.Length() > 0) {
+                    ProcessPendingTradeables()
+                }
                 
                 beginnerMissionsDone := 0
                 soloBattleMissionDone := 0
@@ -2262,9 +2268,12 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         return 
     }
 
+    ; Take screenshot immediately
+    screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
+
+    ; Build card arrays
     cardTypes := []
     cardCounts := []
-    
     if (found3Dmnd > 0) {
         cardTypes.Push("3Diamond")
         cardCounts.Push(found3Dmnd)
@@ -2310,54 +2319,118 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         cardCounts.Push(foundFullArt)
     }
 
-    deviceAccount := GetDeviceAccountFromXML()
-    
-    LogToTradesDatabase(deviceAccount, cardTypes, cardCounts)
-    
-    screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
-
-    statusMessage := "Tradeable cards found"
-
-    CreateStatusMessage("Tradeable cards found! Logged to database and continuing...",,,, false)
-
-    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") Logged to Trades Database. Screenshot file: " . screenShotFileName
-    LogToFile(logMessage, "S4T.txt")
-
-    if (!s4tSilent && s4tDiscordWebhookURL) {
-        packDetailsMessage := ""
-        if (found3Dmnd > 0)
-            packDetailsMessage .= "Three Diamond (x" . found3Dmnd . "), "
-        if (found4Dmnd > 0)
-            packDetailsMessage .= "Four Diamond EX (x" . found4Dmnd . "), "
-        if (found1Star > 0)
-            packDetailsMessage .= "One Star (x" . found1Star . "), "
-        if (foundGimmighoul > 0)
-            packDetailsMessage .= "Gimmighoul (x" . foundGimmighoul . "), "
-        if (foundCrown > 0)
-            packDetailsMessage .= "Crown (x" . foundCrown . "), "
-        if (foundImmersive > 0)
-            packDetailsMessage .= "Immersive (x" . foundImmersive . "), "
-        if (foundShiny1Star > 0)
-            packDetailsMessage .= "Shiny 1-Star (x" . foundShiny1Star . "), "
-        if (foundShiny2Star > 0)
-            packDetailsMessage .= "Shiny 2-Star (x" . foundShiny2Star . "), "
-        if (foundTrainer > 0)
-            packDetailsMessage .= "Trainer (x" . foundTrainer . "), "
-        if (foundRainbow > 0)
-            packDetailsMessage .= "Rainbow (x" . foundRainbow . "), "
-        if (foundFullArt > 0)
-            packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
+    ; For Inject Methods: log immediately (XML already exists)
+    if (loadDir && accountFileName) {
+        deviceAccount := GetDeviceAccountFromXML()
+        LogToTradesDatabase(deviceAccount, cardTypes, cardCounts)
         
-        packDetailsMessage := RTrim(packDetailsMessage, ", ")
+        ; Find XML path
+        xmlPath := ""
+        targetClean := RegExReplace(accountFileName, "^\d+P_", "")
+        targetClean := RegExReplace(targetClean, "_\d+(\([^)]+\))?\.xml$", "")
+        Loop, Files, %loadDir%\*.xml
+        {
+            currentClean := RegExReplace(A_LoopFileName, "^\d+P_", "")
+            currentClean := RegExReplace(currentClean, "_\d+(\([^)]+\))?\.xml$", "")
+            if (currentClean = targetClean) {
+                xmlPath := loadDir . "\" . A_LoopFileName
+                break
+            }
+        }
         
-        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nLogged to Trades Database and continuing..."
+        if (!s4tSilent && s4tDiscordWebhookURL) {
+            packDetailsMessage := BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
+            discordMessage := "Tradeable cards found in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile: " . accountFileName
+            LogToDiscord(discordMessage, screenShot, true, xmlPath,, s4tDiscordWebhookURL, s4tDiscordUserId)
+        }
+    } else {
+        ; For Create Bots: store data for later logging (after XML is created)
+        tradeableData := {}
+        tradeableData.screenShot := screenShot
+        tradeableData.screenShotFileName := screenShotFileName
+        tradeableData.cardTypes := cardTypes
+        tradeableData.cardCounts := cardCounts
+        tradeableData.packsInPool := packsInPool
+        tradeableData.openPack := openPack
+        tradeableData.found3Dmnd := found3Dmnd
+        tradeableData.found4Dmnd := found4Dmnd
+        tradeableData.found1Star := found1Star
+        tradeableData.foundGimmighoul := foundGimmighoul
+        tradeableData.foundCrown := foundCrown
+        tradeableData.foundImmersive := foundImmersive
+        tradeableData.foundShiny1Star := foundShiny1Star
+        tradeableData.foundShiny2Star := foundShiny2Star
+        tradeableData.foundTrainer := foundTrainer
+        tradeableData.foundRainbow := foundRainbow
+        tradeableData.foundFullArt := foundFullArt
         
-        LogToDiscord(discordMessage, screenShot, true, "",, s4tDiscordWebhookURL, s4tDiscordUserId)
-    
-
+        s4tPendingTradeables.Push(tradeableData)
     }
+
+    CreateStatusMessage("Tradeable cards found! Will log after account is saved...",,,, false)
     return
 }
+
+BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt) {
+    msg := ""
+    if (found3Dmnd > 0)
+        msg .= "Three Diamond (x" . found3Dmnd . "), "
+    if (found4Dmnd > 0)
+        msg .= "Four Diamond EX (x" . found4Dmnd . "), "
+    if (found1Star > 0)
+        msg .= "One Star (x" . found1Star . "), "
+    if (foundGimmighoul > 0)
+        msg .= "Gimmighoul (x" . foundGimmighoul . "), "
+    if (foundCrown > 0)
+        msg .= "Crown (x" . foundCrown . "), "
+    if (foundImmersive > 0)
+        msg .= "Immersive (x" . foundImmersive . "), "
+    if (foundShiny1Star > 0)
+        msg .= "Shiny 1-Star (x" . foundShiny1Star . "), "
+    if (foundShiny2Star > 0)
+        msg .= "Shiny 2-Star (x" . foundShiny2Star . "), "
+    if (foundTrainer > 0)
+        msg .= "Trainer (x" . foundTrainer . "), "
+    if (foundRainbow > 0)
+        msg .= "Rainbow (x" . foundRainbow . "), "
+    if (foundFullArt > 0)
+        msg .= "Full Art (x" . foundFullArt . "), "
+    return RTrim(msg, ", ")
+}
+
+ProcessPendingTradeables() {
+    global s4tPendingTradeables, accountFileName, loadDir, s4tSilent, s4tDiscordWebhookURL, s4tDiscordUserId, scriptName
+    
+    if (s4tPendingTradeables.Length() = 0)
+        return
+    
+    deviceAccount := GetDeviceAccountFromXML()
+    
+    ; Find XML path
+    xmlPath := ""
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    if (accountFileName && FileExist(saveDir . "\" . accountFileName)) {
+        xmlPath := saveDir . "\" . accountFileName
+    }
+    
+    ; Process each pending tradeable
+    for index, data in s4tPendingTradeables {
+        ; Log to database
+        LogToTradesDatabase(deviceAccount, data.cardTypes, data.cardCounts)
+        
+        ; Send to Discord
+        if (!s4tSilent && s4tDiscordWebhookURL) {
+            packDetailsMessage := BuildPackDetailsMessage(data.found3Dmnd, data.found4Dmnd, data.found1Star, data.foundGimmighoul, data.foundCrown, data.foundImmersive, data.foundShiny1Star, data.foundShiny2Star, data.foundTrainer, data.foundRainbow, data.foundFullArt)
+            discordMessage := "Tradeable cards found in instance: " . scriptName . " (" . data.packsInPool . " packs, " . data.openPack . ")\nFound: " . packDetailsMessage . "\nFile: " . accountFileName
+            LogToDiscord(discordMessage, data.screenShot, true, xmlPath,, s4tDiscordWebhookURL, s4tDiscordUserId)
+        }
+    }
+    
+    ; Clear pending array
+    s4tPendingTradeables := []
+}
+
+
 
 DetectSixCardPack() {
     global winTitle, defaultLanguage
