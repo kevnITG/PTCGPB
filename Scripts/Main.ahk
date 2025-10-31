@@ -823,9 +823,12 @@ RemoveNonVipFriends() {
     includesIdsAndNames := false
     vipFriendsArray :=  GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
     
-    ;append new list onto vipFriendsArray to combine manual and automatic GPtesting KSBM
-    ManualvipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\manual_vip_ids.txt", includesIdsAndNames)
-    vipFriendsArray.push(ManualvipFriendsArray*)                
+		; append new list onto vipFriendsArray to combine manual and automatic GPtesting KSBM
+		manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
+		if FileExist(manualVipFile) {
+		    ManualvipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
+		    vipFriendsArray.push(ManualvipFriendsArray*)
+		}                
     
     if (!vipFriendsArray.MaxIndex()) {
         CreateStatusMessage("No accounts found in vip_ids.txt. Aborting test...",,,, false)
