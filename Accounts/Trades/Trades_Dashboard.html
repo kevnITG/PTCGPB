@@ -201,8 +201,89 @@
             max-width: 180px;
         }
 
+        th.col-action {
+            width: 100px;
+        }
+
+        td.col-action {
+            width: 100px;
+            text-align: center;
+        }
+
+        .btn-inject {
+            padding: 6px 12px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 400;
+            transition: background 0.2s;
+        }
+
+        .btn-inject:hover {
+            background: #45a049;
+        }
+
+        .btn-inject:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
         th.col-cards {
             max-width: 400px;
+        }
+
+        th.col-screenshot {
+            width: 140px;
+        }
+
+        td.col-screenshot {
+            width: 140px;
+            text-align: center;
+        }
+
+        .screenshot-thumb {
+            max-width: 120px;
+            max-height: 80px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .screenshot-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 10;
+            position: relative;
+        }
+
+        .screenshot-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            cursor: pointer;
+        }
+
+        .screenshot-modal img {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+            margin-top: 5%;
+        }
+
+        .no-screenshot {
+            color: #999;
+            font-size: 0.75em;
+            font-style: italic;
         }
 
         td.col-xml {
@@ -405,6 +486,7 @@
                     <tr>
                         <th class="col-pack">pack</th>
                         <th>cards</th>
+                        <th class="col-screenshot">screenshot</th>
                         <th>.xml filename</th>
                         <th>device account</th>
                         <th class="col-time">time</th>
@@ -412,7 +494,7 @@
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="5" class="empty-state">
+                        <td colspan="8" class="empty-state">
                             <h2>no data loaded</h2>
                             <p>click load csv to view database</p>
                         </td>
@@ -448,6 +530,11 @@
                 if (!lines[i].trim()) continue;
                 
                 const values = lines[i].split(',');
+                
+                // Normalize screenshot path: convert backslashes to forward slashes and trim
+                let screenshotPath = values[7] || '';
+                screenshotPath = screenshotPath.replace(/\\/g, '/').trim();
+                
                 const row = {
                     timestamp: values[0],
                     originalFilename: values[1],
@@ -455,7 +542,8 @@
                     deviceAccount: values[3],
                     packType: values[4],
                     cardTypes: values[5] ? values[5].split('|') : [],
-                    cardCounts: values[6] ? values[6].split('|').map(Number) : []
+                    cardCounts: values[6] ? values[6].split('|').map(Number) : [],
+                    screenshotPath: screenshotPath
                 };
                 allData.push(row);
             }
@@ -604,10 +692,10 @@
             const thead = document.getElementById('tableHead');
             const tbody = document.getElementById('tableBody');
             
-            if (filteredData.length === 0) {
+                if (filteredData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="empty-state">
+                        <td colspan="8" class="empty-state">
                             <h2>no results</h2>
                             <p>try different filters</p>
                         </td>
@@ -629,9 +717,11 @@
                     <th class="col-account">device account</th>
                     <th class="col-pack">pack</th>
                     <th class="col-cards">cards collected</th>
+                    <th class="col-screenshot">screenshot</th>
                     <th class="col-xml">.xml filename</th>
                     <th class="col-time">first seen</th>
                     <th class="col-time">last seen</th>
+                    <th class="col-action">action</th>
                 </tr>
             `;
 
@@ -656,6 +746,18 @@
                     .join(' ');
 
                 const xmlFilenames = account.details.map(d => d.cleanFilename).join(', ');
+                
+                // Get first available screenshot from account details
+                const firstScreenshot = account.details.find(d => d.screenshotPath)?.screenshotPath || '';
+                const accountScreenshotHTML = firstScreenshot
+                    ? `<img src="../../${firstScreenshot.replace(/\\/g, '/')}" alt="Screenshot" class="screenshot-thumb" data-screenshot-path="../../${firstScreenshot.replace(/\\/g, '/')}" />`
+                    : '<span class="no-screenshot">no image</span>';
+
+                // Get first available originalFilename for inject button
+                const firstDetail = account.details.find(d => d.originalFilename && d.originalFilename.trim() !== '');
+                const injectButtonHTML = firstDetail 
+                    ? `<button class="btn-inject" onclick="injectAccount('${firstDetail.originalFilename.replace(/'/g, "\\'")}', '${firstDetail.cleanFilename.replace(/'/g, "\\'")}', event)" title="Inject account: ${firstDetail.cleanFilename}">Inject</button>`
+                    : '<button class="btn-inject" disabled title="No XML file available">Inject</button>';
 
                 tr.innerHTML = `
                     <td class="device-account">
@@ -664,9 +766,11 @@
                     </td>
                     <td>${packsHTML}</td>
                     <td class="col-cards"><div class="summary-stats">${cardsHTML}</div></td>
+                    <td class="col-screenshot">${accountScreenshotHTML}</td>
                     <td class="col-xml">${xmlFilenames}</td>
                     <td class="time-cell">${account.firstSeen.split(' ')[0]}</td>
                     <td class="time-cell">${account.lastSeen.split(' ')[0]}</td>
+                    <td class="col-action">${injectButtonHTML}</td>
                 `;
                 
                 tr.onclick = () => toggleAccount(account.deviceAccount);
@@ -681,13 +785,24 @@
                             return `<span class="badge badge-card">${getCardDisplayName(type)} ×${detail.cardCounts[idx]}</span>`;
                         }).join(' ');
 
+                        const normalizedScreenshotPath = detail.screenshotPath ? `../../${detail.screenshotPath.replace(/\\/g, '/')}` : '';
+                        const screenshotHTML = detail.screenshotPath 
+                            ? `<img src="${normalizedScreenshotPath}" alt="Screenshot" class="screenshot-thumb" data-screenshot-path="${normalizedScreenshotPath}" />`
+                            : '<span class="no-screenshot">no image</span>';
+
+                        const detailInjectButtonHTML = detail.originalFilename && detail.originalFilename.trim() !== ''
+                            ? `<button class="btn-inject" onclick="injectAccount('${detail.originalFilename.replace(/'/g, "\\'")}', '${detail.cleanFilename.replace(/'/g, "\\'")}', event)" title="Inject account: ${detail.cleanFilename}">Inject</button>`
+                            : '<button class="btn-inject" disabled title="No XML file available">Inject</button>';
+
                         detailTr.innerHTML = `
                             <td><span class="badge badge-pack">${detail.packType}</span></td>
                             <td class="col-cards">${detailCardsHTML}</td>
+                            <td class="col-screenshot">${screenshotHTML}</td>
                             <td class="col-xml" title="${detail.originalFilename}">${detail.cleanFilename}</td>
                             <td></td>
                             <td></td>
                             <td class="time-cell">${detail.timestamp}</td>
+                            <td class="col-action">${detailInjectButtonHTML}</td>
                         `;
                         
                         tbody.appendChild(detailTr);
@@ -701,9 +816,11 @@
                 <tr>
                     <th class="col-pack">pack</th>
                     <th>cards</th>
+                    <th class="col-screenshot">screenshot</th>
                     <th>.xml filename</th>
                     <th>device account</th>
                     <th class="col-time">time</th>
+                    <th class="col-action">action</th>
                 </tr>
             `;
 
@@ -714,13 +831,24 @@
                     return `<span class="badge badge-card">${getCardDisplayName(type)} ×${row.cardCounts[idx]}</span>`;
                 }).join(' ');
 
+                const normalizedScreenshotPath = row.screenshotPath ? `../../${row.screenshotPath.replace(/\\/g, '/')}` : '';
+                const screenshotHTML = row.screenshotPath 
+                    ? `<img src="${normalizedScreenshotPath}" alt="Screenshot" class="screenshot-thumb" data-screenshot-path="${normalizedScreenshotPath}" />`
+                    : '<span class="no-screenshot">no image</span>';
+
+                const injectButtonHTML = row.originalFilename && row.originalFilename.trim() !== ''
+                    ? `<button class="btn-inject" onclick="injectAccount('${row.originalFilename.replace(/'/g, "\\'")}', '${row.cleanFilename.replace(/'/g, "\\'")}', event)" title="Inject account: ${row.cleanFilename}">Inject</button>`
+                    : '<button class="btn-inject" disabled title="No XML file available">Inject</button>';
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><span class="badge badge-pack">${row.packType}</span></td>
                     <td>${cardsHTML}</td>
+                    <td class="col-screenshot">${screenshotHTML}</td>
                     <td title="${row.originalFilename}">${row.cleanFilename}</td>
                     <td class="device-account">${row.deviceAccount}</td>
                     <td class="time-cell">${row.timestamp}</td>
+                    <td class="col-action">${injectButtonHTML}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -732,9 +860,9 @@
                 return;
             }
 
-            const headers = 'Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts\n';
+            const headers = 'Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,ScreenshotPath\n';
             const rows = filteredData.map(row => 
-                `${row.timestamp},${row.originalFilename},${row.cleanFilename},${row.deviceAccount},${row.packType},${row.cardTypes.join('|')},${row.cardCounts.join('|')}`
+                `${row.timestamp},${row.originalFilename},${row.cleanFilename},${row.deviceAccount},${row.packType},${row.cardTypes.join('|')},${row.cardCounts.join('|')},${row.screenshotPath || ''}`
             ).join('\n');
 
             const csv = headers + rows;
@@ -746,6 +874,198 @@
             a.click();
             window.URL.revokeObjectURL(url);
         }
+
+        function showScreenshot(imagePath) {
+            // Ensure path uses forward slashes (extra safety check)
+            imagePath = (imagePath || '').replace(/\\/g, '/');
+            
+            const modal = document.getElementById('screenshotModal');
+            const modalImg = document.getElementById('modalScreenshot');
+            
+            if (!modal || !modalImg) {
+                console.error('Screenshot modal elements not found');
+                return;
+            }
+            
+            if (!imagePath) {
+                console.error('No image path provided');
+                return;
+            }
+            
+            modal.style.display = 'block';
+            modalImg.src = imagePath;
+            
+            // Handle image load errors
+            modalImg.onerror = function() {
+                console.error('Failed to load image:', imagePath);
+                modal.style.display = 'none';
+                alert('Failed to load screenshot.\nPath: ' + imagePath);
+            };
+            
+            // Reset error handler when image loads successfully
+            modalImg.onload = function() {
+                modalImg.onerror = null;
+            };
+        }
+
+        // Extract instance number from originalFilename (e.g., "13P_20251031123456_1().xml" -> "1")
+        function extractInstanceNumber(originalFilename) {
+            if (!originalFilename || originalFilename.trim() === '') return null;
+            
+            // Pattern: {pack}P_{timestamp}_{instance}({metadata}).xml
+            // Try to extract number before parentheses
+            const match = originalFilename.match(/_(\d+)\(/);
+            if (match && match[1]) {
+                return match[1];
+            }
+            
+            // Fallback: try to find number after last underscore
+            const parts = originalFilename.split('_');
+            if (parts.length >= 3) {
+                const lastPart = parts[parts.length - 1];
+                const numMatch = lastPart.match(/^(\d+)/);
+                if (numMatch && numMatch[1]) {
+                    return numMatch[1];
+                }
+            }
+            
+            return null;
+        }
+
+        // Inject account using _InjectAccount.ahk
+        function injectAccount(originalFilename, cleanFilename, event) {
+            // Prevent event propagation to avoid expanding/collapsing rows
+            if (event) {
+                event.stopPropagation();
+            }
+
+            if (!originalFilename || originalFilename.trim() === '') {
+                alert('No XML file available for this entry.');
+                return;
+            }
+
+            // Extract instance number from originalFilename
+            const instanceNumber = extractInstanceNumber(originalFilename);
+            if (!instanceNumber) {
+                alert('Could not determine instance number from filename: ' + originalFilename);
+                return;
+            }
+
+            // Calculate absolute path to XML file
+            // Dashboard is opened as file://, extract base path
+            let basePath = '';
+            if (window.location.protocol === 'file:') {
+                // Extract path from file:// URL
+                // Format: file:///C:/Users/.../Accounts/Trades/Trades_Dashboard.html
+                const fileUrl = window.location.href;
+                const filePath = fileUrl.replace(/^file:\/\/\//, '').replace(/\//g, '\\');
+                // Remove Trades_Dashboard.html and Trades folder to get project root
+                basePath = filePath.replace(/\\Accounts\\Trades\\[^\\]*$/, '');
+            } else {
+                // If opened via http/https, use a relative approach
+                basePath = window.location.origin + window.location.pathname.replace(/\/Accounts\/Trades\/[^\/]*$/, '');
+                basePath = basePath.replace(/^https?:\/\/[^\/]+/, '').replace(/\//g, '\\');
+            }
+            
+            // Build absolute path to XML file
+            const accountsAbsolutePath = basePath + '\\Accounts';
+            const xmlAbsolutePath = accountsAbsolutePath + '\\Saved\\' + instanceNumber + '\\' + originalFilename;
+            
+            // Extract fileName without .xml extension (use cleanFilename if available)
+            let fileNameWithoutExt = cleanFilename || originalFilename.replace(/\.xml$/, '');
+            // Remove pack prefix if present (e.g., "13P_20251031123456_1" -> "20251031123456_1")
+            fileNameWithoutExt = fileNameWithoutExt.replace(/^\d+P_/, '');
+            
+            // Default MuMu folder path (can be configured)
+            const defaultMumuFolder = 'C:\\Program Files\\Netease';
+            
+            // Create INI content
+            const iniContent = `[UserSettings]
+winTitle=${instanceNumber}
+fileName=${fileNameWithoutExt}
+folderPath=${defaultMumuFolder}
+selectedFilePath=${xmlAbsolutePath}
+`;
+
+            // Create a blob with the INI content
+            const blob = new Blob([iniContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            // Create temporary download link
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'InjectAccount.ini';
+            
+            // Try to use File System Access API (modern browsers) if available
+            if (window.showSaveFilePicker) {
+                window.showSaveFilePicker({
+                    suggestedName: 'InjectAccount.ini',
+                    types: [{
+                        description: 'INI file',
+                        accept: { 'text/plain': ['.ini'] }
+                    }]
+                }).then(fileHandle => {
+                    fileHandle.createWritable().then(writable => {
+                        writable.write(iniContent);
+                        writable.close();
+                        
+                        // Try to launch _InjectAccount.ahk
+                        const injectScriptPath = accountsAbsolutePath + '\\_InjectAccount.ahk';
+                        // Note: Cannot directly launch .ahk from browser, but can provide instructions
+                        alert('INI file saved!\n\nTo inject this account:\n1. Open the Accounts folder\n2. Double-click "_InjectAccount.ahk"\n\nXML: ' + originalFilename + '\nInstance: ' + instanceNumber);
+                    });
+                }).catch(err => {
+                    // Fallback to download if File System API fails
+                    downloadIniFile();
+                });
+            } else {
+                // Fallback: download the INI file
+                downloadIniFile();
+            }
+            
+            function downloadIniFile() {
+                const message = `To inject this account:
+
+XML File: ${originalFilename}
+Instance: ${instanceNumber}
+Full Path: ${xmlAbsolutePath}
+
+1. The INI file will be downloaded
+2. Save it as "InjectAccount.ini" in the "Accounts" folder (replace existing file if needed)
+3. Double-click "_InjectAccount.ahk" in the Accounts folder
+
+Click OK to download the INI file.`;
+
+                if (confirm(message)) {
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+            }
+        }
+
+        // Add event listeners for screenshot thumbnails (delegation pattern)
+        document.addEventListener('click', function(event) {
+            // Check if clicked element is a screenshot thumbnail
+            if (event.target.classList.contains('screenshot-thumb')) {
+                const imagePath = event.target.getAttribute('data-screenshot-path');
+                if (imagePath) {
+                    showScreenshot(imagePath);
+                }
+            }
+            
+            // Close modal when clicking outside the image
+            const modal = document.getElementById('screenshotModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
     </script>
+    <!-- Screenshot Modal -->
+    <div id="screenshotModal" class="screenshot-modal" onclick="this.style.display='none'">
+        <img id="modalScreenshot" src="" alt="Full screenshot">
+    </div>
 </body>
 </html>
