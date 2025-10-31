@@ -2340,11 +2340,6 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
     logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") Logged to Trades Database. Screenshot file: " . screenShotFileName
     LogToFile(logMessage, "S4T.txt")
 
-<<<<<<< HEAD
-    ; For Inject Methods: log and send webhook immediately (XML already exists)
-    if (loadDir && accountFileName) {
-        packDetailsMessage := BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
-=======
     ; In Create Bots mode, save account XML immediately on first hit if it doesn't exist yet
     ; This allows FoundTradeable to use the correct XML file right away
     if (deleteMethod = "Create Bots (13P)" && (accountFileName = "" || accountFileName = ",,,")) {
@@ -2354,31 +2349,9 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         }
     }
 
-    if (!s4tSilent && s4tDiscordWebhookURL) {
-        packDetailsMessage := ""
-        if (found3Dmnd > 0)
-            packDetailsMessage .= "Three Diamond (x" . found3Dmnd . "), "
-        if (found4Dmnd > 0)
-            packDetailsMessage .= "Four Diamond EX (x" . found4Dmnd . "), "
-        if (found1Star > 0)
-            packDetailsMessage .= "One Star (x" . found1Star . "), "
-        if (foundGimmighoul > 0)
-            packDetailsMessage .= "Gimmighoul (x" . foundGimmighoul . "), "
-        if (foundCrown > 0)
-            packDetailsMessage .= "Crown (x" . foundCrown . "), "
-        if (foundImmersive > 0)
-            packDetailsMessage .= "Immersive (x" . foundImmersive . "), "
-        if (foundShiny1Star > 0)
-            packDetailsMessage .= "Shiny 1-Star (x" . foundShiny1Star . "), "
-        if (foundShiny2Star > 0)
-            packDetailsMessage .= "Shiny 2-Star (x" . foundShiny2Star . "), "
-        if (foundTrainer > 0)
-            packDetailsMessage .= "Trainer (x" . foundTrainer . "), "
-        if (foundRainbow > 0)
-            packDetailsMessage .= "Rainbow (x" . foundRainbow . "), "
-        if (foundFullArt > 0)
-            packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
->>>>>>> eaa5f1e (Fix CreateBots: sauvegarde immédiate au 1er hit + mise à jour filename)
+    ; For Inject Methods: log and send webhook immediately (XML already exists)
+    if (loadDir && accountFileName) {
+        packDetailsMessage := BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
         
         ; Find XML path
         xmlPath := ""
