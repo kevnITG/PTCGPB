@@ -28,6 +28,7 @@ global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star
 global claimDailyMission, wonderpickForEventMissions
 global checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode, isCurrentlyDoingWPCheck := false
 global s4tPendingTradeables := []
+global titleHeight, MuMuv5
 
 global avgtotalSeconds
 global verboseLogging := false
@@ -79,6 +80,7 @@ IniRead, FriendID, %A_ScriptDir%\..\Settings.ini, UserSettings, FriendID
 IniRead, waitTime, %A_ScriptDir%\..\Settings.ini, UserSettings, waitTime, 5
 IniRead, Delay, %A_ScriptDir%\..\Settings.ini, UserSettings, Delay, 250
 IniRead, folderPath, %A_ScriptDir%\..\Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
+MuMuv5 := isMuMuv5()
 IniRead, Columns, %A_ScriptDir%\..\Settings.ini, UserSettings, Columns, 5
 IniRead, godPack, %A_ScriptDir%\..\Settings.ini, UserSettings, godPack, Continue
 IniRead, Instances, %A_ScriptDir%\..\Settings.ini, UserSettings, Instances, 1
@@ -1772,8 +1774,8 @@ resetWindows() {
 }
 
 DirectlyPositionWindow() {
-    global Columns, runMain, Mains, scaleParam, winTitle, SelectedMonitorIndex, rowGap
-    
+    global Columns, runMain, Mains, scaleParam, winTitle, SelectedMonitorIndex, rowGap, titleHeight
+
     ; Make sure rowGap is defined
     if (!rowGap)
         rowGap := 100
@@ -1791,18 +1793,23 @@ DirectlyPositionWindow() {
         instanceIndex := Title
     }
     
-    rowHeight := 533
+    if (MuMuv5) {
+        titleHeight := 50
+    } else {
+        titleHeight := 45
+    }
+    
+    borderWidth := 4 - 1
+    rowHeight := titleHeight + 489 + 4
     currentRow := Floor((instanceIndex - 1) / Columns)
     
-    ; Calculate absolute coordinates with MonitorTop/Left
     y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-    x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+    x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
     
-    ; Position window directly without any additional checks
-    WinSet, Style, -0xC00000, %Title% ; Remove title bar temporarily
-    WinMove, %Title%, , %x%, %y%, %scaleParam%, 537
-    WinSet, Style, +0xC00000, %Title% ; Restore title bar
-    WinSet, Redraw, , %Title% ; Force redraw
+    WinSet, Style, -0xC00000, %Title%
+    WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
+    WinSet, Style, +0xC00000, %Title%
+    WinSet, Redraw, , %Title%
     
     CreateStatusMessage("Positioned window at x:" . x . " y:" . y,,,, false)
     
@@ -3485,8 +3492,11 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
         fileName := "packstats_temp.png"
     filePath := fileDir "\" . fileName
 
+    global titleHeight
+    yBias := titleHeight - 45
     pBitmapW := from_window(WinExist(winTitle))
-    pBitmap := Gdip_CloneBitmapArea(pBitmapW, 18, 175, 240, 227)
+    pBitmap := Gdip_CloneBitmapArea(pBitmapW, 18, 175+yBias, 240, 227)
+
     ;scale 100%
     if (scaleParam = 287) {
         pBitmap := Gdip_CloneBitmapArea(pBitmapW, 17, 168, 245, 230)
@@ -3843,11 +3853,12 @@ bboxAndPause_immage(X1, Y1, X2, Y2, pNeedleObj, vret := False, doPause := False)
 Gdip_ImageSearch_wbb(pBitmapHaystack,pNeedle,ByRef OutputList=""
 ,OuterX1=0,OuterY1=0,OuterX2=0,OuterY2=0,Variation=0,Trans=""
 ,SearchDirection=1,Instances=1,LineDelim="`n",CoordDelim=",") {
-
-	vret := Gdip_ImageSearch(pBitmapHaystack,pNeedle.needle,OutputList,OuterX1,OuterY1,OuterX2,OuterY2,Variation,Trans,SearchDirection,Instances,LineDelim,CoordDelim)
-	if(dbg_bbox)
-		bboxAndPause_immage(OuterX1, OuterY1, OuterX2, OuterY2, pNeedle, vret, dbg_bboxNpause)
-	return vret
+    global titleHeight
+    yBias := titleHeight - 45
+    vret := Gdip_ImageSearch(pBitmapHaystack,pNeedle.needle,OutputList,OuterX1,OuterY1+yBias,OuterX2,OuterY2+yBias,Variation,Trans,SearchDirection,Instances,LineDelim,CoordDelim)
+    if(dbg_bbox)
+        bboxAndPause_immage(OuterX1, OuterY1+yBias, OuterX2, OuterY2+yBias, pNeedle, vret, dbg_bboxNpause)
+    return vret
 }
 
 GetNeedle(Path) {
@@ -4363,7 +4374,7 @@ SelectPack(HG := false) {
         PackIsInHomeScreen := 0
 	}
 	
-	if(openPack == "MegaBlaziken" || openPack == "MegaGyarados" || openPack == "MegaAltaria") {
+	if(openPack == "MegaBlaziken") {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
@@ -6599,4 +6610,14 @@ GetTradesDatabaseStats() {
     }
     
     return stats
+}
+
+isMuMuv5(){
+    global folderPath
+    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMu Player 12"
+    if FileExist(mumuFolder . "\nx_main")
+        return true
+    return false
 }
