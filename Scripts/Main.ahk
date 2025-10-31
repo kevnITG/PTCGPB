@@ -979,7 +979,7 @@ ParseFriendInfo(ByRef friendCode, ByRef friendName, ByRef parseFriendCodeResult,
 
         ; Parse friend identifiers
         if (!parseFriendCodeResult)
-            parseFriendCodeResult := ParseFriendInfoLoop(fullScreenshotFile, 328, 57, 197, 28, "0123456789", "^\d{14,17}$", friendCode)
+            parseFriendCodeResult := ParseFriendInfoLoop(fullScreenshotFile, 258, 57, 197, 28, "0123456789", "^\d{14,17}$", friendCode)
         if (includesIdsAndNames && !parseFriendNameResult)
             parseFriendNameResult := ParseFriendInfoLoop(fullScreenshotFile, 107, 427, 325, 46, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", "^[a-zA-Z0-9]{5,20}$", friendName)
         if (parseFriendCodeResult && (!includesIdsAndNames || parseFriendNameResult))
