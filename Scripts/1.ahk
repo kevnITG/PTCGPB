@@ -4271,7 +4271,14 @@ DoTutorial() {
 
     FindImageAndClick(191, 393, 211, 411, , "Shop", 146, 444) ;click until at main menu
 
-    FindImageAndClick(87, 232, 131, 266, , "Wonder2", 79, 411) ; click until wonder pick tutorial screen
+    ;FindImageAndClick(87, 232, 131, 266, , "Wonder2", 79, 411) ; click until wonder pick tutorial screen
+    ; Temporary fix for Wonder2 issues
+    adbClick(79, 411)
+    Wait, 2000
+    adbClick(79, 411)
+    Wait, 2000
+    adbClick(79, 411)
+    Wait, 2000
 
     FindImageAndClick(114, 430, 155, 441, , "Wonder3", 190, 437) ; click through tutorial
 
