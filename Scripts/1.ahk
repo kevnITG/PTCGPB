@@ -761,12 +761,14 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         } else if (!injectMethod) {
             ; For non-injection methods, handle account deletion/saving
             if ((!injectMethod || !loadedAccount) && (!nukeAccount || keepAccount)) {
-                ; Save account for non-injection or when keeping account
-                saveAccount("All")
-
-                ; if Create Bots + FoundTradeable, log to database and push discord webhook message(s)
-                if (!loadDir && s4tPendingTradeables.Length() > 0) {
-                    ProcessPendingTradeables()
+                ; In Create Bots mode, if account was already saved on first hit, just update the filename
+                ; Otherwise, save account normally at end of cycle
+                if (deleteMethod = "Create Bots (13P)" && accountFileName != "" && accountFileName != ",,," && accountOpenPacks > 0) {
+                    ; Account was already saved on first hit, now update pack count using UpdateAccount logic
+                    UpdateAccountForCreateBots()
+                } else {
+                    ; Save account for non-injection or when keeping account (normal case)
+                    saveAccount("All")
                 }
                 
                 beginnerMissionsDone := 0
@@ -2263,6 +2265,7 @@ CheckPack() {
 }
 
 FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighoul := 0, foundCrown := 0, foundImmersive := 0, foundShiny1Star := 0, foundShiny2Star := 0, foundTrainer := 0, foundRainbow := 0, foundFullArt := 0) {
+    global deleteMethod
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
 
     keepAccount := true
@@ -2337,9 +2340,45 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
     logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") Logged to Trades Database. Screenshot file: " . screenShotFileName
     LogToFile(logMessage, "S4T.txt")
 
+<<<<<<< HEAD
     ; For Inject Methods: log and send webhook immediately (XML already exists)
     if (loadDir && accountFileName) {
         packDetailsMessage := BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
+=======
+    ; In Create Bots mode, save account XML immediately on first hit if it doesn't exist yet
+    ; This allows FoundTradeable to use the correct XML file right away
+    if (deleteMethod = "Create Bots (13P)" && (accountFileName = "" || accountFileName = ",,,")) {
+        savedXmlFile := saveAccount("All")
+        if (savedXmlFile != "") {
+            accountFileName := savedXmlFile
+        }
+    }
+
+    if (!s4tSilent && s4tDiscordWebhookURL) {
+        packDetailsMessage := ""
+        if (found3Dmnd > 0)
+            packDetailsMessage .= "Three Diamond (x" . found3Dmnd . "), "
+        if (found4Dmnd > 0)
+            packDetailsMessage .= "Four Diamond EX (x" . found4Dmnd . "), "
+        if (found1Star > 0)
+            packDetailsMessage .= "One Star (x" . found1Star . "), "
+        if (foundGimmighoul > 0)
+            packDetailsMessage .= "Gimmighoul (x" . foundGimmighoul . "), "
+        if (foundCrown > 0)
+            packDetailsMessage .= "Crown (x" . foundCrown . "), "
+        if (foundImmersive > 0)
+            packDetailsMessage .= "Immersive (x" . foundImmersive . "), "
+        if (foundShiny1Star > 0)
+            packDetailsMessage .= "Shiny 1-Star (x" . foundShiny1Star . "), "
+        if (foundShiny2Star > 0)
+            packDetailsMessage .= "Shiny 2-Star (x" . foundShiny2Star . "), "
+        if (foundTrainer > 0)
+            packDetailsMessage .= "Trainer (x" . foundTrainer . "), "
+        if (foundRainbow > 0)
+            packDetailsMessage .= "Rainbow (x" . foundRainbow . "), "
+        if (foundFullArt > 0)
+            packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
+>>>>>>> eaa5f1e (Fix CreateBots: sauvegarde immédiate au 1er hit + mise à jour filename)
         
         ; Find XML path
         xmlPath := ""
@@ -3164,7 +3203,8 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag :
             metadata .= "W"
 			
         saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
-        filePath := saveDir . "\" . accountOpenPacks . "P_" . A_Now . "_" . winTitle . "(" . metadata . ").xml"
+        xmlFile := accountOpenPacks . "P_" . A_Now . "_" . winTitle . "(" . metadata . ").xml"
+        filePath := saveDir . "\" . xmlFile
     } else if (file = "Valid" || file = "Invalid") {
         metadata := ""
         if(addWFlag)
@@ -3359,6 +3399,79 @@ UpdateAccount() {
     ; Direct display of metrics rather than calling function
     CreateStatusMessage("Avg: " . aminutes . "m " . aseconds . "s | Runs: " . rerolls . " | Account Packs " . accountOpenPacks, "AvgRuns", 0, 605, false, true)
 }
+
+; Update account filename for Create Bots mode after cycle completes
+; Similar to UpdateAccount() but also updates CSV/JSON database entries with new filename
+UpdateAccountForCreateBots() {
+    global accountOpenPacks, accountFileName, accountFileNameParts, accountFileNameOrig, ocrSuccess, winTitle
+    global scriptName
+    
+    accountOpenPacksStr := accountOpenPacks
+    if(accountOpenPacks<10)
+        accountOpenPacksStr := "0" . accountOpenPacks ; add a trailing 0 for sorting
+        
+    if(InStr(accountFileName, "P")){
+        accountFileNameParts := StrSplit(accountFileName, "P")  ; Split at P
+        AccountNewName := accountOpenPacksStr . "P" . accountFileNameParts[2]
+    } else if (ocrSuccess)
+        AccountNewName := accountOpenPacksStr . "P_" . accountFileNameOrig
+    else
+        return ; if OCR is not successful, don't modify account file
+    
+    if(!InStr(accountFileName, "P") || accountOpenPacks > 0) {          
+        saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+        accountFile := saveDir . "\" . accountFileName
+        accountNewFile := saveDir . "\" . AccountNewName
+        
+        oldFileName := accountFileName
+        FileMove, %accountFile% , %accountNewFile%
+        FileSetTime,, %accountNewFile%
+        accountFileName := AccountNewName
+        
+        ; Update CSV and JSON database entries with new filename
+        UpdateTradesDatabaseFilename(oldFileName, AccountNewName)
+    }
+}
+
+; Update filename in Trades_Database.csv and Trades_Index.json after account is renamed
+UpdateTradesDatabaseFilename(oldFileName, newFileName) {
+    global winTitle
+    
+    ; Update CSV
+    csvPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
+    if (FileExist(csvPath)) {
+        FileRead, csvContent, %csvPath%
+        csvContent := StrReplace(csvContent, oldFileName, newFileName)
+        
+        ; Extract clean filenames
+        oldClean := RegExReplace(oldFileName, "^\d+P_", "")
+        oldClean := RegExReplace(oldClean, "_\d+(\([^)]+\))?\.xml$", "")
+        newClean := RegExReplace(newFileName, "^\d+P_", "")
+        newClean := RegExReplace(newClean, "_\d+(\([^)]+\))?\.xml$", "")
+        
+        csvContent := StrReplace(csvContent, oldClean, newClean)
+        FileDelete, %csvPath%
+        FileAppend, %csvContent%, %csvPath%
+    }
+    
+    ; Update JSON
+    jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
+    if (FileExist(jsonPath)) {
+        FileRead, jsonContent, %jsonPath%
+        jsonContent := StrReplace(jsonContent, oldFileName, newFileName)
+        
+        ; Extract clean filenames
+        oldClean := RegExReplace(oldFileName, "^\d+P_", "")
+        oldClean := RegExReplace(oldClean, "_\d+(\([^)]+\))?\.xml$", "")
+        newClean := RegExReplace(newFileName, "^\d+P_", "")
+        newClean := RegExReplace(newClean, "_\d+(\([^)]+\))?\.xml$", "")
+        
+        jsonContent := StrReplace(jsonContent, oldClean, newClean)
+        FileDelete, %jsonPath%
+        FileAppend, %jsonContent%, %jsonPath%
+    }
+}
+
 ControlClick(X, Y) {
     global winTitle
     ControlClick, x%X% y%Y%, %winTitle%
