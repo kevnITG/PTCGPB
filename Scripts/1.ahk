@@ -4396,7 +4396,7 @@ SelectPack(HG := false) {
         }
 
         ; packs that can be opened after fully swiping down
-        if (openPack = "Solgaleo" || "Lunala" || "Shining" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
+        if (openPack = "Solgaleo" || openPack = "Lunala" || openPack = "Shining" || openPack = "Arceus" || openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
             
             X := 266
             Y1 := 430
