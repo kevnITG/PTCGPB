@@ -2326,10 +2326,20 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         cardCounts.Push(foundFullArt)
     }
 
-    ; For Inject Methods: log immediately (XML already exists)
+    deviceAccount := GetDeviceAccountFromXML()
+    
+    LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShot)
+
+    statusMessage := "Tradeable cards found"
+
+    CreateStatusMessage("Tradeable cards found! Logged to database and continuing...",,,, false)
+
+    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") Logged to Trades Database. Screenshot file: " . screenShotFileName
+    LogToFile(logMessage, "S4T.txt")
+
+    ; For Inject Methods: log and send webhook immediately (XML already exists)
     if (loadDir && accountFileName) {
-        deviceAccount := GetDeviceAccountFromXML()
-        LogToTradesDatabase(deviceAccount, cardTypes, cardCounts)
+        packDetailsMessage := BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
         
         ; Find XML path
         xmlPath := ""
@@ -2346,32 +2356,37 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         }
         
         if (!s4tSilent && s4tDiscordWebhookURL) {
-            packDetailsMessage := BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
             discordMessage := "Tradeable cards found in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile: " . accountFileName
             LogToDiscord(discordMessage, screenShot, true, xmlPath,, s4tDiscordWebhookURL, s4tDiscordUserId)
         }
-    } else {
-        ; For Create Bots: store data for later logging (after XML is created)
-        tradeableData := {}
-        tradeableData.screenShot := screenShot
-        tradeableData.screenShotFileName := screenShotFileName
-        tradeableData.cardTypes := cardTypes
-        tradeableData.cardCounts := cardCounts
-        tradeableData.packsInPool := packsInPool
-        tradeableData.openPack := openPack
-        tradeableData.found3Dmnd := found3Dmnd
-        tradeableData.found4Dmnd := found4Dmnd
-        tradeableData.found1Star := found1Star
-        tradeableData.foundGimmighoul := foundGimmighoul
-        tradeableData.foundCrown := foundCrown
-        tradeableData.foundImmersive := foundImmersive
-        tradeableData.foundShiny1Star := foundShiny1Star
-        tradeableData.foundShiny2Star := foundShiny2Star
-        tradeableData.foundTrainer := foundTrainer
-        tradeableData.foundRainbow := foundRainbow
-        tradeableData.foundFullArt := foundFullArt
+    } else if (deleteMethod = "Create Bots (13P)") {
+        ; For Create Bots: save account XML immediately on first hit if it doesn't exist yet
+        ; This allows FoundTradeable to use the correct XML file right away
+        if (accountFileName = "" || accountFileName = ",,,") {
+            savedXmlFile := saveAccount("All")
+            if (savedXmlFile != "") {
+                accountFileName := savedXmlFile
+            }
+        }
         
-        s4tPendingTradeables.Push(tradeableData)
+        ; Prepare XML file path from Accounts/Saved/<num_instance>/ if s4tSendAccountXml is enabled
+        accountFullPath := ""
+        if (s4tSendAccountXml && accountFileName != "" && accountFileName != ",,,") {
+            saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+            accountFullPath := saveDir . "\" . accountFileName
+            ; Only use if file actually exists
+            if (!FileExist(accountFullPath)) {
+                accountFullPath := ""
+            }
+        }
+        
+        packDetailsMessage := BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
+        
+        if (!s4tSilent && s4tDiscordWebhookURL) {
+            discordMessage := "Tradeable cards found in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile: " . accountFileName
+            ; S4T doesn't need friendcode screenshot (only Wonderpick/Godpacks need it)
+            LogToDiscord(discordMessage, screenShot, true, accountFullPath,, s4tDiscordWebhookURL, s4tDiscordUserId)
+        }
     }
 
     CreateStatusMessage("Tradeable cards found! Will log after account is saved...",,,, false)
@@ -3468,7 +3483,7 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
 }
 
 Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
-    global adbShell, adbPath, packs
+    global adbShell, adbPath, packs, scaleParam, winTitle, adbPort
     SetWorkingDir %A_ScriptDir%  ; Ensures the working directory is the script's directory
 		
     ; Define folder and file paths
@@ -3492,16 +3507,86 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
         fileName := "packstats_temp.png"
     filePath := fileDir "\" . fileName
 
-    global titleHeight
-    yBias := titleHeight - 45
-    pBitmapW := from_window(WinExist(winTitle))
-    pBitmap := Gdip_CloneBitmapArea(pBitmapW, 18, 175+yBias, 240, 227)
-
-    ;scale 100%
-    if (scaleParam = 287) {
-        pBitmap := Gdip_CloneBitmapArea(pBitmapW, 17, 168, 245, 230)
+    ; Try to use ADB for high-resolution screenshot first (better quality)
+    ; Fallback to window capture if ADB is not available
+    useAdbScreenshot := false
+    if (adbPath && adbPort) {
+        try {
+            ; Capture full screen via ADB (high resolution)
+            tempAdbFile := A_Temp "\" . winTitle . "_adb_screenshot_" . A_Now . ".png"
+            adbTakeScreenshot(tempAdbFile)
+            
+            ; Check if ADB screenshot was successful
+            if (FileExist(tempAdbFile)) {
+                ; Load the ADB screenshot into GDI+
+                pBitmapAdb := Gdip_CreateBitmapFromFile(tempAdbFile)
+                if (pBitmapAdb) {
+                    ; Get ADB screenshot dimensions
+                    Gdip_GetImageDimensions(pBitmapAdb, adbWidth, adbHeight)
+                    
+                    ; Get window dimensions for coordinate conversion
+                    WinGetPos, , , winWidth, winHeight, %winTitle%
+                    
+                    ; Calculate crop coordinates proportionally from window to ADB resolution
+                    ; Adjusted to include full card area (including top): x=18, y=145, w=240, h=257 (or x=17, y=138, w=245, h=260 for scale 125%)
+                    ; Increased height (cropH) and moved start position up (reduced cropY) to capture complete cards
+                    cropX := 18
+                    cropY := 145
+                    cropW := 240
+                    cropH := 257
+                    ; Scale 125% adjustments
+                    if (scaleParam = 287) {
+                        cropX := 17
+                        cropY := 138
+                        cropW := 245
+                        cropH := 260
+                    }
+                    
+                    ; Convert window coordinates to ADB screen coordinates (proportional)
+                    adbCropX := (cropX / winWidth) * adbWidth
+                    adbCropY := (cropY / winHeight) * adbHeight
+                    adbCropW := (cropW / winWidth) * adbWidth
+                    adbCropH := (cropH / winHeight) * adbHeight
+                    
+                    ; Round to integers for pixel-perfect cropping
+                    adbCropX := Round(adbCropX)
+                    adbCropY := Round(adbCropY)
+                    adbCropW := Round(adbCropW)
+                    adbCropH := Round(adbCropH)
+                    
+                    ; Crop the card area from high-resolution ADB screenshot
+                    pBitmap := Gdip_CloneBitmapArea(pBitmapAdb, adbCropX, adbCropY, adbCropW, adbCropH)
+                    
+                    ; Cleanup
+                    Gdip_DisposeImage(pBitmapAdb)
+                    FileDelete, %tempAdbFile%
+                    
+                    if (pBitmap) {
+                        useAdbScreenshot := true
+                    }
+                } else {
+                    FileDelete, %tempAdbFile%
+                }
+            }
+        } catch e {
+            ; ADB screenshot failed, fallback to window capture
+            useAdbScreenshot := false
+        }
     }
-    Gdip_DisposeImage(pBitmapW)
+    
+    ; Fallback to window capture if ADB screenshot was not successful
+    if (!useAdbScreenshot) {
+        pBitmapW := from_window(WinExist(winTitle))
+        ; Adjusted coordinates to include full card area (including top)
+        pBitmap := Gdip_CloneBitmapArea(pBitmapW, 18, 145, 240, 257)
+        ;scale 100%
+        if (scaleParam = 287) {
+            pBitmap := Gdip_CloneBitmapArea(pBitmapW, 17, 138, 245, 260)
+        }
+        Gdip_DisposeImage(pBitmapW)
+    }
+    
+    ; Save the cropped image
     Gdip_SaveBitmapToFile(pBitmap, filePath)
 
     ; Don't dispose pBitmap if it's a PACKSTATS screenshot
@@ -6429,16 +6514,37 @@ GetDeviceAccountFromXML() {
     return deviceAccount
 }
 
-LogToTradesDatabase(deviceAccount, cardTypes, cardCounts) {
-    global scriptName, accountFileName, accountOpenPacks, openPack
+LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenshotPath := "") {
+    global scriptName, accountFileName, accountOpenPacks, openPack, winTitle
     
     dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
     
     if (!FileExist(dbPath)) {
-        header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts`n"
+        header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,ScreenshotPath`n"
         FileAppend, %header%, %dbPath%
     }
     
+    ; Fallback: when running in Create Bots flow, accountFileName may not yet
+    ; be populated at the exact moment of logging. Resolve it from the
+    ; instance's save directory by taking the most recently modified XML.
+    if (accountFileName = "" || accountFileName = ",,,") {
+        saveDir := A_ScriptDir . "\..\Accounts\Saved\" . winTitle
+        latestTime := 0
+        latestName := ""
+        if (FileExist(saveDir)) {
+            Loop, Files, % saveDir . "\*.xml"
+            {
+                thisTime := A_LoopFileTimeModified
+                if (thisTime > latestTime) {
+                    latestTime := thisTime
+                    latestName := A_LoopFileName
+                }
+            }
+        }
+        if (latestName != "")
+            accountFileName := latestName
+    }
+
     cleanFilename := accountFileName
     cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
     cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]+\))?\.xml$", "")
@@ -6458,24 +6564,63 @@ LogToTradesDatabase(deviceAccount, cardTypes, cardCounts) {
     timestamp := A_Now
     FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
     
+    ; Convert screenshot path to relative path from project root for HTML display
+    screenshotRelativePath := ""
+    if (screenshotPath != "") {
+        ; Convert backslashes to forward slashes for web paths
+        screenshotPathForward := StrReplace(screenshotPath, "\", "/")
+        
+        ; Extract relative path: Screenshots/Trades/filename.png
+        ; Find the "Screenshots" folder in the path
+        RegExMatch(screenshotPathForward, "Screenshots/.*", screenshotRelativePath)
+        if (screenshotRelativePath = "") {
+            ; Fallback: try to extract just the filename if path extraction fails
+            RegExMatch(screenshotPathForward, "[^/]+\.png$", screenshotRelativePath)
+            if (screenshotRelativePath != "")
+                screenshotRelativePath := "Screenshots/Trades/" . screenshotRelativePath
+            else
+                screenshotRelativePath := screenshotPathForward
+        }
+    }
+    
     csvRow := timestamp . ","
         . accountFileName . ","
         . cleanFilename . ","
         . deviceAccount . ","
         . openPack . ","
         . cardTypeStr . ","
-        . cardCountStr . "`n"
+        . cardCountStr . ","
+        . screenshotRelativePath . "`n"
     
     FileAppend, %csvRow%, %dbPath%
     
-    UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp)
+    UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenshotRelativePath)
 }
 
-UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp) {
-    global scriptName, accountFileName, accountOpenPacks, openPack
+UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenshotPath := "") {
+    global scriptName, accountFileName, accountOpenPacks, openPack, winTitle
     
     jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
     
+    ; Same fallback as CSV logging: infer filename from save directory if empty
+    if (accountFileName = "" || accountFileName = ",,,") {
+        saveDir := A_ScriptDir . "\..\Accounts\Saved\" . winTitle
+        latestTime := 0
+        latestName := ""
+        if (FileExist(saveDir)) {
+            Loop, Files, % saveDir . "\*.xml"
+            {
+                thisTime := A_LoopFileTimeModified
+                if (thisTime > latestTime) {
+                    latestTime := thisTime
+                    latestName := A_LoopFileName
+                }
+            }
+        }
+        if (latestName != "")
+            accountFileName := latestName
+    }
+
     cleanFilename := accountFileName
     cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
     cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]+\))?\.xml$", "")
@@ -6486,6 +6631,7 @@ UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp) {
         . """originalFilename"": """ . accountFileName . """, "
         . """cleanFilename"": """ . cleanFilename . """, "
         . """packType"": """ . openPack . """, "
+        . """screenshotPath"": """ . screenshotPath . """, "
         . """cards"": ["
     
     Loop, % cardTypes.Length() {
@@ -6498,6 +6644,7 @@ UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp) {
     
     FileAppend, %jsonEntry%, %jsonPath%
 }
+
 
 SearchTradesDatabase(searchPackType := "", searchCardType := "") {
     dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
