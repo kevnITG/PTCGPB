@@ -1,4 +1,9 @@
 !Accounts/*.ahk
+Accounts/Saved/**/*.xml
+Accounts/Trades/*.csv
+Accounts/Trades/*.json
+Accounts/Trades/*.html
+!Accounts/Trades/Trades_Dashboard.html
 json/*
 Logs/*
 Screenshots/*
