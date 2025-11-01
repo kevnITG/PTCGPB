@@ -28,6 +28,7 @@ global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star
 global claimDailyMission, wonderpickForEventMissions
 global checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode, isCurrentlyDoingWPCheck := false
 global s4tPendingTradeables := []
+global deviceAccountXmlMap := {} ; prevents Create Bots + s4t making duplicate .xmls within a single run
 global titleHeight, MuMuv5
 
 global avgtotalSeconds
@@ -759,10 +760,57 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             loadedAccount := false
             
         } else if (!injectMethod) {
-            ; For non-injection methods, handle account deletion/saving
             if ((!injectMethod || !loadedAccount) && (!nukeAccount || keepAccount)) {
-                ; Save account for non-injection or when keeping account
-                saveAccount("All")
+                ; Save account for Create Bots
+                ; At end of Create Bots run - check if we already have XML from tradeables
+                deviceAccount := GetDeviceAccountFromXML()
+
+                if (deviceAccountXmlMap.HasKey(deviceAccount) && FileExist(deviceAccountXmlMap[deviceAccount])) {
+                    ; We already have an XML from tradeable finds - update and rename it
+                    existingXmlPath := deviceAccountXmlMap[deviceAccount]
+                    
+                    ; Update XML with final account state
+                    UpdateSavedXml(existingXmlPath)
+                    
+                    ; Build new filename with final pack count and metadata
+                    metadata := ""
+                    if(beginnerMissionsDone)
+                        metadata .= "B"
+                    if(soloBattleMissionDone)
+                        metadata .= "S"
+                    if(intermediateMissionsDone)
+                        metadata .= "I"
+                    if(specialMissionsDone)
+                        metadata .= "X"
+                    if(accountHasPackInTesting)
+                        metadata .= "T"
+                    
+                    ; Extract timestamp from existing filename
+                    SplitPath, existingXmlPath, oldFileName, saveDir
+                    RegExMatch(oldFileName, "i)_(\d{14})_", match)
+                    timestamp := match1
+                    
+                    ; Create new filename: 13P_[original_timestamp]_1(B).xml
+                    newFileName := accountOpenPacks . "P_" . timestamp . "_" . winTitle . "(" . metadata . ").xml"
+                    newXmlPath := saveDir . "\" . newFileName
+                    
+                    ; Rename the file
+                    FileMove, %existingXmlPath%, %newXmlPath%, 1
+                    
+                    ; Update mapping and accountFileName
+                    deviceAccountXmlMap[deviceAccount] := newXmlPath
+                    accountFileName := newFileName
+                    
+                } else {
+                    ; No tradeable XML exists - create new one normally
+                    savedXmlPath := ""
+                    saveAccount("All", savedXmlPath)
+                    
+                    if (savedXmlPath) {
+                        SplitPath, savedXmlPath, xmlFileName
+                        accountFileName := xmlFileName
+                    }
+                }
 
                 ; if Create Bots + FoundTradeable, log to database and push discord webhook message(s)
                 if (!loadDir && s4tPendingTradeables.Length() > 0) {
@@ -1831,8 +1879,9 @@ DirectlyPositionWindow() {
     currentRow := Floor((instanceIndex - 1) / Columns)
     
     y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-    x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
-    
+    ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+    x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+
     WinSet, Style, -0xC00000, %Title%
     WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
     WinSet, Style, +0xC00000, %Title%
@@ -2350,17 +2399,43 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         cardCounts.Push(foundFullArt)
     }
 
-    ; For Create Bots: save XML early so it exists for webhook
+    ; Get deviceAccount FIRST before saving
+    deviceAccount := GetDeviceAccountFromXML()
+    
+    ; For Create Bots: Check if XML already exists for this deviceAccount
     if (!loadDir) {
         savedXmlPath := ""
-        saveAccount("All", savedXmlPath)
+        
+        ; Check if we already have an XML for this deviceAccount
+        if (deviceAccountXmlMap.HasKey(deviceAccount) && FileExist(deviceAccountXmlMap[deviceAccount])) {
+            savedXmlPath := deviceAccountXmlMap[deviceAccount]
+            UpdateSavedXml(savedXmlPath)
+            
+            ; Update accountFileName from saved path
+            SplitPath, savedXmlPath, xmlFileName
+            accountFileName := xmlFileName
+        } else {
+            ; Create new XML only if one doesn't exist
+            saveAccount("All", savedXmlPath)
+            
+            ; Extract filename and update accountFileName
+            if (savedXmlPath) {
+                SplitPath, savedXmlPath, xmlFileName
+                accountFileName := xmlFileName
+                
+                ; Store mapping for future reference
+                deviceAccountXmlMap[deviceAccount] := savedXmlPath
+            }
+        }
         
         tradeableData := {}
         tradeableData.xmlPath := savedXmlPath
+        tradeableData.deviceAccount := deviceAccount
         s4tPendingTradeables.Push(tradeableData)
+    } else {
+        ; Inject mode: Get deviceAccount after loading
+        deviceAccount := GetDeviceAccountFromXML()
     }
-
-    deviceAccount := GetDeviceAccountFromXML()
     
     screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
     
@@ -2429,6 +2504,11 @@ ProcessPendingTradeables() {
     }
     
     s4tPendingTradeables := []
+}
+
+ClearDeviceAccountXmlMap() { ; clean the tracked list of xml(s) for Create Bots + s4t
+    global deviceAccountXmlMap
+    deviceAccountXmlMap := {}
 }
 
 UpdateSavedXml(xmlPath) {
@@ -3152,24 +3232,30 @@ MarkAccountAsUsed() {
 saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag := false) {
 
     filePath := ""
+    xmlFile := ""  ; Initialize xmlFile for all branches
 
     if (file = "All") {
-		metadata := ""
-		if(beginnerMissionsDone)
-			metadata .= "B"
-		if(soloBattleMissionDone)
-			metadata .= "S"
-		if(intermediateMissionsDone)
-			metadata .= "I"
-		if(specialMissionsDone)
-			metadata .= "X"
+        metadata := ""
+        if(beginnerMissionsDone)
+            metadata .= "B"
+        if(soloBattleMissionDone)
+            metadata .= "S"
+        if(intermediateMissionsDone)
+            metadata .= "I"
+        if(specialMissionsDone)
+            metadata .= "X"
         if(accountHasPackInTesting)
             metadata .= "T"
         if(addWFlag)
             metadata .= "W"
-			
+            
         saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
-        filePath := saveDir . "\" . accountOpenPacks . "P_" . A_Now . "_" . winTitle . "(" . metadata . ").xml"
+        
+        ; Create filename components
+        timestamp := A_Now
+        xmlFile := accountOpenPacks . "P_" . timestamp . "_" . winTitle . "(" . metadata . ").xml"
+        filePath := saveDir . "\" . xmlFile
+        
     } else if (file = "Valid" || file = "Invalid") {
         metadata := ""
         if(addWFlag)
@@ -3181,11 +3267,13 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag :
             xmlFile .= "(" . metadata . ")"
         xmlFile .= ".xml"
         filePath := saveDir . xmlFile
+        
     } else if (file = "Tradeable") {
         saveDir := A_ScriptDir "\..\Accounts\Trades\"
-		;packsInPool doesn't make sense but nothing does, really.
+        ;packsInPool doesn't make sense but nothing does, really.
         xmlFile := A_Now . "_" . winTitle . (packDetails ? "_" . packDetails : "") . "_" . packsInPool . "_packs.xml"
         filePath := saveDir . xmlFile
+        
     } else {
         metadata := ""
         if(addWFlag)
@@ -3240,7 +3328,7 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag :
     EnvSub, now, 1970, seconds
     IniWrite, %now%, %A_ScriptDir%\%scriptName%.ini, Metrics, LastEndEpoch    
 
-    return xmlFile
+    return xmlFile  ; Now returns the filename for all branches
 }
 
 /* ;Deprecated, use T flag instead
