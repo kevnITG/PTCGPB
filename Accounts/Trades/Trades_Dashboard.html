@@ -800,8 +800,8 @@
                     .map(pack => `<span class="badge badge-pack">${pack}</span>`)
                     .join(' ');
 
-                const xmlFilenames = account.details.map(d => d.cleanFilename)[0];
-                const originalFileName = String(account.details.map(d => d.originalFilename)[0]).trim();
+                const xmlFilenames = [...new Set(account.details.map(d => d.cleanFilename))].join(', ');
+                const originalFileName = account.details.map(d => d.originalFilename).join(',');
 
                 tr.innerHTML = `
                     <td class="device-account">
