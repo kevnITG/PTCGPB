@@ -4355,7 +4355,7 @@ SelectPack(HG := false) {
 	; define constants
 	MiddlePackX := 140
 	RightPackX := 215
-	LeftPackX := 60
+	LeftPackX := 50 ;60
 	HomeScreenAllPackY := 203
 	
 	PackScreenAllPackY := 320
@@ -4528,13 +4528,13 @@ SelectPack(HG := false) {
         If (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
             if (openPack == "MegaGyarados") {
                 packy := SelectExpansionFirstRowY
-                packx := SelectExpansionLeftCollumnLeftX
+                packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionLeft
             } else if (openPack == "MegaBlaziken") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionLeftCollumnMiddleX
             } else if (openPack == "MegaAltaria") {
                 packy := SelectExpansionFirstRowY
-                packx := SelectExpansionLeftCollumnRightX
+                packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionRight
             }
         }
         FindImageAndClick(233, 400, 264, 428, , "Points", packx, packy)
