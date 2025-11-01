@@ -978,7 +978,21 @@ RemoveFriends() {
             FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407)
             FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372)
         }
-        FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1000) ; increased from 750 11.1.2025 to try to prevent double-clicking it
+        failSafe := A_TickCount
+        failSafeTime := 0
+        ; Either find "Add" (expected), or if we accidentally went back too many pages to "Social", go back into friends.
+        Loop {
+            adbClick(143, 507)
+            Sleep, 750
+            if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime)) {
+                Sleep, 1000
+                adbClick(38, 460)
+                Sleep, 2000
+                break
+            }
+            else if(FindOrLoseImage(226, 100, 270, 135, , "Add", 0, failSafeTime))
+                break
+        }
         friendsProcessed++
     }
 
