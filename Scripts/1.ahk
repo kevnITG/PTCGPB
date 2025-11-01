@@ -6423,13 +6423,13 @@ GetDeviceAccountFromXML() {
     return deviceAccount
 }
 
-LogToTradesDatabase(deviceAccount, cardTypes, cardCounts) {
+LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName := "") {
     global scriptName, accountFileName, accountOpenPacks, openPack
     
     dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
     
     if (!FileExist(dbPath)) {
-        header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts`n"
+        header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot`n"
         FileAppend, %header%, %dbPath%
     }
     
@@ -6458,14 +6458,15 @@ LogToTradesDatabase(deviceAccount, cardTypes, cardCounts) {
         . deviceAccount . ","
         . openPack . ","
         . cardTypeStr . ","
-        . cardCountStr . "`n"
+        . cardCountStr . ","
+        . screenShotFileName . "`n"
     
     FileAppend, %csvRow%, %dbPath%
     
-    UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp)
+    UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFileName)
 }
 
-UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp) {
+UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFileName := "") {
     global scriptName, accountFileName, accountOpenPacks, openPack
     
     jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
@@ -6480,6 +6481,7 @@ UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp) {
         . """originalFilename"": """ . accountFileName . """, "
         . """cleanFilename"": """ . cleanFilename . """, "
         . """packType"": """ . openPack . """, "
+        . """packScreenshot"": """ . screenShotFileName . """, "
         . """cards"": ["
     
     Loop, % cardTypes.Length() {
