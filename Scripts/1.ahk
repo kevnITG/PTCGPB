@@ -4391,7 +4391,7 @@ SelectPack(HG := false) {
         PackIsInHomeScreen := 0
 	}
 	
-	if(openPack == "MegaBlaziken" || openPack == "MegaGyarados" || openPack == "MegaAltaria") {
+	if(openPack == "MegaBlaziken") {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
