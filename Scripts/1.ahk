@@ -2491,7 +2491,7 @@ DetectFourCardPack() {
 FindBorders(prefix) {
     global currentPackIs6Card
     count := 0
-    searchVariation := 60 ; raising for Mega since having issues...
+    searchVariation := 40 ; Decreasing for Megas now that we have new image search locations to test. 60 had false positives
     searchVariation6Card := 60 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
     searchVariation4Card := 60 ;
 
@@ -2505,24 +2505,24 @@ FindBorders(prefix) {
     is4CardPack := currentPackIs4Card
     
     if (is4CardPack) {
-        borderCoords := [[70, 284, 123, 286]      ; Top row card 1 (left position)
-            ,[155, 284, 208, 286]                 ; Top row card 2 (right position)
-            ,[70, 399, 123, 401]                  ; Bottom row card 1
-            ,[155, 399, 208, 401]]                ; Bottom row card 2
+        borderCoords := [[96, 284, 123, 286]  ; Card 1
+            ,[181, 284, 208, 286] ; Card 2
+            ,[96, 399, 123, 401] ; Card 3
+            ,[181, 399, 208, 401]] ; Card 4
     } else if (is6CardPack) {
-        borderCoords := [[30, 284, 83, 286]      ; Top row card 1
-            ,[113, 284, 166, 286]                ; Top row card 2  
-            ,[196, 284, 249, 286]                ; Top row card 3
-            ,[30, 399, 83, 401]                  ; Bottom row card 1
-            ,[113, 399, 166, 401]                ; Bottom row card 2
-            ,[196, 399, 249, 401]]               ; Bottom row card 3
+        borderCoords := [[56, 284, 83, 286]   ; Top row card 1
+            ,[139, 284, 166, 286] ; Top row card 2  
+            ,[222, 284, 249, 286] ; Top row card 3
+            ,[56, 399, 83, 401]   ; Bottom row card 1
+            ,[139, 399, 166, 401] ; Bottom row card 2
+            ,[222, 399, 249, 401]] ; Bottom row card 3
     } else {
         ; 5-card pack
-        borderCoords := [[30, 284, 83, 286]
-            ,[113, 284, 166, 286]
-            ,[196, 284, 249, 286]
-            ,[70, 399, 123, 401]
-            ,[155, 399, 208, 401]]
+        borderCoords := [[56, 284, 83, 286] ; Card 1
+            ,[139, 284, 166, 286] ; Card 2
+            ,[222, 284, 249, 286] ; Card 3
+            ,[96, 399, 123, 401] ; Card 4
+            ,[181, 399, 208, 401]] ; Card 5 
     }
     
     ; Changed Shiny 2star needles to improve detection after hours of testing previous needles.
@@ -2584,18 +2584,18 @@ FindBorders(prefix) {
             }
         } else {
             if (is6CardPack) {
-                borderCoords := [[26, 278, 84, 280]
-                    ,[110, 278, 168, 280]
-                    ,[194, 278, 252, 280]
-                    ,[26, 395, 84, 397]
-                    ,[110, 395, 168, 397]
-                    ,[194, 395, 252, 397]]
+                borderCoords := [[55, 278, 84, 280]     ; Card 1
+                    ,[139, 278, 168, 280]                ; Card 2
+                    ,[223, 278, 252, 280]                ; Card 3
+                    ,[55, 395, 84, 397]                  ; Card 4
+                    ,[139, 395, 168, 397]                ; Card 5
+                    ,[223, 395, 252, 397]]               ; Card 6
             } else {
-                borderCoords := [[26, 278, 84, 280]
-                    ,[110, 278, 168, 280]
-                    ,[194, 278, 252, 280]
-                    ,[67, 395, 125, 397]
-                    ,[153, 395, 211, 397]]
+                borderCoords := [[55, 278, 84, 280]     ; Card 1
+                    ,[139, 278, 168, 280]                ; Card 2
+                    ,[223, 278, 252, 280]                ; Card 3
+                    ,[96, 395, 125, 397]                 ; Card 4
+                    ,[182, 395, 211, 397]]               ; Card 5
             }
         }
     }
