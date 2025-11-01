@@ -1406,6 +1406,8 @@ Save:
    s4tWP := false
    s4tWPMinCards := 1
   }
+
+  Deluxe := 0 ; Turn off Deluxe for all users now that pack is removed
   
   SaveAllSettings()
   
