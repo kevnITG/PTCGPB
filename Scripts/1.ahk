@@ -6545,7 +6545,7 @@ LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName := 
     
     cleanFilename := accountFileName
     cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
-    cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]+\))?\.xml$", "")
+    cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]*\))?\.xml$", "")
     
     cardTypeStr := ""
     cardCountStr := ""
