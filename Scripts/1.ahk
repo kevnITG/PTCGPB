@@ -2286,12 +2286,9 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         return 
     }
 
-    ; Take screenshot immediately
-    screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
-
-    ; Build card arrays
     cardTypes := []
     cardCounts := []
+    
     if (found3Dmnd > 0) {
         cardTypes.Push("3Diamond")
         cardCounts.Push(found3Dmnd)
@@ -2337,78 +2334,63 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         cardCounts.Push(foundFullArt)
     }
 
-    ; For Inject Methods: log immediately (XML already exists)
-    if (loadDir && accountFileName) {
-        deviceAccount := GetDeviceAccountFromXML()
-        LogToTradesDatabase(deviceAccount, cardTypes, cardCounts)
-        
-        ; Find XML path
-        xmlPath := ""
-        targetClean := RegExReplace(accountFileName, "^\d+P_", "")
-        targetClean := RegExReplace(targetClean, "_\d+(\([^)]+\))?\.xml$", "")
-        Loop, Files, %loadDir%\*.xml
-        {
-            currentClean := RegExReplace(A_LoopFileName, "^\d+P_", "")
-            currentClean := RegExReplace(currentClean, "_\d+(\([^)]+\))?\.xml$", "")
-            if (currentClean = targetClean) {
-                xmlPath := loadDir . "\" . A_LoopFileName
-                break
-            }
-        }
-        
-        if (!s4tSilent && s4tDiscordWebhookURL) {
-            packDetailsMessage := BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
-            discordMessage := "Tradeable cards found in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile: " . accountFileName
-            LogToDiscord(discordMessage, screenShot, true, xmlPath,, s4tDiscordWebhookURL, s4tDiscordUserId)
-        }
-    } else {
-        ; For Create Bots: create XML immediately, then log
+    ; For Create Bots: save XML early so it exists for webhook
+    if (!loadDir) {
         savedXmlPath := ""
         saveAccount("All", savedXmlPath)
-        
-        deviceAccount := GetDeviceAccountFromXML()
-        LogToTradesDatabase(deviceAccount, cardTypes, cardCounts)
-        
-        if (!s4tSilent && s4tDiscordWebhookURL) {
-            packDetailsMessage := BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
-            discordMessage := "Tradeable cards found in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile: " . savedXmlPath
-            LogToDiscord(discordMessage, screenShot, true, savedXmlPath,, s4tDiscordWebhookURL, s4tDiscordUserId)
-        }
         
         tradeableData := {}
         tradeableData.xmlPath := savedXmlPath
         s4tPendingTradeables.Push(tradeableData)
     }
 
-    CreateStatusMessage("Tradeable cards saved and logged!",,,, false)
-    return
-}
+    deviceAccount := GetDeviceAccountFromXML()
+    
+    screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
+    
+    LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName)
 
-BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt) {
-    msg := ""
-    if (found3Dmnd > 0)
-        msg .= "Three Diamond (x" . found3Dmnd . "), "
-    if (found4Dmnd > 0)
-        msg .= "Four Diamond EX (x" . found4Dmnd . "), "
-    if (found1Star > 0)
-        msg .= "One Star (x" . found1Star . "), "
-    if (foundGimmighoul > 0)
-        msg .= "Gimmighoul (x" . foundGimmighoul . "), "
-    if (foundCrown > 0)
-        msg .= "Crown (x" . foundCrown . "), "
-    if (foundImmersive > 0)
-        msg .= "Immersive (x" . foundImmersive . "), "
-    if (foundShiny1Star > 0)
-        msg .= "Shiny 1-Star (x" . foundShiny1Star . "), "
-    if (foundShiny2Star > 0)
-        msg .= "Shiny 2-Star (x" . foundShiny2Star . "), "
-    if (foundTrainer > 0)
-        msg .= "Trainer (x" . foundTrainer . "), "
-    if (foundRainbow > 0)
-        msg .= "Rainbow (x" . foundRainbow . "), "
-    if (foundFullArt > 0)
-        msg .= "Full Art (x" . foundFullArt . "), "
-    return RTrim(msg, ", ")
+    statusMessage := "Tradeable cards found"
+
+    CreateStatusMessage("Tradeable cards found! Logged to database and continuing...",,,, false)
+
+    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") Logged to Trades Database. Screenshot file: " . screenShotFileName
+    LogToFile(logMessage, "S4T.txt")
+
+    if (!s4tSilent && s4tDiscordWebhookURL) {
+        packDetailsMessage := ""
+        if (found3Dmnd > 0)
+            packDetailsMessage .= "Three Diamond (x" . found3Dmnd . "), "
+        if (found4Dmnd > 0)
+            packDetailsMessage .= "Four Diamond EX (x" . found4Dmnd . "), "
+        if (found1Star > 0)
+            packDetailsMessage .= "One Star (x" . found1Star . "), "
+        if (foundGimmighoul > 0)
+            packDetailsMessage .= "Gimmighoul (x" . foundGimmighoul . "), "
+        if (foundCrown > 0)
+            packDetailsMessage .= "Crown (x" . foundCrown . "), "
+        if (foundImmersive > 0)
+            packDetailsMessage .= "Immersive (x" . foundImmersive . "), "
+        if (foundShiny1Star > 0)
+            packDetailsMessage .= "Shiny 1-Star (x" . foundShiny1Star . "), "
+        if (foundShiny2Star > 0)
+            packDetailsMessage .= "Shiny 2-Star (x" . foundShiny2Star . "), "
+        if (foundTrainer > 0)
+            packDetailsMessage .= "Trainer (x" . foundTrainer . "), "
+        if (foundRainbow > 0)
+            packDetailsMessage .= "Rainbow (x" . foundRainbow . "), "
+        if (foundFullArt > 0)
+            packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
+        
+        packDetailsMessage := RTrim(packDetailsMessage, ", ")
+        
+        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nLogged to Trades Database and continuing..."
+        
+        LogToDiscord(discordMessage, screenShot, true, "",, s4tDiscordWebhookURL, s4tDiscordUserId)
+    
+
+    }
+    return
 }
 
 ProcessPendingTradeables() {
