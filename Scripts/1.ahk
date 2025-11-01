@@ -1296,11 +1296,12 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             return confirmed
         }
 
+    ; Try to handle "Share" feature
         Path = %imagePath%Privacy.png
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 346, 148, 363, searchVariation)
         if (vRet = 1) {
-            adbClick_wbb(137, 485)
+            adbClick_wbb(137, 354)
             Gdip_DisposeImage(pBitmap)
             return confirmed
         }
@@ -1637,6 +1638,16 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 adbClick_wbb(137, 485)
                 Gdip_DisposeImage(pBitmap)
                 continue
+            }
+
+        ; Try to handle "Share" feature
+            Path = %imagePath%Privacy.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 346, 148, 363, searchVariation)
+            if (vRet = 1) {
+                adbClick_wbb(137, 354)
+                Gdip_DisposeImage(pBitmap)
+                return confirmed
             }
             
             Path = %imagePath%Update.png
@@ -4376,11 +4387,13 @@ SelectPack(HG := false) {
         PackIsInHomeScreen := 0
 	}
 	
-	if(openPack == "MegaBlaziken") {
+	if(openPack == "MegaBlaziken" || openPack == "MegaGyarados" || openPack == "MegaAltaria") {
 		PackIsLatest := 1
 	} else {
 		PackIsLatest := 0
-	} 	if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") {
+	}
+    
+    if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") {
 		packInTopRowsOfSelectExpansion := 1
 	} else {
 		packInTopRowsOfSelectExpansion := 0
