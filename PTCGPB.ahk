@@ -1526,6 +1526,20 @@ Save:
       s4tSettings .= "• 3 Diamond`n"
     if (s4t4Dmnd)
       s4tSettings .= "• 4 Diamond`n"
+    if (s4tShiny1Star)
+      s4tSettings .= "• 1 Star Shiny`n"
+   if (s4tShiny2Star)
+      s4tSettings .= "• 2 Star Shiny`n"
+   if (s4tTrainer)
+      s4tSettings .= "• 2 Star Trainer`n"
+   if (s4tRainbow)
+      s4tSettings .= "• 2 Star Rainbow`n"
+   if (s4tFullArt)
+      s4tSettings .= "• 2 Star Full Art`n"
+   if (s4tImmersive)
+      s4tSettings .= "• Immersive`n"
+   if (s4tCrown)
+      s4tSettings .= "• Crown Rare`n"
     if (s4tWP)
       s4tSettings .= "• " . SetUpDictionary.Confirm_WonderPick . " (" . s4tWPMinCards . " " . SetUpDictionary.Confirm_MinCards . ")`n"
     ; if (s4tSilent)
