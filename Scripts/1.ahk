@@ -4292,7 +4292,7 @@ DoTutorial() {
     FindImageAndClick(191, 393, 211, 411, , "Shop", 146, 444) ;click until at main menu
 
     ; New needle & search region 11.1.2025 kevinnnn   
-    FindImageAndClick(75, 156, 83, 167, , "Wonder2", 79, 411,)
+    FindImageAndClick(75, 156, 83, 167, , "Wonder2", 79, 411)
 
     FindImageAndClick(114, 430, 155, 441, , "Wonder3", 190, 437) ; click through tutorial
 
