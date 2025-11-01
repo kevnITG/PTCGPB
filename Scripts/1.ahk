@@ -2402,7 +2402,13 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         
         discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nLogged to Trades Database and continuing..."
         
-        LogToDiscord(discordMessage, screenShot, true, "",, s4tDiscordWebhookURL, s4tDiscordUserId)
+        ; Prepare XML file path for attachment
+        xmlFileToSend := ""
+        if (s4tSendAccountXml && savedXmlPath && FileExist(savedXmlPath)) {
+            xmlFileToSend := savedXmlPath
+        }
+        
+        LogToDiscord(discordMessage, screenShot, true, xmlFileToSend,, s4tDiscordWebhookURL, s4tDiscordUserId)
     
 
     }
