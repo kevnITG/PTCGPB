@@ -196,15 +196,15 @@
         }
 
         th.col-account {
-            width: 200px;
+            width: 180px;
         }
 
         th.col-time {
-            width: 260px;
+            width: 80px;
         }
 
         th.col-pack {
-            width: 130px;
+            width: 100px;
         }
 
         th.col-xml {
@@ -213,8 +213,7 @@
         }
 
         th.col-cards {
-            width: auto;
-            /* max-width: 400px; */
+            width: 100px;
         }
 
         th.col-screenshot {
@@ -223,7 +222,7 @@
         }
 
         th.col-subTime {
-            width: 130px;
+            width: 80px;
             font-size: 0.7em;
         }
 
@@ -236,8 +235,7 @@
         }
 
         td.col-cards {
-            width: auto;
-            /* max-width: 400px; */
+            width: 250px;
         }
 
         td {
@@ -426,9 +424,38 @@
         .close-btn:hover {
             background: #555;
         }
+
+        .header-import-btn {
+            display: block;
+            margin-top: 4px;
+            padding: 2px 6px;
+            font-size: 0.5em;
+            background: white;
+            color: #1a1a1a;
+            border: 1px solid #1a1a1a;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 400;
+            transition: all 0.2s;
+        }
+
+        .header-import-btn:hover:not(:disabled) {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .header-import-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
     </style>
     <script>
         let filesList = [];
+
+        function showLoadSavedFolderPopup() {
+            alert('Navigate to your /Accounts/Saved/ folder, then click "Upload".');
+            document.getElementById('savedDirPicker').click();
+        }
 
         function openPopup(event) {
             const imgObj = event.currentTarget;
@@ -449,15 +476,22 @@
             const keyword = targetObj.dataset.info
             fixedPartKeyword = extractFixedPart(keyword);
 
-            if (filesList.length === 0) { alert('Select saved folder first!'); }
+            if (filesList.length === 0) { 
+                event.preventDefault();
+                alert('Navigate to your /Accounts/Saved/ folder, then click "Upload".');
+                document.getElementById('savedDirPicker').click();
+                return;
+            }
 
             const matches = filesList.filter(f => f.name.includes(fixedPartKeyword));
 
             matches.forEach(f => {
+                const url = URL.createObjectURL(f);
                 const a = document.createElement('a');
-                a.href = "../"+f.webkitRelativePath;
-                a.target = "_blank";
+                a.href = url;
+                a.download = f.name;
                 a.click();
+                URL.revokeObjectURL(url);
             });
         }
 
@@ -536,7 +570,7 @@
                 
                 <button class="btn export-btn" onclick="exportFiltered()" id="exportBtn" disabled>export</button>
 
-                Select Saved folder <input type="file" id="savedDirPicker" webkitdirectory multiple disabled>
+                <input type="file" id="savedDirPicker" webkitdirectory multiple disabled style="display: none;">
             </div>
         </div>
 
@@ -618,6 +652,7 @@
             document.getElementById('searchInput').disabled = false;
             document.getElementById('exportBtn').disabled = false;
             document.getElementById('savedDirPicker').disabled = false;
+            if(document.getElementById('importXmlBtn')) document.getElementById('importXmlBtn').disabled = false;
         }
 
         function updateStats() {
@@ -773,7 +808,7 @@
                     <th class="col-account">device account</th>
                     <th class="col-pack">pack</th>
                     <th class="col-cards">cards collected</th>
-                    <th class="col-xml">.xml filename</th>
+                    <th class="col-xml">.xml filename<br><button class="header-import-btn" onclick="showLoadSavedFolderPopup()" id="importXmlBtn">Load Saved folder</button></th>
                     <th class="col-subTime">first seen</th>
                     <th class="col-subTime">last seen</th>
                     <th class="col-screenshot">Screenshot</th>
