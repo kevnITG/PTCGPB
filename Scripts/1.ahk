@@ -2362,30 +2362,25 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
             LogToDiscord(discordMessage, screenShot, true, xmlPath,, s4tDiscordWebhookURL, s4tDiscordUserId)
         }
     } else {
-        ; For Create Bots: store data for later logging (after XML is created)
-        tradeableData := {}
-        tradeableData.screenShot := screenShot
-        tradeableData.screenShotFileName := screenShotFileName
-        tradeableData.cardTypes := cardTypes
-        tradeableData.cardCounts := cardCounts
-        tradeableData.packsInPool := packsInPool
-        tradeableData.openPack := openPack
-        tradeableData.found3Dmnd := found3Dmnd
-        tradeableData.found4Dmnd := found4Dmnd
-        tradeableData.found1Star := found1Star
-        tradeableData.foundGimmighoul := foundGimmighoul
-        tradeableData.foundCrown := foundCrown
-        tradeableData.foundImmersive := foundImmersive
-        tradeableData.foundShiny1Star := foundShiny1Star
-        tradeableData.foundShiny2Star := foundShiny2Star
-        tradeableData.foundTrainer := foundTrainer
-        tradeableData.foundRainbow := foundRainbow
-        tradeableData.foundFullArt := foundFullArt
+        ; For Create Bots: create XML immediately, then log
+        savedXmlPath := ""
+        saveAccount("All", savedXmlPath)
         
+        deviceAccount := GetDeviceAccountFromXML()
+        LogToTradesDatabase(deviceAccount, cardTypes, cardCounts)
+        
+        if (!s4tSilent && s4tDiscordWebhookURL) {
+            packDetailsMessage := BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, foundCrown, foundImmersive, foundShiny1Star, foundShiny2Star, foundTrainer, foundRainbow, foundFullArt)
+            discordMessage := "Tradeable cards found in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile: " . savedXmlPath
+            LogToDiscord(discordMessage, screenShot, true, savedXmlPath,, s4tDiscordWebhookURL, s4tDiscordUserId)
+        }
+        
+        tradeableData := {}
+        tradeableData.xmlPath := savedXmlPath
         s4tPendingTradeables.Push(tradeableData)
     }
 
-    CreateStatusMessage("Tradeable cards found! Will log after account is saved...",,,, false)
+    CreateStatusMessage("Tradeable cards saved and logged!",,,, false)
     return
 }
 
@@ -2417,38 +2412,48 @@ BuildPackDetailsMessage(found3Dmnd, found4Dmnd, found1Star, foundGimmighoul, fou
 }
 
 ProcessPendingTradeables() {
-    global s4tPendingTradeables, accountFileName, loadDir, s4tSilent, s4tDiscordWebhookURL, s4tDiscordUserId, scriptName
+    global s4tPendingTradeables
     
     if (s4tPendingTradeables.Length() = 0)
         return
     
-    deviceAccount := GetDeviceAccountFromXML()
-    
-    ; Find XML path
-    xmlPath := ""
-    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
-    if (accountFileName && FileExist(saveDir . "\" . accountFileName)) {
-        xmlPath := saveDir . "\" . accountFileName
-    }
-    
-    ; Process each pending tradeable
+    ; Update each saved XML with final account state
     for index, data in s4tPendingTradeables {
-        ; Log to database
-        LogToTradesDatabase(deviceAccount, data.cardTypes, data.cardCounts)
-        
-        ; Send to Discord
-        if (!s4tSilent && s4tDiscordWebhookURL) {
-            packDetailsMessage := BuildPackDetailsMessage(data.found3Dmnd, data.found4Dmnd, data.found1Star, data.foundGimmighoul, data.foundCrown, data.foundImmersive, data.foundShiny1Star, data.foundShiny2Star, data.foundTrainer, data.foundRainbow, data.foundFullArt)
-            discordMessage := "Tradeable cards found in instance: " . scriptName . " (" . data.packsInPool . " packs, " . data.openPack . ")\nFound: " . packDetailsMessage . "\nFile: " . accountFileName
-            LogToDiscord(discordMessage, data.screenShot, true, xmlPath,, s4tDiscordWebhookURL, s4tDiscordUserId)
+        if (data.xmlPath && FileExist(data.xmlPath)) {
+            UpdateSavedXml(data.xmlPath)
         }
     }
     
-    ; Clear pending array
     s4tPendingTradeables := []
 }
 
-
+UpdateSavedXml(xmlPath) {
+    global adbPath, adbPort, adbShell
+    
+    count := 0
+    Loop {
+        CreateStatusMessage("Updating saved XML...",,,, false)
+        
+        adbShell.StdIn.WriteLine("cp -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml /sdcard/deviceAccount.xml")
+        waitadb()
+        Sleep, 500
+        
+        RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " pull /sdcard/deviceAccount.xml """ . xmlPath,, Hide
+        
+        Sleep, 500
+        
+        adbShell.StdIn.WriteLine("rm /sdcard/deviceAccount.xml")
+        Sleep, 500
+        
+        FileGetSize, OutputVar, %xmlPath%
+        if(OutputVar > 0)
+            break
+            
+        if(count > 5)
+            break
+        count++
+    }
+}
 
 DetectSixCardPack() {
     global winTitle, defaultLanguage
