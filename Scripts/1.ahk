@@ -978,7 +978,7 @@ RemoveFriends() {
             FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407)
             FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372)
         }
-        FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 750)
+        FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1000) ; increased from 750 11.1.2025 to try to prevent double-clicking it
         friendsProcessed++
     }
 
@@ -997,8 +997,10 @@ RemoveFriends() {
 TradeTutorial() {
     if(FindOrLoseImage(100, 120, 175, 145, , "Trade", 0)) {
         Loop{
-            adbClick_wbb(167, 437)
+            adbClick_wbb(167, 447)
             Delay(1)
+            adbClick_wbb(38, 460)
+            Delay(3) ; Add more delay to check for the load & Add2 or Add to appear.
             if(FindOrLoseImage(15, 455, 40, 475, ,"Add2", 0))
                 break
             if(FindOrLoseImage(226, 100, 270, 135, ,"Add", 0))
