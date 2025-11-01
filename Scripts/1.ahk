@@ -4363,8 +4363,8 @@ SelectPack(HG := false) {
 	SelectExpansionFirstRowY := 300
 	SelectExpansionSecondRowY := 432
 	
-	SelectExpansionRightCollumnMiddleX := 203
-	SelectExpansionLeftCollumnMiddleX := 73
+	SelectExpansionRightColumnMiddleX := 203
+	SelectExpansionLeftColumnMiddleX := 73
 	3PackExpansionLeft := -40
 	3PackExpansionRight := 40
 	2PackExpansionLeft := -20
@@ -4475,16 +4475,16 @@ SelectPack(HG := false) {
             adbClick(156, 455) ; click A series. need more robust system later
             Delay(4)
             if (openPack == "Springs") {
-                packx := SelectExpansionRightCollumnMiddleX
+                packx := SelectExpansionRightColumnMiddleX
                 packy := 298
             } else if (openPack == "HoOh") {
-                packx := SelectExpansionLeftCollumnMiddleX
+                packx := SelectExpansionLeftColumnMiddleX
                 packy := 434
             } else if (openPack == "Lugia") {
-                packx := SelectExpansionLeftCollumnMiddleX
+                packx := SelectExpansionLeftColumnMiddleX
                 packy := 434
             } else if (openPack == "Eevee") {
-                packx := SelectExpansionRightCollumnMiddleX
+                packx := SelectExpansionRightColumnMiddleX
                 packy := 434
             }
         }
@@ -4505,22 +4505,22 @@ SelectPack(HG := false) {
                 Sleep, 300 ;
             }
             if (openPack = "Dialga") {
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionLeft
+                packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
                 packy := 238
             } else if (openPack = "Palkia") {
-                packx := SelectExpansionLeftCollumnMiddleX + 2PackExpansionRight
+                packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionRight
                 packy := 238
             } else if (openPack = "Mew") {
-                packx := SelectExpansionRightCollumnMiddleX
+                packx := SelectExpansionRightColumnMiddleX
                 packy := 238
 			} else if (openPack = "Charizard") {
-                packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionLeft
+                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
                 packy := 394
             } else if (openPack = "Mewtwo") {
-                packx := SelectExpansionRightCollumnMiddleX
+                packx := SelectExpansionRightColumnMiddleX
                 packy := 394
             } else if (openPack = "Pikachu") {
-                packx := SelectExpansionRightCollumnMiddleX + 3PackExpansionRight
+                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionRight
                 packy := 394
             }
         }
@@ -4528,13 +4528,13 @@ SelectPack(HG := false) {
         If (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
             if (openPack == "MegaGyarados") {
                 packy := SelectExpansionFirstRowY
-                packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionLeft
+                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
             } else if (openPack == "MegaBlaziken") {
                 packy := SelectExpansionFirstRowY
-                packx := SelectExpansionLeftCollumnMiddleX
+                packx := SelectExpansionLeftColumnMiddleX
             } else if (openPack == "MegaAltaria") {
                 packy := SelectExpansionFirstRowY
-                packx := SelectExpansionLeftCollumnMiddleX + 3PackExpansionRight
+                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
             }
         }
         FindImageAndClick(233, 400, 264, 428, , "Points", packx, packy)
