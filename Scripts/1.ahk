@@ -4282,9 +4282,8 @@ DoTutorial() {
 
     FindImageAndClick(191, 393, 211, 411, , "Shop", 146, 444) ;click until at main menu
 
-    FindImageAndClick(99, 235, 124, 244, , "Wonder2", 79, 411) ; click until wonder pick tutorial screen
+    FindImageAndClick(98, 234, 125, 245, 100, "Wonder2", 79, 411) ; click until wonder pick tutorial screen
     ; Changed needle and search location for Wonder2 2025.10.31
-
 
     FindImageAndClick(114, 430, 155, 441, , "Wonder3", 190, 437) ; click through tutorial
 
