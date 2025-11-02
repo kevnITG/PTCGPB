@@ -4647,10 +4647,10 @@ SelectPack(HG := false) {
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
                 packy := 394
             } else if (openPack = "Mewtwo") {
-                packx := SelectExpansionRightColumnMiddleX
+                packx := SelectExpansionLeftColumnMiddleX
                 packy := 394
             } else if (openPack = "Pikachu") {
-                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionRight
+                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
                 packy := 394
             }
         }
