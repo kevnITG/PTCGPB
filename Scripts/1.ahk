@@ -4670,7 +4670,7 @@ SelectPack(HG := false) {
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
             }
         }
-        FindImageAndClick(233, 400, 264, 428, , "Points", packx, packy)
+        FindImageAndClick(233, 400, 264, 428, , "Points", packx, packy, 2000)
     }
 	
 	if(HG = "First" && injectMethod && loadedAccount && !accountHasPackInfo) {
