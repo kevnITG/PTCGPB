@@ -30,6 +30,8 @@ global checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode, isCurrentl
 global s4tPendingTradeables := []
 global deviceAccountXmlMap := {} ; prevents Create Bots + s4t making duplicate .xmls within a single run
 global ocrShinedust
+global shinedustValue := "" ; stores shinedust value from early CountShinedust() call
+global shinedustLogged := false ; tracks if shinedust was logged to database
 global titleHeight, MuMuv5
 
 global avgtotalSeconds
@@ -492,12 +494,19 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             DoTutorial()
             accountOpenPacks := 0 ;tutorial packs don't count
         }
-        
+
         if(deleteMethod = "5 Pack" || deleteMethod = "5 Pack (Fast)" || deleteMethod = "Create Bots (13P)")
             wonderPicked := DoWonderPick()
             
         friendsAdded := AddFriends()
-        
+
+        ; Count shinedust after AddFriends ensures we're at main menu and game is stable
+        shinedustValue := ""
+        shinedustLogged := false
+        if(ocrShinedust && injectMethod && loadedAccount) {
+            shinedustValue := CountShinedust()
+        }
+
         SelectPack("First")
         if(cantOpenMorePacks)
             Goto, MidOfRun
@@ -672,7 +681,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         EndOfRun:
 
-        if(ocrShinedust && injectMethod && loadedAccount) {
+        if(ocrShinedust && injectMethod && loadedAccount && !shinedustLogged) {
             GoToMain()
             ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
             CountShinedust()
@@ -2448,10 +2457,11 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         savedXmlPath := loadedAccount
         deviceAccount := GetDeviceAccountFromXML()
     }
-    
+
     screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
-    
-    LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName)
+
+    LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName, shinedustValue)
+    shinedustLogged := true  ; Mark shinedust as logged to prevent duplicate at EndOfRun
 
     statusMessage := "Tradeable cards found"
 
@@ -2486,8 +2496,13 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
             packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
         
         packDetailsMessage := RTrim(packDetailsMessage, ", ")
-        
-        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nLogged to Trades Database and continuing..."
+
+        ; Build shinedust line if available
+        shinedustLine := ""
+        if (shinedustValue != "")
+            shinedustLine := "\nShinedust: " . shinedustValue
+
+        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nDevice Account: " . deviceAccount . shinedustLine . "\nLogged to Trades Database and continuing..."
         
         ; Prepare XML file path for attachment
         xmlFileToSend := ""
@@ -6827,6 +6842,18 @@ CountShinedust() {
                     LogShinedustToDatabase(shineDustValue)
                     CreateStatusMessage("Account has " . shineDustValue . " shinedust.")
                     Sleep, 2000
+                    if (FileExist(shinedustScreenshotFile)) {
+                        FileDelete, %shinedustScreenshotFile%
+                    }
+                    ; Close the shinedust popup before returning
+                    adbInputEvent("111")
+                    Sleep, 500
+                    ; Click bottom left to ensure we exit any remaining screens
+                    adbClick(40, 516)
+                    Sleep, 300
+                    adbClick(40, 516)
+                    Sleep, 300
+                    return shineDustValue
                 } else {
                     CreateStatusMessage("Failed to OCR shinedust.")
                     Sleep, 2000
@@ -6841,10 +6868,19 @@ CountShinedust() {
         CreateStatusMessage("Failed to OCR shinedust.")
         Sleep, 2000
     }
-    
+
     if (FileExist(shinedustScreenshotFile)) {
         FileDelete, %shinedustScreenshotFile%
     }
+    ; Close the shinedust popup before returning (failure case)
+    adbInputEvent("111")
+    Sleep, 500
+    ; Click bottom left to ensure we exit any remaining screens
+    adbClick(40, 516)
+    Sleep, 300
+    adbClick(40, 516)
+    Sleep, 300
+    return ""
 }
 
 LogShinedustToDatabase(shinedustValue) {
