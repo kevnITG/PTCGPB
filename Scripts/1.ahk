@@ -672,7 +672,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         EndOfRun:
 
-        if(ocrShinedust) {
+        if(ocrShinedust && injectMethod && loadedAccount) {
             GoToMain()
             FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
             CountShinedust()
@@ -6769,6 +6769,21 @@ GetTradesDatabaseStats() {
 }
 
 CountShinedust() {
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop {
+        adbClick(162, 429)
+        if(FindOrLoseImage(256, 81, 268, 93, , "insideTrade", 0, failSafeTime)) {
+            break
+        }
+        if(FindOrLoseImage(114, 310, 126, 321, , "tradesLocked", 0, failSafeTime)) {
+            CreateStatusMessage("Trades locked, can't track shinedust",,,, true)
+            Sleep, 1000
+            adbInputEvent("111")
+            Sleep, 2000
+            return
+        }
+    }
     FindImageAndClick(256, 81, 268, 93, , "insideTrade", 162, 429, 750)
     
     Sleep, 1500
