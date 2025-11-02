@@ -105,7 +105,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v8.1.9"
+   ,localVersion := "v8.2.0"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -362,7 +362,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv8.1.9 kevinnnn)"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv8.2.0 kevinnnn)"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
