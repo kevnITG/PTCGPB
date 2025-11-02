@@ -673,8 +673,8 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         EndOfRun:
 
         if(ocrShinedust && injectMethod && loadedAccount) {
-            GoToMain()
-            FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+            ; GoToMain()
+            ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
             CountShinedust()
         }
 
@@ -3107,6 +3107,7 @@ loadAccount() {
     CreateStatusMessage("Loading account...",,,, false)
 
     saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    loadDir := saveDir
     outputTxt := saveDir . "\list_current.txt"
     
     accountFileName := ""
@@ -3511,11 +3512,10 @@ ReadFile(filename, numbers := false) {
 }
 
 Screenshot_dev(fileType := "Dev",subDir := "") {
-	global adbShell, scriptName, ocrLanguage, loadDir
-
-	SetWorkingDir %A_ScriptDir%  ; Ensures the working directory is the script's directory
-
-	; Define folder and file paths
+    global adbShell, adbPath, packs, winTitle
+    SetWorkingDir %A_ScriptDir%  ; Ensures the working directory is the script's directory
+		
+    ; Define folder and file paths
 	fileDir := A_ScriptDir "\..\Screenshots"
 	if !FileExist(fileDir)
 		FileCreateDir, %fileDir%
@@ -3575,12 +3575,26 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
 		KeyWait, LButton, U
 		Y3 -= 31
 		
+		; Convert window coordinates to device/OCR coordinates
+		; Device resolution: 540x960, Window resolution: 277x489, Y offset: 44
+		OCR_X1 := Round(X1 * 540 / 277)
+		OCR_Y1 := Round((Y1 - 44) * 960 / 489)
+		OCR_W := Round(W * 540 / 277)
+		OCR_H := Round(H * 960 / 489)
+		OCR_X2 := OCR_X1 + OCR_W
+		OCR_Y2 := OCR_Y1 + OCR_H
+		
+		; Calculate center point of the box
+		OCR_X3 := Round(OCR_X1 + OCR_W / 2)
+		OCR_Y3 := Round(OCR_Y1 + OCR_H / 2)
+		
 		MsgBox, 	
 		(LTrim
 			ctrl+C to copy: 
 			FindOrLoseImage(%X1%, %Y1%, %X2%, %Y2%, , "%fileName%", 0, failSafeTime)
             FindImageAndClick(%X1%, %Y1%, %X2%, %Y2%, , "%fileName%", %X3%, %Y3%, sleepTime)
 			adbClick_wbb(%X3%, %Y3%)
+			OCR coordinates: %OCR_X3%, %OCR_Y3%, %OCR_W%, %OCR_H%
 		)
     }
     catch {
@@ -6769,39 +6783,21 @@ GetTradesDatabaseStats() {
 }
 
 CountShinedust() {
+
+    FindImageAndClick(252, 78, 263, 92, , "inHamburgerMenu", 244, 518, 2000)
+
     failSafe := A_TickCount
     failSafeTime := 0
     Loop {
-        adbClick(246, 434)
-        Delay(1)
-        adbClick(263, 290) ; need to fix this manual clicking later.
-        Delay(1)
-        adbClick(263, 290)
-        Delay(1)
-        adbClick(246, 434)
-        Delay(1)
-        if(FindOrLoseImage(256, 81, 268, 93, , "insideTrade", 0, failSafeTime)) {
+        adbClick(105, 269)
+        Sleep, 1000
+        if FindOrLoseImage(26, 188, 43, 204, , "shinedustItems", 0, failSafeTime)
             break
-        }
-        if(FindOrLoseImage(114, 310, 126, 321, , "tradesLocked", 0, failSafeTime)) {
-            CreateStatusMessage("Trades locked, can't track shinedust",,,, true)
+        if FindOrLoseImage(126, 205, 138, 220, , "shopticketItems", 0, failSafeTime) {
             Sleep, 1000
             adbInputEvent("111")
-            Sleep, 2000
-            return
+            Sleep, 1000
         }
-        if FindOrLoseImage(125, 494, 153, 522, , "Privacy", 0) {
-            adbClick(139, 508)
-            Sleep, 500
-            break
-        }
-    }
-    
-    Delay(1)
-    
-    if FindOrLoseImage(125, 494, 153, 522, , "Privacy", 0) {
-        adbClick(139, 508)
-        Sleep, 500
     }
 
     tempDir := A_ScriptDir . "\..\Screenshots\temp"
@@ -6812,32 +6808,43 @@ CountShinedust() {
     adbTakeScreenshot(shinedustScreenshotFile)
     Sleep, 4000
     
+    ; Debug: Save the exact OCR region
+    pBitmap := Gdip_CreateBitmapFromFile(shinedustScreenshotFile)
+    if (pBitmap) {
+        pCropped := Gdip_CloneBitmapArea(pBitmap, 415, 310, 90, 25)
+        if (pCropped) {
+            Gdip_SaveBitmapToFile(pCropped, tempDir . "\" . winTitle . "_Shinedust_OCR_Region.png")
+            Gdip_DisposeImage(pCropped)
+        }
+        Gdip_DisposeImage(pBitmap)
+    }
+    
     try {
         if (IsFunc("ocr")) {
             CreateStatusMessage("Trying to OCR Shinedust...")
-            Sleep, 500
+            Sleep, 5000
             shineDustValue := ""
             allowedChars := "0123456789,"
             validPattern := "^\d{1,3}(,\d{3})*$"
             
-            if (RefinedOCRText(shinedustScreenshotFile, 132, 185, 120, 23, allowedChars, validPattern, shineDustValue)) {
+            if (RefinedOCRText(shinedustScreenshotFile, 415, 310, 90, 25, allowedChars, validPattern, shineDustValue)) {
                 if (shineDustValue != "") {
                     LogShinedustToDatabase(shineDustValue)
                     CreateStatusMessage("Account has " . shineDustValue . " shinedust.")
-                    Sleep, 1000
+                    Sleep, 5000
                 } else {
                     CreateStatusMessage("Failed to OCR shinedust.")
-                    Sleep, 1000
+                    Sleep, 5000
                 }
             } else {
                 CreateStatusMessage("Failed to OCR shinedust.")
-                Sleep, 1000
+                Sleep, 5000
             }
         }
     } catch e {
         LogToFile("Failed to OCR shinedust: " . e.message, "OCR.txt")
         CreateStatusMessage("Failed to OCR shinedust.")
-        Sleep, 1000
+        Sleep, 5000
     }
     
     if (FileExist(shinedustScreenshotFile)) {
