@@ -105,7 +105,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v8.1.8"
+   ,localVersion := "v8.1.9"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -277,17 +277,20 @@ NextStep:
 
    sectionColor := "cFF4500"
    Gui, Font, s10 cWhite, Segoe UI
-   Gui, Add, GroupBox, x255 y65 w180 h50 %sectionColor%, % currentDictionary.CardDetection
+   Gui, Add, GroupBox, x255 y55 w180 h50 %sectionColor%, % currentDictionary.CardDetection
    
-   Gui, Add, Button, x275 y85 w140 h25 gShowCardDetection vCardDetectionButton BackgroundTrans, Loading...
+   Gui, Add, Button, x275 y75 w140 h25 gShowCardDetection vCardDetectionButton BackgroundTrans, Loading...
    
    UpdateCardDetectionButtonText()
 
    sectionColor := "c4169E1"
    Gui, Font, s10 cWhite, Segoe UI
-   Gui, Add, GroupBox, x255 y130 w180 h50 %sectionColor%, % currentDictionary.SaveForTrade
+   Gui, Add, GroupBox, x255 y110 w180 h70 %sectionColor%, % currentDictionary.SaveForTrade
    
-   Gui, Add, Button, x275 y150 w140 h25 gShowS4TSettings vS4TButton BackgroundTrans, Loading...
+   Gui, Add, Button, x275 y130 w140 h25 gShowS4TSettings vS4TButton BackgroundTrans, Loading...
+   
+   Gui, Font, s6 cWhite, Segoe UI
+   Gui, Add, Button, x295 y160 w100 h15 gOpenTradesDashboard BackgroundTrans, Open Trades Dashboard
    
    UpdateS4TButtonText()
 
@@ -359,7 +362,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv8.1.8 kevinnnn)"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv8.1.9 kevinnnn)"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -1680,6 +1683,11 @@ return
 
 OpenDiscord:
    Run, https://discord.gg/C9Nyf7P4sT
+return
+
+OpenTradesDashboard:
+   TradesFile := A_ScriptDir . "\Accounts\Trades\Trades_Dashboard.html"
+   Run, %TradesFile%
 return
 
 RunXMLSortTool:
