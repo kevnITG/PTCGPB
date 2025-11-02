@@ -4670,7 +4670,7 @@ SelectPack(HG := false) {
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
             }
         }
-        FindImageAndClick(233, 400, 264, 428, , "Points", packx, packy, 2000)
+        FindImageAndClick(233, 400, 264, 428, , "Points", packx, packy)
     }
 	
 	if(HG = "First" && injectMethod && loadedAccount && !accountHasPackInfo) {
@@ -4730,12 +4730,13 @@ SelectPack(HG := false) {
                 
                 ; Execute failsafe click only once after 10 seconds
                 failSafeTime := (A_TickCount - failSafe) // 1000
-                if (failSafeTime >= 10 && !failsafeClickExecuted) {
-                    CreateStatusMessage("Trying to click floating pack...")
-                    Sleep, 1000
-                    adbClick_wbb(151, 250) ; if pack is floating too high
-                    Sleep, 2000
-                    failsafeClickExecuted := true
+                if (failSafeTime >= 5 && !failsafeClickExecuted) {
+                    if (FindorLoseImage(233, 400, 264, 428, , "Points", 0)) {
+                        CreateStatusMessage("Trying to click floating pack...")
+                        Sleep, 1000
+                        adbClick_wbb(151, 250) ; if pack is floating/glitched
+                        failsafeClickExecuted := true
+                    }
                 }
             }
         
