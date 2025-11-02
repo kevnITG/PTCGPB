@@ -6772,7 +6772,14 @@ CountShinedust() {
     failSafe := A_TickCount
     failSafeTime := 0
     Loop {
-        adbClick(162, 429)
+        adbClick(246, 434)
+        Delay(1)
+        adbClick(263, 290) ; need to fix this manual clicking later.
+        Delay(1)
+        adbClick(263, 290)
+        Delay(1)
+        adbClick(246, 434)
+        Delay(1)
         if(FindOrLoseImage(256, 81, 268, 93, , "insideTrade", 0, failSafeTime)) {
             break
         }
@@ -6783,10 +6790,14 @@ CountShinedust() {
             Sleep, 2000
             return
         }
-        Sleep, 750
+        if FindOrLoseImage(125, 494, 153, 522, , "Privacy", 0) {
+            adbClick(139, 508)
+            Sleep, 500
+            break
+        }
     }
     
-    Sleep, 1500
+    Delay(1)
     
     if FindOrLoseImage(125, 494, 153, 522, , "Privacy", 0) {
         adbClick(139, 508)
