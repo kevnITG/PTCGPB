@@ -673,7 +673,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         EndOfRun:
 
         if(ocrShinedust && injectMethod && loadedAccount) {
-            ; GoToMain()
+            GoToMain()
             ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
             CountShinedust()
         }
