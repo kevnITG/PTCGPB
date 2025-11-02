@@ -4660,7 +4660,7 @@ SelectPack(HG := false) {
                 packx := SelectExpansionLeftColumnMiddleX
                 packy := 113
             } else if (openPack = "Arceus") {
-                packx := SelectExpansionLeftColumnMiddleX
+                packx := SelectExpansionRightColumnMiddleX
                 packy := 113
             } else if (openPack = "Dialga") {
                 packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
@@ -6783,16 +6783,22 @@ GetTradesDatabaseStats() {
 }
 
 CountShinedust() {
-
     FindImageAndClick(252, 78, 263, 92, , "inHamburgerMenu", 244, 518, 2000)
 
     failSafe := A_TickCount
-    failSafeTime := 0
     Loop {
-        adbClick(105, 269)
-        Sleep, 1000
+        failSafeTime := (A_TickCount - failSafe) // 1000
+        if (failSafeTime > 30) {
+            if (injectMethod && loadedAccount && friended) {
+                IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+            }
+            restartGameInstance("Stuck at Shinedust menu")
+            return
+        }
         if FindOrLoseImage(26, 188, 43, 204, , "shinedustItems", 0, failSafeTime)
             break
+        adbClick(105, 269)
+        Sleep, 1000
         if FindOrLoseImage(126, 205, 138, 220, , "shopticketItems", 0, failSafeTime) {
             Sleep, 1000
             adbInputEvent("111")
@@ -6804,25 +6810,13 @@ CountShinedust() {
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%
     
+    Sleep, 100
     shinedustScreenshotFile := tempDir . "\" . winTitle . "_Shinedust.png"
     adbTakeScreenshot(shinedustScreenshotFile)
-    Sleep, 4000
-    
-    ; Debug: Save the exact OCR region
-    pBitmap := Gdip_CreateBitmapFromFile(shinedustScreenshotFile)
-    if (pBitmap) {
-        pCropped := Gdip_CloneBitmapArea(pBitmap, 415, 310, 90, 25)
-        if (pCropped) {
-            Gdip_SaveBitmapToFile(pCropped, tempDir . "\" . winTitle . "_Shinedust_OCR_Region.png")
-            Gdip_DisposeImage(pCropped)
-        }
-        Gdip_DisposeImage(pBitmap)
-    }
+    Sleep, 100
     
     try {
         if (IsFunc("ocr")) {
-            CreateStatusMessage("Trying to OCR Shinedust...")
-            Sleep, 5000
             shineDustValue := ""
             allowedChars := "0123456789,"
             validPattern := "^\d{1,3}(,\d{3})*$"
@@ -6831,20 +6825,20 @@ CountShinedust() {
                 if (shineDustValue != "") {
                     LogShinedustToDatabase(shineDustValue)
                     CreateStatusMessage("Account has " . shineDustValue . " shinedust.")
-                    Sleep, 5000
+                    Sleep, 2000
                 } else {
                     CreateStatusMessage("Failed to OCR shinedust.")
-                    Sleep, 5000
+                    Sleep, 2000
                 }
             } else {
                 CreateStatusMessage("Failed to OCR shinedust.")
-                Sleep, 5000
+                Sleep, 2000
             }
         }
     } catch e {
         LogToFile("Failed to OCR shinedust: " . e.message, "OCR.txt")
         CreateStatusMessage("Failed to OCR shinedust.")
-        Sleep, 5000
+        Sleep, 2000
     }
     
     if (FileExist(shinedustScreenshotFile)) {
@@ -6855,17 +6849,22 @@ CountShinedust() {
 LogShinedustToDatabase(shinedustValue) {
     global accountFileName
     
+    shinedustValueClean := StrReplace(shinedustValue, ",", "")
+    
+    if (shinedustValueClean < 999 || shinedustValueClean > 999999) {
+        CreateStatusMessage("Invalid shinedust value: " . shinedustValue . " - not logging")
+        Sleep, 2000
+        return
+    }
+    
     dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
     
-    ; Ensure database exists with proper header including Shinedust column
     if (!FileExist(dbPath)) {
         header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot,Shinedust`n"
         FileAppend, %header%, %dbPath%
     } else {
-        ; Check if Shinedust column exists in header
         FileReadLine, headerLine, %dbPath%, 1
         if (!InStr(headerLine, "Shinedust")) {
-            ; Add Shinedust column to existing database
             FileRead, csvContent, %dbPath%
             
             Lines := StrSplit(csvContent, "`n", "`r")
@@ -6885,21 +6884,15 @@ LogShinedustToDatabase(shinedustValue) {
         }
     }
     
-    ; Get device account from current XML file
     deviceAccount := GetDeviceAccountFromXML()
     
-    ; Format timestamp
     timestamp := A_Now
     FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
     
-    ; Clean filename (remove pack count prefix and timestamp suffix)
     cleanFilename := accountFileName
     cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
     cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]*\))?\.xml$", "")
-    shinedustValueClean := StrReplace(shinedustValue, ",", "")
 
-    ; Create CSV row with all required fields
-    ; Format: Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot,Shinedust
     csvRow := timestamp . ","
         . accountFileName . ","
         . cleanFilename . ","
