@@ -4574,10 +4574,10 @@ SelectPack(HG := false) {
                 packx := SelectExpansionRightColumnMiddleX
                 packy := 298
             } else if (openPack == "HoOh") {
-                packx := SelectExpansionLeftColumnMiddleX
+                packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
                 packy := 434
             } else if (openPack == "Lugia") {
-                packx := SelectExpansionLeftColumnMiddleX
+                packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionRight
                 packy := 434
             } else if (openPack == "Eevee") {
                 packx := SelectExpansionRightColumnMiddleX
