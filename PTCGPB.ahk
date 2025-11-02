@@ -1560,6 +1560,9 @@ Save:
   if (s4tSendAccountXml && s4tEnabled) {
     confirmMsg .= "`n" . SetUpDictionary.Confirm_XMLWarning . "`n"
    }
+  if (ocrShinedust && s4tEnabled) {
+    confirmMsg .= "• Track Shinedust`n"
+   }
   if (sendAccountXml) {
     confirmMsg .= "`n" . SetUpDictionary.Confirm_XMLWarning . "`n"
    }
