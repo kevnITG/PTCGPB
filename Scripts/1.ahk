@@ -2575,7 +2575,10 @@ DetectFourCardPack() {
 FindBorders(prefix) {
     global currentPackIs6Card
     count := 0
-    searchVariation := 40 ; Decreasing for Megas now that we have new image search locations to test. 60 had false positives
+    searchVariation := 40 ;
+    if (prefix = "normal") {
+        searchVariation := 75 ; Increasing for megas patch...
+    }
     searchVariation6Card := 60 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
     searchVariation4Card := 60 ;
 
