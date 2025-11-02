@@ -6783,8 +6783,8 @@ CountShinedust() {
             Sleep, 2000
             return
         }
+        Sleep, 750
     }
-    FindImageAndClick(256, 81, 268, 93, , "insideTrade", 162, 429, 750)
     
     Sleep, 1500
     
