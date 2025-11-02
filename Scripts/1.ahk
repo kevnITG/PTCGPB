@@ -1361,11 +1361,11 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
 
     ; Try to handle "Share" feature
-        Path = %imagePath%Privacy.png
+        Path = %imagePath%Share.png
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 128, 360, 148, 380, searchVariation)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 61, 273, 74, 286, searchVariation)
         if (vRet = 1) {
-            adbClick_wbb(138, 370)
+            adbClick_wbb(141, 369)
             Gdip_DisposeImage(pBitmap)
             return confirmed
         }
@@ -1705,11 +1705,11 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             }
 
         ; Try to handle "Share" feature
-            Path = %imagePath%Privacy.png
+            Path = %imagePath%Share.png
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 128, 360, 148, 380, searchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 61, 273, 74, 286, searchVariation)
             if (vRet = 1) {
-                adbClick_wbb(138, 370)
+                adbClick_wbb(141, 369)
                 Gdip_DisposeImage(pBitmap)
                 return confirmed
             }
