@@ -6769,10 +6769,15 @@ GetTradesDatabaseStats() {
 }
 
 CountShinedust() {
-    FindImageAndClick(256, 81, 268, 93, , "insideTrade", 162, 429, 500)
+    FindImageAndClick(256, 81, 268, 93, , "insideTrade", 162, 429, 750)
     
-    Sleep, 500
+    Sleep, 1500
     
+    if FindOrLoseImage(125, 494, 153, 522, , "Privacy", 0) {
+        adbClick(139, 508)
+        Sleep, 500
+    }
+
     tempDir := A_ScriptDir . "\..\Screenshots\temp"
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%

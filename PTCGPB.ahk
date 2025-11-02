@@ -1023,7 +1023,7 @@ ShowS4TSettings:
     buttonCenterX := 375
     popupWidth := 200
     popupX := mainWinX + buttonCenterX - (popupWidth / 2)
-    popupY := mainWinY + 50
+    popupY := mainWinY + 0
     
     Gui, S4TSettingsSelect:Destroy
     Gui, S4TSettingsSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Save for Trade Settings
@@ -1088,6 +1088,9 @@ ShowS4TSettings:
     
     Gui, S4TSettingsSelect:Add, Checkbox, % (s4tSendAccountXml ? "Checked" : "") " vs4tSendAccountXml_Popup x15 y" . yPos . " " . sectionColor, % currentDictionary.Txt_s4tSendAccountXml
     yPos += 20
+    
+    Gui, S4TSettingsSelect:Add, Checkbox, % (ocrShinedust ? "Checked" : "") " vocrShinedust_Popup x15 y" . yPos . " " . sectionColor, Track Shinedust
+    yPos += 25
     ; Gui, S4TSettingsSelect:Add, Checkbox, % (s4tSilent ? "Checked" : "") " vs4tSilent_Popup x15 y" . yPos . " " . sectionColor, Silent (No Ping)
     ; yPos += 35
     
@@ -1117,6 +1120,7 @@ ApplyS4TSettings:
     s4tDiscordUserId := s4tDiscordUserId_Popup
     s4tDiscordWebhookURL := s4tDiscordWebhookURL_Popup
     s4tSendAccountXml := s4tSendAccountXml_Popup
+    ocrShinedust := ocrShinedust_Popup
     s4tSilent := 0
     ; s4tSilent := s4tSilent_Popup
     
@@ -1144,6 +1148,7 @@ ApplyS4TSettings:
     GuiControl,, s4tWPMinCards, %s4tWPMinCards%
     GuiControl,, s4tDiscordUserId, %s4tDiscordUserId%
     GuiControl,, s4tDiscordWebhookURL, %s4tDiscordWebhookURL%
+    GuiControl,, ocrShinedust, %ocrShinedust%
     GuiControl,, s4tSendAccountXml, %s4tSendAccountXml%
     ; GuiControl,, s4tSilent, %s4tSilent%
     
@@ -1961,6 +1966,7 @@ LoadSettingsFromIni() {
       IniRead, s4tDiscordWebhookURL, Settings.ini, UserSettings, s4tDiscordWebhookURL, ""
       IniRead, s4tDiscordUserId, Settings.ini, UserSettings, s4tDiscordUserId, ""
       IniRead, s4tSendAccountXml, Settings.ini, UserSettings, s4tSendAccountXml, 0
+      IniRead, ocrShinedust, Settings.ini, UserSettings, ocrShinedust, 0
       
       IniRead, DiscordWebhookURL, Settings.ini, UserSettings, DiscordWebhookURL, ""
       IniRead, DiscordUserId, Settings.ini, UserSettings, DiscordUserId, ""
@@ -2109,7 +2115,7 @@ SaveAllSettings() {
    global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, isDarkTheme
    global useBackgroundImage, tesseractPath, debugMode, useTesseract, statusMessage
    global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards
-   global s4tDiscordUserId, s4tDiscordWebhookURL, s4tSendAccountXml, minStarsShiny, instanceLaunchDelay, applyRoleFilters, mainIdsURL, vipIdsURL
+   global s4tDiscordUserId, s4tDiscordWebhookURL, s4tSendAccountXml, ocrShinedust, minStarsShiny, instanceLaunchDelay, applyRoleFilters, mainIdsURL, vipIdsURL
    global s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star, s4tTrainer, s4tRainbow, s4tFullArt
    global spendHourGlass, openExtraPack, injectSortMethod, rowGap, SortByDropdown
    global waitForEligibleAccounts, maxWaitHours, skipMissionsInjectMissions
@@ -2203,6 +2209,7 @@ SaveAllSettings() {
    iniContent .= "s4tShiny2Star=" s4tShiny2Star "`n"
    iniContent .= "s4tWP=" s4tWP "`n"
    iniContent .= "s4tSendAccountXml=" s4tSendAccountXml "`n"
+   iniContent .= "ocrShinedust=" ocrShinedust "`n"
    iniContent .= "sendAccountXml=" sendAccountXml "`n"
    iniContent .= "heartBeat=" heartBeat "`n"
    iniContent .= "menuExpanded=" menuExpanded "`n"
