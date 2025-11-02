@@ -981,16 +981,20 @@ RemoveFriends() {
     
     FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460)
     Delay(1)
-    FindImageAndClick(97, 452, 104, 476, 10, "requests", 174, 467)
+    FindImageAndClick(97, 452, 104, 476, 10, "requests", 167, 472)
+    Delay(1)
+    adbClick(167, 472) ; extra click since failing to get into requests sometimes
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
         if (FindOrLoseImage(191, 498, 207, 514, , "clearAll", 0, failSafeTime))
             break
         adbClick(205, 510)
-        Delay(1)
+        Delay(3)
         if (FindOrLoseImage(135, 355, 160, 385, , "Remove", 0, failSafeTime))
             adbClick(210, 372)
+        Delay(3)
+        adbClick()
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for clearAll`n(" . failSafeTime . "/45 seconds)")
     }
