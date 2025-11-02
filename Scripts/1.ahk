@@ -4601,13 +4601,13 @@ SelectPack(HG := false) {
                 Sleep, 300 ;
             }
             if (openPack = "Buzzwole") {
-                packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
+                packx := SelectExpansionLeftColumnMiddleX
                 packy := 444
             } else if (openPack = "Solgaleo") {
-                packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
+                packx := SelectExpansionRightColumnMiddleX
                 packy := 444
             } else if (openPack = "Lunala") {
-                packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
+                packx := SelectExpansionRightColumnMiddleX
                 packy := 444
             }
         }
