@@ -4585,8 +4585,34 @@ SelectPack(HG := false) {
             }
         }
 
+        ; packs that can be opened after swiping once
+        if (openPack = "Buzzwole" || openPack = "Solgaleo" || openPack = "Lunala") {
+            
+            Delay(4)
+            adbClick(156, 455) ; click A series. need more robust system later
+            Delay(4)
+
+            X := 266
+            Y1 := 430
+            Y2 := 50
+    
+            Loop, 1 {
+                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
+                Sleep, 300 ;
+            }
+            if (openPack = "Buzzwole") {
+                packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
+                packy := 444
+            } else if (openPack = "Solgaleo") {
+                packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
+                packy := 444
+            } else if (openPack = "Lunala") {
+                packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
+                packy := 444
+            }
+
         ; packs that can be opened after fully swiping down
-        if (openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu") {
+        if (openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu" || openPack = "Shining" || openPack = "Arceus") {
             
             Delay(4)
             adbClick(156, 455) ; click A series. need more robust system later
@@ -4600,7 +4626,14 @@ SelectPack(HG := false) {
                 adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
                 Sleep, 300 ;
             }
-            if (openPack = "Dialga") {
+            
+            if (openPack = "Shining") {
+                packx := SelectExpansionLeftColumnMiddleX
+                packy := 113
+            } else if (openPack = "Arceus") {
+                packx := SelectExpansionLeftColumnMiddleX
+                packy := 113
+            } else if (openPack = "Dialga") {
                 packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
                 packy := 238
             } else if (openPack = "Palkia") {
@@ -4621,7 +4654,7 @@ SelectPack(HG := false) {
             }
         }
 
-        If (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
+        if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
             if (openPack == "MegaGyarados") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
