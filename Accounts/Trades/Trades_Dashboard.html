@@ -226,6 +226,11 @@
             font-size: 0.7em;
         }
 
+        th.col-shinedust {
+            width: 100px;
+            font-size: 0.75em;
+        }
+
         td.col-xml {
             width: 180px;
             max-width: 180px;
@@ -583,12 +588,13 @@
                         <th class="col-cards">cards</th>
                         <th class="col-xml">.xml filename</th>
                         <th class="col-time" rowspan="2">time</th>
+                        <th class="col-shinedust">shinedust</th>
                         <th class="col-screenshot">Screenshot</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="6" class="empty-state">
+                        <td colspan="7" class="empty-state">
                             <h2>no data loaded</h2>
                             <p>click load csv to view database</p>
                         </td>
@@ -633,6 +639,7 @@
                     cardTypes: values[5] ? values[5].split('|') : [],
                     cardCounts: values[6] ? values[6].split('|').map(Number) : [],
                     packScreenshot: values[7] ? values[7].trim() : '',
+                    shinedust: values[8] ? values[8].trim() : '',
                 };
                 allData.push(row);
             }
@@ -811,6 +818,7 @@
                     <th class="col-xml">.xml filename<br><button class="header-import-btn" onclick="showLoadSavedFolderPopup()" id="importXmlBtn">Load Saved folder</button></th>
                     <th class="col-subTime">first seen</th>
                     <th class="col-subTime">last seen</th>
+                    <th class="col-shinedust">shinedust</th>
                     <th class="col-screenshot">Screenshot</th>
                 </tr>
             `;
@@ -837,6 +845,11 @@
 
                 const xmlFilenames = [...new Set(account.details.map(d => d.cleanFilename))].join(', ');
                 const originalFileName = account.details.map(d => d.originalFilename).join(',');
+                
+                // Get latest shinedust value from most recent entry
+                const latestShinedust = account.details.length > 0 && account.details[account.details.length - 1].shinedust 
+                    ? account.details[account.details.length - 1].shinedust 
+                    : '';
 
                 tr.innerHTML = `
                     <td class="device-account">
@@ -848,6 +861,7 @@
                     <td class="col-xml">${xmlFilenames}&nbsp;&nbsp;&nbsp;<span class="xmlDownloadLink" data-info="${originalFileName}">🡇</span></td>
                     <td class="time-cell">${account.firstSeen.split(' ')[0]}</td>
                     <td class="time-cell">${account.lastSeen.split(' ')[0]}</td>
+                    <td class="col-shinedust">${latestShinedust}</td>
                     <td class="col-screenshot"></td>
                 `;
                 
@@ -874,6 +888,7 @@
                             <td class="col-xml" title="${detail.originalFilename}">${detail.cleanFilename}</td>
                             <td></td>
                             <td class="time-cell">${detail.timestamp}</td>
+                            <td class="col-shinedust">${detail.shinedust || ''}</td>
                             <td class="detail-screenshot">
                         `;
                         screenshotTag = `No filename in Database`;
@@ -908,6 +923,7 @@
                     <th>.xml filename</th>
                     <th>device account</th>
                     <th class="col-time">time</th>
+                    <th class="col-shinedust">shinedust</th>
                     <th class="col-screenshot">Screenshot</th>
                 </tr>
             `;
@@ -932,6 +948,7 @@
                     <td class="col-xml">${xmlFilenames}&nbsp;&nbsp;&nbsp;<span class="xmlDownloadLink" data-info="${originalFileName}">🡇</span></td>
                     <td class="device-account">${row.deviceAccount}</td>
                     <td class="time-cell">${row.timestamp}</td>
+                    <td class="col-shinedust">${row.shinedust || ''}</td>
                     <td class="detail-screenshot">
                     `;
                 screenshotTag = `No filename in Database`;
@@ -961,9 +978,9 @@
                 return;
             }
 
-            const headers = 'Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot\n';
+            const headers = 'Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot,Shinedust\n';
             const rows = filteredData.map(row => 
-                `${row.timestamp},${row.originalFilename},${row.cleanFilename},${row.deviceAccount},${row.packType},${row.cardTypes.join('|')},${row.cardCounts.join('|')},${row.packScreenshot}`
+                `${row.timestamp},${row.originalFilename},${row.cleanFilename},${row.deviceAccount},${row.packType},${row.cardTypes.join('|')},${row.cardCounts.join('|')},${row.packScreenshot},${row.shinedust || ''}`
             ).join('\n');
 
             const csv = headers + rows;

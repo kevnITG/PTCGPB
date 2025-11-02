@@ -29,6 +29,7 @@ global claimDailyMission, wonderpickForEventMissions
 global checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode, isCurrentlyDoingWPCheck := false
 global s4tPendingTradeables := []
 global deviceAccountXmlMap := {} ; prevents Create Bots + s4t making duplicate .xmls within a single run
+global ocrShinedust
 global titleHeight, MuMuv5
 
 global avgtotalSeconds
@@ -194,6 +195,7 @@ IniRead, s4tWPMinCards, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tWPMinCar
 IniRead, s4tDiscordWebhookURL, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tDiscordWebhookURL
 IniRead, s4tDiscordUserId, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tDiscordUserId
 IniRead, s4tSendAccountXml, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tSendAccountXml, 1
+IniRead, ocrShinedust, %A_ScriptDir%\..\Settings.ini, UserSettings, ocrShinedust, 0
 
 IniRead, rerolls, %A_ScriptDir%\%scriptName%.ini, Metrics, rerolls, 0
 IniRead, rerollStartTime, %A_ScriptDir%\%scriptName%.ini, Metrics, rerollStartTime, A_TickCount
@@ -670,6 +672,12 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         EndOfRun:
 
+        if(ocrShinedust) {
+            GoToMain()
+            FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+            CountShinedust()
+        }
+
         if(wonderpickForEventMissions) {
             GoToMain()
             FindImageAndClick(240, 80, 265, 100, , "WonderPick", 59, 429) ;click until in wonderpick Screen
@@ -980,9 +988,9 @@ RemoveFriends() {
     }
     
     FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460)
-    Delay(1)
+    Delay(2)
     FindImageAndClick(97, 452, 104, 476, 10, "requests", 167, 472)
-    Delay(1)
+    Delay(2)
     adbClick(167, 472) ; extra click since failing to get into requests sometimes
     failSafe := A_TickCount
     failSafeTime := 0
@@ -990,11 +998,10 @@ RemoveFriends() {
         if (FindOrLoseImage(191, 498, 207, 514, , "clearAll", 0, failSafeTime))
             break
         adbClick(205, 510)
-        Delay(3)
+        Delay(1)
         if (FindOrLoseImage(135, 355, 160, 385, , "Remove", 0, failSafeTime))
             adbClick(210, 372)
-        Delay(3)
-        adbClick()
+        Delay(1)
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for clearAll`n(" . failSafeTime . "/45 seconds)")
     }
@@ -1806,7 +1813,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if(imageName = "Points" || imageName = "Home") { ;look for level up ok "button"
             LevelUp()
         }
-        if(imageName = "Social" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
+        if(imageName = "Social" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
             TradeTutorial()
         }
         if(skip) {
@@ -4812,7 +4819,7 @@ PackOpening() {
         Delay(1)
     }
 
-    FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497, 50) ;skip through cards until results opening screen
+    FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497, 100) ;skip through cards until results opening screen
 
     CheckPack()
     
@@ -6575,14 +6582,24 @@ GetDeviceAccountFromXML() {
     return deviceAccount
 }
 
-LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName := "") {
+LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName := "", shinedustValue := "") {
     global scriptName, accountFileName, accountOpenPacks, openPack
     
     dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
     
     if (!FileExist(dbPath)) {
-        header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot`n"
+        header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot,Shinedust`n"
         FileAppend, %header%, %dbPath%
+    } else {
+        ; Check if Shinedust column exists
+        FileReadLine, headerLine, %dbPath%, 1
+        if (!InStr(headerLine, "Shinedust")) {
+            ; Read entire file and add Shinedust column
+            FileRead, csvContent, %dbPath%
+            csvContent := RegExReplace(csvContent, "^([^\n]+)`n", "$1,Shinedust`n")
+            FileDelete, %dbPath%
+            FileAppend, %csvContent%, %dbPath%
+        }
     }
     
     cleanFilename := accountFileName
@@ -6611,14 +6628,15 @@ LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName := 
         . openPack . ","
         . cardTypeStr . ","
         . cardCountStr . ","
-        . screenShotFileName . "`n"
+        . screenShotFileName . ","
+        . shinedustValue . "`n"
     
     FileAppend, %csvRow%, %dbPath%
     
-    UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFileName)
+    UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFileName, shinedustValue)
 }
 
-UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFileName := "") {
+UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFileName := "", shinedustValue := "") {
     global scriptName, accountFileName, accountOpenPacks, openPack
     
     jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
@@ -6634,7 +6652,13 @@ UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFile
         . """cleanFilename"": """ . cleanFilename . """, "
         . """packType"": """ . openPack . """, "
         . """packScreenshot"": """ . screenShotFileName . """, "
-        . """cards"": ["
+    
+    ; Add shinedust if provided
+    if (shinedustValue != "") {
+        jsonEntry .= """shinedust"": """ . shinedustValue . """, "
+    }
+    
+    jsonEntry .= """cards"": ["
     
     Loop, % cardTypes.Length() {
         if (A_Index > 1)
@@ -6743,6 +6767,133 @@ GetTradesDatabaseStats() {
     
     return stats
 }
+
+CountShinedust() {
+    FindImageAndClick(256, 81, 268, 93, , "insideTrade", 162, 429, 500)
+    
+    Sleep, 500
+    
+    tempDir := A_ScriptDir . "\..\Screenshots\temp"
+    if !FileExist(tempDir)
+        FileCreateDir, %tempDir%
+    
+    shinedustScreenshotFile := tempDir . "\" . winTitle . "_Shinedust.png"
+    adbTakeScreenshot(shinedustScreenshotFile)
+    Sleep, 4000
+    
+    try {
+        if (IsFunc("ocr")) {
+            CreateStatusMessage("Trying to OCR Shinedust...")
+            Sleep, 500
+            shineDustValue := ""
+            allowedChars := "0123456789,"
+            validPattern := "^\d{1,3}(,\d{3})*$"
+            
+            if (RefinedOCRText(shinedustScreenshotFile, 132, 185, 120, 23, allowedChars, validPattern, shineDustValue)) {
+                if (shineDustValue != "") {
+                    LogShinedustToDatabase(shineDustValue)
+                    CreateStatusMessage("Account has " . shineDustValue . " shinedust.")
+                    Sleep, 1000
+                } else {
+                    CreateStatusMessage("Failed to OCR shinedust.")
+                    Sleep, 1000
+                }
+            } else {
+                CreateStatusMessage("Failed to OCR shinedust.")
+                Sleep, 1000
+            }
+        }
+    } catch e {
+        LogToFile("Failed to OCR shinedust: " . e.message, "OCR.txt")
+        CreateStatusMessage("Failed to OCR shinedust.")
+        Sleep, 1000
+    }
+    
+    if (FileExist(shinedustScreenshotFile)) {
+        FileDelete, %shinedustScreenshotFile%
+    }
+}
+
+LogShinedustToDatabase(shinedustValue) {
+    global accountFileName
+    
+    dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
+    
+    ; Ensure database exists with proper header including Shinedust column
+    if (!FileExist(dbPath)) {
+        header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot,Shinedust`n"
+        FileAppend, %header%, %dbPath%
+    } else {
+        ; Check if Shinedust column exists in header
+        FileReadLine, headerLine, %dbPath%, 1
+        if (!InStr(headerLine, "Shinedust")) {
+            ; Add Shinedust column to existing database
+            FileRead, csvContent, %dbPath%
+            
+            Lines := StrSplit(csvContent, "`n", "`r")
+            newContent := Lines[1] . ",Shinedust`n"
+            
+            Loop, % Lines.Length()
+            {
+                if (A_Index = 1)
+                    continue
+                if (Lines[A_Index] = "")
+                    continue
+                newContent .= Lines[A_Index] . ",`n"
+            }
+            
+            FileDelete, %dbPath%
+            FileAppend, %newContent%, %dbPath%
+        }
+    }
+    
+    ; Get device account from current XML file
+    deviceAccount := GetDeviceAccountFromXML()
+    
+    ; Format timestamp
+    timestamp := A_Now
+    FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
+    
+    ; Clean filename (remove pack count prefix and timestamp suffix)
+    cleanFilename := accountFileName
+    cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
+    cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]*\))?\.xml$", "")
+    shinedustValueClean := StrReplace(shinedustValue, ",", "")
+
+    ; Create CSV row with all required fields
+    ; Format: Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot,Shinedust
+    csvRow := timestamp . ","
+        . accountFileName . ","
+        . cleanFilename . ","
+        . deviceAccount . ","
+        . ","
+        . ","
+        . ","
+        . ","
+        . shinedustValueClean . "`n"
+    
+    FileAppend, %csvRow%, %dbPath%
+    
+    UpdateShinedustJSON(deviceAccount, shinedustValueClean, timestamp, cleanFilename)
+}
+
+UpdateShinedustJSON(deviceAccount, shinedustValue, timestamp, cleanFilename) {
+    global accountFileName
+    
+    jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
+    
+    jsonEntry := "{"
+        . """timestamp"": """ . timestamp . """, "
+        . """deviceAccount"": """ . deviceAccount . """, "
+        . """originalFilename"": """ . accountFileName . """, "
+        . """cleanFilename"": """ . cleanFilename . """, "
+        . """shinedust"": """ . shinedustValue . """"
+        . "}`n"
+    
+    FileAppend, %jsonEntry%, %jsonPath%
+}
+
+; =====================
 
 isMuMuv5(){
     global folderPath
