@@ -6798,7 +6798,7 @@ CountShinedust() {
         if FindOrLoseImage(26, 188, 43, 204, , "shinedustItems", 0, failSafeTime)
             break
         adbClick(105, 269)
-        Sleep, 1000
+        Sleep, 3000
         if FindOrLoseImage(126, 205, 138, 220, , "shopticketItems", 0, failSafeTime) {
             Sleep, 1000
             adbInputEvent("111")
