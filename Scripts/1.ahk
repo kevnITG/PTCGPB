@@ -4610,6 +4610,7 @@ SelectPack(HG := false) {
                 packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
                 packy := 444
             }
+        }
 
         ; packs that can be opened after fully swiping down
         if (openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu" || openPack = "Shining" || openPack = "Arceus") {
