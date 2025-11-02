@@ -2445,6 +2445,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         s4tPendingTradeables.Push(tradeableData)
     } else {
         ; Inject mode: Get deviceAccount after loading
+        savedXmlPath := loadedAccount
         deviceAccount := GetDeviceAccountFromXML()
     }
     
