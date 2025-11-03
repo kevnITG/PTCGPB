@@ -5728,10 +5728,12 @@ DoWonderPick() {
     failSafeTime := 0
     Loop {
         adbClick(261, 478)
-        Sleep, 500
+        Sleep, 1000
         if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
             break
         else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
+            break
+        else if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
             break
     }
 
@@ -5938,13 +5940,14 @@ GetEventRewards(frommain := true){
         failSafe := A_TickCount
         failSafeTime := 0
         Loop {
-        adbClick(261, 478)
-        Sleep, 1000
-        if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
-            break
-        else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
-            ; support for users which have completed beginner and advanced missions
-            break
+            adbClick(261, 478)
+            Sleep, 100
+            if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
+                break
+            else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
+                break
+            else if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
+                break
         }
     }
     Delay(4)
@@ -6006,11 +6009,12 @@ GetAllRewards(tomain := true, dailies := false) {
     failSafeTime := 0
     Loop {
         adbClick(261, 478)
-        Sleep, 500
+        Sleep, 100
         if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
             break
         else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
-            ; support for users which have completed beginner and advanced missions
+            break
+        else if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
             break
     }
 
