@@ -7006,24 +7006,27 @@ CountShinedust() {
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%
     
-    Sleep, 100
+    Sleep, 500
     shinedustScreenshotFile := tempDir . "\" . winTitle . "_Shinedust.png"
     adbTakeScreenshot(shinedustScreenshotFile)
-    Sleep, 100
+    Sleep, 500
     
     try {
         if (IsFunc("ocr")) {
             shineDustValue := ""
-            allowedChars := "0123456789,"
-            validPattern := "^\d{1,3}(,\d{3})*$"
+            allowedChars := "0123456789"
+            validPattern := "^[\d,]+$"
             
-            ocrX := 370
+            ocrX := 385
             ocrY := 310
-            ocrW := 180
-            ocrH := 50
+            ocrW := 150
+            ocrH := 27
             
             pBitmapOriginal := Gdip_CreateBitmapFromFile(shinedustScreenshotFile)
             pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOriginal, ocrX, ocrY, ocrW, ocrH, 300, 75)
+            ;;; debug ;;;;
+            Gdip_SaveBitmapToFile(pBitmapFormatted, tempDir . "\" . winTitle . "_DEBUG_OCR_Processed.png")
+            ;;;;;;;;;;;;;;
             shineDustValue := GetTextFromBitmap(pBitmapFormatted, allowedChars)
             Gdip_DisposeImage(pBitmapOriginal)
             Gdip_DisposeImage(pBitmapFormatted)
