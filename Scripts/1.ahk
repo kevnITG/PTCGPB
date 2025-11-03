@@ -1448,6 +1448,17 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             restartGameInstance("Stuck at " . imageName . "...")
         }
 
+    if(imageName = "Missions") { ; may input extra ESC and stuck at exit game
+        Path = %imagePath%Delete2.png
+        pNeedle := GetNeedle(Path)
+        ; ImageSearch within the region
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 118, 353, 135, 390, searchVariation)
+        if (vRet = 1) {
+            adbClick_wbb(74, 353)
+            Delay(1)
+        }
+    }
+
     if(imageName = "Social" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
         TradeTutorial()
     }
@@ -5655,7 +5666,17 @@ DoWonderPick() {
 	
 	DoWonderPickOnly()
 	
-    FindImageAndClick(2, 85, 34, 120, , "Missions", 261, 478, 500)
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop {
+        adbClick(261, 478)
+        Sleep, 500
+        if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
+            break
+        else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
+            break
+    }
+
     ;FindImageAndClick(130, 170, 170, 205, , "WPMission", 150, 286, 1000)
     FindImageAndClick(120, 185, 150, 215, , "FirstMission", 150, 286, 1000)
     failSafe := A_TickCount
@@ -5856,7 +5877,17 @@ GetEventRewards(frommain := true){
     adbSwipeY2 := Round((453 - 44) / 489 * 960)
     adbSwipeParams2 := adbSwipeX3 . " " . adbSwipeY2 . " " . adbSwipeX4 . " " . adbSwipeY2 . " " . swipeSpeed
     if (frommain){
-        FindImageAndClick(2, 85, 34, 120, , "Missions", 261, 478, 500)
+        failSafe := A_TickCount
+        failSafeTime := 0
+        Loop {
+        adbClick(261, 478)
+        Sleep, 500
+        if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
+            break
+        else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
+            ; support for users which have completed beginner and advanced missions
+            break
+        }
     }
     Delay(4)
     
@@ -5914,13 +5945,36 @@ GetEventRewards(frommain := true){
 }
 
 GetAllRewards(tomain := true, dailies := false) {
-    FindImageAndClick(2, 85, 34, 120, , "Missions", 261, 478, 500)
+
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop {
+        adbClick(261, 478)
+        Sleep, 500
+        if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
+            break
+        else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
+            ; support for users which have completed beginner and advanced missions
+            break
+    }
+
     Delay(4)
     failSafe := A_TickCount
     failSafeTime := 0
     GotRewards := true
     if(dailies){
-        FindImageAndClick(37, 130, 64, 156, , "DailyMissions", 165, 465, 500)
+        adbClick(165, 465)
+        Sleep, 500
+        if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
+            break
+        else if (failSafeTime > 10) {
+            ; if DailyMissions doesn't show up, like if an account has already completed Dailies
+            ; and we are on the wrong tab like 'Deck' missions in the center tab instead.
+            GoToMain()
+            GotRewards := false
+            return
+        }
+
     }
     Loop {
         Delay(2)
