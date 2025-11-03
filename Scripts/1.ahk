@@ -1381,10 +1381,20 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             return confirmed
         }
 
+        ; Trades unlocked
+        Path = %imagePath%FeatureUnlocked1.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 203, 155, 217, searchVariation)
+        if (vRet = 1) {
+            adbInputEvent("111") ; ESC
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
         ; trying to check for other feature unlocks
         Path = %imagePath%FeatureUnlocked1.png
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 150, 155, 240, searchVariation)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 190, 155, 238, searchVariation)
         if (vRet = 1) {
             adbInputEvent("111") ; ESC
             Gdip_DisposeImage(pBitmap)
@@ -4367,8 +4377,8 @@ DoTutorial() {
                 } else {
                     FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
                     FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click 2x
+                }
             }
-        }
             adbClick_wbb(41, 339)
             break
         }
@@ -5929,7 +5939,7 @@ GetEventRewards(frommain := true){
         failSafeTime := 0
         Loop {
         adbClick(261, 478)
-        Sleep, 500
+        Sleep, 1000
         if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
             break
         else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
@@ -5941,30 +5951,13 @@ GetEventRewards(frommain := true){
     
     LevelUp()
     
-    if(setSpeed > 1) {
-        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
-        FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
-        Delay(1)
-        adbClick_wbb(41, 339)
-        Delay(1)
-    }
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
         adbSwipe(adbSwipeParams2)
-        Sleep, 10
+        Sleep, 200
         if (FindOrLoseImage(225, 444, 272, 470, , "Premium", 0, failSafeTime)){
-            if(setSpeed > 1) {
-                if(setSpeed = 3) {
-                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
-                    FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
-                } else {
-                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
-                    FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
-            }
-            }
-                adbClick_wbb(41, 339)
-                break
+            break
             }
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for PremiumMissions`n(" . failSafeTime . "/45 seconds)")
@@ -5981,7 +5974,7 @@ GetEventRewards(frommain := true){
     failSafeTime := 0
     Loop{
         adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-        Sleep, 2000
+        Sleep, 750
         if (FindOrLoseImage(223, 179, 231, 187, , "FirstAnniversaryCelebration", 0, failSafeTime)){
             break
         }
@@ -5991,10 +5984,10 @@ GetEventRewards(frommain := true){
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
-        Delay(5)
         adbClick_wbb(172, 427) ;clicks complete all and ok
-        Delay(5)
+        Sleep, 1500
         adbClick_wbb(152, 464) ;when too many rewards, ok button goes lower
+        Sleep, 1500
         if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
             break
         }
