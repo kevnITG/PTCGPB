@@ -7024,9 +7024,6 @@ CountShinedust() {
             
             pBitmapOriginal := Gdip_CreateBitmapFromFile(shinedustScreenshotFile)
             pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOriginal, ocrX, ocrY, ocrW, ocrH, 300, 75)
-            ;;; debug ;;;;
-            Gdip_SaveBitmapToFile(pBitmapFormatted, tempDir . "\" . winTitle . "_DEBUG_OCR_Processed.png")
-            ;;;;;;;;;;;;;;
             shineDustValue := GetTextFromBitmap(pBitmapFormatted, allowedChars)
             Gdip_DisposeImage(pBitmapOriginal)
             Gdip_DisposeImage(pBitmapFormatted)
