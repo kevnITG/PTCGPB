@@ -1371,6 +1371,26 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             return confirmed
         }
 
+        ; display boards
+        Path = %imagePath%FeatureUnlocked1.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 208, 155, 228, searchVariation)
+        if (vRet = 1) {
+            adbInputEvent("111") ; ESC
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
+        ; trying to check for other feature unlocks
+        Path = %imagePath%FeatureUnlocked1.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 150, 155, 240, searchVariation)
+        if (vRet = 1) {
+            adbInputEvent("111") ; ESC
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
     ; Try to handle "Share" feature
         Path = %imagePath%Share.png
         pNeedle := GetNeedle(Path)
@@ -1725,6 +1745,26 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 Gdip_DisposeImage(pBitmap)
                 continue
             }
+
+        ; display boards
+        Path = %imagePath%FeatureUnlocked1.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 208, 155, 228, searchVariation)
+        if (vRet = 1) {
+            adbInputEvent("111") ; ESC
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
+        ; trying to check for other feature unlocks
+        Path = %imagePath%FeatureUnlocked1.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 150, 155, 240, searchVariation)
+        if (vRet = 1) {
+            adbInputEvent("111") ; ESC
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
 
         ; Try to handle "Share" feature
             Path = %imagePath%Share.png
@@ -4786,12 +4826,20 @@ SelectPack(HG := false) {
         Loop {
             adbClick_wbb(151, 420)  ; open button
             
-            if(FindOrLoseImage(233, 486, 272, 519, , "Skip2", 0)) {
+            if(FindOrLoseImage(233, 486, 272, 519, , "Skip2", 0, failSafeTime)) {
                 break
             } else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
                 cantOpenMorePacks := 1
             } else if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
                 adbClick_wbb(205, 458)  ; Handle unexpected HG pack confirmation
+            } else if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0)) {
+                ; Handle restart caused due to network error
+				adbClick_wbb(139, 371)  
+                if (injectMethod && loadedAccount && friended) {
+                    IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+                }
+                restartGameInstance("Stuck at pack opening")
+                return
             } else {
                 adbClick_wbb(200, 451)  ; Additional fallback click
                 Delay(1)
