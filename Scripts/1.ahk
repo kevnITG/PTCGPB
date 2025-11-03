@@ -5919,17 +5919,27 @@ GetEventRewards(frommain := true){
                 break
             }
         failSafeTime := (A_TickCount - failSafe) // 1000
-        CreateStatusMessage("Waiting for Trace`n(" . failSafeTime . "/45 seconds)")
+        CreateStatusMessage("Waiting for PremiumMissions`n(" . failSafeTime . "/45 seconds)")
         Delay(1)
     }
+    
+    ;====== Click through missions menus ======
     ; pick ONE of these click locations based upon which events are currently going on.
     ; adbClick_wbb(120, 465) ; used to click the middle mission button
     ; adbClick_wbb(25, 465) ;used to click the left-most mission button
-    adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-    Sleep, 400
-    adbClick_wbb(6, 465)
-    Sleep, 400
-    adbClick_wbb(6, 465)
+
+    ; This entire section is specific to First Anniversay Celebration SpecialMissions pt1
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop{
+        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
+        Sleep, 2000
+        if (FindOrLoseImage(223, 179, 231, 187, , "FirstAnniversaryCelebration", 0, failSafeTime)){
+            break
+        }
+    }
+
+    ; ====== Collect all rewards ======
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
