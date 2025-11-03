@@ -33,7 +33,7 @@ global ocrShinedust
 global titleHeight, MuMuv5
 
 global avgtotalSeconds
-global verboseLogging := false
+global verboseLogging
 global showcaseEnabled
 global currentPackIs6Card := false
 global currentPackIs4Card := false
@@ -5421,8 +5421,8 @@ CreateAccountList(instance) {
         ; BUT skip this check if account also has "W" flag (W takes precedence)
         if(InStr(A_LoopFileName, "(") && InStr(A_LoopFileName, "T") && !InStr(A_LoopFileName, "W")) {
             if(hoursDiff < 5*24) {  ; Always 5 days for T-flagged accounts
-                if (verboseLogging)
-                    LogToFile("Skipping account with T flag (testing): " . A_LoopFileName . " (age: " . hoursDiff . " hours, needs 5 days)")
+                ; if (verboseLogging)
+                    ; LogToFile("Skipping account with T flag (testing): " . A_LoopFileName . " (age: " . hoursDiff . " hours, needs 5 days)")
                 continue
             }
         }
@@ -5435,14 +5435,14 @@ CreateAccountList(instance) {
             packCount := packMatch1 + 0  ; Force numeric conversion
         } else {
             packCount := 10  ; Default for unrecognized formats
-            if (verboseLogging)
-                LogToFile("Unknown filename format: " . A_LoopFileName . ", assigned default pack count: 10")
+            ; if (verboseLogging)
+                ; LogToFile("Unknown filename format: " . A_LoopFileName . ", assigned default pack count: 10")
         }
         
         ; Check if pack count fits the current injection range
         if (packCount < minPacks || packCount > maxPacks) {
-            if (verboseLogging)
-                LogToFile("  - SKIPPING: " . A_LoopFileName . " - Pack count " . packCount . " outside range " . minPacks . "-" . maxPacks)
+            ; if (verboseLogging)
+                ; LogToFile("  - SKIPPING: " . A_LoopFileName . " - Pack count " . packCount . " outside range " . minPacks . "-" . maxPacks)
             continue
         }
         
@@ -5450,8 +5450,8 @@ CreateAccountList(instance) {
         fileNames.Push(A_LoopFileName)
         fileTimes.Push(modTime)
         packCounts.Push(packCount)
-        if (verboseLogging)
-            LogToFile("  - KEEPING: " . A_LoopFileName . " - Pack count " . packCount . " inside range " . minPacks . "-" . maxPacks . " (age: " . hoursDiff . " hours)")
+        ; if (verboseLogging)
+            ; LogToFile("  - KEEPING: " . A_LoopFileName . " - Pack count " . packCount . " inside range " . minPacks . "-" . maxPacks . " (age: " . hoursDiff . " hours)")
     }
     
     ; Log counts
@@ -5489,8 +5489,8 @@ CreateAccountList(instance) {
     if (wFlagFiles.MaxIndex() > 0) {
         For i, fileName in wFlagFiles {
             outputContent .= fileName . "`n"
-            if (verboseLogging && i <= 5)
-                LogToFile("  W-" . i . ": " . fileName . " (WP Thanks Check)")
+            ; if (verboseLogging && i <= 5)
+                ; LogToFile("  W-" . i . ": " . fileName . " (WP Thanks Check)")
         }
     }
     
@@ -5501,13 +5501,13 @@ CreateAccountList(instance) {
             
             ; Log first 10 files for verification
             if (i <= 10) {
-                if(verboseLogging) {
-                    FormatTime, fileTimeStr, % fileTimes[i], yyyy-MM-dd HH:mm:ss
-                    LogToFile("  " . i . ": " . fileName . " (Modified: " . fileTimeStr . ", Packs: " . packCounts[i] . ")")
-                }
+                ; if(verboseLogging) {
+                    ; FormatTime, fileTimeStr, % fileTimes[i], yyyy-MM-dd HH:mm:ss
+                    ; LogToFile("  " . i . ": " . fileName . " (Modified: " . fileTimeStr . ", Packs: " . packCounts[i] . ")")
+                ; }
             } else if (i == 11) {
-                if(verboseLogging)
-                    LogToFile("  ... (showing first 10 files only)")
+                ; if(verboseLogging)
+                    ; LogToFile("  ... (showing first 10 files only)")
             }
         }
     }
@@ -5557,17 +5557,17 @@ checkShouldDoMissions() {
     else if (deleteMethod = "Inject Missions") {
         IniRead, skipMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, skipMissionsInjectMissions, 0
         if (skipMissions = 1) {
-            if(verboseLogging)
-                LogToFile("Skipping missions for Inject Missions method (user setting)")
+            ; if(verboseLogging)
+                ; LogToFile("Skipping missions for Inject Missions method (user setting)")
             return false
         }
-        if(verboseLogging)
-            LogToFile("Executing missions for Inject Missions method (user setting enabled)")
+        ; if(verboseLogging)
+            ; LogToFile("Executing missions for Inject Missions method (user setting enabled)")
         return true
     }
     else if (deleteMethod = "Inject 13P+" || deleteMethod = "Inject Wonderpick 96P+") {
-        if(verboseLogging)
-            LogToFile("Skipping missions for " . deleteMethod . " method - missions only run for 'Inject Missions'")
+        ; if(verboseLogging)
+            ; LogToFile("Skipping missions for " . deleteMethod . " method - missions only run for 'Inject Missions'")
         return false
     }
     else {
@@ -6872,7 +6872,50 @@ GetTradesDatabaseStats() {
     return stats
 }
 
+SaveCroppedImage(sourceFile, destFile, x, y, w, h) {
+    if (!FileExist(sourceFile)) {
+        LogToFile("SaveCroppedImage: Source file not found: " . sourceFile, "OCR.txt")
+        return false
+    }
+    
+    pBitmap := Gdip_CreateBitmapFromFile(sourceFile)
+    
+    if (!pBitmap || pBitmap <= 0) {
+        LogToFile("SaveCroppedImage: Failed to load bitmap from: " . sourceFile, "OCR.txt")
+        return false
+    }
+    
+    Gdip_GetImageDimensions(pBitmap, imageWidth, imageHeight)
+    
+    if (x < 0 || y < 0 || x + w > imageWidth || y + h > imageHeight) {
+        LogToFile("SaveCroppedImage: Invalid crop coordinates - Image: " . imageWidth . "x" . imageHeight . ", Crop: " . x . "," . y . "," . w . "," . h, "OCR.txt")
+        Gdip_DisposeImage(pBitmap)
+        return false
+    }
+    
+    pCroppedBitmap := Gdip_CloneBitmapArea(pBitmap, x, y, w, h)
+    
+    if (!pCroppedBitmap || pCroppedBitmap <= 0) {
+        LogToFile("SaveCroppedImage: Failed to crop bitmap", "OCR.txt")
+        Gdip_DisposeImage(pBitmap)
+        return false
+    }
+    
+    saveResult := Gdip_SaveBitmapToFile(pCroppedBitmap, destFile)
+    
+    if (saveResult != 0) {
+        LogToFile("SaveCroppedImage: Failed to save cropped image to: " . destFile . " (Error: " . saveResult . ")", "OCR.txt")
+    }
+    
+    Gdip_DisposeImage(pCroppedBitmap)
+    Gdip_DisposeImage(pBitmap)
+    
+    return (saveResult = 0)
+}
+
 CountShinedust() {
+    global verboseLogging
+    
     FindImageAndClick(252, 78, 263, 92, , "inHamburgerMenu", 244, 518, 2000)
 
     failSafe := A_TickCount
@@ -6928,10 +6971,18 @@ CountShinedust() {
             ocrW := 90
             ocrH := 25
             
+            cropSuccess := false
             if (verboseLogging) {
                 FormatTime, timestamp, , yyyyMMdd_HHmmss
                 debugCropFile := debugDir . "\" . winTitle . "_Shinedust_Crop_" . timestamp . ".png"
-                SaveCroppedImage(shinedustScreenshotFile, debugCropFile, ocrX, ocrY, ocrW, ocrH)
+                Sleep, 200
+                
+                try {
+                    cropSuccess := SaveCroppedImage(shinedustScreenshotFile, debugCropFile, ocrX, ocrY, ocrW, ocrH)
+                } catch e {
+                    LogToFile("Error creating cropped debug image: " . e.message, "OCR.txt")
+                    cropSuccess := false
+                }
             }
             
             if (RefinedOCRText(shinedustScreenshotFile, ocrX, ocrY, ocrW, ocrH, allowedChars, validPattern, shineDustValue)) {
@@ -6940,7 +6991,8 @@ CountShinedust() {
                     CreateStatusMessage("Account has " . shineDustValue . " shinedust.")
                     
                     if (verboseLogging) {
-                        MsgBox, 64, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR`n`nCheck Screenshots/debug folder`n`nOCR Result: %shineDustValue%`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%
+                        cropMsg := cropSuccess ? "Cropped image saved successfully" : "Warning: Cropped image failed to save"
+                        MsgBox, 64, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR - check Screenshots/debug folder`n`nOCR Result: %shineDustValue%`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%`n`n%cropMsg%, 5
                     }
                     
                     Sleep, 2000
@@ -6948,7 +7000,8 @@ CountShinedust() {
                     CreateStatusMessage("Failed to OCR shinedust.")
                     
                     if (verboseLogging) {
-                        MsgBox, 48, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR`n`nCheck Screenshots/debug folder`n`nOCR Result: EMPTY`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%
+                        cropMsg := cropSuccess ? "Cropped image saved successfully" : "Warning: Cropped image failed to save"
+                        MsgBox, 48, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR - check Screenshots/debug folder`n`nOCR Result: EMPTY`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%`n`n%cropMsg%, 5
                     }
                     
                     Sleep, 2000
@@ -6957,7 +7010,8 @@ CountShinedust() {
                 CreateStatusMessage("Failed to OCR shinedust.")
                 
                 if (verboseLogging) {
-                    MsgBox, 16, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR`n`nCheck Screenshots/debug folder`n`nOCR Result: FAILED VALIDATION`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%
+                    cropMsg := cropSuccess ? "Cropped image saved successfully" : "Warning: Cropped image failed to save"
+                    MsgBox, 16, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR - check Screenshots/debug folder`n`nOCR Result: FAILED VALIDATION`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%`n`n%cropMsg%, 5
                 }
                 
                 Sleep, 2000
@@ -6966,10 +7020,10 @@ CountShinedust() {
     } catch e {
         LogToFile("Failed to OCR shinedust: " . e.message, "OCR.txt")
         CreateStatusMessage("Failed to OCR shinedust.")
-
+        
         if (verboseLogging) {
             errorMsg := e.message
-            MsgBox, 16, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR`n`nCheck Screenshots/debug folder`n`nError: %errorMsg%
+            MsgBox, 16, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR - check Screenshots/debug folder`n`nError: %errorMsg%, 5
         }
         
         Sleep, 2000
@@ -6978,21 +7032,6 @@ CountShinedust() {
     if (FileExist(shinedustScreenshotFile)) {
         FileDelete, %shinedustScreenshotFile%
     }
-}
-
-SaveCroppedImage(sourceFile, destFile, x, y, w, h) {
-
-    pToken := Gdip_Startup()
-    pBitmap := Gdip_CreateBitmapFromFile(sourceFile)
-    if (pBitmap) {
-        pCroppedBitmap := Gdip_CloneBitmapArea(pBitmap, x, y, w, h)
-        if (pCroppedBitmap) {
-            Gdip_SaveBitmapToFile(pCroppedBitmap, destFile)
-            Gdip_DisposeImage(pCroppedBitmap)
-        }
-        Gdip_DisposeImage(pBitmap)
-    }
-    Gdip_Shutdown(pToken)
 }
 
 LogShinedustToDatabase(shinedustValue) {
