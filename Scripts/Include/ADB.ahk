@@ -64,7 +64,7 @@ ConnectAdb(folderPath := "C:\Program Files\Netease") {
         adbPath := folderPath . "\MuMu Player 12\shell\adb.exe"
 
     if !FileExist(adbPath)
-        MsgBox Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
+        MsgBox Check folder path! It must contain the MuMuPlayer12 folder! `nDefault is C:\Program Files\Netease
 
     if(!adbPort) {
         Msgbox, Invalid port... Check the common issues section in the readme/github guide.
