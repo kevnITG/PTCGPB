@@ -2350,6 +2350,7 @@ CheckPack() {
 }
 
 FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighoul := 0, foundCrown := 0, foundImmersive := 0, foundShiny1Star := 0, foundShiny2Star := 0, foundTrainer := 0, foundRainbow := 0, foundFullArt := 0) {
+
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
 
     keepAccount := true
@@ -2410,14 +2411,12 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         cardCounts.Push(foundFullArt)
     }
 
-    ; Get deviceAccount FIRST before saving
     deviceAccount := GetDeviceAccountFromXML()
     
-    ; For Create Bots: Check if XML already exists for this deviceAccount
+    savedXmlPath := ""
+    
     if (!loadDir) {
-        savedXmlPath := ""
-        
-        ; Check if we already have an XML for this deviceAccount
+        ; Create Bots mode: Check if XML already exists for this deviceAccount to prevent duplicates
         if (deviceAccountXmlMap.HasKey(deviceAccount) && FileExist(deviceAccountXmlMap[deviceAccount])) {
             savedXmlPath := deviceAccountXmlMap[deviceAccount]
             UpdateSavedXml(savedXmlPath)
@@ -2444,9 +2443,40 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         tradeableData.deviceAccount := deviceAccount
         s4tPendingTradeables.Push(tradeableData)
     } else {
-        ; Inject mode: Get deviceAccount after loading
-        savedXmlPath := loadedAccount
-        deviceAccount := GetDeviceAccountFromXML()
+        ; Inject mode: Use the current accountFileName (which may have new name due to pack count)
+        ; and construct the full path from it
+        saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+        savedXmlPath := saveDir . "\" . accountFileName
+        
+        ; Verify the file exists at this path
+        if (!FileExist(savedXmlPath)) {
+            ; If the direct path doesn't work, search for it by the timestamp portion
+            ; Extract timestamp from filename between first and last underscore
+            
+            if (InStr(accountFileName, "_")) {
+                parts := StrSplit(accountFileName, "_")
+                if (parts.Length() >= 2) {
+                    ; parts[1] = pack count (e.g., "91P")
+                    ; parts[2] = timestamp (e.g., "20250101120000")
+                    timestampPattern := parts[2]
+                    
+                    ; Search the directory for files containing this timestamp
+                    Loop, Files, %saveDir%\*%timestampPattern%*.xml
+                    {
+                        savedXmlPath := A_LoopFileFullPath
+                        accountFileName := A_LoopFileName
+                        break  ; Use the first match
+                    }
+                }
+            }
+        }
+        
+        ; verification
+        if (!FileExist(savedXmlPath)) {
+            CreateStatusMessage("Warning: Could not find account XML file for attachment", "", 0, 0, false)
+            LogToFile("FoundTradeable: Could not find XML file. accountFileName=" . accountFileName . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
+            savedXmlPath := ""  ; Clear it so we don't try to attach a non-existent file
+        }
     }
     
     screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
@@ -2491,6 +2521,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         
         ; Prepare XML file path for attachment
         xmlFileToSend := ""
+        ; NOW savedXmlPath will have the correct path with the updated filename!
         if (s4tSendAccountXml && savedXmlPath && FileExist(savedXmlPath)) {
             xmlFileToSend := savedXmlPath
         }
