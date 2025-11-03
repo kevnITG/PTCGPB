@@ -5962,17 +5962,21 @@ GetAllRewards(tomain := true, dailies := false) {
     failSafe := A_TickCount
     failSafeTime := 0
     GotRewards := true
-    if(dailies){
-        adbClick(165, 465)
-        Sleep, 500
-        if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
-            break
-        else if (failSafeTime > 10) {
-            ; if DailyMissions doesn't show up, like if an account has already completed Dailies
-            ; and we are on the wrong tab like 'Deck' missions in the center tab instead.
-            GoToMain()
-            GotRewards := false
-            return
+    if(dailies) {
+        failSafe := A_TickCount
+        failSafeTime := 0
+        Loop {
+            adbClick(165, 465)
+            Sleep, 500
+            if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
+                break
+            else if (failSafeTime > 10) {
+                ; if DailyMissions doesn't show up, like if an account has already completed Dailies
+                ; and we are on the wrong tab like 'Deck' missions in the center tab instead.
+                GoToMain()
+                GotRewards := false
+                return
+            }
         }
 
     }
@@ -6982,7 +6986,7 @@ SaveCroppedImage(sourceFile, destFile, x, y, w, h) {
     pBitmap := Gdip_CreateBitmapFromFile(sourceFile)
     if (pBitmap) {
         pCroppedBitmap := Gdip_CloneBitmapArea(pBitmap, x, y, w, h)
-        if (pCroppedBitmap) {p
+        if (pCroppedBitmap) {
             Gdip_SaveBitmapToFile(pCroppedBitmap, destFile)
             Gdip_DisposeImage(pCroppedBitmap)
         }
