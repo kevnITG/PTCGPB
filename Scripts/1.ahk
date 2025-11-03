@@ -6896,10 +6896,22 @@ CountShinedust() {
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%
     
+    if (verboseLogging) {
+        debugDir := A_ScriptDir . "\..\Screenshots\debug"
+        if !FileExist(debugDir)
+            FileCreateDir, %debugDir%
+    }
+    
     Sleep, 100
     shinedustScreenshotFile := tempDir . "\" . winTitle . "_Shinedust.png"
     adbTakeScreenshot(shinedustScreenshotFile)
     Sleep, 100
+    
+    if (verboseLogging) {
+        FormatTime, timestamp, , yyyyMMdd_HHmmss
+        debugScreenshotFile := debugDir . "\" . winTitle . "_Shinedust_Full_" . timestamp . ".png"
+        FileCopy, %shinedustScreenshotFile%, %debugScreenshotFile%, 1
+    }
     
     try {
         if (IsFunc("ocr")) {
@@ -6907,29 +6919,76 @@ CountShinedust() {
             allowedChars := "0123456789,"
             validPattern := "^\d{1,3}(,\d{3})*$"
             
-            if (RefinedOCRText(shinedustScreenshotFile, 415, 310, 90, 25, allowedChars, validPattern, shineDustValue)) {
+            ocrX := 415
+            ocrY := 310
+            ocrW := 90
+            ocrH := 25
+            
+            if (verboseLogging) {
+                FormatTime, timestamp, , yyyyMMdd_HHmmss
+                debugCropFile := debugDir . "\" . winTitle . "_Shinedust_Crop_" . timestamp . ".png"
+                SaveCroppedImage(shinedustScreenshotFile, debugCropFile, ocrX, ocrY, ocrW, ocrH)
+            }
+            
+            if (RefinedOCRText(shinedustScreenshotFile, ocrX, ocrY, ocrW, ocrH, allowedChars, validPattern, shineDustValue)) {
                 if (shineDustValue != "") {
                     LogShinedustToDatabase(shineDustValue)
                     CreateStatusMessage("Account has " . shineDustValue . " shinedust.")
+                    
+                    if (verboseLogging) {
+                        MsgBox, 64, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR`n`nCheck Screenshots/debug folder`n`nOCR Result: %shineDustValue%`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%
+                    }
+                    
                     Sleep, 2000
                 } else {
                     CreateStatusMessage("Failed to OCR shinedust.")
+                    
+                    if (verboseLogging) {
+                        MsgBox, 48, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR`n`nCheck Screenshots/debug folder`n`nOCR Result: EMPTY`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%
+                    }
+                    
                     Sleep, 2000
                 }
             } else {
                 CreateStatusMessage("Failed to OCR shinedust.")
+                
+                if (verboseLogging) {
+                    MsgBox, 16, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR`n`nCheck Screenshots/debug folder`n`nOCR Result: FAILED VALIDATION`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%
+                }
+                
                 Sleep, 2000
             }
         }
     } catch e {
         LogToFile("Failed to OCR shinedust: " . e.message, "OCR.txt")
         CreateStatusMessage("Failed to OCR shinedust.")
+
+        if (verboseLogging) {
+            errorMsg := e.message
+            MsgBox, 16, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR`n`nCheck Screenshots/debug folder`n`nError: %errorMsg%
+        }
+        
         Sleep, 2000
     }
     
     if (FileExist(shinedustScreenshotFile)) {
         FileDelete, %shinedustScreenshotFile%
     }
+}
+
+SaveCroppedImage(sourceFile, destFile, x, y, w, h) {
+
+    pToken := Gdip_Startup()
+    pBitmap := Gdip_CreateBitmapFromFile(sourceFile)
+    if (pBitmap) {
+        pCroppedBitmap := Gdip_CloneBitmapArea(pBitmap, x, y, w, h)
+        if (pCroppedBitmap) {p
+            Gdip_SaveBitmapToFile(pCroppedBitmap, destFile)
+            Gdip_DisposeImage(pCroppedBitmap)
+        }
+        Gdip_DisposeImage(pBitmap)
+    }
+    Gdip_Shutdown(pToken)
 }
 
 LogShinedustToDatabase(shinedustValue) {
