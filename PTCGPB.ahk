@@ -1607,7 +1607,11 @@ ArrangeWindows:
    LoadSettingsFromIni()
    
    if (defaultLanguage = "Scale125") {
-      scaleParam := 277
+      if (MuMuv5) {
+        scaleParam := 283
+	} else {
+        scaleParam := 277
+    }
    } else if (defaultLanguage = "Scale100") {
       scaleParam := 287
    }

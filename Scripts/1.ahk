@@ -235,7 +235,11 @@ Sleep, % scriptName * 1000
 if (InStr(defaultLanguage, "100")) {
     scaleParam := 287
 } else {
-    scaleParam := 277
+    	if (MuMuv5) {
+			scaleParam := 283
+		} else {
+			scaleParam := 277
+		}
 }
 DirectlyPositionWindow()
 Sleep, 1000
