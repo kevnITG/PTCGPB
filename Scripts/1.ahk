@@ -5986,7 +5986,7 @@ GetEventRewards(frommain := true){
     Loop{
         adbClick_wbb(172, 427) ;clicks complete all and ok
         Sleep, 1500
-        adbClick_wbb(152, 464) ;when too many rewards, ok button goes lower
+        adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
         Sleep, 1500
         if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
             break
