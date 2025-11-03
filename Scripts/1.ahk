@@ -6995,7 +6995,7 @@ CountShinedust() {
         ; be careful moving this. intentionally chosen to avoid 
         ; accidentally clicking a pack on the homescreen (clicks between instead.)
         Sleep, 3000
-        if FindOrLoseImage(126, 205, 138, 220, , "shopticketItems", 0, failSafeTime) {
+        if FindOrLoseImage(133, 369, 148, 385, , "wrongItem", 0, failSafeTime) {
             Sleep, 1000
             adbInputEvent("111")
             Sleep, 1000
