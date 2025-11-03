@@ -5922,16 +5922,21 @@ GetEventRewards(frommain := true){
         CreateStatusMessage("Waiting for Trace`n(" . failSafeTime . "/45 seconds)")
         Delay(1)
     }
-    ; pick ONE of these two click locations based upon which events are currently going on.
-    adbClick_wbb(120, 465) ; used to click the middle mission button
+    ; pick ONE of these click locations based upon which events are currently going on.
+    ; adbClick_wbb(120, 465) ; used to click the middle mission button
     ; adbClick_wbb(25, 465) ;used to click the left-most mission button
+    adbClick_wbb(6, 465) ; used to scroll to other missions further left.
+    Sleep, 400
+    adbClick_wbb(6, 465)
+    Sleep, 400
+    adbClick_wbb(6, 465)
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
         Delay(5)
         adbClick_wbb(172, 427) ;clicks complete all and ok
         Delay(5)
-        adbClick_wbb(152, 464) ;when to many rewards ok button goes lower
+        adbClick_wbb(152, 464) ;when too many rewards, ok button goes lower
         if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
             break
         }
