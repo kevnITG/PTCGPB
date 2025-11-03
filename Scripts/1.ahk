@@ -6983,9 +6983,17 @@ CountShinedust() {
             restartGameInstance("Stuck at Shinedust menu")
             return
         }
+        if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime)) {
+            ; accidentally re-clicked hamburger menu while page was loading
+            ; and we're back on homescreen. we need to re-enter hamburger menu
+            adbClick(244, 518)
+            Sleep, 3000
+        }  
         if FindOrLoseImage(26, 188, 43, 204, , "shinedustItems", 0, failSafeTime)
             break
-        adbClick(105, 269)
+        adbClick(99, 279)
+        ; be careful moving this. intentionally chosen to avoid 
+        ; accidentally clicking a pack on the homescreen (clicks between instead.)
         Sleep, 3000
         if FindOrLoseImage(126, 205, 138, 220, , "shopticketItems", 0, failSafeTime) {
             Sleep, 1000
