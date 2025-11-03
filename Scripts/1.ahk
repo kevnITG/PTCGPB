@@ -7058,7 +7058,7 @@ LogShinedustToDatabase(shinedustValue) {
     
     shinedustValueClean := StrReplace(shinedustValue, ",", "")
     
-    if (shinedustValueClean < 999 || shinedustValueClean > 999999) {
+    if (shinedustValueClean < 99 || shinedustValueClean > 999999) {
         CreateStatusMessage("Invalid shinedust value: " . shinedustValue . " - not logging")
         Sleep, 2000
         return
