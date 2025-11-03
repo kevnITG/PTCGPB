@@ -6599,7 +6599,8 @@ CropAndFormatForOcr(inputFile, x := 0, y := 0, width := 200, height := 200, scal
     pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOrignal, x, y, width, height, scaleUpPercent, 75)
     
 	filePath := A_ScriptDir . "\temp\" .  winTitle . "_AccountPacks_crop.png"
-    Gdip_SaveBitmapToFile(pBitmap, filePath)
+    Gdip_SaveBitmapToFile(pBitmapFormatted, filePath)
+
 	; Cleanup references
     Gdip_DisposeImage(pBitmapOrignal)
     return pBitmapFormatted
@@ -6914,8 +6915,6 @@ SaveCroppedImage(sourceFile, destFile, x, y, w, h) {
 }
 
 CountShinedust() {
-    global verboseLogging
-    
     FindImageAndClick(252, 78, 263, 92, , "inHamburgerMenu", 244, 518, 2000)
 
     failSafe := A_TickCount
@@ -6943,22 +6942,10 @@ CountShinedust() {
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%
     
-    if (verboseLogging) {
-        debugDir := A_ScriptDir . "\..\Screenshots\debug"
-        if !FileExist(debugDir)
-            FileCreateDir, %debugDir%
-    }
-    
     Sleep, 100
     shinedustScreenshotFile := tempDir . "\" . winTitle . "_Shinedust.png"
     adbTakeScreenshot(shinedustScreenshotFile)
     Sleep, 100
-    
-    if (verboseLogging) {
-        FormatTime, timestamp, , yyyyMMdd_HHmmss
-        debugScreenshotFile := debugDir . "\" . winTitle . "_Shinedust_Full_" . timestamp . ".png"
-        FileCopy, %shinedustScreenshotFile%, %debugScreenshotFile%, 1
-    }
     
     try {
         if (IsFunc("ocr")) {
@@ -6966,66 +6953,34 @@ CountShinedust() {
             allowedChars := "0123456789,"
             validPattern := "^\d{1,3}(,\d{3})*$"
             
-            ocrX := 415
+            ocrX := 370
             ocrY := 310
-            ocrW := 90
-            ocrH := 25
+            ocrW := 180
+            ocrH := 50
             
-            cropSuccess := false
-            if (verboseLogging) {
-                FormatTime, timestamp, , yyyyMMdd_HHmmss
-                debugCropFile := debugDir . "\" . winTitle . "_Shinedust_Crop_" . timestamp . ".png"
-                Sleep, 200
-                
-                try {
-                    cropSuccess := SaveCroppedImage(shinedustScreenshotFile, debugCropFile, ocrX, ocrY, ocrW, ocrH)
-                } catch e {
-                    LogToFile("Error creating cropped debug image: " . e.message, "OCR.txt")
-                    cropSuccess := false
-                }
-            }
+            pBitmapOriginal := Gdip_CreateBitmapFromFile(shinedustScreenshotFile)
+            pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOriginal, ocrX, ocrY, ocrW, ocrH, 300, 75)
+            shineDustValue := GetTextFromBitmap(pBitmapFormatted, allowedChars)
+            Gdip_DisposeImage(pBitmapOriginal)
+            Gdip_DisposeImage(pBitmapFormatted)
             
-            if (RefinedOCRText(shinedustScreenshotFile, ocrX, ocrY, ocrW, ocrH, allowedChars, validPattern, shineDustValue)) {
+            if (RegExMatch(shineDustValue, validPattern)) {
                 if (shineDustValue != "") {
                     LogShinedustToDatabase(shineDustValue)
                     CreateStatusMessage("Account has " . shineDustValue . " shinedust.")
-                    
-                    if (verboseLogging) {
-                        cropMsg := cropSuccess ? "Cropped image saved successfully" : "Warning: Cropped image failed to save"
-                        MsgBox, 64, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR - check Screenshots/debug folder`n`nOCR Result: %shineDustValue%`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%`n`n%cropMsg%, 5
-                    }
-                    
                     Sleep, 2000
                 } else {
                     CreateStatusMessage("Failed to OCR shinedust.")
-                    
-                    if (verboseLogging) {
-                        cropMsg := cropSuccess ? "Cropped image saved successfully" : "Warning: Cropped image failed to save"
-                        MsgBox, 48, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR - check Screenshots/debug folder`n`nOCR Result: EMPTY`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%`n`n%cropMsg%, 5
-                    }
-                    
                     Sleep, 2000
                 }
             } else {
-                CreateStatusMessage("Failed to OCR shinedust.")
-                
-                if (verboseLogging) {
-                    cropMsg := cropSuccess ? "Cropped image saved successfully" : "Warning: Cropped image failed to save"
-                    MsgBox, 16, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR - check Screenshots/debug folder`n`nOCR Result: FAILED VALIDATION`nCoordinates: X=%ocrX% Y=%ocrY% W=%ocrW% H=%ocrH%`n`n%cropMsg%, 5
-                }
-                
+                CreateStatusMessage("Failed to OCR shinedust - got: " . shineDustValue)
                 Sleep, 2000
             }
         }
     } catch e {
         LogToFile("Failed to OCR shinedust: " . e.message, "OCR.txt")
         CreateStatusMessage("Failed to OCR shinedust.")
-        
-        if (verboseLogging) {
-            errorMsg := e.message
-            MsgBox, 16, Debug Mode - Shinedust OCR, Debug screenshots captured for Shinedust OCR - check Screenshots/debug folder`n`nError: %errorMsg%, 5
-        }
-        
         Sleep, 2000
     }
     
