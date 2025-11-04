@@ -13,3 +13,6 @@ Scripts/*.ini
 *.ini
 *.bak
 !.gitkeep
+*.xml
+*.json
+*.csv
