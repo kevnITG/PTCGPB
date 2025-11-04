@@ -1955,8 +1955,12 @@ DirectlyPositionWindow() {
     currentRow := Floor((instanceIndex - 1) / Columns)
     
     y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-    ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
-    x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+    ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+	if (MuMuv5) {
+		x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+	} else {
+		x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+	}
 
     WinSet, Style, -0xC00000, %Title%
     WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
