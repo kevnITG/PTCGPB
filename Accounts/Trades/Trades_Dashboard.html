@@ -456,6 +456,7 @@
     </style>
     <script>
         let filesList = [];
+        let isLoading = false;
 
         function showLoadSavedFolderPopup() {
             alert('Navigate to your /Accounts/Saved/ folder, then click "Upload".');
@@ -483,8 +484,8 @@
 
             if (filesList.length === 0) { 
                 event.preventDefault();
-                alert('Navigate to your /Accounts/Saved/ folder, then click "Upload".');
-                document.getElementById('savedDirPicker').click();
+                showLoadSavedFolderPopup();
+                event.stopPropagation();
                 return;
             }
 
@@ -498,6 +499,7 @@
                 a.click();
                 URL.revokeObjectURL(url);
             });
+            event.stopPropagation();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -519,6 +521,7 @@
 
             dirPicker.addEventListener('change', (e) => {
               filesList = Array.from(e.target.files);
+              alert('All files in the Saved folder have been uploaded. Please try downloading the XML file again.');
             });
         });
     </script>
@@ -559,8 +562,8 @@
                 <input type="file" id="fileInput" accept=".csv">
                 
                 <div class="view-mode-toggle disabled" id="viewModeToggle">
-                    <button class="btn active" onclick="setViewMode('aggregated')" disabled>aggregated</button>
-                    <button class="btn" onclick="setViewMode('detailed')" disabled>detailed</button>
+                    <button class="btn active" onclick="setViewMode('aggregated')" disabled>accounts</button>
+                    <button class="btn" onclick="setViewMode('detailed')" disabled>raw data</button>
                 </div>
 
                 <select id="packFilter" disabled>
@@ -840,6 +843,7 @@
                     .join(' ');
 
                 const packsHTML = Array.from(account.packTypes)
+                    .filter(pack => pack && pack.length > 0)
                     .map(pack => `<span class="badge badge-pack">${pack}</span>`)
                     .join(' ');
 
@@ -872,6 +876,10 @@
                     let detailRowHtml = '';
                     let screenshotTag = '';
                     account.details.forEach(detail => {
+                        if(detail.packType.length == 0 && detail.shinedust > 0)
+                        {
+                            return;
+                        }
                         const detailTr = document.createElement('tr');
                         detailTr.className = 'detail-row';
                         
@@ -888,7 +896,7 @@
                             <td class="col-xml" title="${detail.originalFilename}">${detail.cleanFilename}</td>
                             <td></td>
                             <td class="time-cell">${detail.timestamp}</td>
-                            <td class="col-shinedust">${detail.shinedust || ''}</td>
+                            <td class="col-shinedust"></td>
                             <td class="detail-screenshot">
                         `;
                         screenshotTag = `No filename in Database`;
@@ -920,8 +928,8 @@
                 <tr>
                     <th class="col-pack">pack</th>
                     <th class="col-cards">cards collected</th>
-                    <th>.xml filename</th>
-                    <th>device account</th>
+                    <th class="col-xml">.xml filename</th>
+                    <th class="device-account">device account</th>
                     <th class="col-time">time</th>
                     <th class="col-shinedust">shinedust</th>
                     <th class="col-screenshot">Screenshot</th>
@@ -942,8 +950,12 @@
                 const originalFileName = row.originalFilename;
 
                 const tr = document.createElement('tr');
-                detailRowHtml = `
-                    <td><span class="badge badge-pack">${row.packType}</span></td>
+                let packHTML = "<td></td>";
+                if(row.packType.length > 0){
+                    packHTML = `<td><span class="badge badge-pack">${row.packType || ''}</span></td>`
+                }
+                detailRowHtml = packHTML;
+                detailRowHtml += `
                     <td>${cardsHTML}</td>
                     <td class="col-xml">${xmlFilenames}&nbsp;&nbsp;&nbsp;<span class="xmlDownloadLink" data-info="${originalFileName}">🡇</span></td>
                     <td class="device-account">${row.deviceAccount}</td>
