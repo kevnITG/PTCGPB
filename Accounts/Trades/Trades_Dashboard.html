@@ -231,6 +231,22 @@
             font-size: 0.75em;
         }
 
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th.sortable:hover {
+            background: #f0f0f0;
+        }
+
+        .sort-arrow {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 0.8em;
+            color: #999;
+        }
+
         td.col-xml {
             width: 180px;
             max-width: 180px;
@@ -609,6 +625,10 @@
         let filteredData = [];
         let viewMode = 'aggregated';
         let expandedAccounts = new Set();
+        let currentSort = {
+            column: null,
+            direction: 'asc'
+        };
 
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -697,12 +717,13 @@
         function setViewMode(mode) {
             viewMode = mode;
             expandedAccounts.clear();
-            
+            currentSort = { column: null, direction: 'asc' };
+
             document.querySelectorAll('.view-mode-toggle .btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
-            
+
             renderTable();
         }
 
@@ -722,6 +743,7 @@
             });
 
             expandedAccounts.clear();
+            currentSort = { column: null, direction: 'asc' };
             renderTable();
         }
 
@@ -786,6 +808,124 @@
             renderTable();
         }
 
+        function sortTable(column, dataType = 'string') {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+
+            if (viewMode === 'aggregated') {
+                sortAggregatedData(column, dataType);
+            } else {
+                sortDetailedData(column, dataType);
+            }
+
+            renderTable();
+        }
+
+        function sortAggregatedData(column, dataType) {
+            const aggregated = aggregateByAccount(filteredData);
+
+            aggregated.sort((a, b) => {
+                let valA, valB;
+
+                switch(column) {
+                    case 'account':
+                        valA = a.deviceAccount.toLowerCase();
+                        valB = b.deviceAccount.toLowerCase();
+                        break;
+                    case 'pack':
+                        valA = Array.from(a.packTypes).join(',').toLowerCase();
+                        valB = Array.from(b.packTypes).join(',').toLowerCase();
+                        break;
+                    case 'cards':
+                        valA = Array.from(a.cards.values()).reduce((sum, count) => sum + count, 0);
+                        valB = Array.from(b.cards.values()).reduce((sum, count) => sum + count, 0);
+                        break;
+                    case 'firstseen':
+                        valA = new Date(a.firstSeen);
+                        valB = new Date(b.firstSeen);
+                        break;
+                    case 'lastseen':
+                        valA = new Date(a.lastSeen);
+                        valB = new Date(b.lastSeen);
+                        break;
+                    case 'shinedust':
+                        const latestA = a.details.length > 0 && a.details[a.details.length - 1].shinedust
+                            ? parseInt(a.details[a.details.length - 1].shinedust) || 0
+                            : 0;
+                        const latestB = b.details.length > 0 && b.details[b.details.length - 1].shinedust
+                            ? parseInt(b.details[b.details.length - 1].shinedust) || 0
+                            : 0;
+                        valA = latestA;
+                        valB = latestB;
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (dataType === 'number' || dataType === 'date') {
+                    return currentSort.direction === 'asc' ? valA - valB : valB - valA;
+                } else {
+                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                }
+            });
+
+            // Rebuild filteredData in sorted order
+            filteredData = [];
+            aggregated.forEach(account => {
+                filteredData.push(...account.details);
+            });
+        }
+
+        function sortDetailedData(column, dataType) {
+            filteredData.sort((a, b) => {
+                let valA, valB;
+
+                switch(column) {
+                    case 'account':
+                        valA = a.deviceAccount.toLowerCase();
+                        valB = b.deviceAccount.toLowerCase();
+                        break;
+                    case 'pack':
+                        valA = a.packType.toLowerCase();
+                        valB = b.packType.toLowerCase();
+                        break;
+                    case 'cards':
+                        valA = a.cardCounts.reduce((sum, count) => sum + count, 0);
+                        valB = b.cardCounts.reduce((sum, count) => sum + count, 0);
+                        break;
+                    case 'time':
+                        valA = new Date(a.timestamp);
+                        valB = new Date(b.timestamp);
+                        break;
+                    case 'shinedust':
+                        valA = parseInt(a.shinedust) || 0;
+                        valB = parseInt(b.shinedust) || 0;
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (dataType === 'number' || dataType === 'date') {
+                    return currentSort.direction === 'asc' ? valA - valB : valB - valA;
+                } else {
+                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                }
+            });
+        }
+
+        function getSortArrow(column) {
+            if (currentSort.column !== column) return '';
+            return currentSort.direction === 'asc' ? '▲' : '▼';
+        }
+
         function renderTable() {
             const thead = document.getElementById('tableHead');
             const tbody = document.getElementById('tableBody');
@@ -812,13 +952,13 @@
         function renderAggregatedTable(thead, tbody) {
             thead.innerHTML = `
                 <tr>
-                    <th class="col-account">device account</th>
-                    <th class="col-pack">pack</th>
-                    <th class="col-cards">cards collected</th>
+                    <th class="col-account sortable" onclick="sortTable('account', 'string')">device account <span class="sort-arrow">${getSortArrow('account')}</span></th>
+                    <th class="col-pack sortable" onclick="sortTable('pack', 'string')">pack <span class="sort-arrow">${getSortArrow('pack')}</span></th>
+                    <th class="col-cards sortable" onclick="sortTable('cards', 'number')">cards collected <span class="sort-arrow">${getSortArrow('cards')}</span></th>
                     <th class="col-xml">.xml filename<br><button class="header-import-btn" onclick="showLoadSavedFolderPopup()" id="importXmlBtn">Load Saved folder</button></th>
-                    <th class="col-subTime">first seen</th>
-                    <th class="col-subTime">last seen</th>
-                    <th class="col-shinedust">shinedust</th>
+                    <th class="col-subTime sortable" onclick="sortTable('firstseen', 'date')">first seen <span class="sort-arrow">${getSortArrow('firstseen')}</span></th>
+                    <th class="col-subTime sortable" onclick="sortTable('lastseen', 'date')">last seen <span class="sort-arrow">${getSortArrow('lastseen')}</span></th>
+                    <th class="col-shinedust sortable" onclick="sortTable('shinedust', 'number')">shinedust <span class="sort-arrow">${getSortArrow('shinedust')}</span></th>
                     <th class="col-screenshot">Screenshot</th>
                 </tr>
             `;
@@ -918,12 +1058,12 @@
         function renderDetailedTable(thead, tbody) {
             thead.innerHTML = `
                 <tr>
-                    <th class="col-pack">pack</th>
-                    <th class="col-cards">cards collected</th>
+                    <th class="col-pack sortable" onclick="sortTable('pack', 'string')">pack <span class="sort-arrow">${getSortArrow('pack')}</span></th>
+                    <th class="col-cards sortable" onclick="sortTable('cards', 'number')">cards collected <span class="sort-arrow">${getSortArrow('cards')}</span></th>
                     <th>.xml filename</th>
-                    <th>device account</th>
-                    <th class="col-time">time</th>
-                    <th class="col-shinedust">shinedust</th>
+                    <th class="sortable" onclick="sortTable('account', 'string')">device account <span class="sort-arrow">${getSortArrow('account')}</span></th>
+                    <th class="col-time sortable" onclick="sortTable('time', 'date')">time <span class="sort-arrow">${getSortArrow('time')}</span></th>
+                    <th class="col-shinedust sortable" onclick="sortTable('shinedust', 'number')">shinedust <span class="sort-arrow">${getSortArrow('shinedust')}</span></th>
                     <th class="col-screenshot">Screenshot</th>
                 </tr>
             `;
