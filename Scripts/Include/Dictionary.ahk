@@ -643,9 +643,9 @@ CreateProxyLanguage(Language) {
 CreateSetUpByLanguage(Language) {
     SetUpLang := Object()
     if (Language = 1) {
-        SetUpLang["Error_BotPathTooLong"] := "The path to the bot folder is too long "
+        SetUpLang["Error_BotPathTooLong"] := "The bot folder path is too long "
         SetUpLang["Error_BotPathTooLong"] .= "or contains white spaces. "
-        SetUpLang["Error_BotPathTooLong"] .= "Please move it to a shorter path without spaces."
+        SetUpLang["Error_BotPathTooLong"] .= "Try moving it to C:\PTCGPB or D:\PTCGPB"
         SetUpLang["Confirm_SelectedMethod"] := "Selected Method: "
         SetUpLang["Confirm_RangeValue"] := "Range Value: "
         SetUpLang["Confirm_MaxPackCount"] := "Maximum Pack Count: "

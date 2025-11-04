@@ -35,7 +35,7 @@ global shinedustValueGlobal := "" ; stores shinedust OCR result for inclusion in
 global titleHeight, MuMuv5
 
 global avgtotalSeconds
-global verboseLogging := false
+global verboseLogging
 global showcaseEnabled
 global currentPackIs6Card := false
 global currentPackIs4Card := false
@@ -1366,12 +1366,42 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     }
 
     ; Handle 7/2025 trade news update popup, remove later patch
-    if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll") {
+    if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll" || imageName = "inHamburgerMenu" || imageName = "Trade") {
         Path = %imagePath%Privacy.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
         if (vRet = 1) {
             adbClick_wbb(137, 485)
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
+        ; display boards
+        Path = %imagePath%FeatureUnlocked1.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 208, 155, 228, searchVariation)
+        if (vRet = 1) {
+            adbInputEvent("111") ; ESC
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
+        ; Trades unlocked
+        Path = %imagePath%FeatureUnlocked1.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 203, 155, 217, searchVariation)
+        if (vRet = 1) {
+            adbInputEvent("111") ; ESC
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
+        ; trying to check for other feature unlocks
+        Path = %imagePath%FeatureUnlocked1.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 190, 155, 238, searchVariation)
+        if (vRet = 1) {
+            adbInputEvent("111") ; ESC
             Gdip_DisposeImage(pBitmap)
             return confirmed
         }
@@ -1452,6 +1482,17 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         if (vRet = 1) {
             restartGameInstance("Stuck at " . imageName . "...")
         }
+
+    if(imageName = "Missions") { ; may input extra ESC and stuck at exit game
+        Path = %imagePath%Delete2.png
+        pNeedle := GetNeedle(Path)
+        ; ImageSearch within the region
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 118, 353, 135, 390, searchVariation)
+        if (vRet = 1) {
+            adbClick_wbb(74, 353)
+            Delay(1)
+        }
+    }
 
     if(imageName = "Social" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
         TradeTutorial()
@@ -1710,7 +1751,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         }
 
         ; Search for 7/2025 trade news update popup; can be removed later patch
-        if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll") {
+        if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll" || imageName = "inHamburgerMenu" || imageName = "Trade") {
             Path = %imagePath%Privacy.png
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
@@ -1719,6 +1760,26 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 Gdip_DisposeImage(pBitmap)
                 continue
             }
+
+        ; display boards
+        Path = %imagePath%FeatureUnlocked1.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 208, 155, 228, searchVariation)
+        if (vRet = 1) {
+            adbInputEvent("111") ; ESC
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
+        ; trying to check for other feature unlocks
+        Path = %imagePath%FeatureUnlocked1.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 125, 150, 155, 240, searchVariation)
+        if (vRet = 1) {
+            adbInputEvent("111") ; ESC
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
 
         ; Try to handle "Share" feature
             Path = %imagePath%Share.png
@@ -2355,6 +2416,7 @@ CheckPack() {
 }
 
 FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighoul := 0, foundCrown := 0, foundImmersive := 0, foundShiny1Star := 0, foundShiny2Star := 0, foundTrainer := 0, foundRainbow := 0, foundFullArt := 0) {
+
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
 
     keepAccount := true
@@ -2415,14 +2477,12 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         cardCounts.Push(foundFullArt)
     }
 
-    ; Get deviceAccount FIRST before saving
     deviceAccount := GetDeviceAccountFromXML()
     
-    ; For Create Bots: Check if XML already exists for this deviceAccount
+    savedXmlPath := ""
+    
     if (!loadDir) {
-        savedXmlPath := ""
-        
-        ; Check if we already have an XML for this deviceAccount
+        ; Create Bots mode: Check if XML already exists for this deviceAccount to prevent duplicates
         if (deviceAccountXmlMap.HasKey(deviceAccount) && FileExist(deviceAccountXmlMap[deviceAccount])) {
             savedXmlPath := deviceAccountXmlMap[deviceAccount]
             UpdateSavedXml(savedXmlPath)
@@ -2449,9 +2509,40 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         tradeableData.deviceAccount := deviceAccount
         s4tPendingTradeables.Push(tradeableData)
     } else {
-        ; Inject mode: Get deviceAccount after loading
-        savedXmlPath := loadedAccount
-        deviceAccount := GetDeviceAccountFromXML()
+        ; Inject mode: Use the current accountFileName (which may have new name due to pack count)
+        ; and construct the full path from it
+        saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+        savedXmlPath := saveDir . "\" . accountFileName
+        
+        ; Verify the file exists at this path
+        if (!FileExist(savedXmlPath)) {
+            ; If the direct path doesn't work, search for it by the timestamp portion
+            ; Extract timestamp from filename between first and last underscore
+            
+            if (InStr(accountFileName, "_")) {
+                parts := StrSplit(accountFileName, "_")
+                if (parts.Length() >= 2) {
+                    ; parts[1] = pack count (e.g., "91P")
+                    ; parts[2] = timestamp (e.g., "20250101120000")
+                    timestampPattern := parts[2]
+                    
+                    ; Search the directory for files containing this timestamp
+                    Loop, Files, %saveDir%\*%timestampPattern%*.xml
+                    {
+                        savedXmlPath := A_LoopFileFullPath
+                        accountFileName := A_LoopFileName
+                        break  ; Use the first match
+                    }
+                }
+            }
+        }
+        
+        ; verification
+        if (!FileExist(savedXmlPath)) {
+            CreateStatusMessage("Warning: Could not find account XML file for attachment", "", 0, 0, false)
+            LogToFile("FoundTradeable: Could not find XML file. accountFileName=" . accountFileName . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
+            savedXmlPath := ""  ; Clear it so we don't try to attach a non-existent file
+        }
     }
     
     screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
@@ -2497,6 +2588,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
 
         ; Prepare XML file path for attachment
         xmlFileToSend := ""
+        ; NOW savedXmlPath will have the correct path with the updated filename!
         if (s4tSendAccountXml && savedXmlPath && FileExist(savedXmlPath)) {
             xmlFileToSend := savedXmlPath
         }
@@ -4350,8 +4442,8 @@ DoTutorial() {
                 } else {
                     FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
                     FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click 2x
+                }
             }
-        }
             adbClick_wbb(41, 339)
             break
         }
@@ -4809,12 +4901,20 @@ SelectPack(HG := false) {
         Loop {
             adbClick_wbb(151, 420)  ; open button
             
-            if(FindOrLoseImage(233, 486, 272, 519, , "Skip2", 0)) {
+            if(FindOrLoseImage(233, 486, 272, 519, , "Skip2", 0, failSafeTime)) {
                 break
             } else if(FindOrLoseImage(92, 299, 115, 317, , "notenoughitems", 0)) {
                 cantOpenMorePacks := 1
             } else if(FindOrLoseImage(60, 440, 90, 480, , "HourglassPack", 0, 1) || FindOrLoseImage(49, 449, 70, 474, , "HourGlassAndPokeGoldPack", 0, 1)) {
                 adbClick_wbb(205, 458)  ; Handle unexpected HG pack confirmation
+            } else if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0)) {
+                ; Handle restart caused due to network error
+				adbClick_wbb(139, 371)  
+                if (injectMethod && loadedAccount && friended) {
+                    IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+                }
+                restartGameInstance("Stuck at pack opening")
+                return
             } else {
                 adbClick_wbb(200, 451)  ; Additional fallback click
                 Delay(1)
@@ -5444,8 +5544,8 @@ CreateAccountList(instance) {
         ; BUT skip this check if account also has "W" flag (W takes precedence)
         if(InStr(A_LoopFileName, "(") && InStr(A_LoopFileName, "T") && !InStr(A_LoopFileName, "W")) {
             if(hoursDiff < 5*24) {  ; Always 5 days for T-flagged accounts
-                if (verboseLogging)
-                    LogToFile("Skipping account with T flag (testing): " . A_LoopFileName . " (age: " . hoursDiff . " hours, needs 5 days)")
+                ; if (verboseLogging)
+                    ; LogToFile("Skipping account with T flag (testing): " . A_LoopFileName . " (age: " . hoursDiff . " hours, needs 5 days)")
                 continue
             }
         }
@@ -5458,14 +5558,14 @@ CreateAccountList(instance) {
             packCount := packMatch1 + 0  ; Force numeric conversion
         } else {
             packCount := 10  ; Default for unrecognized formats
-            if (verboseLogging)
-                LogToFile("Unknown filename format: " . A_LoopFileName . ", assigned default pack count: 10")
+            ; if (verboseLogging)
+                ; LogToFile("Unknown filename format: " . A_LoopFileName . ", assigned default pack count: 10")
         }
         
         ; Check if pack count fits the current injection range
         if (packCount < minPacks || packCount > maxPacks) {
-            if (verboseLogging)
-                LogToFile("  - SKIPPING: " . A_LoopFileName . " - Pack count " . packCount . " outside range " . minPacks . "-" . maxPacks)
+            ; if (verboseLogging)
+                ; LogToFile("  - SKIPPING: " . A_LoopFileName . " - Pack count " . packCount . " outside range " . minPacks . "-" . maxPacks)
             continue
         }
         
@@ -5473,8 +5573,8 @@ CreateAccountList(instance) {
         fileNames.Push(A_LoopFileName)
         fileTimes.Push(modTime)
         packCounts.Push(packCount)
-        if (verboseLogging)
-            LogToFile("  - KEEPING: " . A_LoopFileName . " - Pack count " . packCount . " inside range " . minPacks . "-" . maxPacks . " (age: " . hoursDiff . " hours)")
+        ; if (verboseLogging)
+            ; LogToFile("  - KEEPING: " . A_LoopFileName . " - Pack count " . packCount . " inside range " . minPacks . "-" . maxPacks . " (age: " . hoursDiff . " hours)")
     }
     
     ; Log counts
@@ -5512,8 +5612,8 @@ CreateAccountList(instance) {
     if (wFlagFiles.MaxIndex() > 0) {
         For i, fileName in wFlagFiles {
             outputContent .= fileName . "`n"
-            if (verboseLogging && i <= 5)
-                LogToFile("  W-" . i . ": " . fileName . " (WP Thanks Check)")
+            ; if (verboseLogging && i <= 5)
+                ; LogToFile("  W-" . i . ": " . fileName . " (WP Thanks Check)")
         }
     }
     
@@ -5524,13 +5624,13 @@ CreateAccountList(instance) {
             
             ; Log first 10 files for verification
             if (i <= 10) {
-                if(verboseLogging) {
-                    FormatTime, fileTimeStr, % fileTimes[i], yyyy-MM-dd HH:mm:ss
-                    LogToFile("  " . i . ": " . fileName . " (Modified: " . fileTimeStr . ", Packs: " . packCounts[i] . ")")
-                }
+                ; if(verboseLogging) {
+                    ; FormatTime, fileTimeStr, % fileTimes[i], yyyy-MM-dd HH:mm:ss
+                    ; LogToFile("  " . i . ": " . fileName . " (Modified: " . fileTimeStr . ", Packs: " . packCounts[i] . ")")
+                ; }
             } else if (i == 11) {
-                if(verboseLogging)
-                    LogToFile("  ... (showing first 10 files only)")
+                ; if(verboseLogging)
+                    ; LogToFile("  ... (showing first 10 files only)")
             }
         }
     }
@@ -5580,17 +5680,17 @@ checkShouldDoMissions() {
     else if (deleteMethod = "Inject Missions") {
         IniRead, skipMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, skipMissionsInjectMissions, 0
         if (skipMissions = 1) {
-            if(verboseLogging)
-                LogToFile("Skipping missions for Inject Missions method (user setting)")
+            ; if(verboseLogging)
+                ; LogToFile("Skipping missions for Inject Missions method (user setting)")
             return false
         }
-        if(verboseLogging)
-            LogToFile("Executing missions for Inject Missions method (user setting enabled)")
+        ; if(verboseLogging)
+            ; LogToFile("Executing missions for Inject Missions method (user setting enabled)")
         return true
     }
     else if (deleteMethod = "Inject 13P+" || deleteMethod = "Inject Wonderpick 96P+") {
-        if(verboseLogging)
-            LogToFile("Skipping missions for " . deleteMethod . " method - missions only run for 'Inject Missions'")
+        ; if(verboseLogging)
+            ; LogToFile("Skipping missions for " . deleteMethod . " method - missions only run for 'Inject Missions'")
         return false
     }
     else {
@@ -5689,7 +5789,19 @@ DoWonderPick() {
 	
 	DoWonderPickOnly()
 	
-    FindImageAndClick(2, 85, 34, 120, , "Missions", 261, 478, 500)
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop {
+        adbClick(261, 478)
+        Sleep, 1000
+        if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
+            break
+        else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
+            break
+        else if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
+            break
+    }
+
     ;FindImageAndClick(130, 170, 170, 205, , "WPMission", 150, 286, 1000)
     FindImageAndClick(120, 185, 150, 215, , "FirstMission", 150, 286, 1000)
     failSafe := A_TickCount
@@ -5890,51 +6002,60 @@ GetEventRewards(frommain := true){
     adbSwipeY2 := Round((453 - 44) / 489 * 960)
     adbSwipeParams2 := adbSwipeX3 . " " . adbSwipeY2 . " " . adbSwipeX4 . " " . adbSwipeY2 . " " . swipeSpeed
     if (frommain){
-        FindImageAndClick(2, 85, 34, 120, , "Missions", 261, 478, 500)
+        failSafe := A_TickCount
+        failSafeTime := 0
+        Loop {
+            adbClick(261, 478)
+            Sleep, 100
+            if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
+                break
+            else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
+                break
+            else if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
+                break
+        }
     }
     Delay(4)
     
     LevelUp()
     
-    if(setSpeed > 1) {
-        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
-        FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
-        Delay(1)
-        adbClick_wbb(41, 339)
-        Delay(1)
-    }
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
         adbSwipe(adbSwipeParams2)
-        Sleep, 10
+        Sleep, 200
         if (FindOrLoseImage(225, 444, 272, 470, , "Premium", 0, failSafeTime)){
-            if(setSpeed > 1) {
-                if(setSpeed = 3) {
-                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
-                    FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
-                } else {
-                    FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
-                    FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
-            }
-            }
-                adbClick_wbb(41, 339)
-                break
+            break
             }
         failSafeTime := (A_TickCount - failSafe) // 1000
-        CreateStatusMessage("Waiting for Trace`n(" . failSafeTime . "/45 seconds)")
+        CreateStatusMessage("Waiting for PremiumMissions`n(" . failSafeTime . "/45 seconds)")
         Delay(1)
     }
-    ; pick ONE of these two click locations based upon which events are currently going on.
-    adbClick_wbb(120, 465) ; used to click the middle mission button
+    
+    ;====== Click through missions menus ======
+    ; pick ONE of these click locations based upon which events are currently going on.
+    ; adbClick_wbb(120, 465) ; used to click the middle mission button
     ; adbClick_wbb(25, 465) ;used to click the left-most mission button
+
+    ; This entire section is specific to First Anniversay Celebration SpecialMissions pt1
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
-        Delay(5)
+        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
+        Sleep, 750
+        if (FindOrLoseImage(223, 179, 231, 187, , "FirstAnniversaryCelebration", 0, failSafeTime)){
+            break
+        }
+    }
+
+    ; ====== Collect all rewards ======
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop{
         adbClick_wbb(172, 427) ;clicks complete all and ok
-        Delay(5)
-        adbClick_wbb(152, 464) ;when to many rewards ok button goes lower
+        Sleep, 1500
+        adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
+        Sleep, 1500
         if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
             break
         }
@@ -5948,13 +6069,41 @@ GetEventRewards(frommain := true){
 }
 
 GetAllRewards(tomain := true, dailies := false) {
-    FindImageAndClick(2, 85, 34, 120, , "Missions", 261, 478, 500)
+
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop {
+        adbClick(261, 478)
+        Sleep, 100
+        if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
+            break
+        else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
+            break
+        else if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
+            break
+    }
+
     Delay(4)
     failSafe := A_TickCount
     failSafeTime := 0
     GotRewards := true
-    if(dailies){
-        FindImageAndClick(37, 130, 64, 156, , "DailyMissions", 165, 465, 500)
+    if(dailies) {
+        failSafe := A_TickCount
+        failSafeTime := 0
+        Loop {
+            adbClick(165, 465)
+            Sleep, 500
+            if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
+                break
+            else if (failSafeTime > 10) {
+                ; if DailyMissions doesn't show up, like if an account has already completed Dailies
+                ; and we are on the wrong tab like 'Deck' missions in the center tab instead.
+                GoToMain()
+                GotRewards := false
+                return
+            }
+        }
+
     }
     Loop {
         Delay(2)
@@ -6575,7 +6724,8 @@ CropAndFormatForOcr(inputFile, x := 0, y := 0, width := 200, height := 200, scal
     pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOrignal, x, y, width, height, scaleUpPercent, 75)
     
 	filePath := A_ScriptDir . "\temp\" .  winTitle . "_AccountPacks_crop.png"
-    Gdip_SaveBitmapToFile(pBitmap, filePath)
+    Gdip_SaveBitmapToFile(pBitmapFormatted, filePath)
+
 	; Cleanup references
     Gdip_DisposeImage(pBitmapOrignal)
     return pBitmapFormatted
@@ -6848,6 +6998,47 @@ GetTradesDatabaseStats() {
     return stats
 }
 
+SaveCroppedImage(sourceFile, destFile, x, y, w, h) {
+    if (!FileExist(sourceFile)) {
+        LogToFile("SaveCroppedImage: Source file not found: " . sourceFile, "OCR.txt")
+        return false
+    }
+    
+    pBitmap := Gdip_CreateBitmapFromFile(sourceFile)
+    
+    if (!pBitmap || pBitmap <= 0) {
+        LogToFile("SaveCroppedImage: Failed to load bitmap from: " . sourceFile, "OCR.txt")
+        return false
+    }
+    
+    Gdip_GetImageDimensions(pBitmap, imageWidth, imageHeight)
+    
+    if (x < 0 || y < 0 || x + w > imageWidth || y + h > imageHeight) {
+        LogToFile("SaveCroppedImage: Invalid crop coordinates - Image: " . imageWidth . "x" . imageHeight . ", Crop: " . x . "," . y . "," . w . "," . h, "OCR.txt")
+        Gdip_DisposeImage(pBitmap)
+        return false
+    }
+    
+    pCroppedBitmap := Gdip_CloneBitmapArea(pBitmap, x, y, w, h)
+    
+    if (!pCroppedBitmap || pCroppedBitmap <= 0) {
+        LogToFile("SaveCroppedImage: Failed to crop bitmap", "OCR.txt")
+        Gdip_DisposeImage(pBitmap)
+        return false
+    }
+    
+    saveResult := Gdip_SaveBitmapToFile(pCroppedBitmap, destFile)
+    
+    if (saveResult != 0) {
+        LogToFile("SaveCroppedImage: Failed to save cropped image to: " . destFile . " (Error: " . saveResult . ")", "OCR.txt")
+    }
+    
+    Gdip_DisposeImage(pCroppedBitmap)
+    Gdip_DisposeImage(pBitmap)
+    
+    return (saveResult = 0)
+}
+
 CountShinedust() {
     FindImageAndClick(252, 78, 263, 92, , "inHamburgerMenu", 244, 518, 2000)
 
@@ -6861,11 +7052,19 @@ CountShinedust() {
             restartGameInstance("Stuck at Shinedust menu")
             return
         }
+        if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime)) {
+            ; accidentally re-clicked hamburger menu while page was loading
+            ; and we're back on homescreen. we need to re-enter hamburger menu
+            adbClick(244, 518)
+            Sleep, 3000
+        }  
         if FindOrLoseImage(26, 188, 43, 204, , "shinedustItems", 0, failSafeTime)
             break
-        adbClick(105, 269)
+        adbClick(99, 279)
+        ; be careful moving this. intentionally chosen to avoid 
+        ; accidentally clicking a pack on the homescreen (clicks between instead.)
         Sleep, 3000
-        if FindOrLoseImage(126, 205, 138, 220, , "shopticketItems", 0, failSafeTime) {
+        if FindOrLoseImage(133, 369, 148, 385, , "wrongItem", 0, failSafeTime) {
             Sleep, 1000
             adbInputEvent("111")
             Sleep, 1000
@@ -6876,18 +7075,29 @@ CountShinedust() {
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%
     
-    Sleep, 100
+    Sleep, 500
     shinedustScreenshotFile := tempDir . "\" . winTitle . "_Shinedust.png"
     adbTakeScreenshot(shinedustScreenshotFile)
-    Sleep, 100
+    Sleep, 500
     
     try {
         if (IsFunc("ocr")) {
             shineDustValue := ""
-            allowedChars := "0123456789,"
-            validPattern := "^\d{1,3}(,\d{3})*$"
+            allowedChars := "0123456789"
+            validPattern := "^[\d,]+$"
             
-            if (RefinedOCRText(shinedustScreenshotFile, 415, 310, 90, 25, allowedChars, validPattern, shineDustValue)) {
+            ocrX := 385
+            ocrY := 310
+            ocrW := 150
+            ocrH := 27
+            
+            pBitmapOriginal := Gdip_CreateBitmapFromFile(shinedustScreenshotFile)
+            pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOriginal, ocrX, ocrY, ocrW, ocrH, 300, 75)
+            shineDustValue := GetTextFromBitmap(pBitmapFormatted, allowedChars)
+            Gdip_DisposeImage(pBitmapOriginal)
+            Gdip_DisposeImage(pBitmapFormatted)
+            
+            if (RegExMatch(shineDustValue, validPattern)) {
                 if (shineDustValue != "") {
                     ; Store shinedust value globally for use in batched Discord messages
                     shinedustValueGlobal := shineDustValue
@@ -6899,7 +7109,7 @@ CountShinedust() {
                     Sleep, 2000
                 }
             } else {
-                CreateStatusMessage("Failed to OCR shinedust.")
+                CreateStatusMessage("Failed to OCR shinedust - got: " . shineDustValue)
                 Sleep, 2000
             }
         }
@@ -6919,7 +7129,7 @@ LogShinedustToDatabase(shinedustValue) {
     
     shinedustValueClean := StrReplace(shinedustValue, ",", "")
     
-    if (shinedustValueClean < 999 || shinedustValueClean > 999999) {
+    if (shinedustValueClean < 99 || shinedustValueClean > 999999) {
         CreateStatusMessage("Invalid shinedust value: " . shinedustValue . " - not logging")
         Sleep, 2000
         return
