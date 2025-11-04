@@ -19,7 +19,7 @@ CoordMode, Pixel, Screen
 DllCall("AllocConsole")
 WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
-global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
+global accountHasOak, winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
 global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria
 global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
 global DeadCheck
@@ -488,224 +488,85 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         EnvSub, now, 1970, seconds
         IniWrite, %now%, %A_ScriptDir%\%scriptName%.ini, Metrics, LastStartEpoch
 
-        if(!injectMethod || !loadedAccount) {
-            DoTutorial()
-            accountOpenPacks := 0 ;tutorial packs don't count
-        }
-        
-        if(deleteMethod = "5 Pack" || deleteMethod = "5 Pack (Fast)" || deleteMethod = "Create Bots (13P)")
-            wonderPicked := DoWonderPick()
-            
-        friendsAdded := AddFriends()
-        
-        SelectPack("First")
-        if(cantOpenMorePacks)
-            Goto, MidOfRun
-            
-        PackOpening()
-        if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-            Goto, MidOfRun
-
-        ; Pack method handling
-        if(packMethod) {
-            friendsAdded := AddFriends(true)
-            SelectPack()
-            if(cantOpenMorePacks)
-                Goto, MidOfRun
-        }
-
-        PackOpening()
-        if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-            Goto, MidOfRun
-
-        ; Hourglass opening for non-injection methods ONLY
-        if(!injectMethod)
-            HourglassOpening() ;deletemethod check in here at the start
-
-        ; Wonder pick additional handling - only for non-injection methods
-        if(wonderPicked && !injectMethod) {
-            if(deleteMethod = "5 Pack" || packMethod) {
-                friendsAdded := AddFriends(true)
-                SelectPack("HGPack")
-                PackOpening()
-            } else {
-                HourglassOpening(true)
-            }
-
-            if(packMethod) {
-                friendsAdded := AddFriends(true)
-                SelectPack("HGPack")
-                PackOpening()
-            }
-            else {
-                HourglassOpening(true)
-            }
-        }
-
-        ; Daily Mission 4hg collection and/or extra 3rd pack opening
-        if((deleteMethod = "Inject Wonderpick 96P+" || deleteMethod = "Inject 13P+") && (claimDailyMission || openExtraPack)) {
-            
-            ; If only claiming daily missions (no extra pack)
-            if(claimDailyMission && !openExtraPack) {
-                GoToMain()
-                GetAllRewards(false, true)
-            }
-            ; If only opening extra pack (no daily mission claim)
-            else if(!claimDailyMission && openExtraPack) {
-                ; Remove & add friends between 2nd free pack & HG pack if 1-pack method is enabled
-                if(packMethod) {
-                    friendsAdded := AddFriends(true)
-                    SelectPack("HGPack")
-                }
-                if(!cantOpenMorePacks) {
-                    HourglassOpening(true)
-                }
-            }
-            ; If both settings are enabled (original functionality)
-            else if(claimDailyMission && openExtraPack) {
-                ; Remove & add friends between 2nd free pack & HG pack if 1-pack method is enabled
-                if(packMethod) {
-                    friendsAdded := AddFriends(true)
-                }
-
-                GoToMain()
-                GetAllRewards(false, true)
-                GoToMain()
-                SelectPack("HGPack")
-                if(!cantOpenMorePacks) {
-                    PackOpening()
-                }
-            }
-        }
 
         MidOfRun:
-		
-        if(deleteMethod = "Inject 13P+" || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)
-            Goto, EndOfRun
 
-        if (checkShouldDoMissions()) {
+        Loop{
+            adbClick(87, 518) ; my cards button
+            Sleep, 1000 ; wait for page to load
+            ; if we've successfully made it to the My Cards menu without tutorial, move onto next step after this loop.
+            if FindOrLoseImage(241, 459, 260, 476, , "MyCardsMenu", 0, failSafeTime)
+                break
 
-            HomeAndMission()
-            if(beginnerMissionsDone)
-                Goto, EndOfRun
+            adbClick(269, 288) ; click tutorial skips
+            Delay(1)
+            adbClick(269, 288)
+            Delay(1)
+            adbClick(269, 288)
+            Delay(2)
+            ; if made it to the last screen of first tutorial, exit it
+            if(FindOrLoseImage(131, 475, 151, 481, , "EndOfTutorialMenus", 0, failSafeTime)) {
+                adbClick(195, 439)
+                Delay(1)
+                Loop {
+                    adbClick(269, 255)
+                    Delay(1)
+                    adbClick(269, 255)
+                    Delay(1)
+                    adbClick(269, 255)
+                    Delay(1) ;137, 511
 
-            SelectPack("HGPack")
-            if(cantOpenMorePacks)
-                Goto, EndOfRun
-                
-            PackOpening() ;6
-            if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-                Goto, EndOfRun
-                
-            HourglassOpening(true) ;7
-            if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-                Goto, EndOfRun
-
-            HomeAndMission()
-            if(beginnerMissionsDone)
-                Goto, EndOfRun
-                
-            SelectPack("HGPack")
-            if(cantOpenMorePacks)
-                Goto, EndOfRun
-            PackOpening() ;8
-            if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-                Goto, EndOfRun
-                
-            HourglassOpening(true) ;9
-            if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-                Goto, EndOfRun
-
-            HomeAndMission()
-            if(beginnerMissionsDone)
-                Goto, EndOfRun
-                
-            SelectPack("HGPack")
-            if(cantOpenMorePacks)
-                Goto, EndOfRun
-            PackOpening() ;10
-            if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-                Goto, EndOfRun
-                
-            HourglassOpening(true) ;11
-            if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-                Goto, EndOfRun
-                
-            ; Extended mission handling for Inject Missions
-            if(injectMethod && loadedAccount && deleteMethod = "Inject Missions") {                
-                HomeAndMission()
-                if(beginnerMissionsDone)
-                    Goto, EndOfRun
-                    
-                SelectPack("HGPack")
-                if(cantOpenMorePacks)
-                    Goto, EndOfRun
-                PackOpening() ;12
-                if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-                    Goto, EndOfRun
-                
-                HourglassOpening(true) ;13
-                if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-                    Goto, EndOfRun
+                    if(FindOrLoseImage(136, 507, 150, 516, , "EndOfTutorialMenus2", 0, failSafeTime)) {
+                        adbClick(195, 475)
+                        Delay(10)
+                        adbClick(135, 439)
+                        Delay(10)
+                        break
+                    }
+                }
+                break
             }
-            
-            HomeAndMission(1)
-            SelectPack("HGPack")
-            if(cantOpenMorePacks)
-                Goto, EndOfRun
-            PackOpening() ;12
-            if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-                Goto, EndOfRun
-            
-            HomeAndMission(1)
-            SelectPack("HGPack")
-            if(cantOpenMorePacks)
-                Goto, EndOfRun
-            PackOpening() ;13
-            if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
-                Goto, EndOfRun
-                
-            beginnerMissionsDone := 1
-            if(injectMethod && loadedAccount)
-                setMetaData()
+
         }
 
+        ; Search for Oak card
+        FindImageAndClick(25, 133, 44, 155, , "InMyCardsSearch", 241, 187, 2000)
+        Sleep, 2000
+        adbClick(148, 145)
+        Sleep, 700
+        adbInput("prof")
+        Sleep, 100
+        adbClick(247, 510)
+        Sleep, 100
+        adbClick(137, 460)
+        Sleep, 2000
+        
+        ; Check if account has 2-star Oak and set the flag
+        if (FindOrLoseImage(48, 245, 67, 264, , "2starOak", 0, failSafeTime)) {
+            accountHasOak := true
+        CreateStatusMessage("Account HAS OAK!")
+        Sleep, 1000
+        } else {
+            accountHasOak := false
+        CreateStatusMessage("No Oak on this account :(")
+        }
+        Sleep, 1000
         EndOfRun:
 
-        if(ocrShinedust && injectMethod && loadedAccount && s4tEnabled) {
-            GoToMain()
-            ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
-            CountShinedust()
-        }
-
-        if(wonderpickForEventMissions) {
-            GoToMain()
-            FindImageAndClick(240, 80, 265, 100, , "WonderPick", 59, 429) ;click until in wonderpick Screen
-            DoWonderPickOnly()
-        }
-
-        ; Special missions
-        IniRead, claimSpecialMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, claimSpecialMissions, 0
-        if (claimSpecialMissions = 1 && (deleteMethod = "Inject 13P+" || deleteMethod = "Inject Wonderpick 96P+")) {
-            ; removed check for !specialMissionsDone := 1 so that users don't need to constantly reset claim status on accounts.
-            GoToMain()
-            HomeAndMission(1)
-            GetEventRewards(true) ; collects all the Special mission hourglass
-            specialMissionsDone := 1
-            cantOpenMorePacks := 0
-            if (injectMethod && loadedAccount)
-                setMetaData()
-        }
+        ; Get device account for logging
+        deviceAccount := GetDeviceAccountFromXML()
         
-        ; Hourglass spending
-        IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 0
-        if (spendHourGlass = 1 && !(deleteMethod = "Inject 13P+" && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
-            SpendAllHourglass()
-        }
-
-        ; Friend removal for Inject Wonderpick 96P+
-        if (injectMethod && friended && !keepAccount) {
-            RemoveFriends()
+        ; Log to trades database based on Oak status
+        if (accountHasOak) {
+            cardTypes := ["Oak"]
+            cardCounts := ["1"]
+            LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, "\Scale125\2starOak.png", "")
+            ; LogToFile("Account HAS 2-star Oak - deviceAccount: " . deviceAccount)
+        } else {
+            cardTypes := ["Oak"]
+            cardCounts := ["0"]
+            LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, "\Scale125\2starOak.png", "")
+            ; LogToFile("Account does NOT have 2-star Oak - deviceAccount: " . deviceAccount)
         }
 
         ; BallCity 2025.02.21 - Track monitor
@@ -767,77 +628,36 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             ; Reset loadedAccount so it will be loaded fresh next iteration
             loadedAccount := false
             
-        } else if (!injectMethod) {
-            if ((!injectMethod || !loadedAccount) && (!nukeAccount || keepAccount)) {
-                ; Save account for Create Bots
-                ; At end of Create Bots run - check if we already have XML from tradeables
-                deviceAccount := GetDeviceAccountFromXML()
-
-                if (deviceAccountXmlMap.HasKey(deviceAccount) && FileExist(deviceAccountXmlMap[deviceAccount])) {
-                    ; We already have an XML from tradeable finds - update and rename it
-                    existingXmlPath := deviceAccountXmlMap[deviceAccount]
-                    
-                    ; Update XML with final account state
-                    UpdateSavedXml(existingXmlPath)
-                    
-                    ; Build new filename with final pack count and metadata
-                    metadata := ""
-                    if(beginnerMissionsDone)
-                        metadata .= "B"
-                    if(soloBattleMissionDone)
-                        metadata .= "S"
-                    if(intermediateMissionsDone)
-                        metadata .= "I"
-                    if(specialMissionsDone)
-                        metadata .= "X"
-                    if(accountHasPackInTesting)
-                        metadata .= "T"
-                    
-                    ; Extract timestamp from existing filename
-                    SplitPath, existingXmlPath, oldFileName, saveDir
-                    RegExMatch(oldFileName, "i)_(\d{14})_", match)
-                    timestamp := match1
-                    
-                    ; Create new filename: 13P_[original_timestamp]_1(B).xml
-                    newFileName := accountOpenPacks . "P_" . timestamp . "_" . winTitle . "(" . metadata . ").xml"
-                    newXmlPath := saveDir . "\" . newFileName
-                    
-                    ; Rename the file
-                    FileMove, %existingXmlPath%, %newXmlPath%, 1
-                    
-                    ; Update mapping and accountFileName
-                    deviceAccountXmlMap[deviceAccount] := newXmlPath
-                    accountFileName := newFileName
-                    
-                } else {
-                    ; No tradeable XML exists - create new one normally
-                    savedXmlPath := ""
-                    saveAccount("All", savedXmlPath)
-                    
-                    if (savedXmlPath) {
-                        SplitPath, savedXmlPath, xmlFileName
-                        accountFileName := xmlFileName
-                    }
-                }
-
-                ; if Create Bots + FoundTradeable, log to database and push discord webhook message(s)
-                if (!loadDir && s4tPendingTradeables.Length() > 0) {
-                    ProcessPendingTradeables()
-                }
+            
+        }         if (accountFileName && loadDir) {
+            sourceFilePath := loadDir . "\" . accountFileName
+            
+            if (accountHasOak) {
+                ; Move to Has2starOak folder
+                targetFolder := A_ScriptDir . "\..\Accounts\Has2starOak"
+                if !FileExist(targetFolder)
+                    FileCreateDir, %targetFolder%
                 
-                beginnerMissionsDone := 0
-                soloBattleMissionDone := 0
-                intermediateMissionsDone := 0
-                specialMissionsDone := 0
-                accountHasPackInTesting := 0
-
-                restartGameInstance("New Run", false)
-            } else {
-                if (stopToggle) {
-                    CreateStatusMessage("Stopping...",,,, false)
-                    ExitApp
+                targetFilePath := targetFolder . "\" . accountFileName
+                
+                if FileExist(sourceFilePath) {
+                    FileCopy, %sourceFilePath%, %targetFilePath%, 1
+                    FileDelete, %sourceFilePath%
+                    ; LogToFile("Moved account WITH Oak from " . sourceFilePath . " to " . targetFilePath)
                 }
-                restartGameInstance("New Run", false)
+            } else {
+                ; Move to doesntHave2starOak folder
+                targetFolder := A_ScriptDir . "\..\Accounts\doesntHave2starOak"
+                if !FileExist(targetFolder)
+                    FileCreateDir, %targetFolder%
+                
+                targetFilePath := targetFolder . "\" . accountFileName
+                
+                if FileExist(sourceFilePath) {
+                    FileCopy, %sourceFilePath%, %targetFilePath%, 1
+                    FileDelete, %sourceFilePath%
+                    ; LogToFile("Moved account WITHOUT Oak from " . sourceFilePath . " to " . targetFilePath)
+                }
             }
         }
     }
