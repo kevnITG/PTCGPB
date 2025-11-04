@@ -492,12 +492,12 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         MidOfRun:
 
         Loop{
-            adbClick(87, 518) ; my cards button
-            Sleep, 1000 ; wait for page to load
             ; if we've successfully made it to the My Cards menu without tutorial, move onto next step after this loop.
             if FindOrLoseImage(241, 459, 260, 476, , "MyCardsMenu", 0, failSafeTime)
                 break
-
+            
+            adbClick(87, 518) ; my cards button
+            Sleep, 1000 ; wait for page to load
             adbClick(269, 288) ; click tutorial skips
             Delay(1)
             adbClick(269, 288)
