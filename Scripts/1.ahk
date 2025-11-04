@@ -672,7 +672,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         EndOfRun:
 
-        if(ocrShinedust && injectMethod && loadedAccount) {
+        if(ocrShinedust && injectMethod && loadedAccount && s4tEnabled) {
             GoToMain()
             ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
             CountShinedust()
@@ -5733,8 +5733,9 @@ DoWonderPick() {
             break
         else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
             break
-        else if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
+        else if FindOrLoseImage(204, 195, 223, 202, , "DailyMissions", 0, failSafeTime)
             break
+        failSafeTime := (A_TickCount - failSafe) // 1000
     }
 
     ;FindImageAndClick(130, 170, 170, 205, , "WPMission", 150, 286, 1000)
@@ -5941,13 +5942,14 @@ GetEventRewards(frommain := true){
         failSafeTime := 0
         Loop {
             adbClick(261, 478)
-            Sleep, 100
+            Sleep, 1000
             if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
                 break
             else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
                 break
-            else if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
+            else if FindOrLoseImage(204, 195, 223, 202, , "DailyMissions", 0, failSafeTime)
                 break
+            failSafeTime := (A_TickCount - failSafe) // 1000
         }
     }
     Delay(4)
@@ -6009,13 +6011,14 @@ GetAllRewards(tomain := true, dailies := false) {
     failSafeTime := 0
     Loop {
         adbClick(261, 478)
-        Sleep, 100
+        Sleep, 1000
         if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
             break
         else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
             break
-        else if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
+        else if FindOrLoseImage(204, 195, 223, 202, , "DailyMissions", 0, failSafeTime)
             break
+        failSafeTime := (A_TickCount - failSafe) // 1000
     }
 
     Delay(4)
@@ -6028,7 +6031,7 @@ GetAllRewards(tomain := true, dailies := false) {
         Loop {
             adbClick(165, 465)
             Sleep, 500
-            if FindOrLoseImage(37, 130, 64, 156, , "DailyMissions", 0, failSafeTime)
+            if FindOrLoseImage(204, 195, 223, 202, , "DailyMissions", 0, failSafeTime)
                 break
             else if (failSafeTime > 10) {
                 ; if DailyMissions doesn't show up, like if an account has already completed Dailies
