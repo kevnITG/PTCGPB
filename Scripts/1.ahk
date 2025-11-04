@@ -30,6 +30,8 @@ global checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode, isCurrentl
 global s4tPendingTradeables := []
 global deviceAccountXmlMap := {} ; prevents Create Bots + s4t making duplicate .xmls within a single run
 global ocrShinedust
+global s4tBatchedMessages := [] ; stores pending s4t Discord messages to send at end-of-run
+global shinedustValueGlobal := "" ; stores shinedust OCR result for inclusion in Discord messages
 global titleHeight, MuMuv5
 
 global avgtotalSeconds
@@ -677,6 +679,9 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
             CountShinedust()
         }
+
+        ; Send batched s4t Discord messages with shinedust value
+        SendBatchedS4TMessages()
 
         if(wonderpickForEventMissions) {
             GoToMain()
@@ -2575,20 +2580,31 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
             packDetailsMessage .= "Rainbow (x" . foundRainbow . "), "
         if (foundFullArt > 0)
             packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
-        
+
         packDetailsMessage := RTrim(packDetailsMessage, ", ")
-        
-        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nLogged to Trades Database and continuing..."
-        
+
+        ; Multi-line format using literal \n for Discord JSON
+        discordMessage := statusMessage . " (" . packsInPool . "P, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile: " . accountFileName . "\nAccount: " . deviceAccount
+
         ; Prepare XML file path for attachment
         xmlFileToSend := ""
         ; NOW savedXmlPath will have the correct path with the updated filename!
         if (s4tSendAccountXml && savedXmlPath && FileExist(savedXmlPath)) {
             xmlFileToSend := savedXmlPath
         }
-        
-        LogToDiscord(discordMessage, screenShot, true, xmlFileToSend,, s4tDiscordWebhookURL, s4tDiscordUserId)
-    
+
+        ; CHANGED: Instead of sending immediately, batch the message for later
+        batchedMessage := {}
+        batchedMessage.message := discordMessage
+        batchedMessage.screenshot := screenShot
+        batchedMessage.xmlFile := xmlFileToSend
+        batchedMessage.timestamp := A_Now
+        batchedMessage.deviceAccount := deviceAccount
+        s4tBatchedMessages.Push(batchedMessage)
+
+        ; Debug logging
+        LogToFile("S4T DEBUG: Batched message added. Total batched: " . s4tBatchedMessages.Length(), "log_" . scriptName . ".txt")
+
 
     }
     return
@@ -2613,6 +2629,55 @@ ProcessPendingTradeables() {
 ClearDeviceAccountXmlMap() { ; clean the tracked list of xml(s) for Create Bots + s4t
     global deviceAccountXmlMap
     deviceAccountXmlMap := {}
+}
+
+SendBatchedS4TMessages() {
+    global s4tBatchedMessages, shinedustValueGlobal, s4tDiscordWebhookURL, s4tDiscordUserId, scriptName
+
+    ; Debug logging at function entry
+    LogToFile("S4T DEBUG: SendBatchedS4TMessages() called. Array length: " . s4tBatchedMessages.Length(), "log_" . scriptName . ".txt")
+
+    ; Return early if no messages to send
+    if (s4tBatchedMessages.Length() = 0) {
+        LogToFile("S4T DEBUG: No messages to send (array is empty). Returning early.", "log_" . scriptName . ".txt")
+        return
+    }
+
+    ; Debug logging after early return check
+    LogToFile("S4T DEBUG: Sending " . s4tBatchedMessages.Length() . " batched messages with shinedust value: " . shinedustValueGlobal, "log_" . scriptName . ".txt")
+
+    ; Send each batched message
+    totalMessages := s4tBatchedMessages.Length()
+    for index, batchedMsg in s4tBatchedMessages {
+        ; Debug logging for each message
+        LogToFile("S4T DEBUG: Sending message " . index . " of " . totalMessages . " to Discord", "log_" . scriptName . ".txt")
+        LogToFile("S4T DEBUG: Screenshot path: " . batchedMsg.screenshot, "log_" . scriptName . ".txt")
+        LogToFile("S4T DEBUG: XML path: " . batchedMsg.xmlFile, "log_" . scriptName . ".txt")
+        LogToFile("S4T DEBUG: Screenshot exists: " . FileExist(batchedMsg.screenshot), "log_" . scriptName . ".txt")
+        LogToFile("S4T DEBUG: XML exists: " . FileExist(batchedMsg.xmlFile), "log_" . scriptName . ".txt")
+
+        messageToSend := batchedMsg.message
+
+        ; Append shinedust value to all messages
+        if (shinedustValueGlobal != "") {
+            messageToSend .= "\nShinedust: " . shinedustValueGlobal
+        }
+
+        ; Send the Discord message with screenshot and XML attachment
+        LogToDiscord(messageToSend, batchedMsg.screenshot, true, batchedMsg.xmlFile,, s4tDiscordWebhookURL, s4tDiscordUserId)
+
+        ; Add delay between messages to avoid rate limiting
+        if (index < totalMessages) {
+            Sleep, 1000
+        }
+    }
+
+    ; Debug logging after all messages sent
+    LogToFile("S4T DEBUG: All " . totalMessages . " messages sent successfully. Array cleared.", "log_" . scriptName . ".txt")
+
+    ; Clear the batched messages array and reset shinedust value after sending
+    s4tBatchedMessages := []
+    shinedustValueGlobal := ""
 }
 
 UpdateSavedXml(xmlPath) {
@@ -7037,6 +7102,8 @@ CountShinedust() {
             
             if (RegExMatch(shineDustValue, validPattern)) {
                 if (shineDustValue != "") {
+                    ; Store shinedust value globally for use in batched Discord messages
+                    shinedustValueGlobal := shineDustValue
                     LogShinedustToDatabase(shineDustValue)
                     CreateStatusMessage("Account has " . shineDustValue . " shinedust.")
                     Sleep, 2000
