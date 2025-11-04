@@ -6014,8 +6014,12 @@ GetAllRewards(tomain := true, dailies := false) {
         Sleep, 1000
         if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
             break
-        else if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
+        else if (FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)) {
+            Sleep, 500
+            adbClick(42, 465) ; move to DailyMissions page
+            Sleep, 500
             break
+            }
         else if FindOrLoseImage(204, 195, 223, 202, , "DailyMissions", 0, failSafeTime)
             break
         failSafeTime := (A_TickCount - failSafe) // 1000
