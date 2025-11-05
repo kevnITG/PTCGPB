@@ -234,7 +234,7 @@ FindPackStats() {
                 adbClick(pos1, pos2)
 			}
 		}
-		levelUp()
+		LevelUp()
         Delay(1)
 		failSafeTime := (A_TickCount - failSafe) // 1000
     }

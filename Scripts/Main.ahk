@@ -7,6 +7,13 @@
 #Include *i %A_ScriptDir%\Include\StringCompare.ahk
 #Include *i %A_ScriptDir%\Include\OCR.ahk
 
+#Include %A_ScriptDir%\Include\Utils.ahk
+#Include %A_ScriptDir%\Include\Database.ahk
+#Include %A_ScriptDir%\Include\CardDetection.ahk
+#Include %A_ScriptDir%\Include\WonderPickManager.ahk
+#Include %A_ScriptDir%\Include\AccountManager.ahk
+#Include %A_ScriptDir%\Include\FriendManager.ahk
+
 #SingleInstance on
 ;SetKeyDelay, -1, -1
 SetMouseDelay, -1
@@ -505,22 +512,50 @@ RandomUsername() {
     return values[randomIndex]
 }
 
-Screenshot(filename := "Valid") {
-    global packs
+Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
+    global adbShell, adbPath, packs, winTitle, titleHeight, scaleParam, packsInPool
     SetWorkingDir %A_ScriptDir%  ; Ensures the working directory is the script's directory
 
     ; Define folder and file paths
-    screenshotsDir := A_ScriptDir "\..\Screenshots"
-    if !FileExist(screenshotsDir)
-        FileCreateDir, %screenshotsDir%
+    fileDir := A_ScriptDir "\..\Screenshots"
+    if !FileExist(fileDir)
+        FileCreateDir, %fileDir%
+    if (subDir) {
+        fileDir .= "\" . subDir
+		if !FileExist(fileDir)
+			FileCreateDir, %fileDir%
+    }
+	if (fileType = "PACKSTATS") {
+        fileDir .= "\temp"
+		if !FileExist(fileDir)
+			FileCreateDir, %fileDir%
+	}
 
     ; File path for saving the screenshot locally
-    screenshotFile := screenshotsDir "\" . A_Now . "_" . winTitle . "_" . filename . "_" . packs . "_packs.png"
+    fileName := A_Now . "_" . winTitle . "_" . fileType . "_" . packsInPool . "_packs.png"
+    if (fileType = "PACKSTATS")
+        fileName := "packstats_temp.png"
+    filePath := fileDir "\" . fileName
 
-    pBitmap := from_window(WinExist(winTitle))
-    Gdip_SaveBitmapToFile(pBitmap, screenshotFile)
+    yBias := titleHeight - 45
+    pBitmapW := from_window(WinExist(winTitle))
+    pBitmap := Gdip_CloneBitmapArea(pBitmapW, 18, 175+yBias, 240, 227)
 
-    return screenshotFile
+    ;scale 100%
+    if (scaleParam = 287) {
+        pBitmap := Gdip_CloneBitmapArea(pBitmapW, 17, 168, 245, 230)
+    }
+    Gdip_DisposeImage(pBitmapW)
+    Gdip_SaveBitmapToFile(pBitmap, filePath)
+
+    ; Don't dispose pBitmap if it's a PACKSTATS screenshot
+    if (fileType != "PACKSTATS") {
+        Gdip_DisposeImage(pBitmap)
+		return filePath
+    }
+
+    ; For PACKSTATS, return both values and delete temp file after OCR is done
+    return {filepath: filePath, bitmap: pBitmap, deleteAfterUse: true}
 }
 
 ; Pause Script
@@ -593,30 +628,6 @@ InitializeJsonFile() {
         jsonFileName := fileName
         return
     }
-}
-
-; Function to append a time and variable pair to the JSON file
-AppendToJsonFile(variableValue) {
-    global jsonFileName
-    if (jsonFileName = "") {
-        return
-    }
-
-    ; Read the current content of the JSON file
-    FileRead, jsonContent, %jsonFileName%
-    if (jsonContent = "") {
-        jsonContent := "[]"
-    }
-
-    ; Parse and modify the JSON content
-    jsonContent := SubStr(jsonContent, 1, StrLen(jsonContent) - 1) ; Remove trailing bracket
-    if (jsonContent != "[")
-        jsonContent .= ","
-    jsonContent .= "{""time"": """ A_Now """, ""variable"": " variableValue "}]"
-
-    ; Write the updated JSON back to the file
-    FileDelete, %jsonFileName%
-    FileAppend, %jsonContent%, %jsonFileName%
 }
 
 ; Function to sum all variable values in the JSON file
@@ -748,37 +759,6 @@ GetNeedle(Path) {
         NeedleBitmaps[Path] := pNeedle
         return pNeedle
     }
-}
-
-MonthToDays(year, month) {
-    static DaysInMonths := [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    days := 0
-    Loop, % month - 1 {
-        days += DaysInMonths[A_Index]
-    }
-    if (month > 2 && IsLeapYear(year))
-        days += 1
-    return days
-}
-
-IsLeapYear(year) {
-    return (Mod(year, 4) = 0 && Mod(year, 100) != 0) || Mod(year, 400) = 0
-}
-
-ReadFile(filename, numbers := false) {
-    FileRead, content, %A_ScriptDir%\..\%filename%.txt
-
-    if (!content)
-        return false
-
-    values := []
-    for _, val in StrSplit(Trim(content), "`n") {
-        cleanVal := RegExReplace(val, "[^a-zA-Z0-9]") ; Remove non-alphanumeric characters
-        if (cleanVal != "")
-            values.Push(cleanVal)
-    }
-
-    return values.MaxIndex() ? values : false
 }
 
 ; ^e::
@@ -1212,67 +1192,27 @@ IsRecentlyCheckedAccount(inputFriend, ByRef friendList) {
     return false  ; Account was not found and has been added
 }
 
-; Crops an image, scales it up, converts it to grayscale, and enhances contrast to improve OCR accuracy.
-CropAndFormatForOcr(inputFile, x := 0, y := 0, width := 200, height := 200, scaleUpPercent := 200) {
+; Handles level up notifications during gameplay by clicking through them if detected.
+LevelUp() {
     ; ------------------------------------------------------------------------------
-    ; Parameters:
-    ;   inputFile (String)    - Path to the input image file.
-    ;   x (Int)               - X-coordinate of the crop region (default: 0).
-    ;   y (Int)               - Y-coordinate of the crop region (default: 0).
-    ;   width (Int)           - Width of the crop region (default: 200).
-    ;   height (Int)          - Height of the crop region (default: 200).
-    ;   scaleUpPercent (Int)  - Scaling percentage for resizing (default: 200%).
+    ; Checks if a level up notification is displayed and clicks through it.
+    ; Uses the "LevelUp" image to detect the notification, then finds and clicks
+    ; the confirmation button.
     ;
     ; Returns:
-    ;   (Ptr) - Pointer to the processed GDI+ bitmap. Caller must dispose of it.
+    ;   None - Function executes actions and returns
     ; ------------------------------------------------------------------------------
-    ; Get bitmap from file
-    pBitmapOrignal := Gdip_CreateBitmapFromFile(inputFile)
-    ; Crop to region, Scale up the image, Convert to greyscale, Increase contrast
-    pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOrignal, x, y, width, height, scaleUpPercent, 25)
-    ; Cleanup references
-    Gdip_DisposeImage(pBitmapOrignal)
-    return pBitmapFormatted
-}
-
-; Extracts text from a bitmap using OCR (Optical Character Recognition). Converts the bitmap to a format usable by Windows OCR, performs OCR, and optionally removes characters not in the allowed character list.
-GetTextFromBitmap(pBitmap, charAllowList := "") {
-    ; ------------------------------------------------------------------------------
-    ; Parameters:
-    ;   pBitmap (Ptr)         - Pointer to the source GDI+ bitmap.
-    ;   charAllowList (String) - A list of allowed characters for OCR results (default: "").
-    ;
-    ; Returns:
-    ;   (String) - The OCR-extracted text, with disallowed characters removed.
-    ; -----------------------------------------------------------------------------
-    global ocrLanguage
-    ocrText := ""
-    ; OCR the bitmap directly
-    hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmap)
-    pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
-    ocrText := ocr(pIRandomAccessStream, ocrLanguage)
-    ; Cleanup references
-    ; ObjRelease(pIRandomAccessStream) ; TODO: do I need this?
-    DeleteObject(hBitmapFriendCode)
-    ; Remove disallowed characters
-    if (charAllowList != "") {
-        allowedPattern := "[^" RegExEscape(charAllowList) "]"
-        ocrText := RegExReplace(ocrText, allowedPattern)
+    global scaleParam
+    Leveled := FindOrLoseImage(100, 86, 167, 116, , "LevelUp", 0)
+    if(Leveled) {
+        clickButton := FindOrLoseImage(75, 340, 195, 530, 80, "Button", 0)
+        StringSplit, pos, clickButton, `,  ; Split at ", "
+        if (scaleParam = 287) {
+            pos2 += 5
+        }
+        adbClick(pos1, pos2)
     }
-
-    return Trim(ocrText, " `t`r`n")
-}
-
-; Escapes special characters in a string for use in a regular expression. It prepends a backslash to characters that have special meaning in regex.
-RegExEscape(str) {
-    ; ------------------------------------------------------------------------------
-    ; Parameters:
-    ;   str (String) - The input string to be escaped.
-    ;
-    ; Returns:
-    ;   (String) - The escaped string, ready for use in a regular expression.
-    ; ------------------------------------------------------------------------------
-    return RegExReplace(str, "([-[\]{}()*+?.,\^$|#\s])", "\$1")
+    Delay(1)
 }
 
 ; Retrieves the path to the temporary directory for the script. If the directory does not exist, it is created.
@@ -1287,31 +1227,133 @@ GetTempDirectory() {
     return tempDir
 }
 
-; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-; ~~~ Copied from other Arturo scripts ~~~
-; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Delay(n) {
-    global Delay
-    msTime := Delay * n
-    Sleep, msTime
+; Wrapper for adbClick with optional bounding box debugging display.
+adbClick_wbb(X,Y)  {
+    ; ------------------------------------------------------------------------------
+    ; Parameters:
+    ;   X (Int) - X-coordinate to click
+    ;   Y (Int) - Y-coordinate to click
+    ;
+    ; If dbg_bbox global is enabled, shows a bounding box before clicking.
+    ; ------------------------------------------------------------------------------
+    global dbg_bbox, dbg_bboxNpause
+    if(dbg_bbox)
+        bboxAndPause_click(X, Y, dbg_bboxNpause)
+    adbClick(X,Y)
 }
 
-DownloadFile(url, filename) {
-    url := url  ; Change to your hosted .txt URL "https://pastebin.com/raw/vYxsiqSs"
-    localPath = %A_ScriptDir%\..\%filename% ; Change to the folder you want to save the file
-    errored := false
-    try {
-        whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-        whr.Open("GET", url, true)
-        whr.Send()
-        whr.WaitForResponse()
-        contents := whr.ResponseText
-    } catch {
-        errored := true
+; Displays a bounding box at click location for debugging purposes.
+bboxAndPause_click(X, Y, doPause := False) {
+    ; ------------------------------------------------------------------------------
+    ; Parameters:
+    ;   X (Int)       - X-coordinate center of box
+    ;   Y (Int)       - Y-coordinate center of box
+    ;   doPause (Bool) - Whether to pause execution after displaying box
+    ;
+    ; Shows a small box around the click point and optionally pauses for debugging.
+    ; ------------------------------------------------------------------------------
+    global winTitle
+    CreateStatusMessage("Clicking X " . X . " Y " . Y,,,, false)
+
+    color := "BackgroundBlue"
+
+    bboxDraw(X-5, Y-5, X+5, Y+5, color)
+
+    if (doPause) {
+        Pause
     }
-    if(!errored) {
-        FileDelete, %localPath%
-        FileAppend, %contents%, %localPath%
+
+    if GetKeyState("F4", "P") {
+        Pause
     }
-    return !errored
+    Gui, BoundingBox%winTitle%:Destroy
+}
+
+; Draws a rectangular bounding box overlay on the screen for debugging.
+bboxDraw(X1, Y1, X2, Y2, color) {
+    ; ------------------------------------------------------------------------------
+    ; Parameters:
+    ;   X1 (Int)    - Top-left X coordinate
+    ;   Y1 (Int)    - Top-left Y coordinate
+    ;   X2 (Int)    - Bottom-right X coordinate
+    ;   Y2 (Int)    - Bottom-right Y coordinate
+    ;   color (Str) - Color name for the box borders
+    ;
+    ; Creates a transparent GUI overlay with colored borders to show a region.
+    ; ------------------------------------------------------------------------------
+    global winTitle
+    WinGetPos, xwin, ywin, Width, Height, %winTitle%
+    BoxWidth := X2-X1
+    BoxHeight := Y2-Y1
+    ; Create a GUI
+    Gui, BoundingBox%winTitle%:+AlwaysOnTop +ToolWindow -Caption +E0x20
+    Gui, BoundingBox%winTitle%:Color, 123456
+    Gui, BoundingBox%winTitle%:+LastFound  ; Make the GUI window the last found window for use by the line below. (straght from documentation)
+    WinSet, TransColor, 123456 ; Makes that specific color transparent in the gui
+
+    ; Create the borders and show
+    Gui, BoundingBox%winTitle%:Add, Progress, x0 y0 w%BoxWidth% h2 %color%
+    Gui, BoundingBox%winTitle%:Add, Progress, x0 y0 w2 h%BoxHeight% %color%
+    Gui, BoundingBox%winTitle%:Add, Progress, x%BoxWidth% y0 w2 h%BoxHeight% %color%
+    Gui, BoundingBox%winTitle%:Add, Progress, x0 y%BoxHeight% w%BoxWidth% h2 %color%
+
+    xshow := X1+xwin
+    yshow := Y1+ywin
+    Gui, BoundingBox%winTitle%:Show, x%xshow% y%yshow% NoActivate
+    Sleep, 100
+}
+
+; Displays a bounding box for image search debugging.
+bboxAndPause_immage(X1, Y1, X2, Y2, pNeedleObj, vret := False, doPause := False) {
+    ; ------------------------------------------------------------------------------
+    ; Parameters:
+    ;   X1 (Int)         - Top-left X coordinate of search region
+    ;   Y1 (Int)         - Top-left Y coordinate of search region
+    ;   X2 (Int)         - Bottom-right X coordinate of search region
+    ;   Y2 (Int)         - Bottom-right Y coordinate of search region
+    ;   pNeedleObj (Obj) - Needle object containing Name property
+    ;   vret (Mixed)     - Return value from image search (for color coding)
+    ;   doPause (Bool)   - Whether to pause if image found
+    ;
+    ; Shows green box if image found, red if not found.
+    ; ------------------------------------------------------------------------------
+    global winTitle
+    CreateStatusMessage("Searching " . pNeedleObj.Name . " returns " . vret,,,, false)
+
+    if(vret>0) {
+        color := "BackgroundGreen"
+    } else {
+        color := "BackgroundRed"
+    }
+
+    bboxDraw(X1, Y1, X2, Y2, color)
+
+    if (doPause && vret) {
+        Pause
+    }
+
+    if GetKeyState("F4", "P") {
+        Pause
+    }
+    Gui, BoundingBox%winTitle%:Destroy
+}
+
+; Wrapper for Gdip_ImageSearch with bounding box debugging and title bar offset adjustment.
+Gdip_ImageSearch_wbb(pBitmapHaystack,pNeedle,ByRef OutputList=""
+,OuterX1=0,OuterY1=0,OuterX2=0,OuterY2=0,Variation=0,Trans=""
+,SearchDirection=1,Instances=1,LineDelim="`n",CoordDelim=",") {
+    ; ------------------------------------------------------------------------------
+    ; Wrapper around Gdip_ImageSearch that:
+    ;   1. Adjusts Y coordinates for title bar height
+    ;   2. Optionally shows debug bounding box if dbg_bbox is enabled
+    ;
+    ; Parameters: Same as Gdip_ImageSearch
+    ; Returns: Result from Gdip_ImageSearch
+    ; ------------------------------------------------------------------------------
+    global titleHeight, dbg_bbox, dbg_bboxNpause
+    yBias := titleHeight - 45
+    vret := Gdip_ImageSearch(pBitmapHaystack,pNeedle.needle,OutputList,OuterX1,OuterY1+yBias,OuterX2,OuterY2+yBias,Variation,Trans,SearchDirection,Instances,LineDelim,CoordDelim)
+    if(dbg_bbox)
+        bboxAndPause_immage(OuterX1, OuterY1+yBias, OuterX2, OuterY2+yBias, pNeedle, vret, dbg_bboxNpause)
+    return vret
 }
