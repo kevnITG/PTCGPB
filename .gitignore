@@ -19,3 +19,6 @@ Scripts/*.ini
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# Claude Code configuration
+.claude/
