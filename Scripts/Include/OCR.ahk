@@ -198,3 +198,268 @@ WaitForAsync(ByRef Object)
     ObjRelease(Object)
     Object := ObjectResult
 }
+
+;===============================================================================
+; Extended OCR Functions for PTCGPB
+;===============================================================================
+; Added functions specific to Pokemon TCG Pocket Bot:
+;   - FindPackStats - OCR pack count from profile
+;   - CountShinedust - OCR shinedust value from items
+;   - RefinedOCRText - Enhanced OCR with validation
+;   - CropAndFormatForOcr - Image preprocessing
+;   - GetTextFromBitmap - Extract text from bitmap
+;   - RegExEscape - Escape regex special characters
+;===============================================================================
+
+;-------------------------------------------------------------------------------
+; FindPackStats - Navigate to profile and OCR pack count
+;-------------------------------------------------------------------------------
+FindPackStats() {
+    global adbShell, scriptName, ocrLanguage, loadDir, scaleParam, accountOpenPacks, ocrSuccess
+
+	failSafe := A_TickCount
+	failSafeTime := 0
+    ; Click for hamburger menu and wait for profile
+    Loop {
+        adbClick(240, 499)
+        if(FindOrLoseImage(230, 120, 260, 150, , "UserProfile", 0, failSafeTime)) {
+            break
+        } else {
+            clickButton := FindOrLoseImage(75, 340, 195, 530, 80, "Button", 0)
+            if(clickButton) {
+                StringSplit, pos, clickButton, `,  ; Split at ", "
+                if (scaleParam = 287) {
+                    pos2 += 5
+                }
+                adbClick(pos1, pos2)
+			}
+		}
+		levelUp()
+        Delay(1)
+		failSafeTime := (A_TickCount - failSafe) // 1000
+    }
+
+	FindImageAndClick(203, 272, 237, 300, , "Profile", 210, 140, 200) ; Open profile/stats page and wait
+
+    ; Swipe until you get to trophy
+	failSafe := A_TickCount
+	failSafeTime := 0
+    Loop {
+        adbSwipe("266 770 266 355 300")
+		if(FindOrLoseImage(13, 110, 31, 129, , "trophy", 0, failSafeTime))
+			break
+		failSafeTime := (A_TickCount - failSafe) // 1000
+
+    }
+
+	FindImageAndClick(122, 375, 161, 390, , "trophyPage", 50, 107, 200) ; Open pack trophy page
+
+    ; Take screenshot and prepare for OCR
+    Sleep, 100
+
+	tempDir := A_ScriptDir . "\temp"
+    if !FileExist(tempDir)
+        FileCreateDir, %tempDir%
+
+	fullScreenshotFile := tempDir . "\" .  winTitle . "_AccountPacks.png"
+	adbTakeScreenshot(fullScreenshotFile)
+
+	Sleep, 100
+
+    packValue := 0
+	trophyOCR := ""
+
+	;214, 438, 111x30
+	;214, 434, 111x38
+	;214, 441, 111x24
+	ocrSuccess := 0
+    if(RefinedOCRText(fullScreenshotFile, 214, 438, 111, 30, "0123456789,/", "^\d{1,3}(,\d{3})?\/\d{1,3}(,\d{3})?$", trophyOCR)) {
+		;MsgBox, %trophyOCR%
+		ocrParts := StrSplit(trophyOCR, "/")
+		accountOpenPacks := ocrParts[1]
+		;MsgBox, %accountOpenPacks%
+		ocrSuccess := 1
+
+		UpdateAccount()
+	}
+
+	if (FileExist(fullScreenshotFile))
+		FileDelete, %fullScreenshotFile%
+
+	FindImageAndClick(230, 120, 260, 150, , "UserProfile", 140, 496, 200) ; go back to hamburger menu
+
+    Loop {
+        adbClick(34,65)
+			Delay(1)
+        adbClick(34,65)
+			Delay(1)
+        adbClick(34,65)
+			Delay(1)
+        if(FindOrLoseImage(233, 400, 264, 428, , "Points", 0, failSafeTime)) {
+            break
+        } else {
+			adbClick_wbb(141, 480)
+			Delay(1)
+		}
+		failSafeTime := (A_TickCount - failSafe) // 1000
+    }
+}
+
+;-------------------------------------------------------------------------------
+; RefinedOCRText - Attempts to extract and validate text from screenshot
+;-------------------------------------------------------------------------------
+RefinedOCRText(screenshotFile, x, y, w, h, allowedChars, validPattern, ByRef output) {
+    success := False
+    ; Pack count gets bigger blowup
+    if(output = "trophyOCR"){
+        blowUp := [500, 1000, 2000, 100, 200, 250, 300, 350, 400, 450, 550, 600, 700, 800, 900]
+    } else {
+        blowUp := [200, 500, 1000, 2000, 100, 200, 250, 300, 400, 450, 550, 600, 700, 800, 900]
+    }
+    Loop, % blowUp.Length() {
+        ; Get the formatted pBitmap
+        pBitmap := CropAndFormatForOcr(screenshotFile, x, y, w, h, blowUp[A_Index])
+        ; Run OCR
+        output := GetTextFromBitmap(pBitmap, allowedChars)
+        ; Validate result
+        if (RegExMatch(output, validPattern)) {
+            success := True
+            break
+        }
+    }
+    return success
+}
+
+;-------------------------------------------------------------------------------
+; CropAndFormatForOcr - Crops, scales, grayscales and enhances image for OCR
+;-------------------------------------------------------------------------------
+CropAndFormatForOcr(inputFile, x := 0, y := 0, width := 200, height := 200, scaleUpPercent := 200) {
+    global winTitle
+    ; Get bitmap from file
+    pBitmapOrignal := Gdip_CreateBitmapFromFile(inputFile)
+    ; Crop to region, Scale up the image, Convert to greyscale, Increase contrast
+    pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOrignal, x, y, width, height, scaleUpPercent, 75)
+
+	filePath := A_ScriptDir . "\temp\" .  winTitle . "_AccountPacks_crop.png"
+    Gdip_SaveBitmapToFile(pBitmapFormatted, filePath)
+
+	; Cleanup references
+    Gdip_DisposeImage(pBitmapOrignal)
+    return pBitmapFormatted
+}
+
+;-------------------------------------------------------------------------------
+; GetTextFromBitmap - Extracts text from bitmap using OCR
+;-------------------------------------------------------------------------------
+GetTextFromBitmap(pBitmap, charAllowList := "") {
+    global ocrLanguage
+    ocrText := ""
+    ; OCR the bitmap directly
+    hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmap)
+    pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
+    ocrText := ocr(pIRandomAccessStream, ocrLanguage)
+    ; Cleanup references
+    DeleteObject(hBitmapFriendCode)
+    ; Remove disallowed characters
+    if (charAllowList != "") {
+        allowedPattern := "[^" RegExEscape(charAllowList) "]"
+        ocrText := RegExReplace(ocrText, allowedPattern)
+    }
+
+    return Trim(ocrText, " `t`r`n")
+}
+
+;-------------------------------------------------------------------------------
+; RegExEscape - Escapes special characters for use in regex
+;-------------------------------------------------------------------------------
+RegExEscape(str) {
+    return RegExReplace(str, "([-[\]{}()*+?.,\^$|#\s])", "\$1")
+}
+
+;-------------------------------------------------------------------------------
+; CountShinedust - Navigate to items and OCR shinedust value
+;-------------------------------------------------------------------------------
+CountShinedust() {
+    global injectMethod, loadedAccount, friended, scriptName, winTitle
+
+    FindImageAndClick(252, 78, 263, 92, , "inHamburgerMenu", 244, 518, 2000)
+
+    failSafe := A_TickCount
+    Loop {
+        failSafeTime := (A_TickCount - failSafe) // 1000
+        if (failSafeTime > 30) {
+            if (injectMethod && loadedAccount && friended) {
+                IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+            }
+            restartGameInstance("Stuck at Shinedust menu")
+            return
+        }
+        if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime)) {
+            ; accidentally re-clicked hamburger menu while page was loading
+            ; and we're back on homescreen. we need to re-enter hamburger menu
+            adbClick(244, 518)
+            Sleep, 3000
+        }
+        if FindOrLoseImage(26, 188, 43, 204, , "shinedustItems", 0, failSafeTime)
+            break
+        adbClick(99, 279)
+        ; be careful moving this. intentionally chosen to avoid
+        ; accidentally clicking a pack on the homescreen (clicks between instead.)
+        Sleep, 3000
+        if FindOrLoseImage(133, 369, 148, 385, , "wrongItem", 0, failSafeTime) {
+            Sleep, 1000
+            adbInputEvent("111")
+            Sleep, 1000
+        }
+    }
+
+    tempDir := A_ScriptDir . "\..\Screenshots\temp"
+    if !FileExist(tempDir)
+        FileCreateDir, %tempDir%
+
+    Sleep, 500
+    shinedustScreenshotFile := tempDir . "\" . winTitle . "_Shinedust.png"
+    adbTakeScreenshot(shinedustScreenshotFile)
+    Sleep, 500
+
+    try {
+        if (IsFunc("ocr")) {
+            shineDustValue := ""
+            allowedChars := "0123456789"
+            validPattern := "^[\d,]+$"
+
+            ocrX := 385
+            ocrY := 310
+            ocrW := 150
+            ocrH := 27
+
+            pBitmapOriginal := Gdip_CreateBitmapFromFile(shinedustScreenshotFile)
+            pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOriginal, ocrX, ocrY, ocrW, ocrH, 300, 75)
+            shineDustValue := GetTextFromBitmap(pBitmapFormatted, allowedChars)
+            Gdip_DisposeImage(pBitmapOriginal)
+            Gdip_DisposeImage(pBitmapFormatted)
+
+            if (RegExMatch(shineDustValue, validPattern)) {
+                if (shineDustValue != "") {
+                    LogShinedustToDatabase(shineDustValue)
+                    CreateStatusMessage("Account has " . shineDustValue . " shinedust.")
+                    Sleep, 2000
+                } else {
+                    CreateStatusMessage("Failed to OCR shinedust.")
+                    Sleep, 2000
+                }
+            } else {
+                CreateStatusMessage("Failed to OCR shinedust - got: " . shineDustValue)
+                Sleep, 2000
+            }
+        }
+    } catch e {
+        LogToFile("Failed to OCR shinedust: " . e.message, "OCR.txt")
+        CreateStatusMessage("Failed to OCR shinedust.")
+        Sleep, 2000
+    }
+
+    if (FileExist(shinedustScreenshotFile)) {
+        FileDelete, %shinedustScreenshotFile%
+    }
+}

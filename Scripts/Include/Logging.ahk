@@ -136,7 +136,7 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
             ProxyServer := ""
         }
         if (proxyEnabled) {
-            curlChar := "curl -k -x " . proxyServer . "/ "
+            curlChar := "curl -k -x " . proxyServer . "/ " 
         } else {
             curlChar := "curl -k "
         }
@@ -178,7 +178,7 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
 
                 LogToFile(curlCommand, "Discord.txt")
 
-                ; Send the message using curl - ORIGINAL SIMPLE METHOD
+                ; Send the message using curl
                 RunWait, %curlCommand%,, Hide
                 break
             }
