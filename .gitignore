@@ -13,3 +13,9 @@ Scripts/*.ini
 *.ini
 *.bak
 !.gitkeep
+
+# macOS metadata files
+._*
+.DS_Store
+.AppleDouble
+.LSOverride
