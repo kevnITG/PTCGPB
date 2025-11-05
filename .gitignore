@@ -1,4 +1,6 @@
 !Accounts/*.ahk
+Accounts/Trades/Trades_Database.csv
+Accounts/Trades/Trades_Index.json
 json/*
 Logs/*
 Screenshots/*
