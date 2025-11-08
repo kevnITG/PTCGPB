@@ -24,3 +24,5 @@ Scripts/*.ini
 
 # Claude Code configuration
 .claude/
+
+.REFACTORING_SUMMARY.md
