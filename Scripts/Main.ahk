@@ -70,6 +70,10 @@ Sleep, %instanceSleep%
 
 ; Attempt to connect to ADB
 ConnectAdb(folderPath)
+Sleep, 2000
+CreateStatusMessage(Disabling background services...)
+DisableBackgroundServices()
+Sleep, 5000
 
 if (InStr(defaultLanguage, "100")) {
     scaleParam := 287
@@ -364,7 +368,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
     CreateStatusMessage("Finding and clicking " . imageName . "...")
 
     Loop { ; Main loop
-        Sleep, 10
+        Sleep, 100
         if(click) {
             ElapsedClickTime := A_TickCount - clickTime
             if(ElapsedClickTime > sleepTime) {

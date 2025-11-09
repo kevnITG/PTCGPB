@@ -250,6 +250,11 @@ Sleep, 1000
 
 ConnectAdb(folderPath)
 
+Sleep, 2000
+CreateStatusMessage(Disabling background services...)
+DisableBackgroundServices()
+Sleep, 5000
+
 resetWindows()
 MaxRetries := 10
 RetryCount := 0
@@ -1316,7 +1321,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
     messageTime := 0
     firstTime := true
     Loop { ; Main loop
-        Sleep, 10
+        Sleep, 100
         if(click) {
             ElapsedClickTime := A_TickCount - clickTime
             if(ElapsedClickTime > sleepTime) {
@@ -2845,7 +2850,7 @@ DoTutorial() {
     failSafeTime := 0
     Loop {
         adbSwipe_wbb(adbSwipeParams)
-        Sleep, 10
+        Sleep, 100
         if(FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
             if(setSpeed > 1) {
                 if(setSpeed = 3) {
@@ -2873,7 +2878,7 @@ DoTutorial() {
     failSafeTime := 0
     Loop {
         adbSwipe_wbb("266 770 266 355 60")
-        Sleep, 10
+        Sleep, 100
         if(FindOrLoseImage(120, 70, 150, 95, , "SwipeUp", 0, failSafeTime)){
             if(setSpeed > 1) {
                 if(setSpeed = 3)
@@ -2944,7 +2949,7 @@ DoTutorial() {
     failSafeTime := 0
     Loop {
         adbSwipe_wbb(adbSwipeParams)
-        Sleep, 10
+        Sleep, 100
         if(FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
             if(setSpeed > 1) {
                 if(setSpeed = 3) {
@@ -3392,7 +3397,7 @@ PackOpening() {
     failSafeTime := 0
     Loop {
         adbSwipe_wbb(adbSwipeParams)
-        Sleep, 10
+        Sleep, 100
         if (FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
         if(setSpeed > 1) {
             if(setSpeed = 3) {
@@ -3549,7 +3554,7 @@ HourglassOpening(HG := false, NEIRestart := true) {
     failSafeTime := 0
     Loop {
         adbSwipe_wbb(adbSwipeParams)
-        Sleep, 10
+        Sleep, 100
         if (FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
         if(setSpeed > 1) {
             if(setSpeed = 3) {
