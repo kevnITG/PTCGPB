@@ -1,4 +1,5 @@
 global adbPort, adbShell, adbPath
+#Include *i %A_LineFile%\..\Gdip_All.ahk
 
 KillADBProcesses() {
     ; Use AHK's Process command to close adb.exe
@@ -100,6 +101,25 @@ ConnectAdb(folderPath := "C:\Program Files\Netease") {
         else
             CreateStatusMessage("Failed to connect to ADB.",,,, false)
         Reload
+    }
+}
+
+DisableBackgroundServices() {
+    global adbPath, adbPort
+
+    if (!adbPath || !adbPort)
+        return
+
+    deviceAddress := "127.0.0.1:" . adbPort
+    commands := []
+    commands.Push("pm disable-user --user 0 ""com.google.android.gms/.chimera.PersistentIntentOperationService""")
+    commands.Push("pm disable-user --user 0 ""com.google.android.gms/com.google.android.location.reporting.service.ReportingAndroidService""")
+    commands.Push("pm disable-user --user 0 com.mumu.store")
+
+    for index, command in commands {
+        fullCommand := """" . adbPath . """ -s " . deviceAddress . " shell " . command
+        result := CmdRet(fullCommand)
+        LogToFile("DisableService result (" . command . "): " . result, "ADB.txt")
     }
 }
 
@@ -247,11 +267,44 @@ adbGesture(params) {
 
 ; Takes a screenshot of an Android device using ADB and saves it to a file.
 adbTakeScreenshot(outputFile) {
-    ; ------------------------------------------------------------------------------
-    ; Parameters:
-    ;   outputFile (String) - The path and filename where the screenshot will be saved.
-    ; ------------------------------------------------------------------------------
-    deviceAddress := "127.0.0.1:" . adbPort
-    command := """" . adbPath . """ -s " . deviceAddress . " exec-out screencap -p > """ .  outputFile . """"
-    RunWait, %ComSpec% /c "%command%", , Hide
+    ; Percroy Optimization
+    global winTitle, adbPort, adbPath
+    
+    static pTokenLocal := 0
+    if (!pTokenLocal) {
+        pTokenLocal := Gdip_Startup()
+    }
+    
+    hwnd := WinExist(winTitle)
+    if (!hwnd) {
+        deviceAddress := "127.0.0.1:" . adbPort
+        command := """" . adbPath . """ -s " . deviceAddress . " exec-out screencap -p > """ .  outputFile . """"
+        RunWait, %ComSpec% /c "%command%", , Hide
+        return
+    }
+
+    pBitmap := Gdip_BitmapFromHWND(hwnd)
+
+    if (!pBitmap || pBitmap = "") {
+        deviceAddress := "127.0.0.1:" . adbPort
+        command := """" . adbPath . """ -s " . deviceAddress . " exec-out screencap -p > """ .  outputFile . """"
+        RunWait, %ComSpec% /c "%command%", , Hide
+        return
+    }
+
+    SplitPath, outputFile, , outputDir
+    if (outputDir && !FileExist(outputDir)) {
+        FileCreateDir, %outputDir%
+    }
+    
+    result := Gdip_SaveBitmapToFile(pBitmap, outputFile)
+    
+    Gdip_DisposeImage(pBitmap)
+    
+    if (!result || result = -1) {
+        deviceAddress := "127.0.0.1:" . adbPort
+        command := """" . adbPath . """ -s " . deviceAddress . " exec-out screencap -p > """ .  outputFile . """"
+        RunWait, %ComSpec% /c "%command%", , Hide
+        return
+    }
 }
