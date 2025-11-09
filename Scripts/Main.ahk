@@ -133,7 +133,7 @@ A_gptest := 0
 
 initializeAdbShell()
 CreateStatusMessage("Initializing bot...",,,, false)
-; restartGameInstance("Initializing bot...", false)
+restartGameInstance("Initializing bot...", false)
 pToken := Gdip_Startup()
 
 if(heartBeat)
