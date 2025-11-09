@@ -31,6 +31,15 @@ WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, skipInvalidGP, deleteXML, packs, FriendID, AddFriend, Instances, showStatus
 global triggerTestNeeded, testStartTime, firstRun, minStars, minStarsA2b, vipIdsURL
 global autoUseGPTest, autotest, autotest_time, A_gptest, TestTime
+global MuMuv5, titleHeight
+MuMuv5 := isMuMuv5()
+
+; Initialize titleHeight based on MuMuv5
+if (MuMuv5) {
+    titleHeight := 50
+} else {
+    titleHeight := 45
+}
 
 deleteAccount := false
 scriptName := StrReplace(A_ScriptName, ".ahk")
@@ -64,6 +73,8 @@ IniRead, minStarsA2b, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA2b, 
 
 IniRead, autoUseGPTest, %A_ScriptDir%\..\Settings.ini, UserSettings, autoUseGPTest, 0
 IniRead, TestTime, %A_ScriptDir%\..\Settings.ini, UserSettings, TestTime, 3600
+global MuMuv5
+MuMuv5 := isMuMuv5()
 ; connect adb
 instanceSleep := scriptName * 1000
 Sleep, %instanceSleep%
@@ -94,11 +105,9 @@ Loop {
         sleep, 2000
         ;Winset, Alwaysontop, On, %winTitle%
         OwnerWND := WinExist(winTitle)
-        x4 := x + 5
-        y4 := y + 535
+        x4 := x + 4
+        y4 := y + Height - 4 + 2
         buttonWidth := 45
-        if (scaleParam = 287)
-            buttonWidth := buttonWidth + 5
 
         Gui, ToolBar:New, +Owner%OwnerWND% -AlwaysOnTop +ToolWindow -Caption +LastFound -DPIScale 
         Gui, ToolBar:Default
@@ -151,17 +160,6 @@ global 99Configs := {}
 99Configs["jp"] := {leftx: 84, rightx: 127}
 99Configs["ko"] := {leftx: 65, rightx: 100}
 99Configs["cn"] := {leftx: 63, rightx: 102}
-if (scaleParam = 287) {
-    99Configs["en"] := {leftx: 123, rightx: 162}
-    99Configs["es"] := {leftx: 73, rightx: 105}
-    99Configs["fr"] := {leftx: 61, rightx: 93}
-    99Configs["de"] := {leftx: 77, rightx: 108}
-    99Configs["it"] := {leftx: 66, rightx: 97}
-    99Configs["pt"] := {leftx: 133, rightx: 165}
-    99Configs["jp"] := {leftx: 88, rightx: 122}
-    99Configs["ko"] := {leftx: 69, rightx: 105}
-    99Configs["cn"] := {leftx: 63, rightx: 102}
-}
 
 99Path := "99" . clientLanguage
 99Leftx := 99Configs[clientLanguage].leftx
@@ -306,6 +304,8 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     }
     pBitmap := from_window(WinExist(winTitle))
     Path = %imagePath%App.png
+    if (MuMuv5)
+        Path = %imagePath%App2.png
     pNeedle := GetNeedle(Path)
     ; ImageSearch within the region
     vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, 15, 155, 270, 420, searchVariation)
@@ -423,6 +423,8 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         }
         pBitmap := from_window(WinExist(winTitle))
         Path = %imagePath%App.png
+        if (MuMuv5)
+        Path = %imagePath%App2.png
         pNeedle := GetNeedle(Path)
         ; ImageSearch within the region
         vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, 15, 155, 270, 420, searchVariation)
@@ -449,14 +451,12 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
 }
 
 resetWindows(){
-    global Columns, winTitle, SelectedMonitorIndex, scaleParam
+    global Columns, winTitle, SelectedMonitorIndex, scaleParam, titleHeight, MuMuv5
     CreateStatusMessage("Arranging window positions and sizes")
     RetryCount := 0
     MaxRetries := 10
-    Loop
-    {
+    Loop {
         try {
-            ; Get monitor origin from index
             SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
             SysGet, Monitor, Monitor, %SelectedMonitorIndex%
             Title := winTitle
@@ -465,15 +465,29 @@ resetWindows(){
             if (instanceIndex = "")
                 instanceIndex := 1
 
-            rowHeight := 533  ; Adjust the height of each row
-            currentRow := Floor((instanceIndex - 1) / Columns)
-            y := currentRow * rowHeight
+                    
             if (MuMuv5) {
-                x := (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth ;UNTESTED
+                titleHeight := 50
             } else {
-                x := Mod((instanceIndex - 1), Columns) * scaleParam
-            }	
-            WinMove, %Title%, , % (MonitorLeft + x), % (MonitorTop + y), scaleParam, 537
+                titleHeight := 45
+            }
+            
+            borderWidth := 4 - 1
+            rowHeight := titleHeight + 489 + 4
+            currentRow := Floor((instanceIndex - 1) / Columns)
+
+            y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
+            ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+            if (MuMuv5) {
+                x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+            } else {
+                x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+            }
+            
+            WinSet, Style, -0xC00000, %Title%
+            WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
+            WinSet, Style, +0xC00000, %Title%
+            WinSet, Redraw, , %Title%
             break
         }
         catch {
