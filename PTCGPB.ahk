@@ -1607,7 +1607,11 @@ ArrangeWindows:
    LoadSettingsFromIni()
    
    if (defaultLanguage = "Scale125") {
-      scaleParam := 277
+      if (MuMuv5) {
+        scaleParam := 283
+	} else {
+        scaleParam := 277
+    }
    } else if (defaultLanguage = "Scale100") {
       scaleParam := 287
    }
@@ -1629,7 +1633,13 @@ ArrangeWindows:
             rowHeight := 533
             currentRow := Floor((instanceIndex - 1) / Columns)
             y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-            x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+            ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+			if (MuMuv5) {
+			borderWidth := 4 - 1
+			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+			} else {
+			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+			}
             
             WinMove, %mainInstanceName%,, %x%, %y%, %scaleParam%, 537
             WinSet, Redraw, , %mainInstanceName%
@@ -1661,8 +1671,14 @@ ArrangeWindows:
             rowHeight := 533
             currentRow := Floor((instanceIndex - 1) / Columns)
             y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-            x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
-            
+            ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+			if (MuMuv5) {
+			borderWidth := 4 - 1
+			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+			} else {
+			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+			}
+			
             WinMove, %windowTitle%,, %x%, %y%, %scaleParam%, 537
             WinSet, Redraw, , %windowTitle%
             

@@ -150,7 +150,11 @@ launchInstance(instanceNum := "")
         mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
         if(mumuNum != "") {
             ; Run, %mumuFolder%\shell\MuMuPlayer.exe -v %mumuNum%
-            Run_(mumuFolder . "\shell\MuMuPlayer.exe", "-v " . mumuNum)
+            ; Run_(mumuFolder . "\shell\MuMuPlayer.exe", "-v " . mumuNum)
+            mumuExe := mumuFolder . "\shell\MuMuPlayer.exe"
+            if !FileExist(mumuExe)
+                mumuExe := mumuFolder . "\nx_main\MuMuNxMain.exe"
+            Run_(mumuExe, "-v " . mumuNum)
         }
     }
 }
@@ -245,6 +249,16 @@ ShellRun(prms*)
         }
         ObjRelease(ptlb)
     }
+}
+
+isMuMuv5(){
+    global folderPath
+    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMu Player 12"
+    if FileExist(mumuFolder . "\nx_main")
+        return true
+    return false
 }
 
 ~+F7::ExitApp

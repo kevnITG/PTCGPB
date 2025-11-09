@@ -243,7 +243,11 @@ Sleep, % scriptName * 1000
 if (InStr(defaultLanguage, "100")) {
     scaleParam := 287
 } else {
-    scaleParam := 277
+    	if (MuMuv5) {
+			scaleParam := 283
+		} else {
+			scaleParam := 277
+		}
 }
 DirectlyPositionWindow()
 Sleep, 1000
@@ -1626,11 +1630,15 @@ DirectlyPositionWindow() {
     borderWidth := 4 - 1
     rowHeight := titleHeight + 489 + 4
     currentRow := Floor((instanceIndex - 1) / Columns)
-    
-    y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-    ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
-    x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
 
+    y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
+    ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+	if (MuMuv5) {
+		x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+	} else {
+		x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+	}
+    
     WinSet, Style, -0xC00000, %Title%
     WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
     WinSet, Style, +0xC00000, %Title%

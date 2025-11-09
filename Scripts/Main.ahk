@@ -78,7 +78,11 @@ Sleep, 5000
 if (InStr(defaultLanguage, "100")) {
     scaleParam := 287
 } else {
-    scaleParam := 277
+     	if (MuMuv5) {
+			scaleParam := 283
+		} else {
+			scaleParam := 277
+		}
 }
 
 resetWindows()
@@ -464,7 +468,11 @@ resetWindows(){
             rowHeight := 533  ; Adjust the height of each row
             currentRow := Floor((instanceIndex - 1) / Columns)
             y := currentRow * rowHeight
-            x := Mod((instanceIndex - 1), Columns) * scaleParam
+            if (MuMuv5) {
+                x := (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth ;UNTESTED
+            } else {
+                x := Mod((instanceIndex - 1), Columns) * scaleParam
+            }	
             WinMove, %Title%, , % (MonitorLeft + x), % (MonitorTop + y), scaleParam, 537
             break
         }
