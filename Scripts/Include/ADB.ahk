@@ -163,6 +163,7 @@ CmdRet(sCmd, callBackFuncObj := "", encoding := "") {
 }
 
 initializeAdbShell() {
+    global adbShell, adbPath, adbPort, Debug
     RetryCount := 0
     MaxRetries := 10
     BackoffTime := 1000  ; Initial backoff time in milliseconds
@@ -175,10 +176,10 @@ initializeAdbShell() {
 
                 ; Validate adbPath and adbPort
                 if (!FileExist(adbPath)) {
-                    throw "ADB path is invalid: " . adbPath
+                    throw Exception("ADB path is invalid: " . adbPath)
                 }
                 if (adbPort < 0 || adbPort > 65535) {
-                    throw "ADB port is invalid: " . adbPort
+                    throw Exception("ADB port is invalid: " . adbPort)
                 }
 
                 ; Attempt to start adb shell
@@ -187,10 +188,14 @@ initializeAdbShell() {
                 ; Ensure adbShell is running before sending 'su'
                 Sleep, 500
                 if (adbShell.Status != 0) {
-                    throw "Failed to start ADB shell."
+                    throw Exception("Failed to start ADB shell.")
                 }
 
-                adbShell.StdIn.WriteLine("su")
+                try {
+                    adbShell.StdIn.WriteLine("su")
+                } catch e2 {
+                    throw Exception("Failed to elevate shell: " . (IsObject(e2) ? e2.Message : e2))
+                }
             }
 
             ; If adbShell is running, break loop
@@ -198,12 +203,13 @@ initializeAdbShell() {
                 break
             }
         } catch e {
+            errorMessage := IsObject(e) ? e.Message : e
             RetryCount++
-            LogToFile("ADB Shell Error: " . e.message, "ADB.txt")
+            LogToFile("ADB Shell Error: " . errorMessage, "ADB.txt")
 
             if (RetryCount >= MaxRetries) {
                 if (Debug)
-                    CreateStatusMessage("Failed to connect to shell after multiple attempts: " . e.message)
+                    CreateStatusMessage("Failed to connect to shell after multiple attempts: " . errorMessage)
                 else
                     CreateStatusMessage("Failed to connect to shell. Pausing.",,,, false)
                 Pause
@@ -215,13 +221,67 @@ initializeAdbShell() {
     }
 }
 
+adbEnsureShell() {
+    global adbShell
+    if (!IsObject(adbShell) || adbShell.Status != 0) {
+        adbShell := ""
+        initializeAdbShell()
+    }
+}
+
+adbWriteRaw(command) {
+    global adbShell
+    retries := 0
+    MaxRetries := 3
+
+    Loop {
+        adbEnsureShell()
+        try {
+            adbShell.StdIn.WriteLine(command)
+            return true
+        } catch e {
+            errorMessage := IsObject(e) ? e.Message : e
+            retries++
+            LogToFile("ADB write error: " . errorMessage, "ADB.txt")
+            adbShell := ""
+            if (retries >= MaxRetries)
+                throw e
+            Sleep, 300
+        }
+    }
+}
+
 waitadb() {
-    adbShell.StdIn.WriteLine("echo done")
-    while !adbShell.StdOut.AtEndOfStream {
-        line := adbShell.StdOut.ReadLine()
-        if (line = "done")
-            break
-        Sleep, 50
+    global adbShell
+    retries := 0
+    MaxRetries := 3
+
+    Loop {
+        adbEnsureShell()
+        try {
+            adbWriteRaw("echo done")
+            startTick := A_TickCount
+            while (A_TickCount - startTick) < 6000 {
+                if (adbShell.Status != 0)
+                    throw Exception("ADB shell terminated while waiting.")
+                if !adbShell.StdOut.AtEndOfStream {
+                    line := adbShell.StdOut.ReadLine()
+                    if (line = "done")
+                        return
+                } else {
+                    Sleep, 50
+                }
+            }
+            throw Exception("Timeout while waiting for ADB response.")
+        } catch e {
+            errorMessage := IsObject(e) ? e.Message : e
+            retries++
+            LogToFile("waitadb error: " . errorMessage, "ADB.txt")
+            adbShell := ""
+            if (retries >= MaxRetries)
+                throw e
+            Sleep, 300
+        }
     }
 }
 
@@ -236,28 +296,28 @@ adbClick(X, Y) {
             , Round(X * convX)
             , Round((Y + offset) * convY))
     }
-    adbShell.StdIn.WriteLine(clickCommands[key])
+    adbWriteRaw(clickCommands[key])
 }
 
 adbInput(name) {
-    adbShell.StdIn.WriteLine("input text " . name)
+    adbWriteRaw("input text " . name)
     waitadb()
 }
 
 adbInputEvent(event) {
     if InStr(event, " ") {
         ; If the event uses a space, we use keycombination
-        adbShell.StdIn.WriteLine("input keycombination " . event)
+        adbWriteRaw("input keycombination " . event)
     } else {
         ; It's a single key event (e.g., "67")
-        adbShell.StdIn.WriteLine("input keyevent " . event)
+        adbWriteRaw("input keyevent " . event)
     }
     waitadb()
 }
 
 ; Simulates a swipe gesture on an Android device, swiping from one X/Y-coordinate to another.
 adbSwipe(params) {
-    adbShell.StdIn.WriteLine("input swipe " . params)
+    adbWriteRaw("input swipe " . params)
     waitadb()
 }
 
@@ -265,7 +325,7 @@ adbSwipe(params) {
 ; Not currently supported.
 adbGesture(params) {
     ; Example params (a 2-second hold-drag from a lower to an upper Y-coordinate): 0 2000 138 380 138 90 138 90
-    adbShell.StdIn.WriteLine("input touchscreen gesture " . params)
+    adbWriteRaw("input touchscreen gesture " . params)
     waitadb()
 }
 

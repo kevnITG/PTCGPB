@@ -266,32 +266,19 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     imagePath := A_ScriptDir . "\" . defaultLanguage . "\"
     confirmed := false
 
+    ; MuMuv5 image search Y offset adjustment
+    yBias := titleHeight - 45
+    Y1 += yBias
+    Y2 += yBias
+
     CreateStatusMessage("Finding " . imageName . "...")
     pBitmap := from_window(WinExist(winTitle))
     Path = %imagePath%%imageName%.png
     pNeedle := GetNeedle(Path)
+;bboxAndPause(X1, Y1, X2, Y2)
 
-    ; 100% scale changes
-    if (scaleParam = 287) {
-        Y1 -= 8 ; offset, should be 44-36 i think?
-        Y2 -= 8
-        if (Y1 < 0) {
-            Y1 := 0
-        }
-        if (imageName = "Bulba") { ; too much to the left? idk how that happens
-            X1 := 200
-            Y1 := 220
-            X2 := 230
-            Y2 := 260
-        }else if (imageName = 99Path) { ; 100% full of friend list
-            Y1 := 103
-            Y2 := 118
-        }
-    }
-    ;bboxAndPause(X1, Y1, X2, Y2)
-
-    ; ImageSearch within the region
-    vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, X1, Y1, X2, Y2, searchVariation)
+; ImageSearch within the region
+vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, X1, Y1, X2, Y2, searchVariation)
     Gdip_DisposeImage(pBitmap)
     if(EL = 0)
         GDEL := 1
@@ -346,24 +333,10 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
 
     confirmed := false
 
-    ; 100% scale changes
-    if (scaleParam = 287) {
-        Y1 -= 8 ; offset, should be 44-36 i think?
-        Y2 -= 8
-        if (Y1 < 0) {
-            Y1 := 0
-        }
-
-        if (imageName = "Platin") { ; can't do text so purple box
-            X1 := 141
-            Y1 := 189
-            X2 := 208
-            Y2 := 224
-        } else if (imageName = "Opening") { ; Opening click (to skip cards) can't click on the immersive skip with 239, 497
-            clickx := 250
-            clicky := 505
-        }
-    }
+    ; MuMuv5 image search Y offset adjustment
+    yBias := titleHeight - 45
+    Y1 += yBias
+    Y2 += yBias
 
     if(click) {
         adbClick(clickx, clicky)

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>save4trade database</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -12,7 +14,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
             background: #fafafa;
             padding: 20px;
             font-weight: 300;
@@ -933,6 +935,8 @@
         let csvLoaded = false;
         let sortColumn = null;
         let sortDirection = 'desc'; // 'asc' or 'desc'
+        let accountShinedustMap = new Map(); // Store latest shinedust for each account
+        let filesList = []; // Store uploaded XML files for download
 
         function changeLanguage() {
             const select = document.getElementById('languageSelect');
@@ -940,7 +944,8 @@
             
             updateUIText();
             if (csvLoaded) {
-                populateFilters();
+                populatePackFilter();
+                updateCardFilter();
                 renderTable();
             }
         }
@@ -948,9 +953,9 @@
         function updateUIText() {
             const t = translations[currentLanguage];
             
-            // Update stats labels
-            document.querySelector('#uniqueAccounts').nextElementSibling.textContent = t.uniqueAccounts;
-            document.querySelector('#totalCards').nextElementSibling.textContent = t.totalCards;
+            // Update stats labels (use innerHTML to preserve icons)
+            document.querySelector('#uniqueAccounts').nextElementSibling.innerHTML = '<i class="fas fa-users"></i> ' + t.uniqueAccounts;
+            document.querySelector('#totalCards').nextElementSibling.innerHTML = '<i class="fas fa-layer-group"></i> ' + t.totalCards;
             
             // Update table headers
             const headerElements = document.querySelectorAll('[data-i18n]');
@@ -961,10 +966,10 @@
                 }
             });
             
-            // Update button if visible
+            // Update button if visible (use innerHTML to preserve icons)
             const loadBtn = document.getElementById('loadCSVBtn');
             if (loadBtn && loadBtn.style.display !== 'none') {
-                loadBtn.textContent = t.loadCSV;
+                loadBtn.innerHTML = '<i class="fas fa-upload"></i> ' + t.loadCSV;
             }
             
             // Update filter placeholders
@@ -979,7 +984,8 @@
             }
             
             document.getElementById('searchInput').placeholder = t.searchPlaceholder;
-            document.getElementById('exportBtn').textContent = t.exportBtn;
+            // Update export button (use innerHTML to preserve icons)
+            document.getElementById('exportBtn').innerHTML = '<i class="fas fa-download"></i> ' + t.exportBtn;
             
             // Update empty state if visible
             const emptyState = document.querySelector('.empty-state');
@@ -1017,6 +1023,43 @@
             return account.substring(0, 5) + '..';
         }
 
+        function extractFixedPart(filename) {
+            const match = filename.match(/P_(.*?)\(/);
+            return match ? match[1] : null;
+        }
+
+        function showLoadSavedFolderPopup() {
+            alert('Navigate to your /Accounts/Saved/ folder, then click "Upload".');
+            document.getElementById('savedDirPicker').click();
+        }
+
+        function downloadXMLFile(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const targetObj = event.currentTarget;
+            const keyword = targetObj.dataset.info;
+            const fixedPartKeyword = extractFixedPart(keyword);
+
+            if (filesList.length === 0) {
+                showLoadSavedFolderPopup();
+                return;
+            }
+
+            const matches = filesList.filter(f => f.name.includes(fixedPartKeyword));
+
+            matches.forEach(f => {
+                const url = URL.createObjectURL(f);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = f.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const popup = document.getElementById('popup');
             const closeBtn = document.getElementById('closeBtn');
@@ -1042,6 +1085,11 @@
                     parseCSV(event.target.result);
                 };
                 reader.readAsText(file);
+            });
+
+            document.getElementById('savedDirPicker').addEventListener('change', (e) => {
+                filesList = Array.from(e.target.files);
+                alert('All files in the Saved folder have been uploaded. Please try downloading the XML file again.');
             });
         });
 
@@ -1070,10 +1118,44 @@
 
             filteredData = [...allData];
             csvLoaded = true;
+            sortColumn = 'date'; // Set default sort to date
+            sortDirection = 'desc'; // Newest first
+            updateShinedustMap(); // Update shinedust map from all data
             enableControls();
             updateStats();
             populateFilters();
             renderTable();
+        }
+
+        function updateShinedustMap() {
+            // Clear existing map
+            accountShinedustMap.clear();
+            
+            // Group data by deviceAccount
+            const accountGroups = new Map();
+            allData.forEach(row => {
+                if (!accountGroups.has(row.deviceAccount)) {
+                    accountGroups.set(row.deviceAccount, []);
+                }
+                accountGroups.get(row.deviceAccount).push(row);
+            });
+            
+            // For each account, find the latest shinedust value
+            accountGroups.forEach((rows, deviceAccount) => {
+                // Sort by timestamp to get the latest entry
+                const sortedRows = rows.sort((a, b) => {
+                    const dateA = new Date(a.timestamp);
+                    const dateB = new Date(b.timestamp);
+                    return dateB - dateA; // Descending order (latest first)
+                });
+                
+                // Find the first entry with a shinedust value
+                const latestShinedustEntry = sortedRows.find(row => row.shinedust && row.shinedust.trim() !== '');
+                
+                if (latestShinedustEntry) {
+                    accountShinedustMap.set(deviceAccount, latestShinedustEntry.shinedust);
+                }
+            });
         }
 
         function enableControls() {
@@ -1096,32 +1178,86 @@
         }
 
         function populateFilters() {
+            populatePackFilter();
+            updateCardFilter();
+            setupFilterListeners();
+        }
+
+        function populatePackFilter() {
             const packTypes = new Set(allData.map(row => row.packType));
+            
+            const t = translations[currentLanguage];
+            const packFilter = document.getElementById('packFilter');
+            const currentSelection = packFilter.value; // Preserve current selection
+            
+            packFilter.innerHTML = `<option value="">${t.allPacks}</option>`;
+            packTypes.forEach(pack => {
+                const translatedPack = translatePackType(pack);
+                packFilter.innerHTML += `<option value="${pack}">${translatedPack}</option>`;
+            });
+            
+            // Restore previous selection if it still exists
+            if (currentSelection && Array.from(packFilter.options).some(opt => opt.value === currentSelection)) {
+                packFilter.value = currentSelection;
+            }
+        }
+
+        function setupFilterListeners() {
+            const packFilter = document.getElementById('packFilter');
+            const cardFilter = document.getElementById('cardFilter');
+            const searchInput = document.getElementById('searchInput');
+            
+            // Remove existing listeners by cloning and replacing
+            const newPackFilter = packFilter.cloneNode(true);
+            packFilter.parentNode.replaceChild(newPackFilter, packFilter);
+            
+            const newCardFilter = cardFilter.cloneNode(true);
+            cardFilter.parentNode.replaceChild(newCardFilter, cardFilter);
+            
+            const newSearchInput = searchInput.cloneNode(true);
+            searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+            
+            // Add fresh listeners
+            document.getElementById('packFilter').addEventListener('change', () => {
+                updateCardFilter(); // Update card filter when pack changes
+                applyFilters();
+            });
+            document.getElementById('cardFilter').addEventListener('change', applyFilters);
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+        }
+
+        function updateCardFilter() {
+            const t = translations[currentLanguage];
+            const packFilter = document.getElementById('packFilter').value;
+            const cardFilter = document.getElementById('cardFilter');
+            const currentSelection = cardFilter.value; // Preserve current selection
+            
+            // Filter data based on current pack selection
+            const dataToCount = packFilter 
+                ? allData.filter(row => row.packType === packFilter)
+                : allData;
+            
+            // Calculate card counts from filtered data
             const cardTypes = new Map();
-            allData.forEach(row => {
+            dataToCount.forEach(row => {
                 row.cardTypes.forEach((type, idx) => {
                     const count = row.cardCounts[idx] || 0;
                     cardTypes.set(type, (cardTypes.get(type) || 0) + count);
                 });
             });
 
-            const t = translations[currentLanguage];
-            const packFilter = document.getElementById('packFilter');
-            packFilter.innerHTML = `<option value="">${t.allPacks}</option>`;
-            packTypes.forEach(pack => {
-                const translatedPack = translatePackType(pack);
-                packFilter.innerHTML += `<option value="${pack}">${translatedPack}</option>`;
-            });
-
-            const cardFilter = document.getElementById('cardFilter');
+            // Rebuild the card filter dropdown
             cardFilter.innerHTML = `<option value="">${t.allCards}</option>`;
             cardTypes.forEach((count, card) => {
                 cardFilter.innerHTML += `<option value="${card}">${getCardDisplayName(card)} (${count})</option>`;
             });
-
-            packFilter.addEventListener('change', applyFilters);
-            cardFilter.addEventListener('change', applyFilters);
-            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            
+            // Restore previous selection if it still exists
+            if (currentSelection && Array.from(cardFilter.options).some(opt => opt.value === currentSelection)) {
+                cardFilter.value = currentSelection;
+            } else {
+                cardFilter.value = ''; // Reset if previous selection no longer exists
+            }
         }
 
         function sortData(column) {
@@ -1292,10 +1428,8 @@
                 const xmlFilenames = [...new Set(account.details.map(d => d.cleanFilename))].join(', ');
                 const originalFileName = account.details.map(d => d.originalFilename).join(',');
                 
-                // Get latest shinedust value from most recent entry
-                const latestShinedust = account.details.length > 0 && account.details[account.details.length - 1].shinedust 
-                    ? account.details[account.details.length - 1].shinedust 
-                    : '';
+                // Get latest shinedust value from the stored map (not affected by filtering)
+                const latestShinedust = accountShinedustMap.get(account.deviceAccount) || '';
 
                 const shinedust = latestShinedust !== '' ? parseInt(latestShinedust) : 0;
                 const shinedustClass = shinedust >= 25000 ? 'shinedust-high' : (shinedust > 0 ? 'shinedust-low' : '');
@@ -1310,7 +1444,7 @@
                     <td class="col-cards"><div class="summary-stats">${cardsHTML}</div></td>
                     <td class="col-shinedust">${shinedustHTML}</td>
                     <td class="col-screenshot"></td>
-                    <td class="col-xml">${xmlFilenames}&nbsp;&nbsp;&nbsp;<span class="xmlDownloadLink" data-info="${originalFileName}">⬇</span></td>
+                    <td class="col-xml">${xmlFilenames}&nbsp;&nbsp;&nbsp;<span class="xmlDownloadLink" data-info="${originalFileName}"><i class="fas fa-download"></i></span></td>
                     <td class="time-cell">${account.lastSeen.split(' ')[0]}</td>
                 `;
                 
@@ -1361,6 +1495,10 @@
 
             document.querySelectorAll('.PackScreenshot').forEach(el => {
                 el.addEventListener('click', openPopup);
+            });
+
+            document.querySelectorAll('.xmlDownloadLink').forEach(el => {
+                el.addEventListener('click', downloadXMLFile);
             });
         }
 
@@ -1429,18 +1567,19 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="number" id="uniqueAccounts">0</div>
-                <div class="label">unique accounts</div>
+                <div class="label"><i class="fas fa-users"></i> unique accounts</div>
             </div>
             <div class="stat-card">
                 <div class="number" id="totalCards">0</div>
-                <div class="label">total cards</div>
+                <div class="label"><i class="fas fa-layer-group"></i> total cards</div>
             </div>
         </div>
 
         <div class="controls">
             <div class="filter-group">
-                <button class="btn" id="loadCSVBtn" onclick="document.getElementById('fileInput').click()">load csv</button>
+                <button class="btn" id="loadCSVBtn" onclick="document.getElementById('fileInput').click()"><i class="fas fa-upload"></i> load csv</button>
                 <input type="file" id="fileInput" accept=".csv">
+                <input type="file" id="savedDirPicker" webkitdirectory multiple style="display: none;">
 
                 <input type="text" id="searchInput" placeholder="search account..." disabled>
 
@@ -1452,7 +1591,7 @@
                     <option value="">all cards</option>
                 </select>
                 
-                <button class="btn export-btn" onclick="exportFiltered()" id="exportBtn" disabled>export</button>
+                <button class="btn export-btn" onclick="exportFiltered()" id="exportBtn" disabled><i class="fas fa-download"></i> export</button>
             </div>
         </div>
 
