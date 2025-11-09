@@ -48,6 +48,9 @@
 
         .kofi-container {
             margin-top: 14px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
 
         .kofi-container a {
@@ -63,6 +66,55 @@
         .kofi-container img {
             height: 37px;
             width: 185px;
+        }
+
+        .language-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: -3px;
+        }
+
+        .language-selector::before {
+            content: "🌐";
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .language-selector select {
+            padding: 8px 32px 8px 12px;
+            border: 1px solid #666;
+            background: #2a2a2a;
+            color: white;
+            font-size: 0.9em;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: 400;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6 9 12 15 18 9"%3e%3c/polyline%3e%3c/svg%3e');
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .language-selector select:hover {
+            background-color: #3a3a3a;
+            border-color: #888;
+        }
+
+        .language-selector select:focus {
+            outline: none;
+            border-color: #999;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+        }
+
+        .language-selector select option {
+            padding: 8px 12px;
+            background: #2a2a2a;
+            color: white;
         }
 
         .stats-grid {
@@ -97,11 +149,19 @@
         }
 
         .xmlDownloadLink {
-            color: #000000;
-            font-size: 1.2em;
-            font-weight: 300;
+            color: #1a1a1a;
+            font-size: 1.4em;
+            font-weight: 400;
             text-decoration-line: none;
             cursor: pointer;
+            display: inline-block;
+            transition: transform 0.2s, color 0.2s;
+            line-height: 1;
+        }
+
+        .xmlDownloadLink:hover {
+            color: #0066cc;
+            transform: scale(1.15);
         }
 
         .controls {
@@ -169,11 +229,6 @@
             pointer-events: none;
         }
 
-        .view-mode-toggle.disabled {
-            opacity: 0.4;
-            pointer-events: none;
-        }
-
         .table-container {
             padding: 24px;
             overflow-x: auto;
@@ -189,93 +244,137 @@
             background: #fafafa;
             padding: 10px 12px;
             text-align: left;
-            font-weight: 400;
-            color: #666;
+            font-weight: bold;
+            color: #000000;
             border-bottom: 1px solid #e0e0e0;
             font-size: 0.8em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        th.sortable:hover {
+            background: #efefef;
+        }
+
+        th.sortable::after {
+            content: " ⇅";
+            opacity: 0.3;
+            font-size: 0.9em;
+        }
+
+        th.sortable.sorted-asc::after {
+            content: " ▲";
+            opacity: 1;
+            color: #1a1a1a;
+        }
+
+        th.sortable.sorted-desc::after {
+            content: " ▼";
+            opacity: 1;
+            color: #1a1a1a;
         }
 
         th.col-account {
-            width: 180px;
+            width: 70px;
+            max-width: 70px;
         }
 
         th.col-time {
             width: 80px;
+            max-width: 80px;
+            font-size: 0.8em;
         }
 
         th.col-pack {
-            width: 100px;
+            width: 110px;
         }
 
         th.col-xml {
-            width: 180px;
-            max-width: 180px;
+            width: 65px;
+            max-width: 65px;
         }
 
         th.col-cards {
-            width: 100px;
+            width: 60px;
+            max-width: 60px;
         }
 
         th.col-screenshot {
-            width: 150px;
-            max-width: 150px;
+            width: 120px;
+            max-width: 120px;
+            font-size: 0.8em;
+        }
+
+        th.col-shinedust {
+            width: 70px;
+            max-width: 70px;
+            font-size: 0.8em;
         }
 
         th.col-subTime {
             width: 80px;
-            font-size: 0.7em;
+            max-width: 80px;
+            font-size: 0.8em;
         }
 
-        th.col-shinedust {
-            width: 100px;
+        .expandable {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .expandable:hover {
+            background: #f5f5f5;
+        }
+
+        .expandable.expanded {
+            background: #e8f4f8;
+            border-left: 3px solid #4a90e2;
+        }
+
+        .detail-row {
+            background: #fafafa;
+            border-bottom: 1px solid #e0e0e0;
+            border-left: 3px solid #4a90e2;
+        }
+
+        .detail-row.last-detail-row {
+            border-bottom: 3px solid #4a90e2;
+            margin-bottom: 4px;
+        }
+
+        .detail-row td {
             font-size: 0.75em;
-        }
-
-        td.col-xml {
-            width: 180px;
-            max-width: 180px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        td.col-cards {
-            width: 250px;
+            color: #666;
+            padding: 8px 12px;
         }
 
         td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #f0f0f0;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e0e0e0;
             font-size: 0.85em;
-            font-weight: 300;
         }
 
-        tr:hover {
-            background: #fafafa;
+        .summary-stats {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
         }
 
-        tr.expandable {
-            cursor: pointer;
-        }
-
-        tr.expandable:hover {
-            background: #f0f0f0;
-        }
-
-        tr.detail-row {
-            background: #f9f9f9;
-        }
-
-        tr.detail-row td {
-            /* padding-left: 40px; */
-            border-bottom: 1px solid #f5f5f5;
-            /* font-size: 0.8em; */
+        .summary-badge {
+            display: inline-block;
         }
 
         .badge {
             display: inline-block;
-            padding: 3px 8px;
-            font-size: 0.75em;
+            padding: 4px 10px;
+            font-size: 0.9em;
             font-weight: 400;
             margin: 2px;
             border: 1px solid;
@@ -285,12 +384,67 @@
             background: #f0f0f0;
             color: #1a1a1a;
             border-color: #ddd;
+            font-size: 0.95em;
         }
 
         .badge-card {
             background: white;
             color: #1a1a1a;
             border-color: #999;
+            font-size: 0.9em;
+        }
+
+        /* Card type specific colors */
+        .card-crown {
+            color: #B8860B;
+            font-weight: 500;
+        }
+
+        .card-diamond {
+            color: #4A7BA7;
+            font-weight: 500;
+        }
+
+        .card-rainbow {
+            background: linear-gradient(90deg, 
+                #E74C3C 0%, 
+                #E67E22 20%, 
+                #F39C12 40%, 
+                #27AE60 60%, 
+                #3498DB 80%, 
+                #9B59B6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
+        }
+
+        .card-shiny {
+            color: #8B9197;
+            font-weight: 500;
+            text-shadow: 0 0 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .card-immersive {
+            background: linear-gradient(135deg, #1a1a1a 0%, #4A148C 30%, #880E4F 60%, #1A237E 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
+        }
+
+        .card-fullart {
+            color: #8E6BA8;
+            font-weight: 500;
+        }
+
+        .card-trainer {
+            color: #D17A70;
+            font-weight: 500;
+        }
+
+        .card-star {
+            color: #DAA520;
         }
 
         .empty-state {
@@ -318,12 +472,22 @@
             background: #333;
         }
 
-        .device-account, .detail-screenshot {
-            width: 200px;
-            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+        .device-account {
+            width: 80px;
+            max-width: 80px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
             font-size: 0.8em;
-            color: #666;
-            font-weight: 400;
+            color: #000000;
+            font-weight: 300;
+        }
+
+        .detail-screenshot {
+            width: 120px;
+            max-width: 120px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: 0.75em;
+            color: #000000;
+            font-weight: 300;
         }
 
         .time-cell {
@@ -342,45 +506,21 @@
         }
 
         .expand-icon.expanded {
-            transform: rotate(90deg);
-        }
-
-        .view-mode-toggle {
-            display: flex;
-            gap: 0;
-            border: 1px solid #1a1a1a;
-            border-radius: 0;
-            overflow: hidden;
-        }
-
-        .view-mode-toggle .btn {
-            border: none;
-            border-radius: 0;
-            border-right: 1px solid #1a1a1a;
-        }
-
-        .view-mode-toggle .btn:last-child {
-            border-right: none;
-        }
-
-        .summary-stats {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .summary-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
+            transform: rotate(0deg);
         }
 
         .PackScreenshot {
-            width: 100px;
+            max-width: 110px;
+            max-height: 80px;
             cursor: pointer;
+            border: 1px solid #ddd;
+            transition: transform 0.2s;
         }
 
-        /* For popup */
+        .PackScreenshot:hover {
+            transform: scale(1.05);
+        }
+
         .popup-overlay {
             display: none;
             position: fixed;
@@ -388,124 +528,498 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.6);
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
         }
 
         .popup-content {
-            background: #fff;
-            border-radius: 10px;
-            padding: 10px;
+            max-width: 90%;
+            max-height: 90%;
             text-align: center;
-            width: 410px;
-            height: 450px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
         }
 
         .popup-content img {
-            width: 400px;
-            height: 400px;
+            max-width: 100%;
+            max-height: 80vh;
             object-fit: contain;
-            border-radius: 8px;
-            align-self: center;
         }
 
         .close-btn {
-            width: 100%;
-            padding: 10px 0;
-            background: #333;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: 0.2s;
-        }
-
-        .close-btn:hover {
-            background: #555;
-        }
-
-        .header-import-btn {
             display: block;
-            margin-top: 4px;
-            padding: 2px 6px;
-            font-size: 0.5em;
+            margin: 20px auto 0;
+            padding: 10px 30px;
             background: white;
             color: #1a1a1a;
-            border: 1px solid #1a1a1a;
+            border: none;
             cursor: pointer;
-            font-family: inherit;
-            font-weight: 400;
+            font-size: 1em;
+            font-weight: 500;
             transition: all 0.2s;
         }
 
-        .header-import-btn:hover:not(:disabled) {
-            background: #1a1a1a;
-            color: white;
+        .close-btn:hover {
+            background: #f0f0f0;
         }
 
-        .header-import-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
+        .shinedust-high {
+            color: #00cc00;
+            font-weight: 500;
         }
+
+        .shinedust-low {
+            color: #cc0000;
+            font-weight: 500;
+        }
+
+        .col-xml {
+            font-size: 0.7em;
+        }
+
     </style>
     <script>
-        let filesList = [];
-        let isLoading = false;
-
-        function showLoadSavedFolderPopup() {
-            alert('Navigate to your /Accounts/Saved/ folder, then click "Upload".');
-            document.getElementById('savedDirPicker').click();
-        }
-
-        function openPopup(event) {
-            const imgObj = event.currentTarget;
-            const popupImg = document.getElementById('popup-img');
-
-            popupImg.src = imgObj.src;
-            popup.style.display = 'flex';
-        }
-
-        function extractFixedPart(filename) {
-            const match = filename.match(/P_(.*?)\(/);
-            return match ? match[1] : null;
-        }
-
-        function downloadXMLFile(event)
-        {
-            const targetObj = event.currentTarget;
-            const keyword = targetObj.dataset.info
-            fixedPartKeyword = extractFixedPart(keyword);
-
-            if (filesList.length === 0) { 
-                event.preventDefault();
-                showLoadSavedFolderPopup();
-                event.stopPropagation();
-                return;
+        // Translation dictionary
+        const translations = {
+            en: {
+                uniqueAccounts: "unique accounts",
+                totalCards: "total cards",
+                loadCSV: "load csv",
+                allPacks: "all packs",
+                allCards: "all cards",
+                searchPlaceholder: "search account...",
+                exportBtn: "export",
+                deviceAccount: "deviceAccount",
+                pack: "pack",
+                cards: "cards",
+                xml: ".xml",
+                shinedust: "shinedust",
+                screenshot: "screenshot",
+                date: "date",
+                noData: "no data loaded",
+                clickLoad: "click load csv to view database",
+                noResults: "no results",
+                tryFilters: "try different filters",
+                // Pack names
+                megagyarados: "Mega Gyarados",
+                megablaziken: "Mega Blaziken",
+                megaaltaria: "Mega Altaria",
+                deluxe: "Deluxe",
+                springs: "Springs",
+                hooh: "Ho-Oh",
+                lugia: "Lugia",
+                eevee: "Eevee",
+                buzzwole: "Extradimensional Crisis",
+                solgaleo: "Solgaleo",
+                lunala: "Lunala",
+                shining: "Shining",
+                arceus: "Arceus",
+                palkia: "Palkia",
+                dialga: "Dialga",
+                pikachu: "Pikachu",
+                charizard: "Charizard",
+                mewtwo: "Mewtwo",
+                mew: "Mew",
+                // Card types
+                crown: "Crown",
+                fullart: "Full Art",
+                trainer: "Trainer",
+                rainbow: "Rainbow",
+                shiny1star: "Shiny",
+                shiny2star: "Shiny",
+                immersive: "Immersive",
+                "4diamond": "◆◆◆◆"
+            },
+            zh: {
+                uniqueAccounts: "独特帐户",
+                totalCards: "总卡数",
+                loadCSV: "加载 csv",
+                allPacks: "所有卡包",
+                allCards: "所有卡牌",
+                searchPlaceholder: "搜索帐户...",
+                exportBtn: "导出",
+                deviceAccount: "设备帐户",
+                pack: "卡包",
+                cards: "卡牌",
+                xml: ".xml",
+                shinedust: "闪光尘",
+                screenshot: "截图",
+                date: "日期",
+                noData: "未加载数据",
+                clickLoad: "点击加载 csv 查看数据库",
+                noResults: "无结果",
+                tryFilters: "尝试不同的筛选器",
+                // Pack names
+                megagyarados: "超級暴鯉龍",
+                megablaziken: "超級火焰雞",
+                megaaltaria: "超級七夕青鳥",
+                deluxe: "豪華",
+                springs: "溫泉",
+                hooh: "鳳王",
+                lugia: "洛奇亞",
+                eevee: "伊布",
+                buzzwole: "異次元危機",
+                solgaleo: "索爾迦雷歐",
+                lunala: "露奈雅拉",
+                shining: "閃耀",
+                arceus: "阿爾宙斯",
+                palkia: "帕路奇亞",
+                dialga: "帝牙盧卡",
+                pikachu: "皮卡丘",
+                charizard: "噴火龍",
+                mewtwo: "超夢",
+                mew: "夢幻",
+                // Card types
+                crown: "王冠",
+                fullart: "全息",
+                trainer: "训练家",
+                rainbow: "彩虹",
+                shiny1star: "闪卡",
+                shiny2star: "闪卡",
+                immersive: "沉浸式",
+                "4diamond": "◆◆◆◆"
+            },
+            ja: {
+                uniqueAccounts: "固有アカウント",
+                totalCards: "合計カード数",
+                loadCSV: "csv読み込み",
+                allPacks: "すべてのパック",
+                allCards: "すべてのカード",
+                searchPlaceholder: "アカウント検索...",
+                exportBtn: "エクスポート",
+                deviceAccount: "デバイスアカウント",
+                pack: "パック",
+                cards: "カード",
+                xml: ".xml",
+                shinedust: "シャインダスト",
+                screenshot: "スクリーンショット",
+                date: "日付",
+                noData: "データが読み込まれていません",
+                clickLoad: "csvを読み込んでデータベースを表示",
+                noResults: "結果なし",
+                tryFilters: "別のフィルターを試す",
+                // Pack names
+                megagyarados: "メガギャラドス",
+                megablaziken: "メガバシャーモ",
+                megaaltaria: "メガチルタリス",
+                deluxe: "デラックス",
+                springs: "温泉",
+                hooh: "ホウオウ",
+                lugia: "ルギア",
+                eevee: "イーブイ",
+                buzzwole: "異次元の危機",
+                solgaleo: "ソルガレオ",
+                lunala: "ルナアーラ",
+                shining: "シャイニング",
+                arceus: "アルセウス",
+                palkia: "パルキア",
+                dialga: "ディアルガ",
+                pikachu: "ピカチュウ",
+                charizard: "リザードン",
+                mewtwo: "ミュウツー",
+                mew: "ミュウ",
+                // Card types
+                crown: "クラウン",
+                fullart: "フルアート",
+                trainer: "トレーナー",
+                rainbow: "レインボー",
+                shiny1star: "シャイニー",
+                shiny2star: "シャイニー",
+                immersive: "イマーシブ",
+                "4diamond": "◆◆◆◆"
+            },
+            de: {
+                uniqueAccounts: "eindeutige Konten",
+                totalCards: "Gesamtkarten",
+                loadCSV: "csv laden",
+                allPacks: "alle Packs",
+                allCards: "alle Karten",
+                searchPlaceholder: "Konto suchen...",
+                exportBtn: "exportieren",
+                deviceAccount: "Gerätekonto",
+                pack: "Pack",
+                cards: "Karten",
+                xml: ".xml",
+                shinedust: "Glitzerstaub",
+                screenshot: "Screenshot",
+                date: "Datum",
+                noData: "keine Daten geladen",
+                clickLoad: "csv laden, um Datenbank anzuzeigen",
+                noResults: "keine Ergebnisse",
+                tryFilters: "andere Filter versuchen",
+                // Pack names
+                megagyarados: "Mega-Garados",
+                megablaziken: "Mega-Lohgock",
+                megaaltaria: "Mega-Altaria",
+                deluxe: "Deluxe",
+                springs: "Quellen",
+                hooh: "Ho-Oh",
+                lugia: "Lugia",
+                eevee: "Evoli",
+                buzzwole: "Interdimensionale Krise",
+                solgaleo: "Solgaleo",
+                lunala: "Lunala",
+                shining: "Glänzend",
+                arceus: "Arceus",
+                palkia: "Palkia",
+                dialga: "Dialga",
+                pikachu: "Pikachu",
+                charizard: "Glurak",
+                mewtwo: "Mewtu",
+                mew: "Mew",
+                // Card types
+                crown: "Krone",
+                fullart: "Vollkunst",
+                trainer: "Trainer",
+                rainbow: "Regenbogen",
+                shiny1star: "Glänzend",
+                shiny2star: "Glänzend",
+                immersive: "Immersiv",
+                "4diamond": "◆◆◆◆"
+            },
+            fr: {
+                uniqueAccounts: "comptes uniques",
+                totalCards: "total de cartes",
+                loadCSV: "charger csv",
+                allPacks: "tous les paquets",
+                allCards: "toutes les cartes",
+                searchPlaceholder: "rechercher un compte...",
+                exportBtn: "exporter",
+                deviceAccount: "compte appareil",
+                pack: "paquet",
+                cards: "cartes",
+                xml: ".xml",
+                shinedust: "poussière brillante",
+                screenshot: "capture d'écran",
+                date: "date",
+                noData: "aucune donnée chargée",
+                clickLoad: "cliquez sur charger csv pour voir la base de données",
+                noResults: "aucun résultat",
+                tryFilters: "essayez différents filtres",
+                // Pack names
+                megagyarados: "Méga-Léviator",
+                megablaziken: "Méga-Braségali",
+                megaaltaria: "Méga-Altaria",
+                deluxe: "Deluxe",
+                springs: "Sources",
+                hooh: "Ho-Oh",
+                lugia: "Lugia",
+                eevee: "Évoli",
+                buzzwole: "Crise Extradimensionnelle",
+                solgaleo: "Solgaleo",
+                lunala: "Lunala",
+                shining: "Brillant",
+                arceus: "Arceus",
+                palkia: "Palkia",
+                dialga: "Dialga",
+                pikachu: "Pikachu",
+                charizard: "Dracaufeu",
+                mewtwo: "Mewtwo",
+                mew: "Mew",
+                // Card types
+                crown: "Couronne",
+                fullart: "Art Complet",
+                trainer: "Dresseur",
+                rainbow: "Arc-en-ciel",
+                shiny1star: "Brillant",
+                shiny2star: "Brillant",
+                immersive: "Immersif",
+                "4diamond": "◆◆◆◆"
+            },
+            ko: {
+                uniqueAccounts: "고유 계정",
+                totalCards: "총 카드",
+                loadCSV: "csv 로드",
+                allPacks: "모든 팩",
+                allCards: "모든 카드",
+                searchPlaceholder: "계정 검색...",
+                exportBtn: "내보내기",
+                deviceAccount: "기기 계정",
+                pack: "팩",
+                cards: "카드",
+                xml: ".xml",
+                shinedust: "샤인더스트",
+                screenshot: "스크린샷",
+                date: "날짜",
+                noData: "데이터가 로드되지 않음",
+                clickLoad: "데이터베이스를 보려면 csv 로드를 클릭하세요",
+                noResults: "결과 없음",
+                tryFilters: "다른 필터를 시도하세요",
+                // Pack names
+                megagyarados: "메가갸라도스",
+                megablaziken: "메가번치코",
+                megaaltaria: "메가파비코리",
+                deluxe: "디럭스",
+                springs: "온천",
+                hooh: "칠색조",
+                lugia: "루기아",
+                eevee: "이브이",
+                buzzwole: "이차원 위기",
+                solgaleo: "솔가레오",
+                lunala: "루나아라",
+                shining: "샤이닝",
+                arceus: "아르세우스",
+                palkia: "펄기아",
+                dialga: "디아루가",
+                pikachu: "피카츄",
+                charizard: "리자몽",
+                mewtwo: "뮤츠",
+                mew: "뮤",
+                // Card types
+                crown: "크라운",
+                fullart: "풀아트",
+                trainer: "트레이너",
+                rainbow: "레인보우",
+                shiny1star: "샤이니",
+                shiny2star: "샤이니",
+                immersive: "이머시브",
+                "4diamond": "◆◆◆◆"
+            },
+            es: {
+                uniqueAccounts: "cuentas únicas",
+                totalCards: "total de cartas",
+                loadCSV: "cargar csv",
+                allPacks: "todos los sobres",
+                allCards: "todas las cartas",
+                searchPlaceholder: "buscar cuenta...",
+                exportBtn: "exportar",
+                deviceAccount: "cuenta dispositivo",
+                pack: "sobre",
+                cards: "cartas",
+                xml: ".xml",
+                shinedust: "polvo brillante",
+                screenshot: "captura de pantalla",
+                date: "fecha",
+                noData: "no hay datos cargados",
+                clickLoad: "haga clic en cargar csv para ver la base de datos",
+                noResults: "sin resultados",
+                tryFilters: "pruebe diferentes filtros",
+                // Pack names
+                megagyarados: "Mega Gyarados",
+                megablaziken: "Mega Blaziken",
+                megaaltaria: "Mega Altaria",
+                deluxe: "Deluxe",
+                springs: "Fuentes",
+                hooh: "Ho-Oh",
+                lugia: "Lugia",
+                eevee: "Eevee",
+                buzzwole: "Crisis Extradimensional",
+                solgaleo: "Solgaleo",
+                lunala: "Lunala",
+                shining: "Brillante",
+                arceus: "Arceus",
+                palkia: "Palkia",
+                dialga: "Dialga",
+                pikachu: "Pikachu",
+                charizard: "Charizard",
+                mewtwo: "Mewtwo",
+                mew: "Mew",
+                // Card types
+                crown: "Corona",
+                fullart: "Arte Completo",
+                trainer: "Entrenador",
+                rainbow: "Arcoíris",
+                shiny1star: "Brillante",
+                shiny2star: "Brillante",
+                immersive: "Inmersivo",
+                "4diamond": "◆◆◆◆"
             }
+        };
 
-            const matches = filesList.filter(f => f.name.includes(fixedPartKeyword));
+        let currentLanguage = 'en';
+        let allData = [];
+        let filteredData = [];
+        let expandedAccounts = new Set();
+        let csvLoaded = false;
+        let sortColumn = null;
+        let sortDirection = 'desc'; // 'asc' or 'desc'
 
-            matches.forEach(f => {
-                const url = URL.createObjectURL(f);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = f.name;
-                a.click();
-                URL.revokeObjectURL(url);
+        function changeLanguage() {
+            const select = document.getElementById('languageSelect');
+            currentLanguage = select.value;
+            
+            updateUIText();
+            if (csvLoaded) {
+                populateFilters();
+                renderTable();
+            }
+        }
+
+        function updateUIText() {
+            const t = translations[currentLanguage];
+            
+            // Update stats labels
+            document.querySelector('#uniqueAccounts').nextElementSibling.textContent = t.uniqueAccounts;
+            document.querySelector('#totalCards').nextElementSibling.textContent = t.totalCards;
+            
+            // Update table headers
+            const headerElements = document.querySelectorAll('[data-i18n]');
+            headerElements.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) {
+                    el.textContent = t[key];
+                }
             });
-            event.stopPropagation();
+            
+            // Update button if visible
+            const loadBtn = document.getElementById('loadCSVBtn');
+            if (loadBtn && loadBtn.style.display !== 'none') {
+                loadBtn.textContent = t.loadCSV;
+            }
+            
+            // Update filter placeholders
+            const packFilter = document.getElementById('packFilter');
+            if (packFilter) {
+                packFilter.options[0].textContent = t.allPacks;
+            }
+            
+            const cardFilter = document.getElementById('cardFilter');
+            if (cardFilter) {
+                cardFilter.options[0].textContent = t.allCards;
+            }
+            
+            document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+            document.getElementById('exportBtn').textContent = t.exportBtn;
+            
+            // Update empty state if visible
+            const emptyState = document.querySelector('.empty-state');
+            if (emptyState) {
+                const h2 = emptyState.querySelector('h2');
+                const p = emptyState.querySelector('p');
+                if (h2 && p) {
+                    if (!csvLoaded) {
+                        h2.textContent = t.noData;
+                        p.textContent = t.clickLoad;
+                    } else {
+                        h2.textContent = t.noResults;
+                        p.textContent = t.tryFilters;
+                    }
+                }
+            }
+        }
+
+        function translatePackType(packType) {
+            if (!packType) return packType;
+            const t = translations[currentLanguage];
+            const key = packType.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return t[key] || packType;
+        }
+
+        function translateCardType(cardType) {
+            if (!cardType) return cardType;
+            const t = translations[currentLanguage];
+            const key = cardType.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return t[key] || cardType;
+        }
+
+        function shortenDeviceAccount(account) {
+            if (!account || account.length <= 6) return account;
+            return account.substring(0, 5) + '..';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             const popup = document.getElementById('popup');
             const closeBtn = document.getElementById('closeBtn');
-            const dirPicker = document.getElementById('savedDirPicker');
 
             closeBtn.addEventListener('click', () => {
                 popup.style.display = 'none';
@@ -519,109 +1033,16 @@
                 if (e.key === 'Escape') popup.style.display = 'none';
             });
 
-            dirPicker.addEventListener('change', (e) => {
-              filesList = Array.from(e.target.files);
-              alert('All files in the Saved folder have been uploaded. Please try downloading the XML file again.');
+            document.getElementById('fileInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    parseCSV(event.target.result);
+                };
+                reader.readAsText(file);
             });
-        });
-    </script>
-</head>
-<body>    
-    <div class="popup-overlay" id="popup">
-        <div class="popup-content">
-            <img id="popup-img" src="" alt="확대 이미지">
-            <br>
-            <button class="close-btn" id="closeBtn">Close</button>
-        </div>
-    </div>
-    <div class="container">
-        <div class="header">
-            <h1>save4trade database</h1>
-            <p>for ptcgp bot (kevinnnn)</p>
-            <div class="kofi-container">
-                <a href="https://ko-fi.com/kevnitg" target="_blank" rel="noopener noreferrer">
-                    <img src="../../GUI/images/support_me_on_kofi.png" alt="support me on ko-fi" />
-                </a>
-            </div>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="number" id="uniqueAccounts">0</div>
-                <div class="label">unique accounts</div>
-            </div>
-            <div class="stat-card">
-                <div class="number" id="totalCards">0</div>
-                <div class="label">total cards</div>
-            </div>
-        </div>
-
-        <div class="controls">
-            <div class="filter-group">
-                <button class="btn" onclick="document.getElementById('fileInput').click()">load csv</button>
-                <input type="file" id="fileInput" accept=".csv">
-                
-                <div class="view-mode-toggle disabled" id="viewModeToggle">
-                    <button class="btn active" onclick="setViewMode('aggregated')" disabled>accounts</button>
-                    <button class="btn" onclick="setViewMode('detailed')" disabled>raw data</button>
-                </div>
-
-                <select id="packFilter" disabled>
-                    <option value="">all packs</option>
-                </select>
-
-                <select id="cardFilter" disabled>
-                    <option value="">all cards</option>
-                </select>
-
-                <input type="text" id="searchInput" placeholder="search account..." disabled>
-                
-                <button class="btn export-btn" onclick="exportFiltered()" id="exportBtn" disabled>export</button>
-
-                <input type="file" id="savedDirPicker" webkitdirectory multiple disabled style="display: none;">
-            </div>
-        </div>
-
-        <div class="table-container">
-            <table id="mainTable">
-                <thead id="tableHead">
-                    <tr>
-                        <th class="col-account">device account</th>
-                        <th class="col-pack">pack</th>
-                        <th class="col-cards">cards</th>
-                        <th class="col-xml">.xml filename</th>
-                        <th class="col-time" rowspan="2">time</th>
-                        <th class="col-shinedust">shinedust</th>
-                        <th class="col-screenshot">Screenshot</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <tr>
-                        <td colspan="7" class="empty-state">
-                            <h2>no data loaded</h2>
-                            <p>click load csv to view database</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        let allData = [];
-        let filteredData = [];
-        let viewMode = 'aggregated';
-        let expandedAccounts = new Set();
-
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                parseCSV(event.target.result);
-            };
-            reader.readAsText(file);
         });
 
         function parseCSV(csvText) {
@@ -648,6 +1069,7 @@
             }
 
             filteredData = [...allData];
+            csvLoaded = true;
             enableControls();
             updateStats();
             populateFilters();
@@ -655,14 +1077,12 @@
         }
 
         function enableControls() {
-            document.getElementById('viewModeToggle').classList.remove('disabled');
-            document.querySelectorAll('#viewModeToggle .btn').forEach(btn => btn.disabled = false);
             document.getElementById('packFilter').disabled = false;
             document.getElementById('cardFilter').disabled = false;
             document.getElementById('searchInput').disabled = false;
             document.getElementById('exportBtn').disabled = false;
-            document.getElementById('savedDirPicker').disabled = false;
-            if(document.getElementById('importXmlBtn')) document.getElementById('importXmlBtn').disabled = false;
+            // Hide load CSV button
+            document.getElementById('loadCSVBtn').style.display = 'none';
         }
 
         function updateStats() {
@@ -677,19 +1097,26 @@
 
         function populateFilters() {
             const packTypes = new Set(allData.map(row => row.packType));
-            const cardTypes = new Set();
-            allData.forEach(row => row.cardTypes.forEach(type => cardTypes.add(type)));
+            const cardTypes = new Map();
+            allData.forEach(row => {
+                row.cardTypes.forEach((type, idx) => {
+                    const count = row.cardCounts[idx] || 0;
+                    cardTypes.set(type, (cardTypes.get(type) || 0) + count);
+                });
+            });
 
+            const t = translations[currentLanguage];
             const packFilter = document.getElementById('packFilter');
-            packFilter.innerHTML = '<option value="">all packs</option>';
+            packFilter.innerHTML = `<option value="">${t.allPacks}</option>`;
             packTypes.forEach(pack => {
-                packFilter.innerHTML += `<option value="${pack}">${pack}</option>`;
+                const translatedPack = translatePackType(pack);
+                packFilter.innerHTML += `<option value="${pack}">${translatedPack}</option>`;
             });
 
             const cardFilter = document.getElementById('cardFilter');
-            cardFilter.innerHTML = '<option value="">all cards</option>';
-            cardTypes.forEach(card => {
-                cardFilter.innerHTML += `<option value="${card}">${getCardDisplayName(card)}</option>`;
+            cardFilter.innerHTML = `<option value="">${t.allCards}</option>`;
+            cardTypes.forEach((count, card) => {
+                cardFilter.innerHTML += `<option value="${card}">${getCardDisplayName(card)} (${count})</option>`;
             });
 
             packFilter.addEventListener('change', applyFilters);
@@ -697,14 +1124,15 @@
             document.getElementById('searchInput').addEventListener('input', applyFilters);
         }
 
-        function setViewMode(mode) {
-            viewMode = mode;
-            expandedAccounts.clear();
-            
-            document.querySelectorAll('.view-mode-toggle .btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
+        function sortData(column) {
+            if (sortColumn === column) {
+                // Toggle direction if clicking same column
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                // New column, default to descending
+                sortColumn = column;
+                sortDirection = 'desc';
+            }
             
             renderTable();
         }
@@ -728,20 +1156,19 @@
             renderTable();
         }
 
-        function getCardClass(cardType) {
-            return '';
-        }
-
         function getCardDisplayName(cardType) {
             const type = cardType.toLowerCase();
-            if (type === 'crown') return '👑 Crown';
-            if (type === 'fullart') return '★★ Full Art';
-            if (type === 'trainer') return '★★ Trainer';
-            if (type === 'rainbow') return '★★ Rainbow';
-            if (type === 'shiny1star') return '★ Shiny';
-            if (type === 'shiny2star') return '★★ Shiny';
-            if (type === 'immersive') return 'Immersive';
-            return cardType;
+            const translated = translateCardType(cardType);
+            
+            if (type === 'crown') return '<span class="card-star">👑</span> <span class="card-crown">' + translated + '</span>';
+            if (type === 'fullart') return '<span class="card-star">★★</span> <span class="card-fullart">' + translated + '</span>';
+            if (type === 'trainer') return '<span class="card-star">★★</span> <span class="card-trainer">' + translated + '</span>';
+            if (type === 'rainbow') return '<span class="card-star">★★</span> <span class="card-rainbow">' + translated + '</span>';
+            if (type === 'shiny1star') return '<span class="card-star">★</span> <span class="card-shiny">' + translated + '</span>';
+            if (type === 'shiny2star') return '<span class="card-star">★★</span> <span class="card-shiny">' + translated + '</span>';
+            if (type === 'immersive') return '<span class="card-immersive">' + translated + '</span>';
+            if (type === '4diamond') return '<span class="card-diamond">◆◆◆◆</span>';
+            return translated;
         }
 
         function aggregateByAccount(data) {
@@ -790,50 +1217,65 @@
         }
 
         function renderTable() {
+            const t = translations[currentLanguage];
             const thead = document.getElementById('tableHead');
             const tbody = document.getElementById('tableBody');
             
             if (filteredData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="empty-state">
-                            <h2>no results</h2>
-                            <p>try different filters</p>
+                        <td colspan="7" class="empty-state">
+                            <h2>${csvLoaded ? t.noResults : t.noData}</h2>
+                            <p>${csvLoaded ? t.tryFilters : t.clickLoad}</p>
                         </td>
                     </tr>
                 `;
                 return;
             }
 
-            if (viewMode === 'aggregated') {
-                renderAggregatedTable(thead, tbody);
-            } else {
-                renderDetailedTable(thead, tbody);
-            }
-        }
+            const dateClass = sortColumn === 'date' ? `sorted-${sortDirection}` : '';
+            const shinedustClass = sortColumn === 'shinedust' ? `sorted-${sortDirection}` : '';
 
-        function renderAggregatedTable(thead, tbody) {
             thead.innerHTML = `
                 <tr>
-                    <th class="col-account">device account</th>
-                    <th class="col-pack">pack</th>
-                    <th class="col-cards">cards collected</th>
-                    <th class="col-xml">.xml filename<br><button class="header-import-btn" onclick="showLoadSavedFolderPopup()" id="importXmlBtn">Load Saved folder</button></th>
-                    <th class="col-subTime">first seen</th>
-                    <th class="col-subTime">last seen</th>
-                    <th class="col-shinedust">shinedust</th>
-                    <th class="col-screenshot">Screenshot</th>
+                    <th class="col-account"><span data-i18n="deviceAccount">${t.deviceAccount}</span></th>
+                    <th class="col-pack"><span data-i18n="pack">${t.pack}</span></th>
+                    <th class="col-cards"><span data-i18n="cards">${t.cards}</span></th>
+                    <th class="col-shinedust sortable ${shinedustClass}" onclick="sortData('shinedust')"><span data-i18n="shinedust">${t.shinedust}</span></th>
+                    <th class="col-screenshot"><span data-i18n="screenshot">${t.screenshot}</span></th>
+                    <th class="col-xml"><span data-i18n="xml">${t.xml}</span></th>
+                    <th class="col-subTime sortable ${dateClass}" onclick="sortData('date')"><span data-i18n="date">${t.date}</span></th>
                 </tr>
             `;
 
-            const aggregated = aggregateByAccount(filteredData);
+            let aggregated = aggregateByAccount(filteredData);
+            
+            // Apply sorting
+            if (sortColumn === 'date') {
+                aggregated.sort((a, b) => {
+                    const dateA = new Date(a.lastSeen);
+                    const dateB = new Date(b.lastSeen);
+                    return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+                });
+            } else if (sortColumn === 'shinedust') {
+                aggregated.sort((a, b) => {
+                    const shinedustA = a.details.length > 0 && a.details[a.details.length - 1].shinedust 
+                        ? parseInt(a.details[a.details.length - 1].shinedust) 
+                        : 0;
+                    const shinedustB = b.details.length > 0 && b.details[b.details.length - 1].shinedust 
+                        ? parseInt(b.details[b.details.length - 1].shinedust) 
+                        : 0;
+                    return sortDirection === 'asc' ? shinedustA - shinedustB : shinedustB - shinedustA;
+                });
+            }
+
             tbody.innerHTML = '';
             
             aggregated.forEach(account => {
                 const tr = document.createElement('tr');
-                tr.className = 'expandable';
-                
                 const isExpanded = expandedAccounts.has(account.deviceAccount);
+                tr.className = isExpanded ? 'expandable expanded' : 'expandable';
+                
                 const expandIcon = isExpanded ? '▼' : '▶';
                 
                 const cardsHTML = Array.from(account.cards.entries())
@@ -844,7 +1286,7 @@
 
                 const packsHTML = Array.from(account.packTypes)
                     .filter(pack => pack && pack.length > 0)
-                    .map(pack => `<span class="badge badge-pack">${pack}</span>`)
+                    .map(pack => `<span class="badge badge-pack">${translatePackType(pack)}</span>`)
                     .join(' ');
 
                 const xmlFilenames = [...new Set(account.details.map(d => d.cleanFilename))].join(', ');
@@ -855,18 +1297,21 @@
                     ? account.details[account.details.length - 1].shinedust 
                     : '';
 
+                const shinedust = latestShinedust !== '' ? parseInt(latestShinedust) : 0;
+                const shinedustClass = shinedust >= 25000 ? 'shinedust-high' : (shinedust > 0 ? 'shinedust-low' : '');
+                const shinedustHTML = latestShinedust !== '' ? `<span class="${shinedustClass}">${latestShinedust}</span>` : '';
+
                 tr.innerHTML = `
                     <td class="device-account">
                         <span class="expand-icon ${isExpanded ? 'expanded' : ''}">${expandIcon}</span>
-                        ${account.deviceAccount}
+                        ${shortenDeviceAccount(account.deviceAccount)}
                     </td>
                     <td>${packsHTML}</td>
                     <td class="col-cards"><div class="summary-stats">${cardsHTML}</div></td>
-                    <td class="col-xml">${xmlFilenames}&nbsp;&nbsp;&nbsp;<span class="xmlDownloadLink" data-info="${originalFileName}">🡇</span></td>
-                    <td class="time-cell">${account.firstSeen.split(' ')[0]}</td>
-                    <td class="time-cell">${account.lastSeen.split(' ')[0]}</td>
-                    <td class="col-shinedust">${latestShinedust}</td>
+                    <td class="col-shinedust">${shinedustHTML}</td>
                     <td class="col-screenshot"></td>
+                    <td class="col-xml">${xmlFilenames}&nbsp;&nbsp;&nbsp;<span class="xmlDownloadLink" data-info="${originalFileName}">⬇</span></td>
+                    <td class="time-cell">${account.lastSeen.split(' ')[0]}</td>
                 `;
                 
                 tr.onclick = () => toggleAccount(account.deviceAccount);
@@ -875,37 +1320,37 @@
                 if (isExpanded) {
                     let detailRowHtml = '';
                     let screenshotTag = '';
-                    account.details.forEach(detail => {
-                        if(detail.packType.length == 0 && detail.shinedust > 0)
-                        {
-                            return;
-                        }
+                    const validDetails = account.details.filter(detail => 
+                        !(detail.packType.length == 0 && detail.shinedust > 0)
+                    );
+                    
+                    validDetails.forEach((detail, index) => {
                         const detailTr = document.createElement('tr');
-                        detailTr.className = 'detail-row';
+                        const isLastDetail = index === validDetails.length - 1;
+                        detailTr.className = isLastDetail ? 'detail-row last-detail-row' : 'detail-row';
                         
                         const detailCardsHTML = detail.cardTypes.map((type, idx) => {
                             return `<span class="badge badge-card">${getCardDisplayName(type)} ×${detail.cardCounts[idx]}</span>`;
                         }).join(' ');
 
-                        screenshotFileName = detail.packScreenshot.replace(/\n/g, "");
+                        const screenshotFileName = detail.packScreenshot.replace(/\n/g, "");
 
                         detailRowHtml = `
                             <td class="device-account"></td>
-                            <td><span class="badge badge-pack">${detail.packType}</span></td>
+                            <td><span class="badge badge-pack">${translatePackType(detail.packType)}</span></td>
                             <td class="col-cards">${detailCardsHTML}</td>
-                            <td class="col-xml" title="${detail.originalFilename}">${detail.cleanFilename}</td>
-                            <td></td>
-                            <td class="time-cell">${detail.timestamp}</td>
                             <td class="col-shinedust"></td>
                             <td class="detail-screenshot">
                         `;
-                        screenshotTag = `No filename in Database`;
+                        screenshotTag = ``;
                         if(screenshotFileName.trim().length > 0){
                             screenshotTag = `<img class="PackScreenshot" src="../../Screenshots/Trades/${screenshotFileName}">`;
                         }
                         detailRowHtml += screenshotTag;
                         detailRowHtml += `
                             </td>
+                            <td class="col-xml" title="${detail.originalFilename}">${detail.cleanFilename}</td>
+                            <td class="time-cell">${detail.timestamp}</td>
                         `;
                         detailTr.innerHTML = detailRowHtml;
                         
@@ -914,79 +1359,24 @@
                 }
             });
 
-            document.querySelectorAll('.xmlDownloadLink').forEach(el => {
-                el.addEventListener('click', downloadXMLFile);
-            });
-
             document.querySelectorAll('.PackScreenshot').forEach(el => {
                 el.addEventListener('click', openPopup);
             });
         }
 
-        function renderDetailedTable(thead, tbody) {
-            thead.innerHTML = `
-                <tr>
-                    <th class="col-pack">pack</th>
-                    <th class="col-cards">cards collected</th>
-                    <th class="col-xml">.xml filename</th>
-                    <th class="device-account">device account</th>
-                    <th class="col-time">time</th>
-                    <th class="col-shinedust">shinedust</th>
-                    <th class="col-screenshot">Screenshot</th>
-                </tr>
-            `;
+        function openPopup(event) {
+            event.stopPropagation();
+            const imgObj = event.currentTarget;
+            const popupImg = document.getElementById('popup-img');
 
-            tbody.innerHTML = '';
-            
-            let detailRowHtml = '';
-            let screenshotTag = '';
-
-            filteredData.forEach(row => {
-                const cardsHTML = row.cardTypes.map((type, idx) => {
-                    return `<span class="badge badge-card">${getCardDisplayName(type)} ×${row.cardCounts[idx]}</span>`;
-                }).join(' ');
-
-                const xmlFilenames = row.cleanFilename;
-                const originalFileName = row.originalFilename;
-
-                const tr = document.createElement('tr');
-                let packHTML = "<td></td>";
-                if(row.packType.length > 0){
-                    packHTML = `<td><span class="badge badge-pack">${row.packType || ''}</span></td>`
-                }
-                detailRowHtml = packHTML;
-                detailRowHtml += `
-                    <td>${cardsHTML}</td>
-                    <td class="col-xml">${xmlFilenames}&nbsp;&nbsp;&nbsp;<span class="xmlDownloadLink" data-info="${originalFileName}">🡇</span></td>
-                    <td class="device-account">${row.deviceAccount}</td>
-                    <td class="time-cell">${row.timestamp}</td>
-                    <td class="col-shinedust">${row.shinedust || ''}</td>
-                    <td class="detail-screenshot">
-                    `;
-                screenshotTag = `No filename in Database`;
-                if(row.packScreenshot.length > 0){
-                    screenshotTag = `<img class="PackScreenshot" src="../../Screenshots/Trades/${row.packScreenshot}">`;
-                }
-                detailRowHtml += screenshotTag;
-                detailRowHtml += `
-                    </td>
-                `;
-                tr.innerHTML = detailRowHtml;
-                tbody.appendChild(tr);
-            });
-
-            document.querySelectorAll('.xmlDownloadLink').forEach(el => {
-                el.addEventListener('click', downloadXMLFile);
-            });
-
-            document.querySelectorAll('.PackScreenshot').forEach(el => {
-                el.addEventListener('click', openPopup);
-            });
+            popupImg.src = imgObj.src;
+            popup.style.display = 'flex';
         }
 
         function exportFiltered() {
+            const t = translations[currentLanguage];
             if (filteredData.length === 0) {
-                alert('no data to export');
+                alert(t.noResults);
                 return;
             }
 
@@ -1005,5 +1395,90 @@
             window.URL.revokeObjectURL(url);
         }
     </script>
+</head>
+<body>    
+    <div class="popup-overlay" id="popup">
+        <div class="popup-content">
+            <img id="popup-img" src="" alt="Enlarged Image">
+            <br>
+            <button class="close-btn" id="closeBtn">Close</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="header">
+            <h1>save4trade database</h1>
+            <p>for ptcgp bot (kevinnnn)</p>
+            <div class="kofi-container">
+                <a href="https://ko-fi.com/kevnitg" target="_blank" rel="noopener noreferrer">
+                    <img src="../../GUI/images/support_me_on_kofi.png" alt="support me on ko-fi" />
+                </a>
+                <div class="language-selector">
+                    <select id="languageSelect" onchange="changeLanguage()">
+                        <option value="en">English</option>
+                        <option value="zh">中文</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                        <option value="de">Deutsch</option>
+                        <option value="fr">Français</option>
+                        <option value="es">Español</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="number" id="uniqueAccounts">0</div>
+                <div class="label">unique accounts</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalCards">0</div>
+                <div class="label">total cards</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="filter-group">
+                <button class="btn" id="loadCSVBtn" onclick="document.getElementById('fileInput').click()">load csv</button>
+                <input type="file" id="fileInput" accept=".csv">
+
+                <input type="text" id="searchInput" placeholder="search account..." disabled>
+
+                <select id="packFilter" disabled>
+                    <option value="">all packs</option>
+                </select>
+
+                <select id="cardFilter" disabled>
+                    <option value="">all cards</option>
+                </select>
+                
+                <button class="btn export-btn" onclick="exportFiltered()" id="exportBtn" disabled>export</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="mainTable">
+                <thead id="tableHead">
+                    <tr>
+                        <th class="col-account"><span data-i18n="deviceAccount">deviceAccount</span></th>
+                        <th class="col-pack"><span data-i18n="pack">pack</span></th>
+                        <th class="col-cards"><span data-i18n="cards">cards</span></th>
+                        <th class="col-shinedust"><span data-i18n="shinedust">shinedust</span></th>
+                        <th class="col-screenshot"><span data-i18n="screenshot">screenshot</span></th>
+                        <th class="col-xml"><span data-i18n="xml">.xml</span></th>
+                        <th class="col-subTime"><span data-i18n="date">date</span></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <h2>no data loaded</h2>
+                            <p>click load csv to view database</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 </html>

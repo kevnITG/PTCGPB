@@ -255,7 +255,7 @@ Sleep, 1000
 ConnectAdb(folderPath)
 
 Sleep, 2000
-CreateStatusMessage(Disabling background services...)
+CreateStatusMessage("Disabling background services...")
 DisableBackgroundServices()
 Sleep, 5000
 
@@ -1032,7 +1032,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         confirmed := true
     }
 
-    if (imageName = "Social" || imageName = "CommunityShowcase" || imageName = "Add" || imageName = "Search") {
+    if (imageName = "Social" || imageName = "CommunityShowcase" || imageName = "Add" || imageName = "Search" || imageName = "inHamburgerMenu" || imageName = "Trade") {
         Path = %imagePath%Tutorial.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 111, 115, 167, 121, searchVariation)
@@ -3330,6 +3330,16 @@ SelectPack(HG := false) {
             Delay(1)
             failSafeTime := (A_TickCount - failSafe) // 1000
             CreateStatusMessage("Waiting for HourglassPack4`n(" . failSafeTime . "/45 seconds)")
+            
+            ; Execute failsafe click only once after 10 seconds to try to click floating glitched pack
+            if (failSafeTime >= 10 && !failsafeClickExecuted) {
+                if (FindorLoseImage(233, 400, 264, 428, , "Points", 0)) {
+                    CreateStatusMessage("Trying to click floating pack...")
+                    Sleep, 3000
+                    adbClick_wbb(151, 250) ; if pack is floating/glitched
+                    failsafeClickExecuted := true
+                }
+            }
         }
     } else { 
         failSafe := A_TickCount
@@ -3356,7 +3366,7 @@ SelectPack(HG := false) {
                 adbClick_wbb(200, 451)  ; Additional fallback click
                 Delay(1)
                 
-"                ; Execute failsafe click only once after 10 seconds
+                ; Execute failsafe click only once after 10 seconds
                 failSafeTime := (A_TickCount - failSafe) // 1000
                 if (failSafeTime >= 10 && !failsafeClickExecuted) {
                     if (FindorLoseImage(233, 400, 264, 428, , "Points", 0)) {
@@ -3365,7 +3375,7 @@ SelectPack(HG := false) {
                         adbClick_wbb(151, 250) ; if pack is floating/glitched
                         failsafeClickExecuted := true
                     }
-                }"
+                }
             }
         
             if(cantOpenMorePacks)

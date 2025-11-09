@@ -71,7 +71,7 @@ Sleep, %instanceSleep%
 ; Attempt to connect to ADB
 ConnectAdb(folderPath)
 Sleep, 2000
-CreateStatusMessage(Disabling background services...)
+CreateStatusMessage("Disabling background services...")
 DisableBackgroundServices()
 Sleep, 5000
 
