@@ -3259,7 +3259,7 @@ SelectPack(HG := false) {
                 packy := 394
             } else if (openPack = "Mewtwo") {
                 packx := SelectExpansionLeftColumnMiddleX
-                packy := 394
+                packy := 405 ; changed from 394 to avoid charizard pack per Crinity
             } else if (openPack = "Pikachu") {
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
                 packy := 394
@@ -3303,6 +3303,18 @@ SelectPack(HG := false) {
             }
 			if(cantOpenMorePacks)
 				return
+
+            ; Execute failsafe click only once after 10 seconds to try to click floating glitched pack
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            if (failSafeTime >= 10 && !failsafeClickExecuted) {
+                if (FindorLoseImage(233, 400, 264, 428, , "Points", 0)) {
+                    CreateStatusMessage("Trying to click floating pack...")
+                    Sleep, 3000
+                    adbClick_wbb(151, 250) ; if pack is floating/glitched
+                    failsafeClickExecuted := true
+                }
+            }
+
             adbClick_wbb(161, 423)
             Delay(1)
             failSafeTime := (A_TickCount - failSafe) // 1000
@@ -3344,7 +3356,7 @@ SelectPack(HG := false) {
                 adbClick_wbb(200, 451)  ; Additional fallback click
                 Delay(1)
                 
-                ; Execute failsafe click only once after 10 seconds
+"                ; Execute failsafe click only once after 10 seconds
                 failSafeTime := (A_TickCount - failSafe) // 1000
                 if (failSafeTime >= 10 && !failsafeClickExecuted) {
                     if (FindorLoseImage(233, 400, 264, 428, , "Points", 0)) {
@@ -3353,7 +3365,7 @@ SelectPack(HG := false) {
                         adbClick_wbb(151, 250) ; if pack is floating/glitched
                         failsafeClickExecuted := true
                     }
-                }
+                }"
             }
         
             if(cantOpenMorePacks)
@@ -3380,6 +3392,17 @@ PackOpening() {
             adbClick_wbb(205, 458) ; handle unexpected no packs available
         } else {
             adbClick_wbb(239, 497)
+        }
+
+                ; Execute failsafe click only once after 10 seconds to try to select Floating Pack
+        failSafeTime := (A_TickCount - failSafe) // 1000
+        if (failSafeTime >= 10 && !failsafeClickExecuted) {
+            if (FindorLoseImage(233, 400, 264, 428, , "Points", 0)) {
+                CreateStatusMessage("Trying to click floating pack...")
+                Sleep, 3000
+                adbClick_wbb(151, 250) ; if pack is floating/glitched
+                failsafeClickExecuted := true
+            }
         }
 		
 		if(cantOpenMorePacks)
@@ -3498,6 +3521,18 @@ HourglassOpening(HG := false, NEIRestart := true) {
             }
 			if(cantOpenMorePacks)
 				return
+            
+            ; Execute failsafe click only once after 10 seconds to try to click floating pack
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            if (failSafeTime >= 10 && !failsafeClickExecuted) {
+                if (FindorLoseImage(233, 400, 264, 428, , "Points", 0)) {
+                    CreateStatusMessage("Trying to click floating pack...")
+                    Sleep, 3000
+                    adbClick_wbb(151, 250) ; if pack is floating/glitched
+                    failsafeClickExecuted := true
+                }
+            }
+
             if(failSafeTime >= 45) {
                 restartGameInstance("Stuck waiting for HourglassPack")
                 return
