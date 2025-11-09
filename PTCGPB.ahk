@@ -1966,20 +1966,21 @@ LoadSettingsFromIni() {
       IniRead, InvalidCheck, Settings.ini, UserSettings, InvalidCheck, 0
       IniRead, PseudoGodPack, Settings.ini, UserSettings, PseudoGodPack, 0
       
-      IniRead, s4tEnabled, Settings.ini, UserSettings, s4tEnabled, 0
+      ; Start users with s4t enabled so they don't have to know to manually check it. Also pre-enabling all 2star and up cards.
+      IniRead, s4tEnabled, Settings.ini, UserSettings, s4tEnabled, 1
       IniRead, s4tSilent, Settings.ini, UserSettings, s4tSilent, 0
         s4tSilent := 0 ; always disable, removing feature for now. -Kevin
       IniRead, s4t3Dmnd, Settings.ini, UserSettings, s4t3Dmnd, 0
       IniRead, s4t4Dmnd, Settings.ini, UserSettings, s4t4Dmnd, 0
       IniRead, s4t1Star, Settings.ini, UserSettings, s4t1Star, 0
       IniRead, s4tGholdengo, Settings.ini, UserSettings, s4tGholdengo, 0
-      IniRead, s4tTrainer, Settings.ini, UserSettings, s4tTrainer, 0
-      IniRead, s4tRainbow, Settings.ini, UserSettings, s4tRainbow, 0
-      IniRead, s4tFullArt, Settings.ini, UserSettings, s4tFullArt, 0
-      IniRead, s4tCrown, Settings.ini, UserSettings, s4tCrown, 0
-      IniRead, s4tImmersive, Settings.ini, UserSettings, s4tImmersive, 0
+      IniRead, s4tTrainer, Settings.ini, UserSettings, s4tTrainer, 1
+      IniRead, s4tRainbow, Settings.ini, UserSettings, s4tRainbow, 1
+      IniRead, s4tFullArt, Settings.ini, UserSettings, s4tFullArt, 1
+      IniRead, s4tCrown, Settings.ini, UserSettings, s4tCrown, 1
+      IniRead, s4tImmersive, Settings.ini, UserSettings, s4tImmersive, 1
       IniRead, s4tShiny1Star, Settings.ini, UserSettings, s4tShiny1Star, 0
-      IniRead, s4tShiny2Star, Settings.ini, UserSettings, s4tShiny2Star, 0
+      IniRead, s4tShiny2Star, Settings.ini, UserSettings, s4tShiny2Star, 1
       IniRead, s4tWP, Settings.ini, UserSettings, s4tWP, 0
       IniRead, s4tWPMinCards, Settings.ini, UserSettings, s4tWPMinCards, 1
       IniRead, s4tDiscordWebhookURL, Settings.ini, UserSettings, s4tDiscordWebhookURL, ""
