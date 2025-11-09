@@ -491,13 +491,20 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         MidOfRun:
 
+
+        failSafe := A_TickCount
+        failSafeTime := 0
         Loop{
+            if failSafeTime > 40
+                break
+            if FindOrLoseImage(241, 459, 260, 476, , "MyCardsMenu", 0, failSafeTime)
+                break
+            adbClick(87, 518) ; my cards button
+            Sleep, 4000 ; wait for page to load
             ; if we've successfully made it to the My Cards menu without tutorial, move onto next step after this loop.
             if FindOrLoseImage(241, 459, 260, 476, , "MyCardsMenu", 0, failSafeTime)
                 break
-            
-            adbClick(87, 518) ; my cards button
-            Sleep, 1000 ; wait for page to load
+
             adbClick(269, 288) ; click tutorial skips
             Delay(1)
             adbClick(269, 288)
@@ -526,6 +533,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
                 }
                 break
             }
+                        failSafeTime := (A_TickCount - failSafe) // 1000
 
         }
 
@@ -1181,7 +1189,6 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     }
 
     ; Handle 7/2025 trade news update popup, remove later patch
-    if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll" || imageName = "inHamburgerMenu" || imageName = "Trade") {
         Path = %imagePath%Privacy.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
@@ -1239,7 +1246,6 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             Gdip_DisposeImage(pBitmap)
             return confirmed
         }
-    }
     
 
         Path = %imagePath%Error.png ; Search for communication error
@@ -1566,7 +1572,6 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         }
 
         ; Search for 7/2025 trade news update popup; can be removed later patch
-        if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll" || imageName = "inHamburgerMenu" || imageName = "Trade") {
             Path = %imagePath%Privacy.png
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
@@ -1614,7 +1619,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 Gdip_DisposeImage(pBitmap)
                 continue
             }
-        }
+        
 
         Path = %imagePath%App.png
         pNeedle := GetNeedle(Path)
