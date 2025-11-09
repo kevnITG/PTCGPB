@@ -51,7 +51,7 @@ GetDeviceAccountFromXML() {
 
     tempPath := tempDir . "\current_device_" . scriptName . ".xml"
 
-    adbShell.StdIn.WriteLine("cp -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml /sdcard/deviceAccount.xml")
+    adbWriteRaw("cp -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml /sdcard/deviceAccount.xml")
     Sleep, 500
 
     RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " pull /sdcard/deviceAccount.xml """ . tempPath . """",, Hide
@@ -66,7 +66,7 @@ GetDeviceAccountFromXML() {
         }
         FileDelete, %tempPath%
 
-        adbShell.StdIn.WriteLine("rm /sdcard/deviceAccount.xml")
+        adbWriteRaw("rm /sdcard/deviceAccount.xml")
     }
 
     return deviceAccount

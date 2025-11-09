@@ -115,16 +115,16 @@ loadAccount() {
         return false
     }
 
-    adbShell.StdIn.WriteLine("am force-stop jp.pokemon.pokemontcgp")
+    adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
     waitadb()
     RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " push " . loadFile . " /sdcard/deviceAccount.xml",, Hide
     waitadb()
-    adbShell.StdIn.WriteLine("cp /sdcard/deviceAccount.xml /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
+    adbWriteRaw("cp /sdcard/deviceAccount.xml /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
     waitadb()
-    adbShell.StdIn.WriteLine("rm /sdcard/deviceAccount.xml")
+    adbWriteRaw("rm /sdcard/deviceAccount.xml")
     waitadb()
     ; Reliably restart the app: Wait for launch, and start in a clean, new task without animation.
-    adbShell.StdIn.WriteLine("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
+    adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
     waitadb()
     Sleep, 500   ; Reduced from 1000
     ; Parse account filename for pack info (unchanged)
@@ -252,7 +252,7 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag :
         else
             CreateStatusMessage("Saving account...",,,, false)
 
-        adbShell.StdIn.WriteLine("cp -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml /sdcard/deviceAccount.xml")
+        adbWriteRaw("cp -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml /sdcard/deviceAccount.xml")
         waitadb()
         Sleep, 500
 
@@ -260,7 +260,7 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag :
 
         Sleep, 500
 
-        adbShell.StdIn.WriteLine("rm /sdcard/deviceAccount.xml")
+        adbWriteRaw("rm /sdcard/deviceAccount.xml")
 
         Sleep, 500
 
@@ -555,7 +555,7 @@ UpdateSavedXml(xmlPath) {
     Loop {
         CreateStatusMessage("Updating saved XML...",,,, false)
 
-        adbShell.StdIn.WriteLine("cp -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml /sdcard/deviceAccount.xml")
+        adbWriteRaw("cp -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml /sdcard/deviceAccount.xml")
         waitadb()
         Sleep, 500
 
@@ -563,7 +563,7 @@ UpdateSavedXml(xmlPath) {
 
         Sleep, 500
 
-        adbShell.StdIn.WriteLine("rm /sdcard/deviceAccount.xml")
+        adbWriteRaw("rm /sdcard/deviceAccount.xml")
         Sleep, 500
 
         FileGetSize, OutputVar, %xmlPath%

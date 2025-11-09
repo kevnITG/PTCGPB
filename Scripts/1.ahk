@@ -939,7 +939,7 @@ HomeAndMission(homeonly := 0, completeSecondMisson=false) {
 }
 
 clearMissionCache() {
-    adbShell.StdIn.WriteLine("rm /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs")
+    adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs")
     waitadb()
 	Sleep, 500
 	;TODO delete all user preferences?
@@ -1201,7 +1201,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 30, 325, 55, 445, searchVariation)
         }
         if (vRet = 1) {
-            adbShell.StdIn.WriteLine("rm -rf /data/data/jp.pokemon.pokemontcgp/cache/*") ; clear cache
+            adbWriteRaw("rm -rf /data/data/jp.pokemon.pokemontcgp/cache/*") ; clear cache
             waitadb()
             CreateStatusMessage("Loaded deleted account. Deleting XML...",,,, false)
             if(loadedAccount) {
@@ -1494,7 +1494,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 30, 325, 55, 445, searchVariation)
             }
             if (vRet = 1) {
-                adbShell.StdIn.WriteLine("rm -rf /data/data/jp.pokemon.pokemontcgp/cache/*") ; clear cache
+                adbWriteRaw("rm -rf /data/data/jp.pokemon.pokemontcgp/cache/*") ; clear cache
                 waitadb()
                 CreateStatusMessage("Loaded deleted account. Deleting XML...",,,, false)
                 if(loadedAccount) {
@@ -1673,11 +1673,11 @@ restartGameInstance(reason, RL := true) {
         
         ; Restart without deadcheck
         waitadb()
-        adbShell.StdIn.WriteLine("am force-stop jp.pokemon.pokemontcgp")
+        adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
         waitadb()
         Sleep, 2000
         clearMissionCache()
-        adbShell.StdIn.WriteLine("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
+        adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
         waitadb()
         Sleep, 5000
         
@@ -1705,16 +1705,16 @@ restartGameInstance(reason, RL := true) {
         Reload
     } else {
         waitadb()
-        adbShell.StdIn.WriteLine("am force-stop jp.pokemon.pokemontcgp")
+        adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
         waitadb()
         Sleep, 2000
         clearMissionCache()
         if (!RL && DeadCheck = 0) {
-            adbShell.StdIn.WriteLine("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data
+            adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data
         }
         waitadb()
         Sleep, 500
-        adbShell.StdIn.WriteLine("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
+        adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
         waitadb()
         Sleep, 5000
         
@@ -3292,7 +3292,7 @@ SelectPack(HG := false) {
         failSafe := A_TickCount
         failSafeTime := 0
         Loop {
-            ; Execute failsafe click only once after 10 seconds to try to click floating glitched pack
+                        ; Execute failsafe click only once after 10 seconds to try to click floating glitched pack
             failSafeTime := (A_TickCount - failSafe) // 1000
             if (failSafeTime >= 10 && !failsafeClickExecuted) {
                 if (FindorLoseImage(233, 400, 264, 428, , "Points", 0)) {
