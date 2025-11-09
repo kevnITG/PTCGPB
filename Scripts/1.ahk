@@ -39,7 +39,7 @@ global currentPackIs6Card := false
 global currentPackIs4Card := false
 global injectSortMethod := "ModifiedAsc"  ; Default sort method (oldest accounts first)
 global injectMinPacks := 0       ; Minimum pack count for injection (0 = no minimum)
-global injectMaxPacks := 39      ; Maximum pack count for injection (default for regular Inject 13P+)
+global injectMaxPacks := 39      ; Maximum pack count for injection (default for regular CardFinder)
 
 global waitForEligibleAccounts := 1  ; Enable/disable waiting (1 = wait, 0 = stop script)
 global maxWaitHours := 24             ; Maximum hours to wait before giving up (0 = wait forever)
@@ -72,7 +72,7 @@ dbg_bbox_click :=0
 scriptName := StrReplace(A_ScriptName, ".ahk")
 winTitle := scriptName
 foundGP := false
-injectMethod := false
+injectMethod := true
 pauseToggle := false
 showStatus := true
 friended := false
@@ -97,7 +97,7 @@ IniRead, deleteMethod, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
     deleteMethod := MigrateDeleteMethod(deleteMethod)
     if (deleteMethod != originalDeleteMethod) {
         IniWrite, %deleteMethod%, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
-        validMethods := "Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+"
+        validMethods := "Create Bots (13P)|CardFinder|Inject Wonderpick 96P+"
         if (!InStr(validMethods, deleteMethod)) {
             deleteMethod := "Create Bots (13P)"
             IniWrite, %deleteMethod%, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
@@ -308,16 +308,16 @@ MigrateDeleteMethod(oldMethod) {
     if (oldMethod = "13 Pack") {
         return "Create Bots (13P)"
     } else if (oldMethod = "Inject") {
-        return "Inject 13P+" 
+        return "CardFinder" 
     } else if (oldMethod = "Inject for Reroll") {
         return "Inject Wonderpick 96P+"
     } else if (oldMethod = "Inject Missions") {
-        return "Inject 13P+"
+        return "CardFinder"
     }
     return oldMethod
 }
 
-if(InStr(deleteMethod, "Inject"))
+if(InStr(deleteMethod, "Inject" || deleteMethod, "CardFinder"))
     injectMethod := true
 
 initializeAdbShell()
@@ -612,7 +612,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         AppendToJsonFile(packsThisRun)
 		
         ; Check for 40 first to quit	
-        if (deleteMethod = "Inject 13P+" && accountOpenPacks >= maxAccountPackNum) {
+        if (deleteMethod = "CardFinder" && accountOpenPacks >= maxAccountPackNum) {
             if (injectMethod && loadedAccount) {
                 if (!keepAccount) {
                     MarkAccountAsUsed() 
@@ -2033,9 +2033,9 @@ CheckPack() {
     packsInPool += 1
     packsThisRun += 1
     
-    ; NEW: Disable card detection for Create Bots and Inject 13P+
+    ; NEW: Disable card detection for Create Bots and CardFinder
     ; Only run detection for Inject Wonderpick 96P+
-    skipCardDetection := (deleteMethod = "Create Bots (13P)" || deleteMethod = "Inject 13P+")
+    skipCardDetection := (deleteMethod = "Create Bots (13P)" || deleteMethod = "CardFinder")
     
     ; If not doing card detection and no friends and s4t disabled, just return early
     if(skipCardDetection && !friendIDs && friendID = "" && !s4tEnabled)
@@ -2134,7 +2134,7 @@ CheckPack() {
         }
     }
     
-    ; Skip rest of card detection if this is Create Bots or Inject 13P+
+    ; Skip rest of card detection if this is Create Bots or CardFinder
     if (skipCardDetection) {
         return false
     }
@@ -5191,11 +5191,11 @@ CreateAccountList(instance) {
     if (!injectSortMethod)
         injectSortMethod := "ModifiedAsc"
     
-    parseInjectType := "Inject 13P+"  ; Default
+    parseInjectType := "CardFinder"  ; Default
     
     ; Determine injection type and pack ranges
-    if (deleteMethod = "Inject 13P+") {
-        parseInjectType := "Inject 13P+"
+    if (deleteMethod = "CardFinder") {
+        parseInjectType := "CardFinder"
         minPacks := 0
         maxPacks := 9999
     }
@@ -5448,7 +5448,7 @@ checkShouldDoMissions() {
             ; LogToFile("Executing missions for Inject Missions method (user setting enabled)")
         return true
     }
-    else if (deleteMethod = "Inject 13P+" || deleteMethod = "Inject Wonderpick 96P+") {
+    else if (deleteMethod = "CardFinder" || deleteMethod = "Inject Wonderpick 96P+") {
         ; if(verboseLogging)
             ; LogToFile("Skipping missions for " . deleteMethod . " method - missions only run for 'Inject Missions'")
         return false

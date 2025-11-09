@@ -105,7 +105,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v8.2.6"
+   ,localVersion := "v99.99.99"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -233,17 +233,17 @@ NextStep:
 
    if (deleteMethod = "Create Bots (13P)")
    defaultDelete := 1
-   else if (deleteMethod = "Inject 13P+")
-   defaultDelete := 2
+   else if (deleteMethod = "CardFinder")
+   defaultDelete := 1
    else if (deleteMethod = "Inject Missions")
-   defaultDelete := 2
+   defaultDelete := 1
    else if (deleteMethod = "Inject Wonderpick 96P+")
-   defaultDelete := 3
-   Gui, Add, DropDownList, vdeleteMethod gdeleteSettings choose%defaultDelete% x20 y210 w200 Background2A2A2A cWhite, Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+
+   defaultDelete := 1
+   Gui, Add, DropDownList, vdeleteMethod gdeleteSettings choose%defaultDelete% x20 y210 w200 Background2A2A2A cWhite, CardFinder
 
    Gui, Add, Checkbox, % (packMethod ? "Checked" : "") " vpackMethod x20 y240 " . sectionColor . ((deleteMethod = "Inject Wonderpick 96P+") ? "" : " Hidden"), % currentDictionary.Txt_packMethod
    ; Gui, Add, Checkbox, % (nukeAccount ? "Checked" : "") " vnukeAccount x20 y240 " . sectionColor . ((deleteMethod = "Create Bots (13P)")? "": " Hidden"), % currentDictionary.Txt_nukeAccount
-   Gui, Add, Checkbox, % (openExtraPack ? "Checked" : "") " vopenExtraPack gopenExtraPackSettings x20 y260 " . sectionColor . ((deleteMethod = "Inject Wonderpick 96P+" || deleteMethod = "Inject 13P+") ? "" : " Hidden"), % currentDictionary.Txt_openExtraPack
+   Gui, Add, Checkbox, % (openExtraPack ? "Checked" : "") " vopenExtraPack gopenExtraPackSettings x20 y260 " . sectionColor . ((deleteMethod = "Inject Wonderpick 96P+" || deleteMethod = "CardFinder") ? "" : " Hidden"), % currentDictionary.Txt_openExtraPack
    Gui, Add, Checkbox, % (spendHourGlass ? "Checked" : "") " vspendHourGlass gspendHourGlassSettings x20 y280 " . sectionColor . ((deleteMethod = "Create Bots (13P)")? " Hidden":""), % currentDictionary.Txt_spendHourGlass
 
    Gui, Add, Text, x20 y305 %sectionColor% vSortByText, % currentDictionary.SortByText
@@ -362,9 +362,9 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv8.2.6 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nOakFinder 2025.11 kevinnnn"
 
-   Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
+   Gui, Add, Picture, gBuyMeCoffee x625 y90, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
    Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
@@ -375,6 +375,21 @@ NextStep:
    Gui, Add, Text, x620 y340 w165 Center BackgroundTrans, CC BY-NC 4.0 international license
 
    Gui, Show, w%GUI_WIDTH% h%GUI_HEIGHT%, Arturo's PTCGP BOT
+
+   if (deleteMethod = "CardFinder") {
+    GuiControl, Hide, FriendID
+    GuiControl, Hide, spendHourGlass
+    GuiControl, Hide, packMethod
+    GuiControl, Hide, openExtraPack
+    ; GuiControl, Hide, nukeAccount
+    GuiControl, Show, SortByText
+    GuiControl, Show, SortByDropdown
+    GuiControl, Hide, AccountNameText
+    GuiControl, Hide, AccountName
+    GuiControl, Hide, WaitTime
+    nukeAccount := false
+    FriendID := ""  ; NEW: Clear Friend ID for CardFinder
+  }
 
 Return
 
@@ -421,11 +436,11 @@ deleteSettings:
     GuiControl, Hide, AccountName
     GuiControl, Show, WaitTime
     nukeAccount := false
-  } else if (deleteMethod = "Inject 13P+") {
+  } else if (deleteMethod = "CardFinder") {
     GuiControl, Hide, FriendID
-    GuiControl, Show, spendHourGlass
+    GuiControl, Hide, spendHourGlass
     GuiControl, Hide, packMethod
-    GuiControl, Show, openExtraPack
+    GuiControl, Hide, openExtraPack
     ; GuiControl, Hide, nukeAccount
     GuiControl, Show, SortByText
     GuiControl, Show, SortByDropdown
@@ -433,7 +448,7 @@ deleteSettings:
     GuiControl, Hide, AccountName
     GuiControl, Hide, WaitTime
     nukeAccount := false
-    FriendID := ""  ; NEW: Clear Friend ID for Inject 13P+
+    FriendID := ""  ; NEW: Clear Friend ID for CardFinder
   }
 return
 
@@ -685,7 +700,7 @@ UpdateCardDetectionButtonText() {
 ShowCardDetection:
     Gui, Submit, NoHide
     
-    if (deleteMethod = "Create Bots (13P)" || deleteMethod = "Inject 13P+") {
+    if (deleteMethod = "Create Bots (13P)" || deleteMethod = "CardFinder") {
         MsgBox, 64, InjectWP Card Detection, Wonderpick Card Detection is for 'Inject Wonderpick 96P+'' mode.`n`nTo find cards to trade, use 'Save for Trade' settings instead.
         return
     }
@@ -1833,7 +1848,8 @@ BalanceXMLs:
 return
 
 CheckForUpdates:
-   CheckForUpdate()
+   ;CheckForUpdate()
+   Sleep, 100 ; turn off check for updates
 return
 
 IsNumeric(var) {
@@ -1846,13 +1862,13 @@ MigrateDeleteMethod(oldMethod) {
     if (oldMethod = "13 Pack") {
         return "Create Bots (13P)"
     } else if (oldMethod = "Inject") {
-        return "Inject 13P+"
+        return "CardFinder"
     } else if (oldMethod = "Inject for Reroll") {
         return "Inject Wonderpick 96P+"
     } else if (oldMethod = "Inject Missions") {
-        return "Inject 13P+"
+        return "CardFinder"
     } else if (oldMethod = "Inject 13-39P") {
-        return "Inject 13P+"
+        return "CardFinder"
     } else if (oldMethod = "Inject Wonderpick 39P+") {
         return "Inject Wonderpick 96P+"
     }
@@ -1901,7 +1917,7 @@ LoadSettingsFromIni() {
       IniRead, minStars, Settings.ini, UserSettings, minStars, 0
       IniRead, minStarsShiny, Settings.ini, UserSettings, minStarsShiny, 0
       IniRead, minStarsEnabled, Settings.ini, UserSettings, minStarsEnabled, 0
-      IniRead, deleteMethod, Settings.ini, UserSettings, deleteMethod, Create Bots (13P)
+      IniRead, deleteMethod, Settings.ini, UserSettings, deleteMethod, CardFinder
         originalDeleteMethod := deleteMethod
         deleteMethod := MigrateDeleteMethod(deleteMethod)
         if (deleteMethod != originalDeleteMethod) {
@@ -2021,9 +2037,9 @@ LoadSettingsFromIni() {
       if (s4tWPMinCards < 1 || s4tWPMinCards > 2)
          s4tWPMinCards := 1
          
-      validMethods := "Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+"
+      validMethods := "CardFinder"
       if (!InStr(validMethods, deleteMethod)) {
-         deleteMethod := "Create Bots (13P)"
+         deleteMethod := "CardFinder"
          IniWrite, %deleteMethod%, Settings.ini, UserSettings, deleteMethod
       }
 
@@ -2225,11 +2241,11 @@ SaveAllSettings() {
    originalDeleteMethod := deleteMethod
    deleteMethod := MigrateDeleteMethod(deleteMethod)
    if (deleteMethod = "" || deleteMethod = "ERROR") {
-      deleteMethod := "Create Bots (13P)"
+      deleteMethod := "CardFinder"
    }
-   validMethods := "Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+"
+   validMethods := "CardFinder"
    if (!InStr(validMethods, deleteMethod)) {
-      deleteMethod := "Create Bots (13P)"
+      deleteMethod := "CardFinder"
    }
 
    if (!groupRerollEnabled) {
@@ -2464,8 +2480,8 @@ StartBot() {
    rerollTime := A_TickCount
    
    typeMsg := "\nType: " . deleteMethod
-   injectMethod := false
-   if(InStr(deleteMethod, "Inject"))
+   injectMethod := true
+   if(InStr(deleteMethod, "Inject" || deleteMethod, "CardFinder"))
       injectMethod := true
    if(packMethod)
       typeMsg .= " (1P Method)"
