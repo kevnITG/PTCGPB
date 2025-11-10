@@ -484,6 +484,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             }
         }
 
+        Sleep, 7000 ; avoiding spam clicks at startup
         FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         if(setSpeed = 3)
             FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
@@ -1181,7 +1182,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
 
-    if(imageName = "Social" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
+    if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
         TradeTutorial()
     }
 
@@ -1566,7 +1567,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if(imageName = "Points" || imageName = "Home") { ;look for level up ok "button"
             LevelUp()
         }
-        if(imageName = "Social" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
+        if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
             TradeTutorial()
         }
         if(skip) {
