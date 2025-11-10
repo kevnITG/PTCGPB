@@ -95,6 +95,7 @@ DllCall("ntdll\ZwDelayExecution","Int",0,"Int64*",-5000)
 #Include FontListHelper.ahk
 #Include ChooseColors.ahk
 #Include DropDownColor.ahk
+#Include Utils.ahk
 
 version = Arturos PTCGP Bot
 #SingleInstance, force
@@ -114,14 +115,16 @@ githubUser := "kevnITG"
 global GUI_WIDTH := 790
 global GUI_HEIGHT := 370
 global MainGuiName
+global MuMuv5
 
 if not A_IsAdmin
 {
-   Run *RunAs "%A_ScriptFullPath%"
-   ExitApp
+    Run *RunAs "%A_ScriptFullPath%"
+    ExitApp
 }
 
 settingsLoaded := LoadSettingsFromIni()
+MuMuv5 := isMuMuv5()
 if (!settingsLoaded) {
    CreateDefaultSettingsFile()
    LoadSettingsFromIni()
@@ -1602,96 +1605,104 @@ LaunchAllMumu:
 return
 
 ArrangeWindows:
-   Gui, Submit, NoHide
-   SaveAllSettings()
-   LoadSettingsFromIni()
-   
-   if (defaultLanguage = "Scale125") {
-      if (MuMuv5) {
-        scaleParam := 283
+    Gui, Submit, NoHide
+    SaveAllSettings()
+    LoadSettingsFromIni()
+    MuMuv5 := isMuMuv5()
+
+    if (defaultLanguage = "Scale125") {
+       if (MuMuv5) {
+         scaleParam := 283
 	} else {
-        scaleParam := 277
+         scaleParam := 277
+     }
+    } else if (defaultLanguage = "Scale100") {
+       scaleParam := 287
     }
-   } else if (defaultLanguage = "Scale100") {
-      scaleParam := 287
-   }
-   
-   windowsPositioned := 0
-   
-   if (runMain && Mains > 0) {
-      Loop %Mains% {
-         mainInstanceName := "Main" . (A_Index > 1 ? A_Index : "")
-         SetTitleMatchMode, 3
-         if (WinExist(mainInstanceName)) {
-            WinActivate, %mainInstanceName%
-            WinGetPos, curX, curY, curW, curH, %mainInstanceName%
-            
-            SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
-            SysGet, Monitor, Monitor, %SelectedMonitorIndex%
-            
-            instanceIndex := A_Index
-            rowHeight := 533
-            currentRow := Floor((instanceIndex - 1) / Columns)
-            y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-            ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
-			if (MuMuv5) {
-			borderWidth := 4 - 1
-			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
-			} else {
-			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
-			}
-            
-            WinMove, %mainInstanceName%,, %x%, %y%, %scaleParam%, 537
-            WinSet, Redraw, , %mainInstanceName%
-            
-            windowsPositioned++
-            sleep, 100
-         }
-      }
-   }
-   
-   if (Instances > 0) {
-      Loop %Instances% {
-         SetTitleMatchMode, 3
-         windowTitle := A_Index
-         
-         if (WinExist(windowTitle)) {
-            WinActivate, %windowTitle%
-            WinGetPos, curX, curY, curW, curH, %windowTitle%
-            
-            SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
-            SysGet, Monitor, Monitor, %SelectedMonitorIndex%
-            
-            if (runMain) {
-               instanceIndex := (Mains - 1) + A_Index + 1
-            } else {
-               instanceIndex := A_Index
-            }
-            
-            rowHeight := 533
-            currentRow := Floor((instanceIndex - 1) / Columns)
-            y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-            ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
-			if (MuMuv5) {
-			borderWidth := 4 - 1
-			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
-			} else {
-			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
-			}
-			
-            WinMove, %windowTitle%,, %x%, %y%, %scaleParam%, 537
-            WinSet, Redraw, , %windowTitle%
-            
-            windowsPositioned++
-            sleep, 100
-         }
-      }
-   }
-   
-   if (debugMode && windowsPositioned == 0) {
-      MsgBox, 0x40000,, No windows found to arrange
-   }
-return
+
+    windowsPositioned := 0
+
+    ; Initialize titleHeight based on MuMuv5
+    if (MuMuv5) {
+        titleHeight := 50
+    } else {
+        titleHeight := 45
+    }
+
+    if (runMain && Mains > 0) {
+       Loop %Mains% {
+          mainInstanceName := "Main" . (A_Index > 1 ? A_Index : "")
+          SetTitleMatchMode, 3
+          if (WinExist(mainInstanceName)) {
+             WinActivate, %mainInstanceName%
+             WinGetPos, curX, curY, curW, curH, %mainInstanceName%
+
+             SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+             SysGet, Monitor, Monitor, %SelectedMonitorIndex%
+
+             instanceIndex := A_Index
+             borderWidth := 4 - 1
+             rowHeight := titleHeight + 489 + 4
+             currentRow := Floor((instanceIndex - 1) / Columns)
+             y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
+             ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+ 			if (MuMuv5) {
+ 			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+ 			} else {
+ 			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+ 			}
+
+             WinMove, %mainInstanceName%,, %x%, %y%, %scaleParam%, %rowHeight%
+             WinSet, Redraw, , %mainInstanceName%
+
+             windowsPositioned++
+             sleep, 100
+          }
+       }
+    }
+
+    if (Instances > 0) {
+       Loop %Instances% {
+          SetTitleMatchMode, 3
+          windowTitle := A_Index
+
+          if (WinExist(windowTitle)) {
+             WinActivate, %windowTitle%
+             WinGetPos, curX, curY, curW, curH, %windowTitle%
+
+             SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+             SysGet, Monitor, Monitor, %SelectedMonitorIndex%
+
+             if (runMain) {
+                instanceIndex := (Mains - 1) + A_Index + 1
+             } else {
+                instanceIndex := A_Index
+             }
+
+             borderWidth := 4 - 1
+             rowHeight := titleHeight + 489 + 4
+             currentRow := Floor((instanceIndex - 1) / Columns)
+             y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
+             ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+ 			if (MuMuv5) {
+ 			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+ 			} else {
+ 			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+ 			}
+
+             WinMove, %windowTitle%,, %x%, %y%, %scaleParam%, %rowHeight%
+             WinSet, Redraw, , %windowTitle%
+
+             windowsPositioned++
+             sleep, 100
+          }
+       }
+    }
+
+    if (debugMode && windowsPositioned == 0) {
+       MsgBox, 0x40000,, No windows found to arrange
+    }
+ return
 
 DiscordLink:
    Run, https://discord.com/invite/C9Nyf7P4sT
@@ -1858,22 +1869,6 @@ IsNumeric(var) {
    return false
 }
 
-MigrateDeleteMethod(oldMethod) {
-    if (oldMethod = "13 Pack") {
-        return "Create Bots (13P)"
-    } else if (oldMethod = "Inject") {
-        return "Inject 13P+"
-    } else if (oldMethod = "Inject for Reroll") {
-        return "Inject Wonderpick 96P+"
-    } else if (oldMethod = "Inject Missions") {
-        return "Inject 13P+"
-    } else if (oldMethod = "Inject 13-39P") {
-        return "Inject 13P+"
-    } else if (oldMethod = "Inject Wonderpick 39P+") {
-        return "Inject Wonderpick 96P+"
-    }
-    return oldMethod
-}
 
 LoadSettingsFromIni() {
    global
@@ -3005,28 +3000,6 @@ VersionCompare(v1, v2) {
    return 0
 }
 
-DownloadFile(url, filename) {
-   url := url
-   localPath = %A_ScriptDir%\%filename%
-   
-   URLDownloadToFile, %url%, %localPath%
-}
-
-ReadFile(filename, numbers := false) {
-   FileRead, content, %A_ScriptDir%\%filename%.txt
-   
-   if (!content)
-      return false
-   
-   values := []
-   for _, val in StrSplit(Trim(content), "`n") {
-      cleanVal := RegExReplace(val, "[^a-zA-Z0-9]")
-      if (cleanVal != "")
-         values.Push(cleanVal)
-   }
-   
-   return values.MaxIndex() ? values : false
-}
 
 ErrorHandler(exception) {
    errorMessage := "Error in PTCGPB.ahk`n`n"

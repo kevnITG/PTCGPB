@@ -433,24 +433,24 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         ; For injection methods, load account only if we don't already have one
         if(injectMethod) {
             nukeAccount := false
-            
+
             ; Only load account if we don't already have one loaded
             if(!loadedAccount) {
                 loadedAccount := loadAccount()
             }
-            
+
             ; If no account could be loaded for injection methods, handle appropriately
             if(!loadedAccount) {
                 ; Check user setting for what to do when no eligible accounts
                 IniRead, waitForEligibleAccounts, %A_ScriptDir%\..\Settings.ini, UserSettings, waitForEligibleAccounts, 1
                 IniRead, maxWaitHours, %A_ScriptDir%\..\Settings.ini, UserSettings, maxWaitHours, 24
-                
+
                 if(waitForEligibleAccounts = 1) {
                     ; Wait for eligible accounts to become available
                     ; Simple approach - just show wait message and sleep
                     CreateStatusMessage("No eligible accounts available for " . deleteMethod . ". Waiting 5 minutes before checking again...", "", 0, 0, false)
                     LogToFile("No eligible accounts available for " . deleteMethod . ". Waiting 5 minutes...")
-                    
+
                     ; Wait 5 minutes before checking again
                     Sleep, 300000  ; 5 minutes
                     continue  ; Go back to start of loop to check again
@@ -458,7 +458,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
                     ExitApp
                 }
             }
-            
+
             ; If we reach here, we have a valid loaded account for injection
             LogToFile("Successfully loaded account for injection: " . accountFileName)
         }
@@ -470,6 +470,17 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
                 MarkAccountAsUsed()
                 loadedAccount := false
                 continue  ; Skip to next iteration of main loop
+            }
+        }
+
+        ; Download friend IDs for injection methods when group reroll is enabled
+        if(injectMethod) {
+            IniRead, groupRerollEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, groupRerollEnabled, 1
+            if(groupRerollEnabled) {
+                IniRead, mainIdsURL, %A_ScriptDir%\..\Settings.ini, UserSettings, mainIdsURL
+                if(mainIdsURL) {
+                    DownloadFile(mainIdsURL, "ids.txt")
+                }
             }
         }
 
@@ -497,10 +508,10 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             DoTutorial()
             accountOpenPacks := 0 ;tutorial packs don't count
         }
-        
+
         if(deleteMethod = "5 Pack" || deleteMethod = "5 Pack (Fast)" || deleteMethod = "Create Bots (13P)")
             wonderPicked := DoWonderPick()
-            
+
         friendsAdded := AddFriends()
         
         SelectPack("First")
@@ -3976,7 +3987,7 @@ GoToMain(fromSocial := false) {
     if(!fromSocial) {
         Delay(2)
         Loop {
-            Delay(3) ;increase this delay if you see "close app" on home page
+            Delay(6) ;increase this delay if you see "close app" on home page
             if(FindOrLoseImage(191, 393, 211, 411, , "Shop", 0, failSafeTime)) {
                 break
             }
