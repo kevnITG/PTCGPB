@@ -495,14 +495,19 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         failSafe := A_TickCount
         failSafeTime := 0
         Loop{
-            if failSafeTime > 40
+            if failSafeTime > 90
                 break
             if FindOrLoseImage(241, 459, 260, 476, , "MyCardsMenu", 0, failSafeTime)
                 break
+            if FindOrLoseImage(29, 180, 42, 201, , "MyCardsMenu2", 0, failSafeTime)
+                break
+
             adbClick(87, 518) ; my cards button
             Sleep, 4000 ; wait for page to load
             ; if we've successfully made it to the My Cards menu without tutorial, move onto next step after this loop.
             if FindOrLoseImage(241, 459, 260, 476, , "MyCardsMenu", 0, failSafeTime)
+                break
+            if FindOrLoseImage(29, 180, 42, 201, , "MyCardsMenu2", 0, failSafeTime)
                 break
 
             adbClick(269, 288) ; click tutorial skips
@@ -537,6 +542,17 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         }
 
+        ; Verify we're actually in My Cards menu before proceeding to Oak search
+        if (!FindOrLoseImage(241, 459, 260, 476, , "MyCardsMenu", 0, 0)) && (!FindOrLoseImage(29, 180, 42, 201, , "MyCardsMenu2", 0, 0)) {
+            CreateStatusMessage("Failed to reach My Cards menu. Restarting...",,,, false)
+            restartGameInstance("Failed to reach My Cards menu")
+            return
+        }
+
+        ; Reset failsafe timer before Oak search to prevent false timeouts
+        failSafe := A_TickCount
+        failSafeTime := 0
+
         ; Search for Oak card
         FindImageAndClick(25, 133, 44, 155, , "InMyCardsSearch", 241, 187, 2000)
         Sleep, 2000
@@ -548,15 +564,35 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         Sleep, 100
         adbClick(137, 460)
         Sleep, 2000
-        
-        ; Check if account has 2-star Oak and set the flag
-        if (FindOrLoseImage(48, 245, 67, 264, , "2starOak", 0, failSafeTime)) {
+
+        ; Check if account has 2-star Oak and set the flag with timeout handling
+        oakSearchStart := A_TickCount
+        oakTimeout := 30 ; 30 seconds timeout for Oak search
+
+        oakFound := false
+        Loop {
+            oakFound := FindOrLoseImage(48, 245, 67, 264, , "2starOak", 0, 0)
+            if (oakFound) {
+                break
+            }
+
+            ; Check for timeout
+            if ((A_TickCount - oakSearchStart) // 1000 > oakTimeout) {
+                CreateStatusMessage("Oak search timed out after " . oakTimeout . " seconds. Assuming no Oak.",,,, false)
+                break
+            }
+
+            ; Brief delay between checks
+            Sleep, 500
+        }
+
+        if (oakFound) {
             accountHasOak := true
-        CreateStatusMessage("Account HAS OAK!")
-        Sleep, 1000
+            CreateStatusMessage("Account HAS OAK!")
+            Sleep, 1000
         } else {
             accountHasOak := false
-        CreateStatusMessage("No Oak on this account :(")
+            CreateStatusMessage("No Oak on this account :(")
         }
         Sleep, 1000
         EndOfRun:
