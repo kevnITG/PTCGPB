@@ -1055,7 +1055,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
 
     ; Handle 7/2025 trade news update popup, remove later patch
     if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll" || imageName = "inHamburgerMenu" || imageName = "Trade") {
-        Path = %imagePath%Privacy.png
+        Path = %imagePath%Privacy.png ; this is just the "X" button on several pop-up menus
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 477, 148, 494, searchVariation)
         if (vRet = 1) {
@@ -1094,12 +1094,22 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             return confirmed
         }
 
-    ; Try to handle "Share" feature
+        ; Try to handle "Share" feature
         Path = %imagePath%Share.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 61, 273, 74, 286, searchVariation)
         if (vRet = 1) {
             adbClick_wbb(141, 369)
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
+        ; another option to look for "share" 'x' button, different position per language? unclear.
+        Path = %imagePath%Privacy.png ; this is just the "X" button on several pop-up menus
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 359, 148, 379, searchVariation)
+        if (vRet = 1) {
+            adbInputEvent("111") ; ESC
             Gdip_DisposeImage(pBitmap)
             return confirmed
         }
@@ -3268,13 +3278,13 @@ SelectPack(HG := false) {
                 packy := 238
 			} else if (openPack = "Charizard") {
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
-                packy := 394
+                packy := 420
             } else if (openPack = "Mewtwo") {
                 packx := SelectExpansionLeftColumnMiddleX
-                packy := 405 ; changed from 394 to avoid charizard pack per Crinity
+                packy := 420 ; changed from 394 to avoid charizard pack per Crinity
             } else if (openPack = "Pikachu") {
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
-                packy := 394
+                packy := 420
             }
         }
 
@@ -3291,7 +3301,36 @@ SelectPack(HG := false) {
             }
         }
         FindImageAndClick(233, 400, 264, 428, , "Points", packx, packy)
+    
+        if(openPack = "Lunala") {
+            ; Crinity created this method to click on some other pack in the same expansion
+            ; and make sure we're clicked over to the correct pack within the set.
+            failSafe := A_TickCount
+            failSafeTime := 0
+            Loop{
+                Delay(1)
+                if(FindOrLoseImage(233, 400, 264, 428, , "Points", 0, failSafeTime)) {
+                    break
+                }
+                failSafeTime := (A_TickCount - failsafe) // 1000
+            }
+            failSafe := A_TickCount 
+            failSafeTime := 0
+            Loop{
+                adbClick_wbb(210, 320)
+                Delay(1)
+                if(FindOrLoseImage(58, 303, 74, 319, , "PackIsMissing", 1, failSafeTime)){
+                    ; if white square DOES NOT appear here, then break.
+                    break
+                }
+                failSafeTime := (A_TickCount - failsafe) // 1000
+            }
+        }
+    
+    
     }
+
+
 	
 	if(HG = "First" && injectMethod && loadedAccount && !accountHasPackInfo) {
 		FindPackStats()
