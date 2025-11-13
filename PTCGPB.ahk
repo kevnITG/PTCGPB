@@ -355,10 +355,10 @@ NextStep:
    }
 
    Gui, Font, s10 cWhite
-   Gui, Add, Picture, gOpenDiscord x430 y323 w28 h28, %A_ScriptDir%\GUI\Images\discord-icon.png
-   Gui, Add, Picture, gOpenToolTip x470 y323 w28 h28, %A_ScriptDir%\GUI\Images\help-icon.png
-   Gui, Add, Picture, gShowToolsAndSystemSettings x510 y323 w28 h28, %A_ScriptDir%\GUI\Images\tools-icon.png
-   Gui, Add, Picture, gShowPowerUserMenu x550 y323 w28 h28, %A_ScriptDir%\GUI\Images\surprised-pikachu.png
+   Gui, Add, Picture, gOpenDiscord x445 y323 w28 h28, %A_ScriptDir%\GUI\Images\discord-icon.png
+   Gui, Add, Picture, gOpenToolTip x485 y323 w28 h28, %A_ScriptDir%\GUI\Images\help-icon.png
+   Gui, Add, Picture, gShowToolsAndSystemSettings x525 y323 w28 h28, %A_ScriptDir%\GUI\Images\tools-icon.png
+   Gui, Add, Picture, gShowPowerUserMenu x565 y323 w28 h28, %A_ScriptDir%\GUI\Images\surprised-pikachu.png
 
    sectionColor := "cWhite"
    Gui, Add, GroupBox, x611 y0 w175 h360 %sectionColor%
