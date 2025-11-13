@@ -1379,8 +1379,10 @@ return
 ShowPowerUserMenuMain:
     Gui, PowerUserWarning:Destroy
 
-    ; Submit main GUI to sync current values (especially Instances)
-    Gui, Submit, NoHide
+    ; Read current Instances value directly from main GUI control
+    GuiControlGet, currentInstances, , Instances
+    if (currentInstances != "")
+        Instances := currentInstances
 
     WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
 
