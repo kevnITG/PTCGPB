@@ -1379,9 +1379,10 @@ return
 ShowPowerUserMenuMain:
     Gui, PowerUserWarning:Destroy
 
-    ; Read current Instances value directly from main GUI control
+    ; Set context back to main GUI and read current Instances value
+    Gui, 1:Default
     GuiControlGet, currentInstances, , Instances
-    if (currentInstances != "")
+    if (currentInstances != "" && currentInstances > 0)
         Instances := currentInstances
 
     WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
