@@ -355,10 +355,10 @@ NextStep:
    }
 
    Gui, Font, s10 cWhite
-   Gui, Add, Picture, gOpenDiscord x455 y320 w36 h36, %A_ScriptDir%\GUI\Images\discord-icon.png
-   Gui, Add, Picture, gOpenToolTip x505 y320 w36 h36, %A_ScriptDir%\GUI\Images\help-icon.png
-   Gui, Add, Picture, gShowToolsAndSystemSettings x555 y322 w32 h32, %A_ScriptDir%\GUI\Images\tools-icon.png
-   Gui, Add, Picture, gShowPowerUserMenu x595 y320 w36 h36, %A_ScriptDir%\GUI\Images\surprised-pikachu.png
+   Gui, Add, Picture, gOpenDiscord x465 y323 w28 h28, %A_ScriptDir%\GUI\Images\discord-icon.png
+   Gui, Add, Picture, gOpenToolTip x505 y323 w28 h28, %A_ScriptDir%\GUI\Images\help-icon.png
+   Gui, Add, Picture, gShowToolsAndSystemSettings x545 y323 w28 h28, %A_ScriptDir%\GUI\Images\tools-icon.png
+   Gui, Add, Picture, gShowPowerUserMenu x585 y323 w28 h28, %A_ScriptDir%\GUI\Images\surprised-pikachu.png
 
    sectionColor := "cWhite"
    Gui, Add, GroupBox, x611 y0 w175 h360 %sectionColor%
@@ -368,7 +368,7 @@ NextStep:
    Gui, Font, s10 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.0.0beta3-poweruser kevinnnn"
 
-   Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
+   Gui, Add, Picture, gBuyMeCoffee x625 y90, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
    Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
@@ -1399,9 +1399,8 @@ ShowPowerUserMenuMain:
     global currentDictionary
     global Instances
 
-    ; Build pack options list
-    packOptions := "None (Use Main Menu)"
-    packOptions .= "|" . currentDictionary.Txt_MegaGyarados
+    ; Build pack options list (no None option - user must select a pack)
+    packOptions := currentDictionary.Txt_MegaGyarados
     packOptions .= "|" . currentDictionary.Txt_MegaBlaziken
     packOptions .= "|" . currentDictionary.Txt_MegaAltaria
     packOptions .= "|" . currentDictionary.Txt_Springs
@@ -1429,9 +1428,9 @@ ShowPowerUserMenuMain:
         instanceNum := A_Index
         varName := "PowerUserPack" . instanceNum
 
-        ; Ensure the variable exists globally
-        if (!%varName%)
-            %varName% := "None"
+        ; Ensure the variable exists - default to MegaGyarados if not set
+        if (!%varName% || %varName% = "None")
+            %varName% := currentDictionary.Txt_MegaGyarados
 
         Gui, PowerUserMenu:Add, Text, x30 y%yPos% w100, Instance %instanceNum%:
         choice := GetPackDropdownChoice(%varName%)
@@ -1451,11 +1450,11 @@ return
 GetPackDropdownChoice(packName) {
     global currentDictionary
 
+    ; Default to first pack (MegaGyarados) if empty or None
     if (packName = "" || packName = "None")
         return 1
 
     packList := []
-    packList.Push("None (Use Main Menu)")
     packList.Push(currentDictionary.Txt_MegaGyarados)
     packList.Push(currentDictionary.Txt_MegaBlaziken)
     packList.Push(currentDictionary.Txt_MegaAltaria)
