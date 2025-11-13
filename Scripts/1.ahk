@@ -111,6 +111,9 @@ IniRead, deleteMethod, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
             IniWrite, %deleteMethod%, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
         }
     }
+; Write deleteMethod to instance-specific ini for Monitor.ahk to read
+IniWrite, %deleteMethod%, %A_ScriptDir%\%scriptName%.ini, UserSettings, deleteMethod
+
 IniRead, runMain, %A_ScriptDir%\..\Settings.ini, UserSettings, runMain, 1
 IniRead, Mains, %A_ScriptDir%\..\Settings.ini, UserSettings, Mains, 1
 IniRead, AccountName, %A_ScriptDir%\..\Settings.ini, UserSettings, AccountName, ""

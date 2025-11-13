@@ -35,8 +35,11 @@ Loop {
         instanceNum := Format("{:u}", A_Index)
         
         IniRead, LastEndEpoch, %A_ScriptDir%\..\%instanceNum%.ini, Metrics, LastEndEpoch, 0
+        IniRead, deleteMethod, %A_ScriptDir%\..\%instanceNum%.ini, UserSettings, deleteMethod, Create Bots (13P)
         secondsSinceLastEnd := nowEpoch - LastEndEpoch
-        if(LastEndEpoch > 0 && secondsSinceLastEnd > (11 * 60))
+        ; Set threshold: 30 minutes for Create Bots, 11 minutes for others
+        threshold := (deleteMethod == "Create Bots (13P)") ? (30 * 60) : (11 * 60)
+        if(LastEndEpoch > 0 && secondsSinceLastEnd > threshold)
         {
             ; msgbox, Killing Instance %instanceNum%! Last Run Completed %secondsSinceLastEnd% Seconds Ago
             msg := "Killing Instance " . instanceNum . "! Last Run Completed " . secondsSinceLastEnd . " Seconds Ago"
