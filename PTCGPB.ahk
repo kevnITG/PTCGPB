@@ -2245,7 +2245,6 @@ LoadSettingsFromIni() {
       {
          instanceNum := A_Index
          varName := "PowerUserPack" . instanceNum
-         global %varName%
          IniRead, %varName%, Settings.ini, PowerUser, Pack%instanceNum%, None
       }
       
