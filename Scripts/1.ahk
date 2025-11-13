@@ -226,6 +226,22 @@ Loop, % pokemonList.MaxIndex()  ; Loop through the array
         packArray.push(pokemon)  ; Add the name to packArray
 }
 
+; Load Power User pack override for this instance (if scriptName is numeric)
+PowerUserPackOverride := ""
+if (scriptName >= 1 && scriptName <= 10) {
+    IniRead, PowerUserPackOverride, %A_ScriptDir%\..\Settings.ini, PowerUser, Pack%scriptName%, None
+}
+
+; Convert display name to internal pack name if power user override is set
+if (PowerUserPackOverride != "" && PowerUserPackOverride != "None" && !InStr(PowerUserPackOverride, "Use Main Menu")) {
+    PowerUserPackInternal := ConvertDisplayNameToPackName(PowerUserPackOverride)
+    if (PowerUserPackInternal != "") {
+        ; Override packArray with just the power user selection
+        packArray := []
+        packArray.push(PowerUserPackInternal)
+    }
+}
+
 changeDate := getChangeDateTime() ; get server reset time
 
 if(heartBeat)
@@ -4076,12 +4092,59 @@ return
 
 ; Extracts text from a bitmap using OCR. Converts the bitmap to a format usable by Windows OCR, performs OCR, and optionally removes characters not in the allowed character list.
 
-; Escapes special characters in a string for use in a regular expression. 
+; Escapes special characters in a string for use in a regular expression.
 ; ========================================
 ; DATABASE FUNCTIONS
 ; ========================================
 
+; ========================================
+; POWER USER FUNCTIONS
+; ========================================
 
+; Converts display name from Power User menu dropdown to internal pack name
+ConvertDisplayNameToPackName(displayName) {
+    ; Simple string matching - the displayName comes directly from currentDictionary
+    ; Match against known display names
+    if (InStr(displayName, "Gyarados"))
+        return "MegaGyarados"
+    if (InStr(displayName, "Blaziken"))
+        return "MegaBlaziken"
+    if (InStr(displayName, "Altaria"))
+        return "MegaAltaria"
+    if (InStr(displayName, "Springs"))
+        return "Springs"
+    if (InStr(displayName, "Ho-Oh") || InStr(displayName, "HoOh"))
+        return "HoOh"
+    if (InStr(displayName, "Lugia"))
+        return "Lugia"
+    if (InStr(displayName, "Eevee"))
+        return "Eevee"
+    if (InStr(displayName, "Buzzwole"))
+        return "Buzzwole"
+    if (InStr(displayName, "Solgaleo"))
+        return "Solgaleo"
+    if (InStr(displayName, "Lunala"))
+        return "Lunala"
+    if (InStr(displayName, "Shining Revelry"))
+        return "Shining"
+    if (InStr(displayName, "Triumphant Light"))
+        return "Arceus"
+    if (InStr(displayName, "Dialga"))
+        return "Dialga"
+    if (InStr(displayName, "Palkia"))
+        return "Palkia"
+    if (InStr(displayName, "Mew"))
+        return "Mew"
+    if (InStr(displayName, "Charizard"))
+        return "Charizard"
+    if (InStr(displayName, "Mewtwo"))
+        return "Mewtwo"
+    if (InStr(displayName, "Pikachu"))
+        return "Pikachu"
+
+    ; If no match found, return empty string
+    return ""
+}
 
 
 

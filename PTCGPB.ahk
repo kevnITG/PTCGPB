@@ -358,6 +358,7 @@ NextStep:
    Gui, Add, Picture, gOpenDiscord x455 y320 w36 h36, %A_ScriptDir%\GUI\Images\discord-icon.png
    Gui, Add, Picture, gOpenToolTip x505 y320 w36 h36, %A_ScriptDir%\GUI\Images\help-icon.png
    Gui, Add, Picture, gShowToolsAndSystemSettings x555 y322 w32 h32, %A_ScriptDir%\GUI\Images\tools-icon.png
+   Gui, Add, Picture, gShowPowerUserMenu x595 y320 w36 h36, %A_ScriptDir%\GUI\Images\surprised-pikachu.png
 
    sectionColor := "cWhite"
    Gui, Add, GroupBox, x611 y0 w175 h360 %sectionColor%
@@ -1343,6 +1344,174 @@ CancelToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Destroy
 return
 
+ShowPowerUserMenu:
+    WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
+
+    popupX := mainWinX + 200
+    popupY := mainWinY + 50
+
+    Gui, PowerUserWarning:Destroy
+    Gui, PowerUserWarning:New, +ToolWindow -MinimizeBox +LastFound, Power User Menu - Warning
+    Gui, PowerUserWarning:Color, 1E1E1E, 333333
+    Gui, PowerUserWarning:Font, s11 cRed Bold, Segoe UI
+
+    Gui, PowerUserWarning:Add, Text, x20 y20 w360 cRed Center, WARNING: POWER USER MENU
+
+    Gui, PowerUserWarning:Font, s10 cWhite Normal, Segoe UI
+    Gui, PowerUserWarning:Add, Text, x20 y50 w360, This menu contains advanced features that may have bugs or unexpected behavior.
+    Gui, PowerUserWarning:Add, Text, x20 y90 w360, Please ensure you:
+    Gui, PowerUserWarning:Font, s9 cYellow, Segoe UI
+    Gui, PowerUserWarning:Add, Text, x40 y115 w340, • Know what you are doing
+    Gui, PowerUserWarning:Add, Text, x40 y135 w340, • Have backups of your accounts ready
+    Gui, PowerUserWarning:Add, Text, x40 y155 w340, • Understand the risks involved
+
+    Gui, PowerUserWarning:Font, s10 cWhite, Segoe UI
+    Gui, PowerUserWarning:Add, Button, x70 y190 w120 h30 gShowPowerUserMenuMain, I Understand
+    Gui, PowerUserWarning:Add, Button, x210 y190 w120 h30 gCancelPowerUserWarning, Cancel
+
+    Gui, PowerUserWarning:Show, x%popupX% y%popupY% w400 h240
+return
+
+CancelPowerUserWarning:
+    Gui, PowerUserWarning:Destroy
+return
+
+ShowPowerUserMenuMain:
+    Gui, PowerUserWarning:Destroy
+
+    WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
+
+    popupX := mainWinX + 150
+    popupY := mainWinY + 30
+
+    Gui, PowerUserMenu:Destroy
+    Gui, PowerUserMenu:New, +ToolWindow -MinimizeBox +LastFound, Power User Pack Override
+    Gui, PowerUserMenu:Color, 1E1E1E, 333333
+    Gui, PowerUserMenu:Font, s10 cWhite Bold, Segoe UI
+
+    Gui, PowerUserMenu:Add, Text, x20 y10 w460 Center, Override Booster Packs per Instance
+
+    Gui, PowerUserMenu:Font, s9 cGray Normal, Segoe UI
+    Gui, PowerUserMenu:Add, Text, x20 y30 w460 Center, Select specific packs for each numbered Mumu instance (overrides main menu)
+
+    Gui, PowerUserMenu:Font, s10 cWhite, Segoe UI
+
+    global currentDictionary
+    global Instances
+
+    ; Build pack options list
+    packOptions := "None (Use Main Menu)"
+    packOptions .= "|" . currentDictionary.Txt_MegaGyarados
+    packOptions .= "|" . currentDictionary.Txt_MegaBlaziken
+    packOptions .= "|" . currentDictionary.Txt_MegaAltaria
+    packOptions .= "|" . currentDictionary.Txt_Springs
+    packOptions .= "|" . currentDictionary.Txt_HoOh
+    packOptions .= "|" . currentDictionary.Txt_Lugia
+    packOptions .= "|" . currentDictionary.Txt_Eevee
+    packOptions .= "|" . currentDictionary.Txt_Buzzwole
+    packOptions .= "|" . currentDictionary.Txt_Solgaleo
+    packOptions .= "|" . currentDictionary.Txt_Lunala
+    packOptions .= "|Shining Revelry"
+    packOptions .= "|Triumphant Light"
+    packOptions .= "|" . currentDictionary.Txt_Dialga
+    packOptions .= "|" . currentDictionary.Txt_Palkia
+    packOptions .= "|" . currentDictionary.Txt_Mew
+    packOptions .= "|" . currentDictionary.Txt_Charizard
+    packOptions .= "|" . currentDictionary.Txt_Mewtwo
+    packOptions .= "|" . currentDictionary.Txt_Pikachu
+
+    yPos := 60
+    rowHeight := 40
+
+    ; Dynamically create dropdowns for each instance
+    Loop, %Instances%
+    {
+        instanceNum := A_Index
+        varName := "PowerUserPack" . instanceNum
+
+        ; Ensure the variable exists globally
+        if (!%varName%)
+            %varName% := "None"
+
+        Gui, PowerUserMenu:Add, Text, x30 y%yPos% w100, Instance %instanceNum%:
+        choice := GetPackDropdownChoice(%varName%)
+        Gui, PowerUserMenu:Add, DropDownList, v%varName%_Popup x140 y%yPos% w320 Choose%choice% Background2A2A2A cWhite, %packOptions%
+        yPos += rowHeight
+    }
+
+    yPos += 10
+
+    Gui, PowerUserMenu:Add, Button, x140 y%yPos% w140 h30 gApplyPowerUserSettings, Apply
+    Gui, PowerUserMenu:Add, Button, x300 y%yPos% w140 h30 gCancelPowerUserSettings, Cancel
+    yPos += 40
+
+    Gui, PowerUserMenu:Show, x%popupX% y%popupY% w500 h%yPos%
+return
+
+GetPackDropdownChoice(packName) {
+    global currentDictionary
+
+    if (packName = "" || packName = "None")
+        return 1
+
+    packList := []
+    packList.Push("None (Use Main Menu)")
+    packList.Push(currentDictionary.Txt_MegaGyarados)
+    packList.Push(currentDictionary.Txt_MegaBlaziken)
+    packList.Push(currentDictionary.Txt_MegaAltaria)
+    packList.Push(currentDictionary.Txt_Springs)
+    packList.Push(currentDictionary.Txt_HoOh)
+    packList.Push(currentDictionary.Txt_Lugia)
+    packList.Push(currentDictionary.Txt_Eevee)
+    packList.Push(currentDictionary.Txt_Buzzwole)
+    packList.Push(currentDictionary.Txt_Solgaleo)
+    packList.Push(currentDictionary.Txt_Lunala)
+    packList.Push("Shining Revelry")
+    packList.Push("Triumphant Light")
+    packList.Push(currentDictionary.Txt_Dialga)
+    packList.Push(currentDictionary.Txt_Palkia)
+    packList.Push(currentDictionary.Txt_Mew)
+    packList.Push(currentDictionary.Txt_Charizard)
+    packList.Push(currentDictionary.Txt_Mewtwo)
+    packList.Push(currentDictionary.Txt_Pikachu)
+
+    Loop % packList.MaxIndex() {
+        if (packList[A_Index] = packName)
+            return A_Index
+    }
+
+    return 1
+}
+
+ApplyPowerUserSettings:
+    Gui, PowerUserMenu:Submit, NoHide
+
+    global Instances
+
+    ; Dynamically save all instance settings
+    Loop, %Instances%
+    {
+        instanceNum := A_Index
+        varName := "PowerUserPack" . instanceNum
+        popupVarName := varName . "_Popup"
+
+        ; Update the global variable with popup value
+        %varName% := %popupVarName%
+
+        ; Save to settings file
+        packValue := %varName%
+        IniWrite, %packValue%, Settings.ini, PowerUser, Pack%instanceNum%
+    }
+
+    MsgBox, 64, Power User Settings, Power user pack overrides saved successfully!
+
+    Gui, PowerUserMenu:Destroy
+return
+
+CancelPowerUserSettings:
+    Gui, PowerUserMenu:Destroy
+return
+
 discordSettings:
   Gui, Submit, NoHide
   if (heartBeat) {
@@ -2021,6 +2190,15 @@ LoadSettingsFromIni() {
       IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
       IniRead, menuExpanded, Settings.ini, UserSettings, menuExpanded, True
+
+      ; Load Power User settings dynamically for all possible instances (up to 10)
+      Loop, 10
+      {
+         instanceNum := A_Index
+         varName := "PowerUserPack" . instanceNum
+         global %varName%
+         IniRead, %varName%, Settings.ini, PowerUser, Pack%instanceNum%, None
+      }
       
       if (!IsNumeric(Instances))
          Instances := 1
