@@ -3945,12 +3945,50 @@ GetEventRewards(frommain := true){
         if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
             break
         }
+        if (FindOrLoseImage(246, 147, 257, 158, , "bonusWeek", 0, failSafeTime)){
+            break
+        }
         else if (failSafeTime > 60){
             GotRewards := false
             break
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
     }
+
+    ;====== Click through missions menus ======
+    ; pick ONE of these click locations based upon which events are currently going on.
+    ; adbClick_wbb(120, 465) ; used to click the middle mission button
+    ; adbClick_wbb(25, 465) ;used to click the left-most mission button
+
+    ; This entire section is specific to "Bonus Week" missions
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop{
+        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
+        Sleep, 750
+        if (FindOrLoseImage(246, 147, 257, 158, , "bonusWeek", 0, failSafeTime)){
+            break
+        }
+    }
+
+    ; ====== Collect all rewards ======
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop{
+        adbClick_wbb(172, 427) ;clicks complete all and ok
+        Sleep, 1500
+        adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
+        Sleep, 1500
+        if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
+            break
+        }
+        else if (failSafeTime > 60){
+            GotRewards := false
+            break
+        }
+        failSafeTime := (A_TickCount - failSafe) // 1000
+    }
+
     GoToMain()
 }
 
