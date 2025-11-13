@@ -1538,6 +1538,7 @@ ConvertPackNameToDisplay(packName) {
 }
 
 ApplyPowerUserSettings:
+    Gui, PowerUserMenu:Default
     Gui, PowerUserMenu:Submit, NoHide
 
     global Instances
@@ -1549,12 +1550,14 @@ ApplyPowerUserSettings:
         varName := "PowerUserPack" . instanceNum
         popupVarName := varName . "_Popup"
 
+        ; Get the value from the popup dropdown
+        GuiControlGet, popupValue, , %popupVarName%
+
         ; Update the global variable with popup value
-        %varName% := %popupVarName%
+        %varName% := popupValue
 
         ; Save to settings file
-        packValue := %varName%
-        IniWrite, %packValue%, Settings.ini, PowerUser, Pack%instanceNum%
+        IniWrite, %popupValue%, Settings.ini, PowerUser, Pack%instanceNum%
     }
 
     MsgBox, 64, Power User Settings, Power user pack overrides saved successfully!
