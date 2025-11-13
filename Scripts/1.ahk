@@ -403,6 +403,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         openPack := packArray[rand]
         friended := false
         IniWrite, 1, %A_ScriptDir%\..\HeartBeat.ini, HeartBeat, Instance%scriptName%
+        IniWrite, %openPack%, %A_ScriptDir%\..\HeartBeat.ini, PackInfo, Instance%scriptName%
 
         changeDate := getChangeDateTime() ; get server reset time
 
@@ -758,6 +759,10 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         aseconds := Mod(avgtotalSeconds, 60) ; Average remaining seconds
         mminutes := Floor(totalSeconds / 60) ; Total minutes
         sseconds := Mod(totalSeconds, 60) ; Total remaining seconds
+
+        ; Write average run time to HeartBeat.ini for main heartbeat to read
+        IniWrite, %aminutes%, %A_ScriptDir%\..\HeartBeat.ini, AvgRunTime, Instance%scriptName%Minutes
+        IniWrite, %aseconds%, %A_ScriptDir%\..\HeartBeat.ini, AvgRunTime, Instance%scriptName%Seconds
 
         ; Display the times
         CreateStatusMessage("Avg: " . aminutes . "m " . aseconds . "s | Runs: " . rerolls . " | Account Packs " . accountOpenPacks, "AvgRuns", 0, 605, false, true)

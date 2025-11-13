@@ -1483,6 +1483,55 @@ GetPackDropdownChoice(packName) {
     return 1
 }
 
+; Converts internal pack name to display name for heartbeat messages
+ConvertPackNameToDisplay(packName) {
+    global currentDictionary
+
+    if (packName = "" || packName = "None")
+        return ""
+
+    ; Map internal pack names to display names
+    if (packName = "MegaGyarados")
+        return currentDictionary.Txt_MegaGyarados
+    if (packName = "MegaBlaziken")
+        return currentDictionary.Txt_MegaBlaziken
+    if (packName = "MegaAltaria")
+        return currentDictionary.Txt_MegaAltaria
+    if (packName = "Springs")
+        return currentDictionary.Txt_Springs
+    if (packName = "HoOh")
+        return currentDictionary.Txt_HoOh
+    if (packName = "Lugia")
+        return currentDictionary.Txt_Lugia
+    if (packName = "Eevee")
+        return currentDictionary.Txt_Eevee
+    if (packName = "Buzzwole")
+        return currentDictionary.Txt_Buzzwole
+    if (packName = "Solgaleo")
+        return currentDictionary.Txt_Solgaleo
+    if (packName = "Lunala")
+        return currentDictionary.Txt_Lunala
+    if (packName = "Shining")
+        return "Shining Revelry"
+    if (packName = "Arceus")
+        return "Triumphant Light"
+    if (packName = "Dialga")
+        return currentDictionary.Txt_Dialga
+    if (packName = "Palkia")
+        return currentDictionary.Txt_Palkia
+    if (packName = "Mew")
+        return currentDictionary.Txt_Mew
+    if (packName = "Charizard")
+        return currentDictionary.Txt_Charizard
+    if (packName = "Mewtwo")
+        return currentDictionary.Txt_Mewtwo
+    if (packName = "Pikachu")
+        return currentDictionary.Txt_Pikachu
+
+    ; If no match, return the pack name as-is
+    return packName
+}
+
 ApplyPowerUserSettings:
     Gui, PowerUserMenu:Submit, NoHide
 
@@ -2735,14 +2784,28 @@ StartBot() {
          }
          
          for index, value in Online {
+            instanceNum := A_Index
+
+            ; Read pack info for this instance
+            IniRead, packName, HeartBeat.ini, PackInfo, Instance%instanceNum%, None
+
+            ; Convert internal pack name to display name
+            packDisplay := ConvertPackNameToDisplay(packName)
+
             if(index = Online.MaxIndex())
                commaSeparate := ""
             else
                commaSeparate := ", "
-            if(value)
-               onlineAHK .= A_Index . commaSeparate
-            else
-               offlineAHK .= A_Index . commaSeparate
+
+            if(value) {
+               if(packDisplay != "None" && packDisplay != "")
+                  onlineAHK .= instanceNum . " (" . packDisplay . ")" . commaSeparate
+               else
+                  onlineAHK .= instanceNum . commaSeparate
+            }
+            else {
+               offlineAHK .= instanceNum . commaSeparate
+            }
          }
          
          if (runMain) {
@@ -2771,16 +2834,35 @@ StartBot() {
          
          discMessage := heartBeatName ? "\n" . heartBeatName : ""
          discMessage .= "\n" . onlineAHK . "\n" . offlineAHK
-         
+
          total := SumVariablesInJsonFile()
          totalSeconds := Round((A_TickCount - rerollTime) / 1000)
          mminutes := Floor(totalSeconds / 60)
+
+         ; Calculate average run time across all online instances
+         totalAvgSeconds := 0
+         onlineCount := 0
+         Loop, %Instances% {
+            IniRead, avgMins, HeartBeat.ini, AvgRunTime, Instance%A_Index%Minutes, -1
+            IniRead, avgSecs, HeartBeat.ini, AvgRunTime, Instance%A_Index%Seconds, -1
+            if (avgMins != -1 && avgSecs != -1) {
+               totalAvgSeconds += (avgMins * 60) + avgSecs
+               onlineCount++
+            }
+         }
+
          packStatus := "Time: " . mminutes . "m | Packs: " . total
          packStatus .= " | Avg: " . Round(total / mminutes, 2) . " packs/min"
-         
+
+         if (onlineCount > 0) {
+            overallAvgSeconds := Round(totalAvgSeconds / onlineCount)
+            overallAvgMins := Floor(overallAvgSeconds / 60)
+            overallAvgSecs := Mod(overallAvgSeconds, 60)
+            packStatus .= " | Avg Run: " . overallAvgMins . "m " . overallAvgSecs . "s"
+         }
+
          discMessage .= "\n" . packStatus . "\nVersion: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion
          discMessage .= typeMsg
-         discMessage .= selectMsg
          
          if (mainTestMode == "1")
             discMessage .= "\n\nMain entered GP Test Mode ✕"
@@ -2804,9 +2886,29 @@ StartBot() {
       total := SumVariablesInJsonFile()
       totalSeconds := Round((A_TickCount - rerollTime) / 1000)
       mminutes := Floor(totalSeconds / 60)
-      
+
+      ; Calculate average run time across all online instances
+      totalAvgSeconds := 0
+      onlineCount := 0
+      Loop, %Instances% {
+         IniRead, avgMins, HeartBeat.ini, AvgRunTime, Instance%A_Index%Minutes, -1
+         IniRead, avgSecs, HeartBeat.ini, AvgRunTime, Instance%A_Index%Seconds, -1
+         if (avgMins != -1 && avgSecs != -1) {
+            totalAvgSeconds += (avgMins * 60) + avgSecs
+            onlineCount++
+         }
+      }
+
       packStatus := "Time: " . mminutes . "m Packs: " . total
       packStatus .= " | Avg: " . Round(total / mminutes, 2) . " packs/min"
+
+      if (onlineCount > 0) {
+         overallAvgSeconds := Round(totalAvgSeconds / onlineCount)
+         overallAvgMins := Floor(overallAvgSeconds / 60)
+         overallAvgSecs := Mod(overallAvgSeconds, 60)
+         packStatus .= " | Avg Run: " . overallAvgMins . "m " . overallAvgSecs . "s"
+      }
+
       DisplayPackStatus(packStatus, ((runMain ? Mains * scaleParam : 0) + 5), 625)
       
       if(heartBeat) {
@@ -2828,14 +2930,28 @@ StartBot() {
             }
             
             for index, value in Online {
+               instanceNum := A_Index
+
+               ; Read pack info for this instance
+               IniRead, packName, HeartBeat.ini, PackInfo, Instance%instanceNum%, None
+
+               ; Convert internal pack name to display name
+               packDisplay := ConvertPackNameToDisplay(packName)
+
                if(index = Online.MaxIndex())
                   commaSeparate := ""
                else
                   commaSeparate := ", "
-               if(value)
-                  onlineAHK .= A_Index . commaSeparate
-               else
-                  offlineAHK .= A_Index . commaSeparate
+
+               if(value) {
+                  if(packDisplay != "None" && packDisplay != "")
+                     onlineAHK .= instanceNum . " (" . packDisplay . ")" . commaSeparate
+                  else
+                     onlineAHK .= instanceNum . commaSeparate
+               }
+               else {
+                  offlineAHK .= instanceNum . commaSeparate
+               }
             }
             
             if(runMain) {
@@ -2865,11 +2981,10 @@ StartBot() {
                onlineAHK := "Online: " . RTrim(onlineAHK, ", ")
             
             discMessage := heartBeatName ? "\n" . heartBeatName : ""
-            
+
             discMessage .= "\n" . onlineAHK . "\n" . offlineAHK . "\n" . packStatus . "\nVersion: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion
             discMessage .= typeMsg
-            discMessage .= selectMsg
-            
+
             LogToDiscord(discMessage,, false,,, heartBeatWebhookURL)
             
             if (debugMode) {
@@ -2920,7 +3035,6 @@ SendAllInstancesOfflineStatus() {
    
    discMessage .= "\n" . packStatus . "\nVersion: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion
    discMessage .= typeMsg
-   discMessage .= selectMsg
    discMessage .= "\n\n All instances marked as OFFLINE"
    
    LogToDiscord(discMessage,, false,,, heartBeatWebhookURL)
