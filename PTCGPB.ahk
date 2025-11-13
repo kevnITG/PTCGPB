@@ -1434,12 +1434,17 @@ ShowPowerUserMenuMain:
         instanceNum := A_Index
         varName := "PowerUserPack" . instanceNum
 
-        ; Ensure the variable exists - default to MegaGyarados if not set
-        if (!%varName% || %varName% = "None")
-            %varName% := currentDictionary.Txt_MegaGyarados
+        ; Get the internal pack name (loaded from Settings.ini)
+        internalPackName := %varName%
+
+        ; Convert internal pack name to display name for dropdown
+        if (!internalPackName || internalPackName = "None")
+            displayPackName := currentDictionary.Txt_MegaGyarados
+        else
+            displayPackName := ConvertPackNameToDisplay(internalPackName)
 
         Gui, PowerUserMenu:Add, Text, x30 y%yPos% w100, Instance %instanceNum%:
-        choice := GetPackDropdownChoice(%varName%)
+        choice := GetPackDropdownChoice(displayPackName)
         Gui, PowerUserMenu:Add, DropDownList, v%varName%_Popup x140 y%yPos% w320 Choose%choice% Background2A2A2A cWhite, %packOptions%
         yPos += rowHeight
     }
@@ -1537,6 +1542,51 @@ ConvertPackNameToDisplay(packName) {
     return packName
 }
 
+ConvertDisplayNameToPackName(displayName) {
+    global currentDictionary
+
+    ; Convert localized display names back to internal pack names
+    if (displayName = currentDictionary.Txt_MegaGyarados)
+        return "MegaGyarados"
+    if (displayName = currentDictionary.Txt_MegaBlaziken)
+        return "MegaBlaziken"
+    if (displayName = currentDictionary.Txt_MegaAltaria)
+        return "MegaAltaria"
+    if (displayName = currentDictionary.Txt_Springs)
+        return "Springs"
+    if (displayName = currentDictionary.Txt_HoOh)
+        return "HoOh"
+    if (displayName = currentDictionary.Txt_Lugia)
+        return "Lugia"
+    if (displayName = currentDictionary.Txt_Eevee)
+        return "Eevee"
+    if (displayName = currentDictionary.Txt_Buzzwole)
+        return "Buzzwole"
+    if (displayName = currentDictionary.Txt_Solgaleo)
+        return "Solgaleo"
+    if (displayName = currentDictionary.Txt_Lunala)
+        return "Lunala"
+    if (displayName = "Shining Revelry")
+        return "Shining"
+    if (displayName = "Triumphant Light")
+        return "Arceus"
+    if (displayName = currentDictionary.Txt_Dialga)
+        return "Dialga"
+    if (displayName = currentDictionary.Txt_Palkia)
+        return "Palkia"
+    if (displayName = currentDictionary.Txt_Mew)
+        return "Mew"
+    if (displayName = currentDictionary.Txt_Charizard)
+        return "Charizard"
+    if (displayName = currentDictionary.Txt_Mewtwo)
+        return "Mewtwo"
+    if (displayName = currentDictionary.Txt_Pikachu)
+        return "Pikachu"
+
+    ; If no match, return as-is
+    return displayName
+}
+
 ApplyPowerUserSettings:
     Gui, PowerUserMenu:Default
     Gui, PowerUserMenu:Submit, NoHide
@@ -1550,14 +1600,17 @@ ApplyPowerUserSettings:
         varName := "PowerUserPack" . instanceNum
         popupVarName := varName . "_Popup"
 
-        ; Get the value from the popup dropdown
+        ; Get the value from the popup dropdown (display name)
         GuiControlGet, popupValue, , %popupVarName%
 
-        ; Update the global variable with popup value
-        %varName% := popupValue
+        ; Convert display name to internal pack name
+        internalPackName := ConvertDisplayNameToPackName(popupValue)
 
-        ; Save to settings file
-        IniWrite, %popupValue%, Settings.ini, PowerUser, Pack%instanceNum%
+        ; Update the global variable with internal pack name
+        %varName% := internalPackName
+
+        ; Save internal pack name to settings file
+        IniWrite, %internalPackName%, Settings.ini, PowerUser, Pack%instanceNum%
     }
 
     MsgBox, 64, Power User Settings, Power user pack overrides saved successfully!

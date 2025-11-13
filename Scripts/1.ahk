@@ -227,19 +227,17 @@ Loop, % pokemonList.MaxIndex()  ; Loop through the array
 }
 
 ; Load Power User pack override for this instance (if scriptName is valid)
+; Settings.ini now stores internal pack names directly (e.g., "MegaGyarados")
 PowerUserPackOverride := ""
 if (scriptName >= 1) {
     IniRead, PowerUserPackOverride, %A_ScriptDir%\..\Settings.ini, PowerUser, Pack%scriptName%, None
 }
 
-; Convert display name to internal pack name if power user override is set
-if (PowerUserPackOverride != "" && PowerUserPackOverride != "None" && !InStr(PowerUserPackOverride, "Use Main Menu")) {
-    PowerUserPackInternal := ConvertDisplayNameToPackName(PowerUserPackOverride)
-    if (PowerUserPackInternal != "") {
-        ; Override packArray with just the power user selection
-        packArray := []
-        packArray.push(PowerUserPackInternal)
-    }
+; Apply power user override if set (already in internal pack name format)
+if (PowerUserPackOverride != "" && PowerUserPackOverride != "None") {
+    ; Override packArray with just the power user selection
+    packArray := []
+    packArray.push(PowerUserPackOverride)
 }
 
 changeDate := getChangeDateTime() ; get server reset time
