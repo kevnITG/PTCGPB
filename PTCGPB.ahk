@@ -106,7 +106,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.0.0b"
+   ,localVersion := "v9.0.0b-poweruser"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -366,7 +366,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.0.0beta3 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.0.0beta3-poweruser kevinnnn"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -2472,8 +2472,6 @@ SaveAllSettings() {
    }
 
    if (!groupRerollEnabled) {
-   mainIdsURL := ""
-   vipIdsURL := ""
    autoUseGPTest := 0
    TestTime := 3600
    applyRoleFilters := 0
@@ -2490,13 +2488,13 @@ SaveAllSettings() {
    iniContent_Second := "deleteMethod=" deleteMethod "`n"
    if (deleteMethod = "Inject Wonderpick 96P+") {
       iniContent_Second .= "FriendID=" FriendID "`n"
-      iniContent_Second .= "mainIdsURL=" mainIdsURL "`n"
    } else {
       iniContent_Second .= "FriendID=`n"
-      iniContent_Second .= "mainIdsURL=`n"
-      mainIdsURL := ""
       FriendID := ""
    }
+
+   ; Always save mainIdsURL (for group reroll feature)
+   iniContent_Second .= "mainIdsURL=" mainIdsURL "`n"
    
    iniContent_Second .= "AccountName=" AccountName "`n"
    iniContent_Second .= "waitTime=" waitTime "`n"
@@ -2875,7 +2873,7 @@ StartBot() {
       }
       
       if(Mod(A_Index, 10) = 0) {
-         if(mainIdsURL != "") {
+         if(groupRerollEnabled && mainIdsURL != "") {
             DownloadFile(mainIdsURL, "ids.txt")
          } else {
             if(FileExist("ids.txt"))
