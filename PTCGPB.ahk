@@ -1379,6 +1379,9 @@ return
 ShowPowerUserMenuMain:
     Gui, PowerUserWarning:Destroy
 
+    ; Submit main GUI to sync current values (especially Instances)
+    Gui, Submit, NoHide
+
     WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
 
     popupX := mainWinX + 150
