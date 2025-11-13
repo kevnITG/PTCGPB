@@ -2245,8 +2245,8 @@ LoadSettingsFromIni() {
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
       IniRead, menuExpanded, Settings.ini, UserSettings, menuExpanded, True
 
-      ; Load Power User settings dynamically for all possible instances (up to 10)
-      Loop, 10
+      ; Load Power User settings dynamically for all possible instances
+      Loop, 100
       {
          instanceNum := A_Index
          varName := "PowerUserPack" . instanceNum
