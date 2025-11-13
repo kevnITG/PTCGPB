@@ -2610,8 +2610,15 @@ SaveAllSettings() {
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"
    iniContent_Second .= "minStarsShiny=" minStarsShiny "`n"
    iniContent_Second .= "tesseractPath=" tesseractPath "`n"
-   
-   iniFull := iniContent . iniContent_Second
+
+   ; Preserve [PowerUser] section if it exists
+   powerUserContent := ""
+   IniRead, powerUserSection, Settings.ini, PowerUser
+   if (powerUserSection != "" && powerUserSection != "ERROR") {
+      powerUserContent := "`n[PowerUser]`n" . powerUserSection . "`n"
+   }
+
+   iniFull := iniContent . iniContent_Second . powerUserContent
    FileDelete, Settings.ini
    FileAppend, %iniFull%, Settings.ini, UTF-16
    
