@@ -300,7 +300,8 @@
         }
 
         th.col-pack {
-            width: 110px;
+            width: 80px;
+            max-width: 80px;
         }
 
         th.col-xml {
@@ -309,8 +310,8 @@
         }
 
         th.col-cards {
-            width: 60px;
-            max-width: 60px;
+            width: 90px;
+            max-width: 90px;
         }
 
         th.col-screenshot {
@@ -422,76 +423,77 @@
         /* Card type specific colors */
         .badge-crown {
             background: #FFF8DC !important;
-            border-color: #B8860B !important;
-            color: #B8860B !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
         }
 
         .badge-4diamond {
             background: #E3F2FD !important;
-            border-color: #4A7BA7 !important;
-            color: #1565C0 !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
         }
 
         .badge-3diamond {
             background: #E8F5E9 !important;
-            border-color: #66BB6A !important;
-            color: #2E7D32 !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
         }
 
         .badge-2diamond {
             background: #FFF3E0 !important;
-            border-color: #FFA726 !important;
-            color: #E65100 !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
         }
 
         .badge-1diamond {
             background: #FFEBEE !important;
-            border-color: #EF5350 !important;
-            color: #C62828 !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
         }
 
         .badge-rainbow {
             background: linear-gradient(90deg,
-                #FFE5E5 0%,
-                #FFF3E0 25%,
-                #FFFDE7 40%,
-                #E8F5E9 60%,
-                #E3F2FD 80%,
-                #F3E5F5 100%) !important;
-            border-color: #9C27B0 !important;
-            color: #6A1B9A !important;
+                #FFB3BA 0%,
+                #FFDFBA 16.67%,
+                #FFFFBA 33.33%,
+                #BAFFBA 50%,
+                #BAE1FF 66.67%,
+                #D7BAFF 83.33%,
+                #FFB3D9 100%) !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
         }
 
         .badge-shiny1star,
         .badge-shiny2star {
-            background: #F5F5F5 !important;
-            border-color: #C0C0C0 !important;
-            color: #666 !important;
+            background: linear-gradient(45deg, #B8B8B8, #D8D8D8) !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
         }
 
         .badge-1star,
         .badge-2star {
             background: #FFFDE7 !important;
-            border-color: #FDD835 !important;
-            color: #F57F17 !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
         }
 
         .badge-immersive {
             background: linear-gradient(135deg, #E8D5F2 0%, #D1C4E9 50%, #B39DDB 100%) !important;
-            border-color: #9575CD !important;
-            color: #4A148C !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
         }
 
         .badge-fullart {
-            background: #F3E5F5 !important;
-            border-color: #8E6BA8 !important;
-            color: #6A1B9A !important;
+            background: #C8E6C9 !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
         }
 
         .badge-trainer {
-            background: #FFEBEE !important;
-            border-color: #E57373 !important;
-            color: #C62828 !important;
+            background: #BBDEFB !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
         }
 
         .card-crown {
@@ -1204,6 +1206,8 @@
 
             filteredData = [...allData];
             csvLoaded = true;
+            sortColumn = 'date';
+            sortDirection = 'desc';
             updateShinedustMap(); // Update shinedust map from all data
             enableControls();
             updateStats();
@@ -1534,7 +1538,7 @@
                 const shinedustClass = shinedust >= 25000 ? 'shinedust-high' : (shinedust > 0 ? 'shinedust-low' : '');
                 const shinedustHTML = latestShinedust !== '' ? `<span class="${shinedustClass}">${latestShinedust}</span>` : '';
 
-                const ageDays = calculateAgeDays(account.lastSeen);
+                const ageDays = calculateAgeDays(account.firstSeen);
 
                 tr.innerHTML = `
                     <td class="device-account">
