@@ -226,9 +226,9 @@ Loop, % pokemonList.MaxIndex()  ; Loop through the array
         packArray.push(pokemon)  ; Add the name to packArray
 }
 
-; Load Power User pack override for this instance (if scriptName is numeric)
+; Load Power User pack override for this instance (if scriptName is valid)
 PowerUserPackOverride := ""
-if (IsNumeric(scriptName)) {
+if (scriptName >= 1) {
     IniRead, PowerUserPackOverride, %A_ScriptDir%\..\Settings.ini, PowerUser, Pack%scriptName%, None
 }
 
