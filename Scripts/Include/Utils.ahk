@@ -69,6 +69,7 @@ DownloadFile(url, filename) {
         FileDelete, %localPath%
         FileAppend, %ids%, %localPath%
     }
+    return !errored
 }
 
 ;-------------------------------------------------------------------------------
