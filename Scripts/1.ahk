@@ -3935,6 +3935,10 @@ GetEventRewards(frommain := true){
         if (FindOrLoseImage(223, 179, 231, 187, , "FirstAnniversaryCelebration", 0, failSafeTime)){
             break
         }
+        else if (failSafeTime > 10){
+            break
+        }
+        failSafeTime := (A_TickCount - failSafe) // 1000
     }
 
     ; ====== Collect all rewards ======
@@ -3948,10 +3952,10 @@ GetEventRewards(frommain := true){
         if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
             break
         }
-        if (FindOrLoseImage(246, 147, 257, 158, , "bonusWeek", 0, failSafeTime)){
+        if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
             break
         }
-        else if (failSafeTime > 60){
+        else if (failSafeTime > 15){
             GotRewards := false
             break
         }
@@ -3968,10 +3972,14 @@ GetEventRewards(frommain := true){
     failSafeTime := 0
     Loop{
         adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-        Sleep, 750
-        if (FindOrLoseImage(246, 147, 257, 158, , "bonusWeek", 0, failSafeTime)){
+        Sleep, 1500
+        if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
             break
         }
+        else if (failSafeTime > 10){
+            break
+        }
+        failSafeTime := (A_TickCount - failSafe) // 1000
     }
 
     ; ====== Collect all rewards ======
@@ -3985,7 +3993,7 @@ GetEventRewards(frommain := true){
         if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
             break
         }
-        else if (failSafeTime > 60){
+        else if (failSafeTime > 15){
             GotRewards := false
             break
         }

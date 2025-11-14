@@ -1198,8 +1198,8 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, GroupBox, x%col1X% y%yPos% w%col1W% h%eventMissionBoxH% %sectionColor%, Special Event Missions
     yPos += 20
     
-    Gui, ToolsAndSystemSelect:Add, Button, x25 y%yPos% w170 h20 gClearSpecialMissionHistory BackgroundTrans, Reset Claim Status
-    yPos += 25
+    ; Gui, ToolsAndSystemSelect:Add, Button, x25 y%yPos% w170 h20 gClearSpecialMissionHistory BackgroundTrans, Reset Claim Status
+    ; yPos += 25
     
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (claimSpecialMissions ? "Checked" : "") " vclaimSpecialMissions_Popup x25 y" . yPos . " cWhite", Claim Rewards
     yPos += 20
