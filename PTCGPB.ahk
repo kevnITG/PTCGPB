@@ -2876,6 +2876,9 @@ StartBot() {
             IniWrite, 0, HeartBeat.ini, HeartBeat, Instance%A_Index%
          }
          
+         ; Build separate lists for instances and their packs
+         onlinePacksAHK := ""
+
          for index, value in Online {
             instanceNum := A_Index
 
@@ -2891,16 +2894,17 @@ StartBot() {
                commaSeparate := ", "
 
             if(value) {
+               onlineAHK .= instanceNum . commaSeparate
                if(packDisplay != "None" && packDisplay != "")
-                  onlineAHK .= instanceNum . " (" . packDisplay . ")" . commaSeparate
+                  onlinePacksAHK .= packDisplay . commaSeparate
                else
-                  onlineAHK .= instanceNum . commaSeparate
+                  onlinePacksAHK .= "-" . commaSeparate
             }
             else {
                offlineAHK .= instanceNum . commaSeparate
             }
          }
-         
+
          if (runMain) {
             if(mainStatus) {
                if (onlineAHK)
@@ -2915,7 +2919,7 @@ StartBot() {
                   offlineAHK := "Main"
             }
          }
-         
+
          if(offlineAHK = "")
             offlineAHK := "Offline: none"
          else
@@ -2924,9 +2928,16 @@ StartBot() {
             onlineAHK := "Online: none"
          else
             onlineAHK := "Online: " . RTrim(onlineAHK, ", ")
-         
+
+         ; Build packs line
+         packsLine := ""
+         if(onlinePacksAHK != "") {
+            onlinePacksAHK := RTrim(onlinePacksAHK, ", ")
+            packsLine := "\nPacks:  " . onlinePacksAHK
+         }
+
          discMessage := heartBeatName ? "\n" . heartBeatName : ""
-         discMessage .= "\n" . onlineAHK . "\n" . offlineAHK
+         discMessage .= "\n" . onlineAHK . packsLine . "\n" . offlineAHK
 
          total := SumVariablesInJsonFile()
          totalSeconds := Round((A_TickCount - rerollTime) / 1000)
@@ -3022,6 +3033,9 @@ StartBot() {
                IniWrite, 0, HeartBeat.ini, HeartBeat, Instance%A_Index%
             }
             
+            ; Build separate lists for instances and their packs
+            onlinePacksAHK := ""
+
             for index, value in Online {
                instanceNum := A_Index
 
@@ -3037,10 +3051,11 @@ StartBot() {
                   commaSeparate := ", "
 
                if(value) {
+                  onlineAHK .= instanceNum . commaSeparate
                   if(packDisplay != "None" && packDisplay != "")
-                     onlineAHK .= instanceNum . " (" . packDisplay . ")" . commaSeparate
+                     onlinePacksAHK .= packDisplay . commaSeparate
                   else
-                     onlineAHK .= instanceNum . commaSeparate
+                     onlinePacksAHK .= "-" . commaSeparate
                }
                else {
                   offlineAHK .= instanceNum . commaSeparate
@@ -3063,7 +3078,7 @@ StartBot() {
                }
                IniWrite, 0, HeartBeat.ini, HeartBeat, Main
             }
-            
+
             if(offlineAHK = "")
                offlineAHK := "Offline: none"
             else
@@ -3072,10 +3087,17 @@ StartBot() {
                onlineAHK := "Online: none"
             else
                onlineAHK := "Online: " . RTrim(onlineAHK, ", ")
-            
+
+            ; Build packs line
+            packsLine := ""
+            if(onlinePacksAHK != "") {
+               onlinePacksAHK := RTrim(onlinePacksAHK, ", ")
+               packsLine := "\nPacks:  " . onlinePacksAHK
+            }
+
             discMessage := heartBeatName ? "\n" . heartBeatName : ""
 
-            discMessage .= "\n" . onlineAHK . "\n" . offlineAHK . "\n" . packStatus . "\nVersion: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion
+            discMessage .= "\n" . onlineAHK . packsLine . "\n" . offlineAHK . "\n" . packStatus . "\nVersion: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion
             discMessage .= typeMsg
 
             LogToDiscord(discMessage,, false,,, heartBeatWebhookURL)
