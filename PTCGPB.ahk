@@ -1451,8 +1451,9 @@ ShowPowerUserMenuMain:
 
     yPos += 10
 
-    Gui, PowerUserMenu:Add, Button, x140 y%yPos% w140 h30 gApplyPowerUserSettings, Apply
-    Gui, PowerUserMenu:Add, Button, x300 y%yPos% w140 h30 gCancelPowerUserSettings, Cancel
+    Gui, PowerUserMenu:Add, Button, x30 y%yPos% w135 h30 gClearAllPowerUserSettings, Clear All
+    Gui, PowerUserMenu:Add, Button, x182 y%yPos% w135 h30 gApplyPowerUserSettings, Apply
+    Gui, PowerUserMenu:Add, Button, x335 y%yPos% w135 h30 gCancelPowerUserSettings, Cancel
     yPos += 40
 
     Gui, PowerUserMenu:Show, x%popupX% y%popupY% w500 h%yPos%
@@ -1616,6 +1617,33 @@ ApplyPowerUserSettings:
     MsgBox, 64, Power User Settings, Power user pack overrides saved successfully!
 
     Gui, PowerUserMenu:Destroy
+return
+
+ClearAllPowerUserSettings:
+    global Instances
+
+    ; Confirm with user
+    MsgBox, 4, Clear All Pack Overrides, Are you sure you want to clear all pack overrides?`n`nThis will revert all instances to use the main menu pack selection.
+
+    IfMsgBox Yes
+    {
+        ; Clear all pack overrides by setting them to "None"
+        Loop, %Instances%
+        {
+            instanceNum := A_Index
+            varName := "PowerUserPack" . instanceNum
+
+            ; Update the global variable
+            %varName% := "None"
+
+            ; Clear the setting in the INI file
+            IniWrite, None, Settings.ini, PowerUser, Pack%instanceNum%
+        }
+
+        MsgBox, 64, Cleared, All pack overrides have been cleared successfully!`n`nInstances will now use the main menu pack selection.
+
+        Gui, PowerUserMenu:Destroy
+    }
 return
 
 CancelPowerUserSettings:
