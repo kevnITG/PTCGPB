@@ -761,7 +761,12 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
 
         packDetailsMessage := RTrim(packDetailsMessage, ", ")
 
-        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nLogged to Trades Database and continuing..."
+        ; Get account name from deviceAccount or use filename
+        global deviceAccount, s4tBatchedMessages
+        accountDisplay := deviceAccount ? deviceAccount : accountFileName
+
+        ; Multi-line format for Discord
+        discordMessage := statusMessage . " (" . packsInPool . "P, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile: " . accountFileName . "\nAccount: " . accountDisplay
 
         ; Prepare XML file path for attachment
         xmlFileToSend := ""
@@ -770,7 +775,14 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
             xmlFileToSend := savedXmlPath
         }
 
-        LogToDiscord(discordMessage, screenShot, true, xmlFileToSend,, s4tDiscordWebhookURL, s4tDiscordUserId)
+        ; Batch the message for sending at end-of-run with shinedust
+        batchedMessage := {}
+        batchedMessage.message := discordMessage
+        batchedMessage.screenshot := screenShot
+        batchedMessage.xmlFile := xmlFileToSend
+        batchedMessage.timestamp := A_Now
+        batchedMessage.deviceAccount := accountDisplay
+        s4tBatchedMessages.Push(batchedMessage)
 
 
     }

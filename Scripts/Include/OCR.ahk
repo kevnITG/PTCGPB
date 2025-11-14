@@ -441,6 +441,9 @@ CountShinedust() {
 
             if (RegExMatch(shineDustValue, validPattern)) {
                 if (shineDustValue != "") {
+                    ; Store shinedust value globally for use in batched Discord messages
+                    global shinedustValueGlobal
+                    shinedustValueGlobal := shineDustValue
                     LogShinedustToDatabase(shineDustValue)
                     CreateStatusMessage("Account has " . shineDustValue . " shinedust.")
                     Sleep, 2000

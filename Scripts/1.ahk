@@ -38,6 +38,8 @@ global checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode, isCurrentl
 global s4tPendingTradeables := []
 global deviceAccountXmlMap := {} ; prevents Create Bots + s4t making duplicate .xmls within a single run
 global ocrShinedust
+global s4tBatchedMessages := [] ; stores pending s4t Discord messages to send at end-of-run
+global shinedustValueGlobal := "" ; stores shinedust OCR result for inclusion in Discord messages
 global titleHeight, MuMuv5
 
 global avgtotalSeconds
@@ -712,6 +714,9 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
             CountShinedust()
         }
+
+        ; Send batched s4t Discord messages with shinedust value
+        SendBatchedS4TMessages()
 
         if(wonderpickForEventMissions) {
             GoToMain()
@@ -4197,6 +4202,40 @@ ConvertDisplayNameToPackName(displayName) {
 
     ; If no match found, return empty string
     return ""
+}
+
+;-------------------------------------------------------------------------------
+; SendBatchedS4TMessages - Send batched s4t Discord messages with shinedust
+;-------------------------------------------------------------------------------
+SendBatchedS4TMessages() {
+    global s4tBatchedMessages, shinedustValueGlobal, s4tDiscordWebhookURL, s4tDiscordUserId
+
+    ; Return early if no messages to send
+    if (s4tBatchedMessages.Length() = 0)
+        return
+
+    ; Send each batched message
+    totalMessages := s4tBatchedMessages.Length()
+    for index, batchedMsg in s4tBatchedMessages {
+        messageToSend := batchedMsg.message
+
+        ; Append shinedust value if available
+        if (shinedustValueGlobal != "") {
+            messageToSend .= "\nShinedust: " . shinedustValueGlobal
+        }
+
+        ; Send the Discord message with screenshot and XML attachment
+        LogToDiscord(messageToSend, batchedMsg.screenshot, true, batchedMsg.xmlFile,, s4tDiscordWebhookURL, s4tDiscordUserId)
+
+        ; Add delay between messages to avoid rate limiting
+        if (index < totalMessages) {
+            Sleep, 1000
+        }
+    }
+
+    ; Clear the batched messages array and reset shinedust value after sending
+    s4tBatchedMessages := []
+    shinedustValueGlobal := ""
 }
 
 
