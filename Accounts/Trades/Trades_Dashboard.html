@@ -26,6 +26,8 @@
             background: white;
             border: 1px solid #e0e0e0;
             box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         .header {
@@ -68,6 +70,7 @@
         .kofi-container img {
             height: 37px;
             width: 185px;
+            border-radius: 8px;
         }
 
         .language-selector {
@@ -193,6 +196,7 @@
             font-family: inherit;
             font-weight: 300;
             background: white;
+            border-radius: 8px;
         }
 
         .filter-group select:focus,
@@ -211,6 +215,7 @@
             font-weight: 400;
             font-family: inherit;
             transition: all 0.2s;
+            border-radius: 8px;
         }
 
         .btn:hover {
@@ -295,7 +300,8 @@
         }
 
         th.col-pack {
-            width: 110px;
+            width: 80px;
+            max-width: 80px;
         }
 
         th.col-xml {
@@ -304,8 +310,8 @@
         }
 
         th.col-cards {
-            width: 60px;
-            max-width: 60px;
+            width: 90px;
+            max-width: 90px;
         }
 
         th.col-screenshot {
@@ -324,6 +330,21 @@
             width: 80px;
             max-width: 80px;
             font-size: 0.8em;
+        }
+
+        th.col-age {
+            width: 70px;
+            max-width: 70px;
+            font-size: 0.8em;
+            text-align: center;
+        }
+
+        td.col-age {
+            width: 70px;
+            max-width: 70px;
+            font-size: 0.85em;
+            text-align: center;
+            color: #666;
         }
 
         .expandable {
@@ -380,6 +401,7 @@
             font-weight: 400;
             margin: 2px;
             border: 1px solid;
+            border-radius: 12px;
         }
 
         .badge-pack {
@@ -387,6 +409,7 @@
             color: #1a1a1a;
             border-color: #ddd;
             font-size: 0.95em;
+            border-radius: 12px;
         }
 
         .badge-card {
@@ -394,59 +417,122 @@
             color: #1a1a1a;
             border-color: #999;
             font-size: 0.9em;
+            border-radius: 12px;
         }
 
         /* Card type specific colors */
+        .badge-crown {
+            background: #FFF8DC !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
+        }
+
+        .badge-4diamond {
+            background: #E3F2FD !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
+        }
+
+        .badge-3diamond {
+            background: #E8F5E9 !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
+        }
+
+        .badge-2diamond {
+            background: #FFF3E0 !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
+        }
+
+        .badge-1diamond {
+            background: #FFEBEE !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
+        }
+
+        .badge-rainbow {
+            background: linear-gradient(90deg,
+                #FFB3BA 0%,
+                #FFDFBA 16.67%,
+                #FFFFBA 33.33%,
+                #BAFFBA 50%,
+                #BAE1FF 66.67%,
+                #D7BAFF 83.33%,
+                #FFB3D9 100%) !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
+        }
+
+        .badge-shiny1star,
+        .badge-shiny2star {
+            background: linear-gradient(45deg, #B8B8B8, #D8D8D8) !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
+        }
+
+        .badge-1star,
+        .badge-2star {
+            background: #FFFDE7 !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
+        }
+
+        .badge-immersive {
+            background: linear-gradient(135deg, #E8D5F2 0%, #D1C4E9 50%, #B39DDB 100%) !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
+        }
+
+        .badge-fullart {
+            background: #C8E6C9 !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
+        }
+
+        .badge-trainer {
+            background: #BBDEFB !important;
+            border-color: #000000 !important;
+            color: #000000 !important;
+        }
+
         .card-crown {
             color: #B8860B;
             font-weight: 500;
         }
 
         .card-diamond {
-            color: #4A7BA7;
             font-weight: 500;
         }
 
         .card-rainbow {
-            background: linear-gradient(90deg, 
-                #E74C3C 0%, 
-                #E67E22 20%, 
-                #F39C12 40%, 
-                #27AE60 60%, 
-                #3498DB 80%, 
-                #9B59B6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #6A1B9A;
             font-weight: 600;
         }
 
         .card-shiny {
-            color: #8B9197;
+            color: #666;
             font-weight: 500;
-            text-shadow: 0 0 1px rgba(255, 255, 255, 0.8);
         }
 
         .card-immersive {
-            background: linear-gradient(135deg, #1a1a1a 0%, #4A148C 30%, #880E4F 60%, #1A237E 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #4A148C;
             font-weight: 600;
         }
 
         .card-fullart {
-            color: #8E6BA8;
+            color: #6A1B9A;
             font-weight: 500;
         }
 
         .card-trainer {
-            color: #D17A70;
+            color: #C62828;
             font-weight: 500;
         }
 
         .card-star {
             color: #DAA520;
+            font-weight: 500;
         }
 
         .empty-state {
@@ -517,6 +603,7 @@
             cursor: pointer;
             border: 1px solid #ddd;
             transition: transform 0.2s;
+            border-radius: 8px;
         }
 
         .PackScreenshot:hover {
@@ -546,6 +633,7 @@
             max-width: 100%;
             max-height: 80vh;
             object-fit: contain;
+            border-radius: 8px;
         }
 
         .close-btn {
@@ -559,6 +647,7 @@
             font-size: 1em;
             font-weight: 500;
             transition: all 0.2s;
+            border-radius: 8px;
         }
 
         .close-btn:hover {
@@ -598,6 +687,7 @@
                 shinedust: "shinedust",
                 screenshot: "screenshot",
                 date: "date",
+                ageDays: "age (days)",
                 noData: "no data loaded",
                 clickLoad: "click load csv to view database",
                 noResults: "no results",
@@ -629,8 +719,13 @@
                 rainbow: "Rainbow",
                 shiny1star: "Shiny",
                 shiny2star: "Shiny",
+                "1star": "1 Star",
+                "2star": "2 Star",
                 immersive: "Immersive",
-                "4diamond": "◆◆◆◆"
+                "4diamond": "◆◆◆◆",
+                "3diamond": "◆◆◆",
+                "2diamond": "◆◆",
+                "1diamond": "◆"
             },
             zh: {
                 uniqueAccounts: "独特帐户",
@@ -647,6 +742,7 @@
                 shinedust: "闪光尘",
                 screenshot: "截图",
                 date: "日期",
+                ageDays: "天数",
                 noData: "未加载数据",
                 clickLoad: "点击加载 csv 查看数据库",
                 noResults: "无结果",
@@ -678,8 +774,13 @@
                 rainbow: "彩虹",
                 shiny1star: "闪卡",
                 shiny2star: "闪卡",
+                "1star": "1星",
+                "2star": "2星",
                 immersive: "沉浸式",
-                "4diamond": "◆◆◆◆"
+                "4diamond": "◆◆◆◆",
+                "3diamond": "◆◆◆",
+                "2diamond": "◆◆",
+                "1diamond": "◆"
             },
             ja: {
                 uniqueAccounts: "固有アカウント",
@@ -696,6 +797,7 @@
                 shinedust: "シャインダスト",
                 screenshot: "スクリーンショット",
                 date: "日付",
+                ageDays: "日数",
                 noData: "データが読み込まれていません",
                 clickLoad: "csvを読み込んでデータベースを表示",
                 noResults: "結果なし",
@@ -727,8 +829,13 @@
                 rainbow: "レインボー",
                 shiny1star: "シャイニー",
                 shiny2star: "シャイニー",
+                "1star": "1つ星",
+                "2star": "2つ星",
                 immersive: "イマーシブ",
-                "4diamond": "◆◆◆◆"
+                "4diamond": "◆◆◆◆",
+                "3diamond": "◆◆◆",
+                "2diamond": "◆◆",
+                "1diamond": "◆"
             },
             de: {
                 uniqueAccounts: "eindeutige Konten",
@@ -745,6 +852,7 @@
                 shinedust: "Glitzerstaub",
                 screenshot: "Screenshot",
                 date: "Datum",
+                ageDays: "Alter (Tage)",
                 noData: "keine Daten geladen",
                 clickLoad: "csv laden, um Datenbank anzuzeigen",
                 noResults: "keine Ergebnisse",
@@ -776,8 +884,13 @@
                 rainbow: "Regenbogen",
                 shiny1star: "Glänzend",
                 shiny2star: "Glänzend",
+                "1star": "1 Stern",
+                "2star": "2 Sterne",
                 immersive: "Immersiv",
-                "4diamond": "◆◆◆◆"
+                "4diamond": "◆◆◆◆",
+                "3diamond": "◆◆◆",
+                "2diamond": "◆◆",
+                "1diamond": "◆"
             },
             fr: {
                 uniqueAccounts: "comptes uniques",
@@ -794,6 +907,7 @@
                 shinedust: "poussière brillante",
                 screenshot: "capture d'écran",
                 date: "date",
+                ageDays: "âge (jours)",
                 noData: "aucune donnée chargée",
                 clickLoad: "cliquez sur charger csv pour voir la base de données",
                 noResults: "aucun résultat",
@@ -825,8 +939,13 @@
                 rainbow: "Arc-en-ciel",
                 shiny1star: "Brillant",
                 shiny2star: "Brillant",
+                "1star": "1 Étoile",
+                "2star": "2 Étoiles",
                 immersive: "Immersif",
-                "4diamond": "◆◆◆◆"
+                "4diamond": "◆◆◆◆",
+                "3diamond": "◆◆◆",
+                "2diamond": "◆◆",
+                "1diamond": "◆"
             },
             ko: {
                 uniqueAccounts: "고유 계정",
@@ -843,6 +962,7 @@
                 shinedust: "샤인더스트",
                 screenshot: "스크린샷",
                 date: "날짜",
+                ageDays: "나이 (일)",
                 noData: "데이터가 로드되지 않음",
                 clickLoad: "데이터베이스를 보려면 csv 로드를 클릭하세요",
                 noResults: "결과 없음",
@@ -874,8 +994,13 @@
                 rainbow: "레인보우",
                 shiny1star: "샤이니",
                 shiny2star: "샤이니",
+                "1star": "1스타",
+                "2star": "2스타",
                 immersive: "이머시브",
-                "4diamond": "◆◆◆◆"
+                "4diamond": "◆◆◆◆",
+                "3diamond": "◆◆◆",
+                "2diamond": "◆◆",
+                "1diamond": "◆"
             },
             es: {
                 uniqueAccounts: "cuentas únicas",
@@ -892,6 +1017,7 @@
                 shinedust: "polvo brillante",
                 screenshot: "captura de pantalla",
                 date: "fecha",
+                ageDays: "edad (días)",
                 noData: "no hay datos cargados",
                 clickLoad: "haga clic en cargar csv para ver la base de datos",
                 noResults: "sin resultados",
@@ -923,8 +1049,13 @@
                 rainbow: "Arcoíris",
                 shiny1star: "Brillante",
                 shiny2star: "Brillante",
+                "1star": "1 Estrella",
+                "2star": "2 Estrellas",
                 immersive: "Inmersivo",
-                "4diamond": "◆◆◆◆"
+                "4diamond": "◆◆◆◆",
+                "3diamond": "◆◆◆",
+                "2diamond": "◆◆",
+                "1diamond": "◆"
             }
         };
 
@@ -936,7 +1067,6 @@
         let sortColumn = null;
         let sortDirection = 'desc'; // 'asc' or 'desc'
         let accountShinedustMap = new Map(); // Store latest shinedust for each account
-        let filesList = []; // Store uploaded XML files for download
 
         function changeLanguage() {
             const select = document.getElementById('languageSelect');
@@ -1023,43 +1153,6 @@
             return account.substring(0, 5) + '..';
         }
 
-        function extractFixedPart(filename) {
-            const match = filename.match(/P_(.*?)\(/);
-            return match ? match[1] : null;
-        }
-
-        function showLoadSavedFolderPopup() {
-            alert('Navigate to your /Accounts/Saved/ folder, then click "Upload".');
-            document.getElementById('savedDirPicker').click();
-        }
-
-        function downloadXMLFile(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            
-            const targetObj = event.currentTarget;
-            const keyword = targetObj.dataset.info;
-            const fixedPartKeyword = extractFixedPart(keyword);
-
-            if (filesList.length === 0) {
-                showLoadSavedFolderPopup();
-                return;
-            }
-
-            const matches = filesList.filter(f => f.name.includes(fixedPartKeyword));
-
-            matches.forEach(f => {
-                const url = URL.createObjectURL(f);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = f.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            });
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
             const popup = document.getElementById('popup');
             const closeBtn = document.getElementById('closeBtn');
@@ -1085,11 +1178,6 @@
                     parseCSV(event.target.result);
                 };
                 reader.readAsText(file);
-            });
-
-            document.getElementById('savedDirPicker').addEventListener('change', (e) => {
-                filesList = Array.from(e.target.files);
-                alert('All files in the Saved folder have been uploaded. Please try downloading the XML file again.');
             });
         });
 
@@ -1118,8 +1206,8 @@
 
             filteredData = [...allData];
             csvLoaded = true;
-            sortColumn = 'date'; // Set default sort to date
-            sortDirection = 'desc'; // Newest first
+            sortColumn = 'date';
+            sortDirection = 'desc';
             updateShinedustMap(); // Update shinedust map from all data
             enableControls();
             updateStats();
@@ -1295,15 +1383,20 @@
         function getCardDisplayName(cardType) {
             const type = cardType.toLowerCase();
             const translated = translateCardType(cardType);
-            
+
             if (type === 'crown') return '<span class="card-star">👑</span> <span class="card-crown">' + translated + '</span>';
             if (type === 'fullart') return '<span class="card-star">★★</span> <span class="card-fullart">' + translated + '</span>';
             if (type === 'trainer') return '<span class="card-star">★★</span> <span class="card-trainer">' + translated + '</span>';
             if (type === 'rainbow') return '<span class="card-star">★★</span> <span class="card-rainbow">' + translated + '</span>';
             if (type === 'shiny1star') return '<span class="card-star">★</span> <span class="card-shiny">' + translated + '</span>';
             if (type === 'shiny2star') return '<span class="card-star">★★</span> <span class="card-shiny">' + translated + '</span>';
+            if (type === '1star') return '<span class="card-star">★</span> ' + translated;
+            if (type === '2star') return '<span class="card-star">★★</span> ' + translated;
             if (type === 'immersive') return '<span class="card-immersive">' + translated + '</span>';
             if (type === '4diamond') return '<span class="card-diamond">◆◆◆◆</span>';
+            if (type === '3diamond') return '<span class="card-diamond">◆◆◆</span>';
+            if (type === '2diamond') return '<span class="card-diamond">◆◆</span>';
+            if (type === '1diamond') return '<span class="card-diamond">◆</span>';
             return translated;
         }
 
@@ -1352,6 +1445,14 @@
             renderTable();
         }
 
+        function calculateAgeDays(timestamp) {
+            const now = new Date();
+            const date = new Date(timestamp);
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        }
+
         function renderTable() {
             const t = translations[currentLanguage];
             const thead = document.getElementById('tableHead');
@@ -1360,7 +1461,7 @@
             if (filteredData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="empty-state">
+                        <td colspan="8" class="empty-state">
                             <h2>${csvLoaded ? t.noResults : t.noData}</h2>
                             <p>${csvLoaded ? t.tryFilters : t.clickLoad}</p>
                         </td>
@@ -1381,6 +1482,7 @@
                     <th class="col-screenshot"><span data-i18n="screenshot">${t.screenshot}</span></th>
                     <th class="col-xml"><span data-i18n="xml">${t.xml}</span></th>
                     <th class="col-subTime sortable ${dateClass}" onclick="sortData('date')"><span data-i18n="date">${t.date}</span></th>
+                    <th class="col-age"><span data-i18n="ageDays">${t.ageDays}</span></th>
                 </tr>
             `;
 
@@ -1416,7 +1518,8 @@
                 
                 const cardsHTML = Array.from(account.cards.entries())
                     .map(([type, count]) => {
-                        return `<span class="summary-badge"><span class="badge badge-card">${getCardDisplayName(type)} ×${count}</span></span>`;
+                        const typeLower = type.toLowerCase();
+                        return `<span class="summary-badge"><span class="badge badge-card badge-${typeLower}">${getCardDisplayName(type)} ×${count}</span></span>`;
                     })
                     .join(' ');
 
@@ -1435,6 +1538,8 @@
                 const shinedustClass = shinedust >= 25000 ? 'shinedust-high' : (shinedust > 0 ? 'shinedust-low' : '');
                 const shinedustHTML = latestShinedust !== '' ? `<span class="${shinedustClass}">${latestShinedust}</span>` : '';
 
+                const ageDays = calculateAgeDays(account.firstSeen);
+
                 tr.innerHTML = `
                     <td class="device-account">
                         <span class="expand-icon ${isExpanded ? 'expanded' : ''}">${expandIcon}</span>
@@ -1446,6 +1551,7 @@
                     <td class="col-screenshot"></td>
                     <td class="col-xml">${xmlFilenames}&nbsp;&nbsp;&nbsp;<span class="xmlDownloadLink" data-info="${originalFileName}"><i class="fas fa-download"></i></span></td>
                     <td class="time-cell">${account.lastSeen.split(' ')[0]}</td>
+                    <td class="col-age">${ageDays}</td>
                 `;
                 
                 tr.onclick = () => toggleAccount(account.deviceAccount);
@@ -1464,7 +1570,8 @@
                         detailTr.className = isLastDetail ? 'detail-row last-detail-row' : 'detail-row';
                         
                         const detailCardsHTML = detail.cardTypes.map((type, idx) => {
-                            return `<span class="badge badge-card">${getCardDisplayName(type)} ×${detail.cardCounts[idx]}</span>`;
+                            const typeLower = type.toLowerCase();
+                            return `<span class="badge badge-card badge-${typeLower}">${getCardDisplayName(type)} ×${detail.cardCounts[idx]}</span>`;
                         }).join(' ');
 
                         const screenshotFileName = detail.packScreenshot.replace(/\n/g, "");
@@ -1485,6 +1592,7 @@
                             </td>
                             <td class="col-xml" title="${detail.originalFilename}">${detail.cleanFilename}</td>
                             <td class="time-cell">${detail.timestamp}</td>
+                            <td class="col-age"></td>
                         `;
                         detailTr.innerHTML = detailRowHtml;
                         
@@ -1495,10 +1603,6 @@
 
             document.querySelectorAll('.PackScreenshot').forEach(el => {
                 el.addEventListener('click', openPopup);
-            });
-
-            document.querySelectorAll('.xmlDownloadLink').forEach(el => {
-                el.addEventListener('click', downloadXMLFile);
             });
         }
 
@@ -1579,7 +1683,6 @@
             <div class="filter-group">
                 <button class="btn" id="loadCSVBtn" onclick="document.getElementById('fileInput').click()"><i class="fas fa-upload"></i> load csv</button>
                 <input type="file" id="fileInput" accept=".csv">
-                <input type="file" id="savedDirPicker" webkitdirectory multiple style="display: none;">
 
                 <input type="text" id="searchInput" placeholder="search account..." disabled>
 
@@ -1606,11 +1709,12 @@
                         <th class="col-screenshot"><span data-i18n="screenshot">screenshot</span></th>
                         <th class="col-xml"><span data-i18n="xml">.xml</span></th>
                         <th class="col-subTime"><span data-i18n="date">date</span></th>
+                        <th class="col-age"><span data-i18n="ageDays">age (days)</span></th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="7" class="empty-state">
+                        <td colspan="8" class="empty-state">
                             <h2>no data loaded</h2>
                             <p>click load csv to view database</p>
                         </td>

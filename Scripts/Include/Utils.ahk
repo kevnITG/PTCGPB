@@ -70,7 +70,7 @@ DownloadFile(url, filename) {
         FileAppend, %ids%, %localPath%
         return true
     }
-    return false
+    return !errored
 }
 
 ;-------------------------------------------------------------------------------

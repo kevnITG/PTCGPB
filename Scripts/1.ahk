@@ -111,6 +111,9 @@ IniRead, deleteMethod, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
             IniWrite, %deleteMethod%, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod
         }
     }
+; Write deleteMethod to instance-specific ini for Monitor.ahk to read
+IniWrite, %deleteMethod%, %A_ScriptDir%\%scriptName%.ini, UserSettings, deleteMethod
+
 IniRead, runMain, %A_ScriptDir%\..\Settings.ini, UserSettings, runMain, 1
 IniRead, Mains, %A_ScriptDir%\..\Settings.ini, UserSettings, Mains, 1
 IniRead, AccountName, %A_ScriptDir%\..\Settings.ini, UserSettings, AccountName, ""
@@ -3288,16 +3291,17 @@ SelectPack(HG := false) {
                 packy := 113
             } else if (openPack = "Dialga") {
                 packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
-                packy := 238
+                packy := 209
             } else if (openPack = "Palkia") {
-                packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionRight
-                packy := 238
+                packx := 80
+                packy := 209 ; custom height and X to avoid clicking pack accidentally on next screen
             } else if (openPack = "Mew") {
                 packx := SelectExpansionRightColumnMiddleX
                 packy := 238
 			} else if (openPack = "Charizard") {
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
-                packy := 420
+                packy := 420 ; packy must be low enough to not accidentally click the pack
+                             ; wheel rotation on the next screen while waiting for 'points'
             } else if (openPack = "Mewtwo") {
                 packx := SelectExpansionLeftColumnMiddleX
                 packy := 420 ; changed from 394 to avoid charizard pack per Crinity
@@ -3950,6 +3954,10 @@ GetEventRewards(frommain := true){
         if (FindOrLoseImage(223, 179, 231, 187, , "FirstAnniversaryCelebration", 0, failSafeTime)){
             break
         }
+        else if (failSafeTime > 10){
+            break
+        }
+        failSafeTime := (A_TickCount - failSafe) // 1000
     }
 
     ; ====== Collect all rewards ======
@@ -3963,12 +3971,54 @@ GetEventRewards(frommain := true){
         if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
             break
         }
-        else if (failSafeTime > 60){
+        if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
+            break
+        }
+        else if (failSafeTime > 15){
             GotRewards := false
             break
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
     }
+
+    ;====== Click through missions menus ======
+    ; pick ONE of these click locations based upon which events are currently going on.
+    ; adbClick_wbb(120, 465) ; used to click the middle mission button
+    ; adbClick_wbb(25, 465) ;used to click the left-most mission button
+
+    ; This entire section is specific to "Bonus Week" missions
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop{
+        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
+        Sleep, 1500
+        if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
+            break
+        }
+        else if (failSafeTime > 10){
+            break
+        }
+        failSafeTime := (A_TickCount - failSafe) // 1000
+    }
+
+    ; ====== Collect all rewards ======
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop{
+        adbClick_wbb(172, 427) ;clicks complete all and ok
+        Sleep, 1500
+        adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
+        Sleep, 1500
+        if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
+            break
+        }
+        else if (failSafeTime > 15){
+            GotRewards := false
+            break
+        }
+        failSafeTime := (A_TickCount - failSafe) // 1000
+    }
+
     GoToMain()
 }
 
