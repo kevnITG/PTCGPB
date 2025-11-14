@@ -2877,7 +2877,8 @@ StartBot() {
          }
          
          ; Build separate lists for instances and their packs
-         onlinePacksAHK := ""
+         onlineInstances := []
+         onlinePacks := []
 
          for index, value in Online {
             instanceNum := A_Index
@@ -2895,10 +2896,11 @@ StartBot() {
 
             if(value) {
                onlineAHK .= instanceNum . commaSeparate
+               onlineInstances.Push(instanceNum)
                if(packDisplay != "None" && packDisplay != "")
-                  onlinePacksAHK .= packDisplay . commaSeparate
+                  onlinePacks.Push(packDisplay)
                else
-                  onlinePacksAHK .= "-" . commaSeparate
+                  onlinePacks.Push("-")
             }
             else {
                offlineAHK .= instanceNum . commaSeparate
@@ -2929,11 +2931,48 @@ StartBot() {
          else
             onlineAHK := "Online: " . RTrim(onlineAHK, ", ")
 
-         ; Build packs line
+         ; Build packs line with grouped consecutive duplicates
          packsLine := ""
-         if(onlinePacksAHK != "") {
-            onlinePacksAHK := RTrim(onlinePacksAHK, ", ")
-            packsLine := "\nPacks:  " . onlinePacksAHK
+         if(onlinePacks.Length() > 0) {
+            groupedPacks := ""
+            currentPack := onlinePacks[1]
+            startInstance := onlineInstances[1]
+            endInstance := onlineInstances[1]
+
+            Loop, % onlinePacks.Length() {
+               if (A_Index = 1)
+                  continue
+
+               if (onlinePacks[A_Index] = currentPack) {
+                  ; Same pack, extend the range
+                  endInstance := onlineInstances[A_Index]
+               } else {
+                  ; Different pack, output the current group
+                  if (groupedPacks != "")
+                     groupedPacks .= ", "
+
+                  if (startInstance = endInstance)
+                     groupedPacks .= currentPack . " (" . startInstance . ")"
+                  else
+                     groupedPacks .= currentPack . " (" . startInstance . "-" . endInstance . ")"
+
+                  ; Start new group
+                  currentPack := onlinePacks[A_Index]
+                  startInstance := onlineInstances[A_Index]
+                  endInstance := onlineInstances[A_Index]
+               }
+            }
+
+            ; Output the last group
+            if (groupedPacks != "")
+               groupedPacks .= ", "
+
+            if (startInstance = endInstance)
+               groupedPacks .= currentPack . " (" . startInstance . ")"
+            else
+               groupedPacks .= currentPack . " (" . startInstance . "-" . endInstance . ")"
+
+            packsLine := "\nPacks:  " . groupedPacks
          }
 
          discMessage := heartBeatName ? "\n" . heartBeatName : ""
@@ -3034,7 +3073,8 @@ StartBot() {
             }
             
             ; Build separate lists for instances and their packs
-            onlinePacksAHK := ""
+            onlineInstances := []
+            onlinePacks := []
 
             for index, value in Online {
                instanceNum := A_Index
@@ -3052,16 +3092,17 @@ StartBot() {
 
                if(value) {
                   onlineAHK .= instanceNum . commaSeparate
+                  onlineInstances.Push(instanceNum)
                   if(packDisplay != "None" && packDisplay != "")
-                     onlinePacksAHK .= packDisplay . commaSeparate
+                     onlinePacks.Push(packDisplay)
                   else
-                     onlinePacksAHK .= "-" . commaSeparate
+                     onlinePacks.Push("-")
                }
                else {
                   offlineAHK .= instanceNum . commaSeparate
                }
             }
-            
+
             if(runMain) {
                IniRead, value, HeartBeat.ini, HeartBeat, Main
                if(value) {
@@ -3088,11 +3129,48 @@ StartBot() {
             else
                onlineAHK := "Online: " . RTrim(onlineAHK, ", ")
 
-            ; Build packs line
+            ; Build packs line with grouped consecutive duplicates
             packsLine := ""
-            if(onlinePacksAHK != "") {
-               onlinePacksAHK := RTrim(onlinePacksAHK, ", ")
-               packsLine := "\nPacks:  " . onlinePacksAHK
+            if(onlinePacks.Length() > 0) {
+               groupedPacks := ""
+               currentPack := onlinePacks[1]
+               startInstance := onlineInstances[1]
+               endInstance := onlineInstances[1]
+
+               Loop, % onlinePacks.Length() {
+                  if (A_Index = 1)
+                     continue
+
+                  if (onlinePacks[A_Index] = currentPack) {
+                     ; Same pack, extend the range
+                     endInstance := onlineInstances[A_Index]
+                  } else {
+                     ; Different pack, output the current group
+                     if (groupedPacks != "")
+                        groupedPacks .= ", "
+
+                     if (startInstance = endInstance)
+                        groupedPacks .= currentPack . " (" . startInstance . ")"
+                     else
+                        groupedPacks .= currentPack . " (" . startInstance . "-" . endInstance . ")"
+
+                     ; Start new group
+                     currentPack := onlinePacks[A_Index]
+                     startInstance := onlineInstances[A_Index]
+                     endInstance := onlineInstances[A_Index]
+                  }
+               }
+
+               ; Output the last group
+               if (groupedPacks != "")
+                  groupedPacks .= ", "
+
+               if (startInstance = endInstance)
+                  groupedPacks .= currentPack . " (" . startInstance . ")"
+               else
+                  groupedPacks .= currentPack . " (" . startInstance . "-" . endInstance . ")"
+
+               packsLine := "\nPacks:  " . groupedPacks
             }
 
             discMessage := heartBeatName ? "\n" . heartBeatName : ""
