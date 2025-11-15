@@ -3122,8 +3122,6 @@ SelectPack(HG := false) {
 	if(openPack == "MegaBlaziken") {
 		PackIsLatest := 1
 	} else {
-        ; Technically, this is supposed to work with other "latest" packs. But in practice, it's clicking at Y which accidentally
-        ; clicks a pack behind it on the following screen and can rotate the the pack wheel accidentally.
 		PackIsLatest := 0
 	}
     
