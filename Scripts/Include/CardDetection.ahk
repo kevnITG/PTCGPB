@@ -593,7 +593,7 @@ AddWflag() {
 FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighoul := 0, foundCrown := 0, foundImmersive := 0, foundShiny1Star := 0, foundShiny2Star := 0, foundTrainer := 0, foundRainbow := 0, foundFullArt := 0) {
     global scriptName, keepAccount, s4tWP, s4tWPMinCards, s4tSilent, s4tDiscordWebhookURL, s4tDiscordUserId
     global s4tSendAccountXml, loadDir, deviceAccountXmlMap, s4tPendingTradeables, accountFileName
-    global winTitle, packsInPool, openPack, screenShotFileName
+    global winTitle, packsInPool, openPack, screenShotFileName, deviceAccount, s4tBatchedMessages
 
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
 
@@ -761,7 +761,11 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
 
         packDetailsMessage := RTrim(packDetailsMessage, ", ")
 
-        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nLogged to Trades Database and continuing..."
+        ; Get account name from deviceAccount or use filename
+        accountDisplay := deviceAccount ? deviceAccount : accountFileName
+
+        ; Multi-line format for Discord
+        discordMessage := statusMessage . " (" . packsInPool . "P, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile: " . accountFileName . "\nAccount: " . accountDisplay
 
         ; Prepare XML file path for attachment
         xmlFileToSend := ""
@@ -770,7 +774,14 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
             xmlFileToSend := savedXmlPath
         }
 
-        LogToDiscord(discordMessage, screenShot, true, xmlFileToSend,, s4tDiscordWebhookURL, s4tDiscordUserId)
+        ; Batch the message for sending at end-of-run with shinedust
+        batchedMessage := {}
+        batchedMessage.message := discordMessage
+        batchedMessage.screenshot := screenShot
+        batchedMessage.xmlFile := xmlFileToSend
+        batchedMessage.timestamp := A_Now
+        batchedMessage.deviceAccount := accountDisplay
+        s4tBatchedMessages.Push(batchedMessage)
 
 
     }
