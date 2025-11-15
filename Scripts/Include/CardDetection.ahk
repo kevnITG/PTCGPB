@@ -725,7 +725,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
 
     screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
 
-    LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName, shinedustValueGlobal)
+    LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName)
 
     statusMessage := "Tradeable cards found"
 
