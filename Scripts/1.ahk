@@ -487,7 +487,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             }
         }
 
-        Sleep, 7000 ; avoiding spam clicks at startup
+        Sleep, 4000 ; avoiding spam clicks at startup
         FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
         if(setSpeed = 3)
             FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
