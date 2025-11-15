@@ -3122,6 +3122,8 @@ SelectPack(HG := false) {
 	if(openPack == "MegaBlaziken") {
 		PackIsLatest := 1
 	} else {
+        ; Technically, this is supposed to work with other "latest" packs. But in practice, it's clicking at Y which accidentally
+        ; clicks a pack behind it on the following screen and can rotate the the pack wheel accidentally.
 		PackIsLatest := 0
 	}
     
@@ -3292,7 +3294,7 @@ SelectPack(HG := false) {
             }
         }
 
-        if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
+/*         if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
             if (openPack == "MegaGyarados") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
@@ -3302,8 +3304,9 @@ SelectPack(HG := false) {
             } else if (openPack == "MegaAltaria") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
-            }
+            } 
         }
+        */
         FindImageAndClick(233, 400, 264, 428, , "Points", packx, packy)
     
         if(openPack = "Lunala") {
