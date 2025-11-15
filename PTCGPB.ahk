@@ -106,7 +106,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.0.2"
+   ,localVersion := "v9.0.1"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -355,10 +355,9 @@ NextStep:
    }
 
    Gui, Font, s10 cWhite
-   Gui, Add, Picture, gOpenDiscord x445 y323 w28 h28, %A_ScriptDir%\GUI\Images\discord-icon.png
-   Gui, Add, Picture, gOpenToolTip x485 y323 w28 h28, %A_ScriptDir%\GUI\Images\help-icon.png
-   Gui, Add, Picture, gShowToolsAndSystemSettings x525 y323 w28 h28, %A_ScriptDir%\GUI\Images\tools-icon.png
-   Gui, Add, Picture, gShowPowerUserMenu x565 y323 w28 h28, %A_ScriptDir%\GUI\Images\surprised-pikachu.png
+   Gui, Add, Picture, gOpenDiscord x455 y320 w36 h36, %A_ScriptDir%\GUI\Images\discord-icon.png
+   Gui, Add, Picture, gOpenToolTip x505 y320 w36 h36, %A_ScriptDir%\GUI\Images\help-icon.png
+   Gui, Add, Picture, gShowToolsAndSystemSettings x555 y322 w32 h32, %A_ScriptDir%\GUI\Images\tools-icon.png
 
    sectionColor := "cWhite"
    Gui, Add, GroupBox, x611 y0 w175 h360 %sectionColor%
@@ -366,9 +365,9 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.0.2 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.0.1 kevinnnn"
 
-   Gui, Add, Picture, gBuyMeCoffee x625 y90, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
+   Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
    Gui, Font, s10 cWhite Bold
    Gui, Add, Button, x621 y205 w155 h25 gBalanceXMLs BackgroundTrans, % currentDictionary.btn_balance
@@ -1344,312 +1343,6 @@ CancelToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Destroy
 return
 
-ShowPowerUserMenu:
-    WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
-
-    popupX := mainWinX + 200
-    popupY := mainWinY + 50
-
-    Gui, PowerUserWarning:Destroy
-    Gui, PowerUserWarning:New, +ToolWindow -MinimizeBox +LastFound, Power User Menu - Warning
-    Gui, PowerUserWarning:Color, 1E1E1E, 333333
-    Gui, PowerUserWarning:Font, s11 cRed Bold, Segoe UI
-
-    Gui, PowerUserWarning:Add, Text, x20 y20 w360 cRed Center, WARNING: POWER USER MENU
-
-    Gui, PowerUserWarning:Font, s10 cWhite Normal, Segoe UI
-    Gui, PowerUserWarning:Add, Text, x20 y50 w360, This menu contains advanced features that may have bugs or unexpected behavior.
-    Gui, PowerUserWarning:Add, Text, x20 y90 w360, Please ensure you:
-    Gui, PowerUserWarning:Font, s9 cYellow, Segoe UI
-    Gui, PowerUserWarning:Add, Text, x40 y115 w340, • Know what you are doing
-    Gui, PowerUserWarning:Add, Text, x40 y135 w340, • Have backups of your accounts ready
-    Gui, PowerUserWarning:Add, Text, x40 y155 w340, • Understand the risks involved
-
-    Gui, PowerUserWarning:Font, s10 cWhite, Segoe UI
-    Gui, PowerUserWarning:Add, Button, x70 y190 w120 h30 gShowPowerUserMenuMain, I Understand
-    Gui, PowerUserWarning:Add, Button, x210 y190 w120 h30 gCancelPowerUserWarning, Cancel
-
-    Gui, PowerUserWarning:Show, x%popupX% y%popupY% w400 h240
-return
-
-CancelPowerUserWarning:
-    Gui, PowerUserWarning:Destroy
-return
-
-ShowPowerUserMenuMain:
-    Gui, PowerUserWarning:Destroy
-
-    ; Set context back to main GUI and read current Instances value
-    Gui, 1:Default
-    GuiControlGet, currentInstances, , Instances
-    if (currentInstances != "" && currentInstances > 0)
-        Instances := currentInstances
-
-    WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
-
-    popupX := mainWinX + 150
-    popupY := mainWinY + 30
-
-    Gui, PowerUserMenu:Destroy
-    Gui, PowerUserMenu:New, +ToolWindow -MinimizeBox +LastFound, Power User Pack Override
-    Gui, PowerUserMenu:Color, 1E1E1E, 333333
-    Gui, PowerUserMenu:Font, s10 cWhite Bold, Segoe UI
-
-    Gui, PowerUserMenu:Add, Text, x20 y10 w460 Center, Override Booster Packs per Instance
-
-    Gui, PowerUserMenu:Font, s9 cGray Normal, Segoe UI
-    Gui, PowerUserMenu:Add, Text, x20 y30 w460 Center, Select specific packs for each numbered Mumu instance (overrides main menu)
-
-    Gui, PowerUserMenu:Font, s10 cWhite, Segoe UI
-
-    global currentDictionary
-    global Instances
-
-    ; Build pack options list (no None option - user must select a pack)
-    packOptions := currentDictionary.Txt_MegaGyarados
-    packOptions .= "|" . currentDictionary.Txt_MegaBlaziken
-    packOptions .= "|" . currentDictionary.Txt_MegaAltaria
-    packOptions .= "|" . currentDictionary.Txt_Springs
-    packOptions .= "|" . currentDictionary.Txt_HoOh
-    packOptions .= "|" . currentDictionary.Txt_Lugia
-    packOptions .= "|" . currentDictionary.Txt_Eevee
-    packOptions .= "|" . currentDictionary.Txt_Buzzwole
-    packOptions .= "|" . currentDictionary.Txt_Solgaleo
-    packOptions .= "|" . currentDictionary.Txt_Lunala
-    packOptions .= "|Shining Revelry"
-    packOptions .= "|Triumphant Light"
-    packOptions .= "|" . currentDictionary.Txt_Dialga
-    packOptions .= "|" . currentDictionary.Txt_Palkia
-    packOptions .= "|" . currentDictionary.Txt_Mew
-    packOptions .= "|" . currentDictionary.Txt_Charizard
-    packOptions .= "|" . currentDictionary.Txt_Mewtwo
-    packOptions .= "|" . currentDictionary.Txt_Pikachu
-
-    yPos := 60
-    rowHeight := 40
-
-    ; Dynamically create dropdowns for each instance
-    Loop, %Instances%
-    {
-        instanceNum := A_Index
-        varName := "PowerUserPack" . instanceNum
-
-        ; Get the internal pack name (loaded from Settings.ini)
-        internalPackName := %varName%
-
-        ; Convert internal pack name to display name for dropdown
-        if (!internalPackName || internalPackName = "None")
-            displayPackName := currentDictionary.Txt_MegaGyarados
-        else
-            displayPackName := ConvertPackNameToDisplay(internalPackName)
-
-        Gui, PowerUserMenu:Add, Text, x30 y%yPos% w100, Instance %instanceNum%:
-        choice := GetPackDropdownChoice(displayPackName)
-        Gui, PowerUserMenu:Add, DropDownList, v%varName%_Popup x140 y%yPos% w320 Choose%choice% Background2A2A2A cWhite, %packOptions%
-        yPos += rowHeight
-    }
-
-    yPos += 10
-
-    Gui, PowerUserMenu:Add, Button, x30 y%yPos% w135 h30 gClearAllPowerUserSettings, Clear All
-    Gui, PowerUserMenu:Add, Button, x182 y%yPos% w135 h30 gApplyPowerUserSettings, Apply
-    Gui, PowerUserMenu:Add, Button, x335 y%yPos% w135 h30 gCancelPowerUserSettings, Cancel
-    yPos += 40
-
-    Gui, PowerUserMenu:Show, x%popupX% y%popupY% w500 h%yPos%
-return
-
-GetPackDropdownChoice(packName) {
-    global currentDictionary
-
-    ; Default to first pack (MegaGyarados) if empty or None
-    if (packName = "" || packName = "None")
-        return 1
-
-    packList := []
-    packList.Push(currentDictionary.Txt_MegaGyarados)
-    packList.Push(currentDictionary.Txt_MegaBlaziken)
-    packList.Push(currentDictionary.Txt_MegaAltaria)
-    packList.Push(currentDictionary.Txt_Springs)
-    packList.Push(currentDictionary.Txt_HoOh)
-    packList.Push(currentDictionary.Txt_Lugia)
-    packList.Push(currentDictionary.Txt_Eevee)
-    packList.Push(currentDictionary.Txt_Buzzwole)
-    packList.Push(currentDictionary.Txt_Solgaleo)
-    packList.Push(currentDictionary.Txt_Lunala)
-    packList.Push("Shining Revelry")
-    packList.Push("Triumphant Light")
-    packList.Push(currentDictionary.Txt_Dialga)
-    packList.Push(currentDictionary.Txt_Palkia)
-    packList.Push(currentDictionary.Txt_Mew)
-    packList.Push(currentDictionary.Txt_Charizard)
-    packList.Push(currentDictionary.Txt_Mewtwo)
-    packList.Push(currentDictionary.Txt_Pikachu)
-
-    Loop % packList.MaxIndex() {
-        if (packList[A_Index] = packName)
-            return A_Index
-    }
-
-    return 1
-}
-
-; Converts internal pack name to display name for heartbeat messages
-ConvertPackNameToDisplay(packName) {
-    global currentDictionary
-
-    if (packName = "" || packName = "None")
-        return ""
-
-    ; Map internal pack names to display names
-    if (packName = "MegaGyarados")
-        return currentDictionary.Txt_MegaGyarados
-    if (packName = "MegaBlaziken")
-        return currentDictionary.Txt_MegaBlaziken
-    if (packName = "MegaAltaria")
-        return currentDictionary.Txt_MegaAltaria
-    if (packName = "Springs")
-        return currentDictionary.Txt_Springs
-    if (packName = "HoOh")
-        return currentDictionary.Txt_HoOh
-    if (packName = "Lugia")
-        return currentDictionary.Txt_Lugia
-    if (packName = "Eevee")
-        return currentDictionary.Txt_Eevee
-    if (packName = "Buzzwole")
-        return currentDictionary.Txt_Buzzwole
-    if (packName = "Solgaleo")
-        return currentDictionary.Txt_Solgaleo
-    if (packName = "Lunala")
-        return currentDictionary.Txt_Lunala
-    if (packName = "Shining")
-        return "Shining Revelry"
-    if (packName = "Arceus")
-        return "Triumphant Light"
-    if (packName = "Dialga")
-        return currentDictionary.Txt_Dialga
-    if (packName = "Palkia")
-        return currentDictionary.Txt_Palkia
-    if (packName = "Mew")
-        return currentDictionary.Txt_Mew
-    if (packName = "Charizard")
-        return currentDictionary.Txt_Charizard
-    if (packName = "Mewtwo")
-        return currentDictionary.Txt_Mewtwo
-    if (packName = "Pikachu")
-        return currentDictionary.Txt_Pikachu
-
-    ; If no match, return the pack name as-is
-    return packName
-}
-
-ConvertDisplayNameToPackName(displayName) {
-    global currentDictionary
-
-    ; Convert localized display names back to internal pack names
-    if (displayName = currentDictionary.Txt_MegaGyarados)
-        return "MegaGyarados"
-    if (displayName = currentDictionary.Txt_MegaBlaziken)
-        return "MegaBlaziken"
-    if (displayName = currentDictionary.Txt_MegaAltaria)
-        return "MegaAltaria"
-    if (displayName = currentDictionary.Txt_Springs)
-        return "Springs"
-    if (displayName = currentDictionary.Txt_HoOh)
-        return "HoOh"
-    if (displayName = currentDictionary.Txt_Lugia)
-        return "Lugia"
-    if (displayName = currentDictionary.Txt_Eevee)
-        return "Eevee"
-    if (displayName = currentDictionary.Txt_Buzzwole)
-        return "Buzzwole"
-    if (displayName = currentDictionary.Txt_Solgaleo)
-        return "Solgaleo"
-    if (displayName = currentDictionary.Txt_Lunala)
-        return "Lunala"
-    if (displayName = "Shining Revelry")
-        return "Shining"
-    if (displayName = "Triumphant Light")
-        return "Arceus"
-    if (displayName = currentDictionary.Txt_Dialga)
-        return "Dialga"
-    if (displayName = currentDictionary.Txt_Palkia)
-        return "Palkia"
-    if (displayName = currentDictionary.Txt_Mew)
-        return "Mew"
-    if (displayName = currentDictionary.Txt_Charizard)
-        return "Charizard"
-    if (displayName = currentDictionary.Txt_Mewtwo)
-        return "Mewtwo"
-    if (displayName = currentDictionary.Txt_Pikachu)
-        return "Pikachu"
-
-    ; If no match, return as-is
-    return displayName
-}
-
-ApplyPowerUserSettings:
-    Gui, PowerUserMenu:Default
-    Gui, PowerUserMenu:Submit, NoHide
-
-    global Instances
-
-    ; Dynamically save all instance settings
-    Loop, %Instances%
-    {
-        instanceNum := A_Index
-        varName := "PowerUserPack" . instanceNum
-        popupVarName := varName . "_Popup"
-
-        ; Get the value from the popup dropdown (display name)
-        GuiControlGet, popupValue, , %popupVarName%
-
-        ; Convert display name to internal pack name
-        internalPackName := ConvertDisplayNameToPackName(popupValue)
-
-        ; Update the global variable with internal pack name
-        %varName% := internalPackName
-
-        ; Save internal pack name to settings file
-        IniWrite, %internalPackName%, Settings.ini, PowerUser, Pack%instanceNum%
-    }
-
-    MsgBox, 64, Power User Settings, Power user pack overrides saved successfully!
-
-    Gui, PowerUserMenu:Destroy
-return
-
-ClearAllPowerUserSettings:
-    global Instances
-
-    ; Confirm with user
-    MsgBox, 4, Clear All Pack Overrides, Are you sure you want to clear all pack overrides?`n`nThis will revert all instances to use the main menu pack selection.
-
-    IfMsgBox Yes
-    {
-        ; Clear all pack overrides by setting them to "None"
-        Loop, %Instances%
-        {
-            instanceNum := A_Index
-            varName := "PowerUserPack" . instanceNum
-
-            ; Update the global variable
-            %varName% := "None"
-
-            ; Clear the setting in the INI file
-            IniWrite, None, Settings.ini, PowerUser, Pack%instanceNum%
-        }
-
-        MsgBox, 64, Cleared, All pack overrides have been cleared successfully!`n`nInstances will now use the main menu pack selection.
-
-        Gui, PowerUserMenu:Destroy
-    }
-return
-
-CancelPowerUserSettings:
-    Gui, PowerUserMenu:Destroy
-return
-
 discordSettings:
   Gui, Submit, NoHide
   if (heartBeat) {
@@ -2328,14 +2021,6 @@ LoadSettingsFromIni() {
       IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
       IniRead, menuExpanded, Settings.ini, UserSettings, menuExpanded, True
-
-      ; Load Power User settings dynamically for all possible instances
-      Loop, 100
-      {
-         instanceNum := A_Index
-         varName := "PowerUserPack" . instanceNum
-         IniRead, %varName%, Settings.ini, PowerUser, Pack%instanceNum%, None
-      }
       
       if (!IsNumeric(Instances))
          Instances := 1
@@ -2560,6 +2245,8 @@ SaveAllSettings() {
    }
 
    if (!groupRerollEnabled) {
+   mainIdsURL := ""
+   vipIdsURL := ""
    autoUseGPTest := 0
    TestTime := 3600
    applyRoleFilters := 0
@@ -2576,13 +2263,13 @@ SaveAllSettings() {
    iniContent_Second := "deleteMethod=" deleteMethod "`n"
    if (deleteMethod = "Inject Wonderpick 96P+") {
       iniContent_Second .= "FriendID=" FriendID "`n"
+      iniContent_Second .= "mainIdsURL=" mainIdsURL "`n"
    } else {
       iniContent_Second .= "FriendID=`n"
+      iniContent_Second .= "mainIdsURL=`n"
+      mainIdsURL := ""
       FriendID := ""
    }
-
-   ; Always save mainIdsURL (for group reroll feature)
-   iniContent_Second .= "mainIdsURL=" mainIdsURL "`n"
    
    iniContent_Second .= "AccountName=" AccountName "`n"
    iniContent_Second .= "waitTime=" waitTime "`n"
@@ -2638,15 +2325,8 @@ SaveAllSettings() {
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"
    iniContent_Second .= "minStarsShiny=" minStarsShiny "`n"
    iniContent_Second .= "tesseractPath=" tesseractPath "`n"
-
-   ; Preserve [PowerUser] section if it exists
-   powerUserContent := ""
-   IniRead, powerUserSection, Settings.ini, PowerUser
-   if (powerUserSection != "" && powerUserSection != "ERROR") {
-      powerUserContent := "`n[PowerUser]`n" . powerUserSection . "`n"
-   }
-
-   iniFull := iniContent . iniContent_Second . powerUserContent
+   
+   iniFull := iniContent . iniContent_Second
    FileDelete, Settings.ini
    FileAppend, %iniFull%, Settings.ini, UTF-16
    
@@ -2876,37 +2556,17 @@ StartBot() {
             IniWrite, 0, HeartBeat.ini, HeartBeat, Instance%A_Index%
          }
          
-         ; Build separate lists for instances and their packs
-         onlineInstances := []
-         onlinePacks := []
-
          for index, value in Online {
-            instanceNum := A_Index
-
-            ; Read pack info for this instance
-            IniRead, packName, HeartBeat.ini, PackInfo, Instance%instanceNum%, None
-
-            ; Convert internal pack name to display name
-            packDisplay := ConvertPackNameToDisplay(packName)
-
             if(index = Online.MaxIndex())
                commaSeparate := ""
             else
                commaSeparate := ", "
-
-            if(value) {
-               onlineAHK .= instanceNum . commaSeparate
-               onlineInstances.Push(instanceNum)
-               if(packDisplay != "None" && packDisplay != "")
-                  onlinePacks.Push(packDisplay)
-               else
-                  onlinePacks.Push("-")
-            }
-            else {
-               offlineAHK .= instanceNum . commaSeparate
-            }
+            if(value)
+               onlineAHK .= A_Index . commaSeparate
+            else
+               offlineAHK .= A_Index . commaSeparate
          }
-
+         
          if (runMain) {
             if(mainStatus) {
                if (onlineAHK)
@@ -2921,7 +2581,7 @@ StartBot() {
                   offlineAHK := "Main"
             }
          }
-
+         
          if(offlineAHK = "")
             offlineAHK := "Offline: none"
          else
@@ -2930,82 +2590,19 @@ StartBot() {
             onlineAHK := "Online: none"
          else
             onlineAHK := "Online: " . RTrim(onlineAHK, ", ")
-
-         ; Build packs line with grouped consecutive duplicates
-         packsLine := ""
-         if(onlinePacks.Length() > 0) {
-            groupedPacks := ""
-            currentPack := onlinePacks[1]
-            startInstance := onlineInstances[1]
-            endInstance := onlineInstances[1]
-
-            Loop, % onlinePacks.Length() {
-               if (A_Index = 1)
-                  continue
-
-               if (onlinePacks[A_Index] = currentPack) {
-                  ; Same pack, extend the range
-                  endInstance := onlineInstances[A_Index]
-               } else {
-                  ; Different pack, output the current group
-                  if (groupedPacks != "")
-                     groupedPacks .= ", "
-
-                  if (startInstance = endInstance)
-                     groupedPacks .= currentPack . " (" . startInstance . ")"
-                  else
-                     groupedPacks .= currentPack . " (" . startInstance . "-" . endInstance . ")"
-
-                  ; Start new group
-                  currentPack := onlinePacks[A_Index]
-                  startInstance := onlineInstances[A_Index]
-                  endInstance := onlineInstances[A_Index]
-               }
-            }
-
-            ; Output the last group
-            if (groupedPacks != "")
-               groupedPacks .= ", "
-
-            if (startInstance = endInstance)
-               groupedPacks .= currentPack . " (" . startInstance . ")"
-            else
-               groupedPacks .= currentPack . " (" . startInstance . "-" . endInstance . ")"
-
-            packsLine := "\nPacks:  " . groupedPacks
-         }
-
+         
          discMessage := heartBeatName ? "\n" . heartBeatName : ""
-         discMessage .= "\n" . onlineAHK . packsLine . "\n" . offlineAHK
-
+         discMessage .= "\n" . onlineAHK . "\n" . offlineAHK
+         
          total := SumVariablesInJsonFile()
          totalSeconds := Round((A_TickCount - rerollTime) / 1000)
          mminutes := Floor(totalSeconds / 60)
-
-         ; Calculate average run time across all online instances
-         totalAvgSeconds := 0
-         onlineCount := 0
-         Loop, %Instances% {
-            IniRead, avgMins, HeartBeat.ini, AvgRunTime, Instance%A_Index%Minutes, -1
-            IniRead, avgSecs, HeartBeat.ini, AvgRunTime, Instance%A_Index%Seconds, -1
-            if (avgMins != -1 && avgSecs != -1) {
-               totalAvgSeconds += (avgMins * 60) + avgSecs
-               onlineCount++
-            }
-         }
-
          packStatus := "Time: " . mminutes . "m | Packs: " . total
          packStatus .= " | Avg: " . Round(total / mminutes, 2) . " packs/min"
-
-         if (onlineCount > 0) {
-            overallAvgSeconds := Round(totalAvgSeconds / onlineCount)
-            overallAvgMins := Floor(overallAvgSeconds / 60)
-            overallAvgSecs := Mod(overallAvgSeconds, 60)
-            packStatus .= " | Avg Run: " . overallAvgMins . "m " . overallAvgSecs . "s"
-         }
-
+         
          discMessage .= "\n" . packStatus . "\nVersion: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion
          discMessage .= typeMsg
+         discMessage .= selectMsg
          
          if (mainTestMode == "1")
             discMessage .= "\n\nMain entered GP Test Mode ✕"
@@ -3018,7 +2615,7 @@ StartBot() {
       }
       
       if(Mod(A_Index, 10) = 0) {
-         if(groupRerollEnabled && mainIdsURL != "") {
+         if(mainIdsURL != "") {
             DownloadFile(mainIdsURL, "ids.txt")
          } else {
             if(FileExist("ids.txt"))
@@ -3029,29 +2626,9 @@ StartBot() {
       total := SumVariablesInJsonFile()
       totalSeconds := Round((A_TickCount - rerollTime) / 1000)
       mminutes := Floor(totalSeconds / 60)
-
-      ; Calculate average run time across all online instances
-      totalAvgSeconds := 0
-      onlineCount := 0
-      Loop, %Instances% {
-         IniRead, avgMins, HeartBeat.ini, AvgRunTime, Instance%A_Index%Minutes, -1
-         IniRead, avgSecs, HeartBeat.ini, AvgRunTime, Instance%A_Index%Seconds, -1
-         if (avgMins != -1 && avgSecs != -1) {
-            totalAvgSeconds += (avgMins * 60) + avgSecs
-            onlineCount++
-         }
-      }
-
+      
       packStatus := "Time: " . mminutes . "m Packs: " . total
       packStatus .= " | Avg: " . Round(total / mminutes, 2) . " packs/min"
-
-      if (onlineCount > 0) {
-         overallAvgSeconds := Round(totalAvgSeconds / onlineCount)
-         overallAvgMins := Floor(overallAvgSeconds / 60)
-         overallAvgSecs := Mod(overallAvgSeconds, 60)
-         packStatus .= " | Avg Run: " . overallAvgMins . "m " . overallAvgSecs . "s"
-      }
-
       DisplayPackStatus(packStatus, ((runMain ? Mains * scaleParam : 0) + 5), 625)
       
       if(heartBeat) {
@@ -3072,37 +2649,17 @@ StartBot() {
                IniWrite, 0, HeartBeat.ini, HeartBeat, Instance%A_Index%
             }
             
-            ; Build separate lists for instances and their packs
-            onlineInstances := []
-            onlinePacks := []
-
             for index, value in Online {
-               instanceNum := A_Index
-
-               ; Read pack info for this instance
-               IniRead, packName, HeartBeat.ini, PackInfo, Instance%instanceNum%, None
-
-               ; Convert internal pack name to display name
-               packDisplay := ConvertPackNameToDisplay(packName)
-
                if(index = Online.MaxIndex())
                   commaSeparate := ""
                else
                   commaSeparate := ", "
-
-               if(value) {
-                  onlineAHK .= instanceNum . commaSeparate
-                  onlineInstances.Push(instanceNum)
-                  if(packDisplay != "None" && packDisplay != "")
-                     onlinePacks.Push(packDisplay)
-                  else
-                     onlinePacks.Push("-")
-               }
-               else {
-                  offlineAHK .= instanceNum . commaSeparate
-               }
+               if(value)
+                  onlineAHK .= A_Index . commaSeparate
+               else
+                  offlineAHK .= A_Index . commaSeparate
             }
-
+            
             if(runMain) {
                IniRead, value, HeartBeat.ini, HeartBeat, Main
                if(value) {
@@ -3119,7 +2676,7 @@ StartBot() {
                }
                IniWrite, 0, HeartBeat.ini, HeartBeat, Main
             }
-
+            
             if(offlineAHK = "")
                offlineAHK := "Offline: none"
             else
@@ -3128,56 +2685,13 @@ StartBot() {
                onlineAHK := "Online: none"
             else
                onlineAHK := "Online: " . RTrim(onlineAHK, ", ")
-
-            ; Build packs line with grouped consecutive duplicates
-            packsLine := ""
-            if(onlinePacks.Length() > 0) {
-               groupedPacks := ""
-               currentPack := onlinePacks[1]
-               startInstance := onlineInstances[1]
-               endInstance := onlineInstances[1]
-
-               Loop, % onlinePacks.Length() {
-                  if (A_Index = 1)
-                     continue
-
-                  if (onlinePacks[A_Index] = currentPack) {
-                     ; Same pack, extend the range
-                     endInstance := onlineInstances[A_Index]
-                  } else {
-                     ; Different pack, output the current group
-                     if (groupedPacks != "")
-                        groupedPacks .= ", "
-
-                     if (startInstance = endInstance)
-                        groupedPacks .= currentPack . " (" . startInstance . ")"
-                     else
-                        groupedPacks .= currentPack . " (" . startInstance . "-" . endInstance . ")"
-
-                     ; Start new group
-                     currentPack := onlinePacks[A_Index]
-                     startInstance := onlineInstances[A_Index]
-                     endInstance := onlineInstances[A_Index]
-                  }
-               }
-
-               ; Output the last group
-               if (groupedPacks != "")
-                  groupedPacks .= ", "
-
-               if (startInstance = endInstance)
-                  groupedPacks .= currentPack . " (" . startInstance . ")"
-               else
-                  groupedPacks .= currentPack . " (" . startInstance . "-" . endInstance . ")"
-
-               packsLine := "\nPacks:  " . groupedPacks
-            }
-
+            
             discMessage := heartBeatName ? "\n" . heartBeatName : ""
-
-            discMessage .= "\n" . onlineAHK . packsLine . "\n" . offlineAHK . "\n" . packStatus . "\nVersion: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion
+            
+            discMessage .= "\n" . onlineAHK . "\n" . offlineAHK . "\n" . packStatus . "\nVersion: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion
             discMessage .= typeMsg
-
+            discMessage .= selectMsg
+            
             LogToDiscord(discMessage,, false,,, heartBeatWebhookURL)
             
             if (debugMode) {
@@ -3228,6 +2742,7 @@ SendAllInstancesOfflineStatus() {
    
    discMessage .= "\n" . packStatus . "\nVersion: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion
    discMessage .= typeMsg
+   discMessage .= selectMsg
    discMessage .= "\n\n All instances marked as OFFLINE"
    
    LogToDiscord(discMessage,, false,,, heartBeatWebhookURL)

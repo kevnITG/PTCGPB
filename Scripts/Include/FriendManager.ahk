@@ -213,7 +213,7 @@ RemoveFriends() {
 
     FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460)
     Delay(2)
-    FindImageAndClick(123, 452, 134, 457, , "requests", 167, 472)
+    FindImageAndClick(97, 452, 104, 476, 10, "requests", 167, 472)
     Delay(2)
     adbClick(167, 472) ; extra click since failing to get into requests sometimes
     failSafe := A_TickCount

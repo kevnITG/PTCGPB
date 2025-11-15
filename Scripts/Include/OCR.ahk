@@ -425,10 +425,8 @@ CountShinedust() {
     try {
         if (IsFunc("ocr")) {
             shineDustValue := ""
-            ; Allow digits, commas, periods, and spaces (different languages format numbers differently)
-            allowedChars := "0123456789,. "
-            ; Pattern allows digits with optional separators (commas, periods, or spaces)
-            validPattern := "^[\d,.\s]+$"
+            allowedChars := "0123456789"
+            validPattern := "^[\d,]+$"
 
             ocrX := 385
             ocrY := 310
@@ -437,21 +435,12 @@ CountShinedust() {
 
             pBitmapOriginal := Gdip_CreateBitmapFromFile(shinedustScreenshotFile)
             pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOriginal, ocrX, ocrY, ocrW, ocrH, 300, 75)
-
-            ; Use user's current language - numbers are recognized by all language packs
             shineDustValue := GetTextFromBitmap(pBitmapFormatted, allowedChars)
             Gdip_DisposeImage(pBitmapOriginal)
             Gdip_DisposeImage(pBitmapFormatted)
 
-            ; Clean up the result: remove all non-digit characters except commas
-            ; This handles different number formats (spaces, periods as separators)
-            shineDustValue := RegExReplace(shineDustValue, "[^\d,]", "")
-
-            if (RegExMatch(shineDustValue, "^\d[\d,]*\d$|^\d$")) {
+            if (RegExMatch(shineDustValue, validPattern)) {
                 if (shineDustValue != "") {
-                    ; Store shinedust value globally for use in batched Discord messages
-                    global shinedustValueGlobal
-                    shinedustValueGlobal := shineDustValue
                     LogShinedustToDatabase(shineDustValue)
                     CreateStatusMessage("Account has " . shineDustValue . " shinedust.")
                     Sleep, 2000

@@ -38,8 +38,6 @@ global checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode, isCurrentl
 global s4tPendingTradeables := []
 global deviceAccountXmlMap := {} ; prevents Create Bots + s4t making duplicate .xmls within a single run
 global ocrShinedust
-global s4tBatchedMessages := [] ; stores pending s4t Discord messages to send at end-of-run
-global shinedustValueGlobal := "" ; stores shinedust OCR result for inclusion in Discord messages
 global titleHeight, MuMuv5
 
 global avgtotalSeconds
@@ -231,20 +229,6 @@ Loop, % pokemonList.MaxIndex()  ; Loop through the array
         packArray.push(pokemon)  ; Add the name to packArray
 }
 
-; Load Power User pack override for this instance (if scriptName is valid)
-; Settings.ini now stores internal pack names directly (e.g., "MegaGyarados")
-PowerUserPackOverride := ""
-if (scriptName >= 1) {
-    IniRead, PowerUserPackOverride, %A_ScriptDir%\..\Settings.ini, PowerUser, Pack%scriptName%, None
-}
-
-; Apply power user override if set (already in internal pack name format)
-if (PowerUserPackOverride != "" && PowerUserPackOverride != "None") {
-    ; Override packArray with just the power user selection
-    packArray := []
-    packArray.push(PowerUserPackOverride)
-}
-
 changeDate := getChangeDateTime() ; get server reset time
 
 if(heartBeat)
@@ -406,7 +390,6 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         openPack := packArray[rand]
         friended := false
         IniWrite, 1, %A_ScriptDir%\..\HeartBeat.ini, HeartBeat, Instance%scriptName%
-        IniWrite, %openPack%, %A_ScriptDir%\..\HeartBeat.ini, PackInfo, Instance%scriptName%
 
         changeDate := getChangeDateTime() ; get server reset time
 
@@ -715,9 +698,6 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             CountShinedust()
         }
 
-        ; Send batched s4t Discord messages with shinedust value
-        SendBatchedS4TMessages()
-
         if(wonderpickForEventMissions) {
             GoToMain()
             FindImageAndClick(240, 80, 265, 100, , "WonderPick", 59, 429) ;click until in wonderpick Screen
@@ -765,10 +745,6 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         aseconds := Mod(avgtotalSeconds, 60) ; Average remaining seconds
         mminutes := Floor(totalSeconds / 60) ; Total minutes
         sseconds := Mod(totalSeconds, 60) ; Total remaining seconds
-
-        ; Write average run time to HeartBeat.ini for main heartbeat to read
-        IniWrite, %aminutes%, %A_ScriptDir%\..\HeartBeat.ini, AvgRunTime, Instance%scriptName%Minutes
-        IniWrite, %aseconds%, %A_ScriptDir%\..\HeartBeat.ini, AvgRunTime, Instance%scriptName%Seconds
 
         ; Display the times
         CreateStatusMessage("Avg: " . aminutes . "m " . aseconds . "s | Runs: " . rerolls . " | Account Packs " . accountOpenPacks, "AvgRuns", 0, 605, false, true)
@@ -4153,93 +4129,12 @@ return
 
 ; Extracts text from a bitmap using OCR. Converts the bitmap to a format usable by Windows OCR, performs OCR, and optionally removes characters not in the allowed character list.
 
-; Escapes special characters in a string for use in a regular expression.
+; Escapes special characters in a string for use in a regular expression. 
 ; ========================================
 ; DATABASE FUNCTIONS
 ; ========================================
 
-; ========================================
-; POWER USER FUNCTIONS
-; ========================================
 
-; Converts display name from Power User menu dropdown to internal pack name
-ConvertDisplayNameToPackName(displayName) {
-    ; Simple string matching - the displayName comes directly from currentDictionary
-    ; Match against known display names
-    if (InStr(displayName, "Gyarados"))
-        return "MegaGyarados"
-    if (InStr(displayName, "Blaziken"))
-        return "MegaBlaziken"
-    if (InStr(displayName, "Altaria"))
-        return "MegaAltaria"
-    if (InStr(displayName, "Springs"))
-        return "Springs"
-    if (InStr(displayName, "Ho-Oh") || InStr(displayName, "HoOh"))
-        return "HoOh"
-    if (InStr(displayName, "Lugia"))
-        return "Lugia"
-    if (InStr(displayName, "Eevee"))
-        return "Eevee"
-    if (InStr(displayName, "Buzzwole"))
-        return "Buzzwole"
-    if (InStr(displayName, "Solgaleo"))
-        return "Solgaleo"
-    if (InStr(displayName, "Lunala"))
-        return "Lunala"
-    if (InStr(displayName, "Shining Revelry"))
-        return "Shining"
-    if (InStr(displayName, "Triumphant Light"))
-        return "Arceus"
-    if (InStr(displayName, "Dialga"))
-        return "Dialga"
-    if (InStr(displayName, "Palkia"))
-        return "Palkia"
-    if (InStr(displayName, "Mew"))
-        return "Mew"
-    if (InStr(displayName, "Charizard"))
-        return "Charizard"
-    if (InStr(displayName, "Mewtwo"))
-        return "Mewtwo"
-    if (InStr(displayName, "Pikachu"))
-        return "Pikachu"
-
-    ; If no match found, return empty string
-    return ""
-}
-
-;-------------------------------------------------------------------------------
-; SendBatchedS4TMessages - Send batched s4t Discord messages with shinedust
-;-------------------------------------------------------------------------------
-SendBatchedS4TMessages() {
-    global s4tBatchedMessages, shinedustValueGlobal, s4tDiscordWebhookURL, s4tDiscordUserId
-
-    ; Return early if no messages to send
-    if (s4tBatchedMessages.Length() = 0)
-        return
-
-    ; Send each batched message
-    totalMessages := s4tBatchedMessages.Length()
-    for index, batchedMsg in s4tBatchedMessages {
-        messageToSend := batchedMsg.message
-
-        ; Append shinedust value if available
-        if (shinedustValueGlobal != "") {
-            messageToSend .= "\nShinedust: " . shinedustValueGlobal
-        }
-
-        ; Send the Discord message with screenshot and XML attachment
-        LogToDiscord(messageToSend, batchedMsg.screenshot, true, batchedMsg.xmlFile,, s4tDiscordWebhookURL, s4tDiscordUserId)
-
-        ; Add delay between messages to avoid rate limiting
-        if (index < totalMessages) {
-            Sleep, 1000
-        }
-    }
-
-    ; Clear the batched messages array and reset shinedust value after sending
-    s4tBatchedMessages := []
-    shinedustValueGlobal := ""
-}
 
 
 
