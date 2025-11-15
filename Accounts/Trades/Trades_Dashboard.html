@@ -1067,6 +1067,8 @@
         let sortColumn = null;
         let sortDirection = 'desc'; // 'asc' or 'desc'
         let accountShinedustMap = new Map(); // Store latest shinedust for each account
+        let filesUploaded = false;
+        let uploadedFiles = [];
 
         function changeLanguage() {
             const select = document.getElementById('languageSelect');
@@ -1167,6 +1169,15 @@
 
             document.addEventListener('keydown', e => {
                 if (e.key === 'Escape') popup.style.display = 'none';
+            });
+
+            document.getElementById('xmlFileInput').addEventListener('change', function(e) {
+                const files = e.target.files;
+                // Handle uploaded files
+                uploadedFiles = Array.from(files);
+                filesUploaded = true;
+                alert(`Uploaded ${files.length} files. You can now download them.`);
+                // Perhaps process files here
             });
 
             document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -1604,6 +1615,31 @@
             document.querySelectorAll('.PackScreenshot').forEach(el => {
                 el.addEventListener('click', openPopup);
             });
+
+            document.querySelectorAll('.xmlDownloadLink').forEach(el => {
+                el.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    if (!filesUploaded) {
+                        alert('Navigate to the /Accounts/Saved/ folder, then click "Upload".');
+                        document.getElementById('xmlFileInput').click();
+                    } else {
+                        // Download the specific XML file for this row
+                        const info = this.getAttribute('data-info');
+                        const filenames = info.split(',');
+                        const matchingFile = uploadedFiles.find(file => filenames.some(fn => fn.trim() === file.name));
+                        if (matchingFile) {
+                            const url = URL.createObjectURL(matchingFile);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = matchingFile.name;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        } else {
+                            alert('Matching XML file not found in uploaded files.');
+                        }
+                    }
+                });
+            });
         }
 
         function openPopup(event) {
@@ -1683,6 +1719,7 @@
             <div class="filter-group">
                 <button class="btn" id="loadCSVBtn" onclick="document.getElementById('fileInput').click()"><i class="fas fa-upload"></i> load csv</button>
                 <input type="file" id="fileInput" accept=".csv">
+                <input type="file" id="xmlFileInput" webkitdirectory multiple style="display:none">
 
                 <input type="text" id="searchInput" placeholder="search account..." disabled>
 
