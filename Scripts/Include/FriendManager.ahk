@@ -122,8 +122,8 @@ AddFriends(renew := false, getFC := false) {
             if(FindOrLoseImage(165, 250, 190, 275, , "Send", 0, failSafeTime)) {
                 Delay(1) ; otherwise it will sometimes click before UI finishes loading
                 adbClick_wbb(243, 258)
-                adbClick_wbb(243, 258)
-                adbClick_wbb(243, 258)
+                ; adbClick_wbb(243, 258)
+                ; adbClick_wbb(243, 258)
                 break
             }
             else if(FindOrLoseImage(165, 240, 255, 270, , "Withdraw", 0, failSafeTime)) {
@@ -135,8 +135,8 @@ AddFriends(renew := false, getFC := false) {
                     FindImageAndClick(165, 250, 190, 275, , "Send", 200, 372)
                     Delay(1) ; otherwise it will sometimes click before UI finishes loading
                     adbClick_wbb(243, 258)
-                    adbClick_wbb(243, 258)
-                    adbClick_wbb(243, 258)
+                    ; adbClick_wbb(243, 258)
+                    ; adbClick_wbb(243, 258)
                 }
                 break
             }
