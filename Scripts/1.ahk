@@ -3963,7 +3963,7 @@ GetEventRewards(frommain := true){
         failSafeTime := (A_TickCount - failSafe) // 1000
     }
 
-    ;====== Click through missions menus ======
+/*     ;====== Click through missions menus ======
     ; pick ONE of these click locations based upon which events are currently going on.
     ; adbClick_wbb(120, 465) ; used to click the middle mission button
     ; adbClick_wbb(25, 465) ;used to click the left-most mission button
@@ -4000,6 +4000,7 @@ GetEventRewards(frommain := true){
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
     }
+*/
 
     GoToMain()
 }
