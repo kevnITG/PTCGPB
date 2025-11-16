@@ -3292,10 +3292,11 @@ SelectPack(HG := false) {
             }
         }
 
-/*         if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
+         if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
             if (openPack == "MegaGyarados") {
                 packy := SelectExpansionFirstRowY
-                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
+                ; packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
+                packx := 18 ; custom location to avoid accidentally rotating through pack wheel on following screen
             } else if (openPack == "MegaBlaziken") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionLeftColumnMiddleX
@@ -3304,7 +3305,7 @@ SelectPack(HG := false) {
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
             } 
         }
-        */
+
         FindImageAndClick(233, 400, 264, 428, , "Points", packx, packy)
     
         if(openPack = "Lunala") {
