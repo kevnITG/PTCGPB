@@ -3922,6 +3922,9 @@ GetEventRewards(frommain := true){
         CreateStatusMessage("Waiting for PremiumMissions`n(" . failSafeTime . "/45 seconds)")
         Delay(1)
     }
+
+    adbClick(139,465) ;Important - clicks the center-most mission first.
+    Delay(2)
     
     ;====== Click through missions menus ======
     ; pick ONE of these click locations based upon which events are currently going on.
@@ -3932,11 +3935,11 @@ GetEventRewards(frommain := true){
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
-        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-        Sleep, 750
         if (FindOrLoseImage(223, 179, 231, 187, , "FirstAnniversaryCelebration", 0, failSafeTime)){
             break
         }
+        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
+        Sleep, 750
         else if (failSafeTime > 10){
             break
         }
