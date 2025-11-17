@@ -3940,7 +3940,7 @@ GetEventRewards(frommain := true){
         }
         adbClick_wbb(6, 465) ; used to scroll to other missions further left.
         Sleep, 750
-        else if (failSafeTime > 10){
+        if (failSafeTime > 10){
             break
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
