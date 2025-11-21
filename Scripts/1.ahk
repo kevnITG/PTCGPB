@@ -3293,6 +3293,9 @@ SelectPack(HG := false) {
         }
 
          if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
+            Delay(4)
+            adbClick(52, 455) ; click B series. need more robust system later
+            Delay(4)
             if (openPack == "MegaGyarados") {
                 packy := SelectExpansionFirstRowY
                 ; packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
