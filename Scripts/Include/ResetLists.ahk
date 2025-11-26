@@ -37,11 +37,11 @@ LogToResetListFile("Attempting to access primary path: " . saveDir)
 if (!FileExist(saveDir)) {
     LogToResetListFile("Primary path not found, trying fallback path")
     ; Try alternative path directly
-    saveDir := scriptDir . "\..\Accounts\Saved" 
+    saveDir := scriptDir . "\..\Accounts\Saved"
     saveDir := StrReplace(saveDir, "\\", "\")
-    
+
     LogToResetListFile("Attempting fallback path: " . saveDir)
-    
+
     ; Exit immediately if neither path exists
     if (!FileExist(saveDir)) {
         LogToResetListFile("ERROR: Neither primary nor fallback path exists. Exiting.")
@@ -61,11 +61,11 @@ Loop, Files, %saveDir%\*, D
     foldersProcessed++
     folderPath := A_LoopFileFullPath
     folderName := A_LoopFileName
-    
+
     ; Count files in this folder and track specific files
     filesInFolder := 0
     folderFiles := ""
-    
+
     if (FileExist(folderPath . "\list.txt")) {
         filesInFolder++
         totalFilesFound++
@@ -81,7 +81,7 @@ Loop, Files, %saveDir%\*, D
         totalFilesFound++
         folderFiles .= "list_last_generated.txt, "
     }
-    
+
     if (filesInFolder > 0) {
         folderFiles := RTrim(folderFiles, ", ")
         LogToResetListFile("Found " . filesInFolder . " list files in folder " . folderName . ": " . folderFiles)
@@ -150,11 +150,11 @@ Loop, Files, %saveDir%\*, D
     foldersChecked++
     folderPath := A_LoopFileFullPath
     folderName := A_LoopFileName
-    
+
     ; Check what was successfully deleted and what remains
     folderDeleted := ""
     folderRemaining := ""
-    
+
     if (FileExist(folderPath . "\list.txt")) {
         remainingFiles++
         folderRemaining .= "list.txt, "
@@ -165,7 +165,7 @@ Loop, Files, %saveDir%\*, D
             folderDeleted .= "list.txt, "
         }
     }
-    
+
     if (FileExist(folderPath . "\list_current.txt")) {
         remainingFiles++
         folderRemaining .= "list_current.txt, "
@@ -176,7 +176,7 @@ Loop, Files, %saveDir%\*, D
             folderDeleted .= "list_current.txt, "
         }
     }
-    
+
     if (FileExist(folderPath . "\list_last_generated.txt")) {
         remainingFiles++
         folderRemaining .= "list_last_generated.txt, "
@@ -187,14 +187,14 @@ Loop, Files, %saveDir%\*, D
             folderDeleted .= "list_last_generated.txt, "
         }
     }
-    
+
     ; Log what was deleted from this folder
     if (folderDeleted != "") {
         folderDeleted := RTrim(folderDeleted, ", ")
         LogToResetListFile("Successfully deleted from folder " . folderName . ": " . folderDeleted)
         actuallyDeleted .= folderName . " (" . folderDeleted . "), "
     }
-    
+
     ; Track failed deletions
     if (folderRemaining != "") {
         folderRemaining := RTrim(folderRemaining, ", ")

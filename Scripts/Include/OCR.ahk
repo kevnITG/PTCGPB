@@ -2,9 +2,9 @@
 
 HBitmapToRandomAccessStream(hBitmap) {
     static IID_IRandomAccessStream := "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}"
-          , IID_IPicture            := "{7BF80980-BF32-101A-8BBB-00AA00300CAB}"
-          , PICTYPE_BITMAP := 1
-          , BSOS_DEFAULT   := 0
+        , IID_IPicture            := "{7BF80980-BF32-101A-8BBB-00AA00300CAB}"
+        , PICTYPE_BITMAP := 1
+        , BSOS_DEFAULT   := 0
 
     DllCall("Ole32\CreateStreamOnHGlobal", "Ptr", 0, "UInt", true, "PtrP", pIStream, "UInt")
 
@@ -166,7 +166,7 @@ CreateClass(string, interface, ByRef Class)
 
 CreateHString(string, ByRef hString)
 {
-     DllCall("Combase.dll\WindowsCreateString", "wstr", string, "uint", StrLen(string), "ptr*", hString)
+    DllCall("Combase.dll\WindowsCreateString", "wstr", string, "uint", StrLen(string), "ptr*", hString)
 }
 
 DeleteHString(hString)
@@ -217,8 +217,8 @@ WaitForAsync(ByRef Object)
 FindPackStats() {
     global adbShell, scriptName, ocrLanguage, loadDir, scaleParam, accountOpenPacks, ocrSuccess
 
-	failSafe := A_TickCount
-	failSafeTime := 0
+    failSafe := A_TickCount
+    failSafeTime := 0
     ; Click for hamburger menu and wait for profile
     Loop {
         adbClick(240, 499)
@@ -232,76 +232,76 @@ FindPackStats() {
                     pos2 += 5
                 }
                 adbClick(pos1, pos2)
-			}
-		}
-		LevelUp()
+            }
+        }
+        LevelUp()
         Delay(1)
-		failSafeTime := (A_TickCount - failSafe) // 1000
+        failSafeTime := (A_TickCount - failSafe) // 1000
     }
 
-	FindImageAndClick(203, 272, 237, 300, , "Profile", 210, 140, 200) ; Open profile/stats page and wait
+    FindImageAndClick(203, 272, 237, 300, , "Profile", 210, 140, 200) ; Open profile/stats page and wait
 
     ; Swipe until you get to trophy
-	failSafe := A_TickCount
-	failSafeTime := 0
+    failSafe := A_TickCount
+    failSafeTime := 0
     Loop {
         adbSwipe("266 770 266 355 300")
-		if(FindOrLoseImage(13, 110, 31, 129, , "trophy", 0, failSafeTime))
-			break
-		failSafeTime := (A_TickCount - failSafe) // 1000
+        if(FindOrLoseImage(13, 110, 31, 129, , "trophy", 0, failSafeTime))
+            break
+        failSafeTime := (A_TickCount - failSafe) // 1000
 
     }
 
-	FindImageAndClick(122, 375, 161, 390, , "trophyPage", 50, 107, 200) ; Open pack trophy page
+    FindImageAndClick(122, 375, 161, 390, , "trophyPage", 50, 107, 200) ; Open pack trophy page
 
     ; Take screenshot and prepare for OCR
     Sleep, 100
 
-	tempDir := A_ScriptDir . "\temp"
+    tempDir := A_ScriptDir . "\temp"
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%
 
-	fullScreenshotFile := tempDir . "\" .  winTitle . "_AccountPacks.png"
-	adbTakeScreenshot(fullScreenshotFile)
+    fullScreenshotFile := tempDir . "\" .  winTitle . "_AccountPacks.png"
+    adbTakeScreenshot(fullScreenshotFile)
 
-	Sleep, 100
+    Sleep, 100
 
     packValue := 0
-	trophyOCR := ""
+    trophyOCR := ""
 
-	;214, 438, 111x30
-	;214, 434, 111x38
-	;214, 441, 111x24
-	ocrSuccess := 0
+    ;214, 438, 111x30
+    ;214, 434, 111x38
+    ;214, 441, 111x24
+    ocrSuccess := 0
     if(RefinedOCRText(fullScreenshotFile, 214, 438, 111, 30, "0123456789,/", "^\d{1,3}(,\d{3})?\/\d{1,3}(,\d{3})?$", trophyOCR)) {
-		;MsgBox, %trophyOCR%
-		ocrParts := StrSplit(trophyOCR, "/")
-		accountOpenPacks := ocrParts[1]
-		;MsgBox, %accountOpenPacks%
-		ocrSuccess := 1
+        ;MsgBox, %trophyOCR%
+        ocrParts := StrSplit(trophyOCR, "/")
+        accountOpenPacks := ocrParts[1]
+        ;MsgBox, %accountOpenPacks%
+        ocrSuccess := 1
 
-		UpdateAccount()
-	}
+        UpdateAccount()
+    }
 
-	if (FileExist(fullScreenshotFile))
-		FileDelete, %fullScreenshotFile%
+    if (FileExist(fullScreenshotFile))
+        FileDelete, %fullScreenshotFile%
 
-	FindImageAndClick(230, 120, 260, 150, , "UserProfile", 140, 496, 200) ; go back to hamburger menu
+    FindImageAndClick(230, 120, 260, 150, , "UserProfile", 140, 496, 200) ; go back to hamburger menu
 
     Loop {
         adbClick(34,65)
-			Delay(1)
+        Delay(1)
         adbClick(34,65)
-			Delay(1)
+        Delay(1)
         adbClick(34,65)
-			Delay(1)
+        Delay(1)
         if(FindOrLoseImage(233, 400, 264, 428, , "Points", 0, failSafeTime)) {
             break
         } else {
-			adbClick_wbb(141, 480)
-			Delay(1)
-		}
-		failSafeTime := (A_TickCount - failSafe) // 1000
+            adbClick_wbb(141, 480)
+            Delay(1)
+        }
+        failSafeTime := (A_TickCount - failSafe) // 1000
     }
 }
 
@@ -340,10 +340,10 @@ CropAndFormatForOcr(inputFile, x := 0, y := 0, width := 200, height := 200, scal
     ; Crop to region, Scale up the image, Convert to greyscale, Increase contrast
     pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOrignal, x, y, width, height, scaleUpPercent, 75)
 
-	filePath := A_ScriptDir . "\temp\" .  winTitle . "_AccountPacks_crop.png"
+    filePath := A_ScriptDir . "\temp\" .  winTitle . "_AccountPacks_crop.png"
     Gdip_SaveBitmapToFile(pBitmapFormatted, filePath)
 
-	; Cleanup references
+    ; Cleanup references
     Gdip_DisposeImage(pBitmapOrignal)
     return pBitmapFormatted
 }

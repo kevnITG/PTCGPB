@@ -282,47 +282,47 @@ FindGodPack(invalidPack := false) {
     requiredStars := minStars ; Default to general minStars
 
     ; Check specific selections first, then default to shiny
-        if (openPack == "MegaGyarados") {
-            requiredStars := minStarsMegaGyarados
-        } else if (openPack == "MegaBlaziken") {
-            requiredStars := minStarsMegaBlaziken
-        } else if (openPack == "MegaAltaria") {
-            requiredStars := minStarsMegaAltaria
-        } else if (openPack == "Deluxe") {
-            requiredStars := minStarsA4Deluxe
-        } else if (openPack == "Springs") {
-            requiredStars := minStarsA4Springs
-        } else if (openPack == "HoOh") {
-            requiredStars := minStarsA4HoOh
-        } else if (openPack == "Lugia") {
-            requiredStars := minStarsA4Lugia
-        } else if (openPack == "Eevee") {
-            requiredStars := minStarsA3b
-        } else if (openPack == "Buzzwole") {
-            requiredStars := minStarsA3a
-        } else if (openPack == "Solgaleo") {
-            requiredStars := minStarsA3Solgaleo
-        } else if (openPack == "Lunala") {
-            requiredStars := minStarsA3Lunala
-        } else if (openPack = "Shining") {
-            requiredStars := minStarsA2b
-        } else if (openPack = "Arceus") {
-            requiredStars := minStarsA2a
-        } else if (openPack = "Dialga") {
-            requiredStars := minStarsA2Dialga
-        } else if (openPack = "Palkia") {
-            requiredStars := minStarsA2Palkia
-        } else if (openPack = "Mewtwo") {
-            requiredStars := minStarsA1Mewtwo
-        } else if (openPack = "Charizard") {
-            requiredStars := minStarsA1Charizard
-        } else if (openPack = "Pikachu") {
-            requiredStars := minStarsA1Pikachu
-        } else if (openPack = "Mew") {
-            requiredStars := minStarsA1a
-        } else if (shinyPacks.HasKey(openPack)) {
-            requiredStars := minStarsShiny
-        }
+    if (openPack == "MegaGyarados") {
+        requiredStars := minStarsMegaGyarados
+    } else if (openPack == "MegaBlaziken") {
+        requiredStars := minStarsMegaBlaziken
+    } else if (openPack == "MegaAltaria") {
+        requiredStars := minStarsMegaAltaria
+    } else if (openPack == "Deluxe") {
+        requiredStars := minStarsA4Deluxe
+    } else if (openPack == "Springs") {
+        requiredStars := minStarsA4Springs
+    } else if (openPack == "HoOh") {
+        requiredStars := minStarsA4HoOh
+    } else if (openPack == "Lugia") {
+        requiredStars := minStarsA4Lugia
+    } else if (openPack == "Eevee") {
+        requiredStars := minStarsA3b
+    } else if (openPack == "Buzzwole") {
+        requiredStars := minStarsA3a
+    } else if (openPack == "Solgaleo") {
+        requiredStars := minStarsA3Solgaleo
+    } else if (openPack == "Lunala") {
+        requiredStars := minStarsA3Lunala
+    } else if (openPack = "Shining") {
+        requiredStars := minStarsA2b
+    } else if (openPack = "Arceus") {
+        requiredStars := minStarsA2a
+    } else if (openPack = "Dialga") {
+        requiredStars := minStarsA2Dialga
+    } else if (openPack = "Palkia") {
+        requiredStars := minStarsA2Palkia
+    } else if (openPack = "Mewtwo") {
+        requiredStars := minStarsA1Mewtwo
+    } else if (openPack = "Charizard") {
+        requiredStars := minStarsA1Charizard
+    } else if (openPack = "Pikachu") {
+        requiredStars := minStarsA1Pikachu
+    } else if (openPack = "Mew") {
+        requiredStars := minStarsA1a
+    } else if (shinyPacks.HasKey(openPack)) {
+        requiredStars := minStarsShiny
+    }
 
     ; Check if pack meets minimum stars requirement
     if (!invalidPack) {
@@ -771,7 +771,6 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         }
 
         LogToDiscord(discordMessage, screenShot, true, xmlFileToSend,, s4tDiscordWebhookURL, s4tDiscordUserId)
-
 
     }
     return

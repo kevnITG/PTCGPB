@@ -56,7 +56,7 @@
         Lang["GroupSettings"] := "Group Settings"
         Lang["DiscordSettingsHeading"] := "Discord Settings"
         Lang["HeartbeatSettingsSubHeading"] := "Heartbeat Settings"
-        
+
         Lang["Txt_Instances"] := "Instances:"
         Lang["Txt_InstanceStartDelay"] := "Start Delay (s):"
         Lang["Txt_Columns"] := "Columns:"
@@ -200,7 +200,7 @@
         Lang["GroupSettings"] := "群組設定"
         Lang["DiscordSettingsHeading"] := "Discord 設定"
         Lang["HeartbeatSettingsSubHeading"] := "心跳設定"
-        
+
         Lang["Txt_Instances"] := "模擬器數量："
         Lang["Txt_InstanceStartDelay"] := "啟動延遲："
         Lang["Txt_Columns"] := "排列數："
@@ -281,7 +281,7 @@
         Lang["Txt_s4tWPMinCards"] := "最少卡數："
         Lang["S4TDiscordSettingsSubHeading"] := "S4T Discord 設定"
         Lang["Txt_s4tSendAccountXml"] := "傳送帳號 XML"
-        
+
         Lang["Txt_sendAccountXml"] := "傳送帳號 XML"
         Lang["Txt_heartBeat"] := "Discord 心跳"
         Lang["hbName"] := "名稱："
@@ -344,7 +344,7 @@
         Lang["GroupSettings"] := "グループ設定"
         Lang["DiscordSettingsHeading"] := "Discord 設定"
         Lang["HeartbeatSettingsSubHeading"] := "ハートビート設定"
-        
+
         Lang["Txt_Instances"] := "エミュレータ数："
         Lang["Txt_InstanceStartDelay"] := "起動遅延："
         Lang["Txt_Columns"] := "列数："
@@ -425,7 +425,7 @@
         Lang["Txt_s4tWPMinCards"] := "最小枚数："
         Lang["S4TDiscordSettingsSubHeading"] := "S4T Discord 設定"
         Lang["Txt_s4tSendAccountXml"] := "アカウント XML 送信"
-        
+
         Lang["Txt_sendAccountXml"] := "アカウント XML 送信"
         Lang["Txt_heartBeat"] := "Discord ハートビート"
         Lang["hbName"] := "名称："
@@ -490,7 +490,7 @@
         Lang["GroupSettings"] := "Gruppen-Einstellungen"
         Lang["DiscordSettingsHeading"] := "Discord Einstellungen"
         Lang["HeartbeatSettingsSubHeading"] := "Herzschlag Einstellungen"
-        
+
         Lang["Txt_Instances"] := "Instanzen:"
         Lang["Txt_InstanceStartDelay"] := "Startverzögerung:"
         Lang["Txt_Columns"] := "Spalten:"
@@ -562,7 +562,7 @@
         Lang["Txt_ShinyCheck"] := "Schillernde speichern"
         Lang["Txt_ImmersiveCheck"] := "Immersive speichern"
         Lang["Txt_InvalidCheck"] := "Ignoriere ungültige Packs"
-        
+
         Lang["Txt_s4tEnabled"] := "Für Tausch speichern aktivieren"
         Lang["Txt_S4TEnabled"] := "S4T: Aktiviert"
         Lang["Txt_S4TDisabled"] := "Deaktiviert"
@@ -571,12 +571,12 @@
         Lang["Txt_s4tWPMinCards"] := "Min. Karten:"
         Lang["S4TDiscordSettingsSubHeading"] := "S4T Discord Einstellungen"
         Lang["Txt_s4tSendAccountXml"] := "Account XML senden"
-        
+
         Lang["Txt_sendAccountXml"] := "Account XML senden"
         Lang["Txt_heartBeat"] := "Discord Herzschlag"
         Lang["hbName"] := "Name:"
         Lang["hbDelay"] := "Herzschlag Verzögerung (min):"
-        
+
         Lang["Txt_showcaseEnabled"] := "Showcase aus showcase_ids.txt verwenden"
         Lang["Txt_Disabled"] := "Deaktiviert"
     }
@@ -677,7 +677,8 @@ CreateSetUpByLanguage(Language) {
         SetUpLang["Confirm_Gholdengo"] := "Gholdengo"
         SetUpLang["Confirm_WonderPick"] := "Wonder Pick"
         SetUpLang["Confirm_MinCards"] := "cards minimum"
-        SetUpLang["Confirm_XMLWarning"] := "⚠️ WARNING: Send Account XML is enabled. This setting is only recommended to be used solo. Do not use it in groups as your accounts will be shared to other members of your group."
+        SetUpLang["Confirm_XMLWarning"] :=
+        "⚠️ WARNING: Send Account XML is enabled. This setting is only recommended to be used solo. Do not use it in groups as your accounts will be shared to other members of your group."
         SetUpLang["Confirm_StartBot"] := "Click 'Yes' to START THE BOT with these settings."
         SetUpLang["Confirm_StartBot"] .= " Click 'No' to CHANGE settings."
     } else if (Language = 2) {
@@ -715,7 +716,7 @@ CreateSetUpByLanguage(Language) {
         SetUpLang["Confirm_WonderPick"] := "得卡挑戰"
         SetUpLang["Confirm_MinCards"] := "最少卡數"
         SetUpLang["Confirm_XMLWarning"] := "⚠️ 警告：傳送帳號 XML 已啟用。此設定僅建議單獨使用。請勿在群組中使用，因為您的帳號將會共享給群組的其他成員。"
-                SetUpLang["Confirm_StartBot"] := "按「是」開始運行，按「否」返回修改設定。"
+        SetUpLang["Confirm_StartBot"] := "按「是」開始運行，按「否」返回修改設定。"
     } else if (Language = 3) {
         SetUpLang["Error_BotPathTooLong"] := "BOTフォルダのパスが長すぎるか、スペースが含まれています"
         SetUpLang["Error_BotPathTooLong"] .= "。より短くスペースを含まないパスに移動してください。"
@@ -750,7 +751,8 @@ CreateSetUpByLanguage(Language) {
         SetUpLang["Confirm_Gholdengo"] := "サーフゴー"
         SetUpLang["Confirm_WonderPick"] := "ゲットチャレンジ"
         SetUpLang["Confirm_MinCards"] := "最小枚数"
-        SetUpLang["Confirm_XMLWarning"] := "⚠️ 警告：アカウント XML 送信が有効です。この設定は単独でのみ使用することをお勧めします。グループ内で使用しないでください。アカウントがグループの他のメンバーと共有されます。"
+        SetUpLang["Confirm_XMLWarning"] :=
+        "⚠️ 警告：アカウント XML 送信が有効です。この設定は単独でのみ使用することをお勧めします。グループ内で使用しないでください。アカウントがグループの他のメンバーと共有されます。"
         SetUpLang["Confirm_StartBot"] := "「はい」でこの設定でBOTを開始。「いいえ」で設定を変更します。"
     } else if (Language = 4) {
         SetUpLang["Error_BotPathTooLong"] := "Der Pfad zum Bot-Ordner ist zu lang oder "
@@ -787,7 +789,8 @@ CreateSetUpByLanguage(Language) {
         SetUpLang["Confirm_Gholdengo"] := "Gholdengo"
         SetUpLang["Confirm_WonderPick"] := "Wunderwahl"
         SetUpLang["Confirm_MinCards"] := "Min. Karten"
-        SetUpLang["Confirm_XMLWarning"] := "⚠️ WARNUNG: Account XML senden ist aktiviert. Diese Einstellung wird nur zur alleinigen Nutzung empfohlen. Verwenden Sie sie nicht in Gruppen, da Ihre Konten mit anderen Mitgliedern Ihrer Gruppe geteilt werden."
+        SetUpLang["Confirm_XMLWarning"] :=
+        "⚠️ WARNUNG: Account XML senden ist aktiviert. Diese Einstellung wird nur zur alleinigen Nutzung empfohlen. Verwenden Sie sie nicht in Gruppen, da Ihre Konten mit anderen Mitgliedern Ihrer Gruppe geteilt werden."
         SetUpLang["Confirm_StartBot"] := "Klicke auf Ja, um den BOT mit diesen "
         SetUpLang["Confirm_StartBot"] .= "Einstellungen zu STARTEN. Klicke auf "
         SetUpLang["Confirm_StartBot"] .= "Nein, um die Einstellungen zu ÄNDERN."
