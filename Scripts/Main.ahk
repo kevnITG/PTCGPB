@@ -89,11 +89,11 @@ Sleep, 5000
 if (InStr(defaultLanguage, "100")) {
     scaleParam := 287
 } else {
-    if (MuMuv5) {
-        scaleParam := 283
-    } else {
-        scaleParam := 277
-    }
+     	if (MuMuv5) {
+			scaleParam := 283
+		} else {
+			scaleParam := 277
+		}
 }
 
 resetWindows()
@@ -109,7 +109,7 @@ Loop {
         y4 := y + Height - 4 + 2
         buttonWidth := 45
 
-        Gui, ToolBar:New, +Owner%OwnerWND% -AlwaysOnTop +ToolWindow -Caption +LastFound -DPIScale
+        Gui, ToolBar:New, +Owner%OwnerWND% -AlwaysOnTop +ToolWindow -Caption +LastFound -DPIScale 
         Gui, ToolBar:Default
         Gui, ToolBar:Margin, 4, 4  ; Set margin for the GUI
         Gui, ToolBar:Font, s5 cGray Norm Bold, Segoe UI  ; Normal font for input labels
@@ -120,7 +120,7 @@ Loop {
         Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 4) . " y0 w" . buttonWidth . " h25 gShowStatusMessages", Status (Shift+F8)
         Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 5) . " y0 w" . buttonWidth . " h25 gTestScript", GP Test (Shift+F9)
         DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1  ; HWND_BOTTOM
-            , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
+                , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
         Gui, ToolBar:Show, NoActivate x%x4% y%y4%  w275 h30
         break
     }
@@ -172,7 +172,7 @@ Loop {
         if (autotest_time >= TestTime) {
             A_gptest := 1
             ToggleTestScript()
-        }
+        }        
     }
 
     if (GPTest) {
@@ -434,7 +434,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         pBitmap := from_window(WinExist(winTitle))
         Path = %imagePath%App.png
         if (MuMuv5)
-            Path = %imagePath%App2.png
+        Path = %imagePath%App2.png
         pNeedle := GetNeedle(Path)
         ; ImageSearch within the region
         vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, 15, 155, 270, 420, searchVariation)
@@ -475,12 +475,13 @@ resetWindows(){
             if (instanceIndex = "")
                 instanceIndex := 1
 
+                    
             if (MuMuv5) {
                 titleHeight := 50
             } else {
                 titleHeight := 45
             }
-
+            
             borderWidth := 4 - 1
             rowHeight := titleHeight + 489 + 4
             currentRow := Floor((instanceIndex - 1) / Columns)
@@ -492,7 +493,7 @@ resetWindows(){
             } else {
                 x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
             }
-
+            
             WinSet, Style, -0xC00000, %Title%
             WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
             WinSet, Style, +0xC00000, %Title%
@@ -557,14 +558,14 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
         FileCreateDir, %fileDir%
     if (subDir) {
         fileDir .= "\" . subDir
-        if !FileExist(fileDir)
-            FileCreateDir, %fileDir%
+		if !FileExist(fileDir)
+			FileCreateDir, %fileDir%
     }
-    if (fileType = "PACKSTATS") {
+	if (fileType = "PACKSTATS") {
         fileDir .= "\temp"
-        if !FileExist(fileDir)
-            FileCreateDir, %fileDir%
-    }
+		if !FileExist(fileDir)
+			FileCreateDir, %fileDir%
+	}
 
     ; File path for saving the screenshot locally
     fileName := A_Now . "_" . winTitle . "_" . fileType . "_" . packsInPool . "_packs.png"
@@ -586,7 +587,7 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
     ; Don't dispose pBitmap if it's a PACKSTATS screenshot
     if (fileType != "PACKSTATS") {
         Gdip_DisposeImage(pBitmap)
-        return filePath
+		return filePath
     }
 
     ; For PACKSTATS, return both values and delete temp file after OCR is done
@@ -837,14 +838,14 @@ RemoveNonVipFriends() {
 
     includesIdsAndNames := false
     vipFriendsArray :=  GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
-
-    ; append new list onto vipFriendsArray to combine manual and automatic GPtesting KSBM
-    manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
-    if FileExist(manualVipFile) {
-        ManualvipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
-        vipFriendsArray.push(ManualvipFriendsArray*)
-    }
-
+    
+		; append new list onto vipFriendsArray to combine manual and automatic GPtesting KSBM
+		manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
+		if FileExist(manualVipFile) {
+		    ManualvipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
+		    vipFriendsArray.push(ManualvipFriendsArray*)
+		}                
+    
     if (!vipFriendsArray.MaxIndex()) {
         CreateStatusMessage("No accounts found in vip_ids.txt. Aborting test...",,,, false)
         return
@@ -852,7 +853,7 @@ RemoveNonVipFriends() {
 
     friendIndex := 0
     repeatFriendAccounts := 0
-    scrolledWithoutFriend := 0
+	scrolledWithoutFriend := 0
     recentFriendAccounts := []
     Loop {
         if (scrolledWithoutFriend > 5){
@@ -861,7 +862,7 @@ RemoveNonVipFriends() {
                 A_gptest := 0
                 autotest := A_TickCount
                 ToggleTestScript()
-            }
+			}
             return
         }
         friendClickY := 195 + (95 * friendIndex)
@@ -886,10 +887,10 @@ RemoveNonVipFriends() {
                     CreateStatusMessage("Ready to test.",,,, false)
                 adbClick(143, 507)
                 if(A_gptest && autoUseGPTest) {
-                    A_gptest := 0
-                    autotest := A_TickCount
-                    ToggleTestScript()
-                }
+					A_gptest := 0
+					autotest := A_TickCount
+					ToggleTestScript()
+				}
                 return
             }
             matchedFriend := ""
@@ -903,8 +904,8 @@ RemoveNonVipFriends() {
                 ; If it's a VIP friend, skip removal
                 if (isVipResult) {
                     CreateStatusMessage("Parsed friend: " . friendAccount.ToString() . "`nMatched VIP: " . matchedFriend.ToString() . "`nSkipping VIP...",,,, false)
-                    scrolledWithoutFriend := 0
-                }
+					scrolledWithoutFriend := 0
+				}
                 Sleep, 1500 ; Time to read
                 FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 500)
                 Delay(2)
@@ -934,7 +935,7 @@ RemoveNonVipFriends() {
                 Delay(1)
                 FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 500)
                 Delay(3)
-                scrolledWithoutFriend := 0
+				scrolledWithoutFriend := 0
             }
         }
         else {
@@ -956,7 +957,7 @@ RemoveNonVipFriends() {
                 FindImageAndClick(226, 100, 270, 135, , "Add", 143, 508, 500)
                 Delay(3)
             }
-            scrolledWithoutFriend++
+			scrolledWithoutFriend++
         }
         if (!GPTest) {
             Return
@@ -1375,8 +1376,8 @@ bboxAndPause_immage(X1, Y1, X2, Y2, pNeedleObj, vret := False, doPause := False)
 
 ; Wrapper for Gdip_ImageSearch with bounding box debugging and title bar offset adjustment.
 Gdip_ImageSearch_wbb(pBitmapHaystack,pNeedle,ByRef OutputList=""
-    ,OuterX1=0,OuterY1=0,OuterX2=0,OuterY2=0,Variation=0,Trans=""
-    ,SearchDirection=1,Instances=1,LineDelim="`n",CoordDelim=",") {
+,OuterX1=0,OuterY1=0,OuterX2=0,OuterY2=0,Variation=0,Trans=""
+,SearchDirection=1,Instances=1,LineDelim="`n",CoordDelim=",") {
     ; ------------------------------------------------------------------------------
     ; Wrapper around Gdip_ImageSearch that:
     ;   1. Adjusts Y coordinates for title bar height

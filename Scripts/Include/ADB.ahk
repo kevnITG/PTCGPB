@@ -333,12 +333,12 @@ adbGesture(params) {
 adbTakeScreenshot(outputFile) {
     ; Percroy Optimization
     global winTitle, adbPort, adbPath
-
+    
     static pTokenLocal := 0
     if (!pTokenLocal) {
         pTokenLocal := Gdip_Startup()
     }
-
+    
     hwnd := WinExist(winTitle)
     if (!hwnd) {
         deviceAddress := "127.0.0.1:" . adbPort
@@ -360,11 +360,11 @@ adbTakeScreenshot(outputFile) {
     if (outputDir && !FileExist(outputDir)) {
         FileCreateDir, %outputDir%
     }
-
+    
     result := Gdip_SaveBitmapToFile(pBitmap, outputFile)
-
+    
     Gdip_DisposeImage(pBitmap)
-
+    
     if (!result || result = -1) {
         deviceAddress := "127.0.0.1:" . adbPort
         command := """" . adbPath . """ -s " . deviceAddress . " exec-out screencap -p > """ .  outputFile . """"

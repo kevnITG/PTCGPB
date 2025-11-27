@@ -188,7 +188,8 @@
             font-size: 0.85em;
         }
 
-        .filter-group input[type="text"] {
+        .filter-group select,
+        .filter-group input {
             padding: 6px 12px;
             border: 1px solid #ddd;
             font-size: 0.85em;
@@ -198,59 +199,10 @@
             border-radius: 8px;
         }
 
-        .filter-group input[type="text"]:focus {
+        .filter-group select:focus,
+        .filter-group input:focus {
             outline: none;
             border-color: #1a1a1a;
-        }
-
-        .filter-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .filter-label {
-            font-size: 0.8em;
-            color: #555;
-            font-weight: 500;
-            letter-spacing: 0.2px;
-        }
-
-        .checkbox-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            padding: 8px 10px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            background: white;
-            max-height: 140px;
-            overflow-y: auto;
-            min-width: 220px;
-        }
-
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 8px;
-            border: 1px solid #f0f0f0;
-            border-radius: 8px;
-            background: #fafafa;
-            font-size: 0.85em;
-            cursor: pointer;
-            transition: border-color 0.15s, background 0.15s;
-            user-select: none;
-        }
-
-        .checkbox-item:hover {
-            border-color: #ccc;
-            background: #f5f5f5;
-        }
-
-        .checkbox-item input {
-            accent-color: #1a1a1a;
-            cursor: pointer;
         }
 
         .btn {
@@ -724,8 +676,6 @@
                 uniqueAccounts: "unique accounts",
                 totalCards: "total cards",
                 loadCSV: "load csv",
-                expandAll: "expand all",
-                collapseAll: "collapse all",
                 allPacks: "all packs",
                 allCards: "all cards",
                 searchPlaceholder: "search account...",
@@ -781,8 +731,6 @@
                 uniqueAccounts: "独特帐户",
                 totalCards: "总卡数",
                 loadCSV: "加载 csv",
-                expandAll: "全部展开",
-                collapseAll: "全部折叠",
                 allPacks: "所有卡包",
                 allCards: "所有卡牌",
                 searchPlaceholder: "搜索帐户...",
@@ -838,8 +786,6 @@
                 uniqueAccounts: "固有アカウント",
                 totalCards: "合計カード数",
                 loadCSV: "csv読み込み",
-                expandAll: "すべて展開",
-                collapseAll: "すべて折りたたむ",
                 allPacks: "すべてのパック",
                 allCards: "すべてのカード",
                 searchPlaceholder: "アカウント検索...",
@@ -895,8 +841,6 @@
                 uniqueAccounts: "eindeutige Konten",
                 totalCards: "Gesamtkarten",
                 loadCSV: "csv laden",
-                expandAll: "alle öffnen",
-                collapseAll: "alle schließen",
                 allPacks: "alle Packs",
                 allCards: "alle Karten",
                 searchPlaceholder: "Konto suchen...",
@@ -952,8 +896,6 @@
                 uniqueAccounts: "comptes uniques",
                 totalCards: "total de cartes",
                 loadCSV: "charger csv",
-                expandAll: "tout déplier",
-                collapseAll: "tout replier",
                 allPacks: "tous les paquets",
                 allCards: "toutes les cartes",
                 searchPlaceholder: "rechercher un compte...",
@@ -1009,8 +951,6 @@
                 uniqueAccounts: "고유 계정",
                 totalCards: "총 카드",
                 loadCSV: "csv 로드",
-                expandAll: "모두 펼치기",
-                collapseAll: "모두 접기",
                 allPacks: "모든 팩",
                 allCards: "모든 카드",
                 searchPlaceholder: "계정 검색...",
@@ -1066,8 +1006,6 @@
                 uniqueAccounts: "cuentas únicas",
                 totalCards: "total de cartas",
                 loadCSV: "cargar csv",
-                expandAll: "expandir todo",
-                collapseAll: "contraer todo",
                 allPacks: "todos los sobres",
                 allCards: "todas las cartas",
                 searchPlaceholder: "buscar cuenta...",
@@ -1131,7 +1069,6 @@
         let accountShinedustMap = new Map(); // Store latest shinedust for each account
         let filesUploaded = false;
         let uploadedFiles = [];
-        let allExpanded = false;
 
         function changeLanguage() {
             const select = document.getElementById('languageSelect');
@@ -1167,6 +1104,17 @@
                 loadBtn.innerHTML = '<i class="fas fa-upload"></i> ' + t.loadCSV;
             }
             
+            // Update filter placeholders
+            const packFilter = document.getElementById('packFilter');
+            if (packFilter) {
+                packFilter.options[0].textContent = t.allPacks;
+            }
+            
+            const cardFilter = document.getElementById('cardFilter');
+            if (cardFilter) {
+                cardFilter.options[0].textContent = t.allCards;
+            }
+            
             document.getElementById('searchInput').placeholder = t.searchPlaceholder;
             // Update export button (use innerHTML to preserve icons)
             document.getElementById('exportBtn').innerHTML = '<i class="fas fa-download"></i> ' + t.exportBtn;
@@ -1186,35 +1134,6 @@
                     }
                 }
             }
-
-            updateExpandButtonText();
-        }
-
-        function updateExpandButtonText() {
-            const btn = document.getElementById('expandToggleBtn');
-            if (!btn) return;
-            const t = translations[currentLanguage] || translations.en;
-            const label = allExpanded
-                ? (t.collapseAll || translations.en.collapseAll)
-                : (t.expandAll || translations.en.expandAll);
-            const iconClass = allExpanded ? 'fa-compress' : 'fa-expand';
-            btn.innerHTML = `<i class="fas ${iconClass}"></i> ${label}`;
-            btn.classList.toggle('active', allExpanded);
-        }
-
-        function toggleExpandAll() {
-            if (!csvLoaded) return;
-
-            if (allExpanded) {
-                allExpanded = false;
-                expandedAccounts.clear();
-            } else {
-                const accounts = filteredData.map(row => row.deviceAccount);
-                expandedAccounts = new Set(accounts);
-                allExpanded = expandedAccounts.size > 0;
-            }
-
-            renderTable();
         }
 
         function translatePackType(packType) {
@@ -1234,16 +1153,6 @@
         function shortenDeviceAccount(account) {
             if (!account || account.length <= 6) return account;
             return account.substring(0, 5) + '..';
-        }
-
-        function makeSafeId(prefix, value) {
-            const safeValue = (value || 'item').toString().replace(/[^a-zA-Z0-9_-]/g, '');
-            return `${prefix}-${safeValue || 'option'}`;
-        }
-
-        function getCheckedValues(containerId) {
-            return Array.from(document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`))
-                .map(cb => cb.value);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1307,14 +1216,10 @@
             }
 
             filteredData = [...allData];
-            expandedAccounts.clear();
-            allExpanded = false;
             csvLoaded = true;
             sortColumn = 'date';
             sortDirection = 'desc';
             updateShinedustMap(); // Update shinedust map from all data
-            document.getElementById('packFilterContainer').dataset.initialized = '';
-            document.getElementById('cardFilterContainer').dataset.initialized = '';
             enableControls();
             updateStats();
             populateFilters();
@@ -1353,9 +1258,10 @@
         }
 
         function enableControls() {
+            document.getElementById('packFilter').disabled = false;
+            document.getElementById('cardFilter').disabled = false;
             document.getElementById('searchInput').disabled = false;
             document.getElementById('exportBtn').disabled = false;
-            document.getElementById('expandToggleBtn').disabled = false;
             // Hide load CSV button
             document.getElementById('loadCSVBtn').style.display = 'none';
         }
@@ -1378,68 +1284,56 @@
 
         function populatePackFilter() {
             const packTypes = new Set(allData.map(row => row.packType));
-            const container = document.getElementById('packFilterContainer');
-            const previousSelection = new Set(getCheckedValues('packFilterContainer'));
-            const firstRender = !container.dataset.initialized;
-            const existingPackInputs = Array.from(container.querySelectorAll('input[type="checkbox"]'));
-            const hadAllChecked = existingPackInputs.length === 0 || existingPackInputs.every(cb => cb.checked);
-
-            container.innerHTML = '';
+            
+            const t = translations[currentLanguage];
+            const packFilter = document.getElementById('packFilter');
+            const currentSelection = packFilter.value; // Preserve current selection
+            
+            packFilter.innerHTML = `<option value="">${t.allPacks}</option>`;
             packTypes.forEach(pack => {
-                const label = document.createElement('label');
-                label.className = 'checkbox-item';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = pack;
-                checkbox.id = makeSafeId('pack', pack);
-                checkbox.checked = firstRender || previousSelection.has(pack) || hadAllChecked;
-
-                const text = document.createElement('span');
-                text.textContent = translatePackType(pack);
-
-                label.appendChild(checkbox);
-                label.appendChild(text);
-                container.appendChild(label);
+                const translatedPack = translatePackType(pack);
+                packFilter.innerHTML += `<option value="${pack}">${translatedPack}</option>`;
             });
-
-            container.dataset.initialized = 'true';
+            
+            // Restore previous selection if it still exists
+            if (currentSelection && Array.from(packFilter.options).some(opt => opt.value === currentSelection)) {
+                packFilter.value = currentSelection;
+            }
         }
 
         function setupFilterListeners() {
-            const packContainer = document.getElementById('packFilterContainer');
-            const cardContainer = document.getElementById('cardFilterContainer');
+            const packFilter = document.getElementById('packFilter');
+            const cardFilter = document.getElementById('cardFilter');
             const searchInput = document.getElementById('searchInput');
-
-            if (packContainer) {
-                packContainer.onchange = () => {
-                    updateCardFilter();
-                    applyFilters();
-                };
-            }
-
-            if (cardContainer) {
-                cardContainer.onchange = applyFilters;
-            }
-
+            
+            // Remove existing listeners by cloning and replacing
+            const newPackFilter = packFilter.cloneNode(true);
+            packFilter.parentNode.replaceChild(newPackFilter, packFilter);
+            
+            const newCardFilter = cardFilter.cloneNode(true);
+            cardFilter.parentNode.replaceChild(newCardFilter, cardFilter);
+            
             const newSearchInput = searchInput.cloneNode(true);
             searchInput.parentNode.replaceChild(newSearchInput, searchInput);
             
             // Add fresh listeners
+            document.getElementById('packFilter').addEventListener('change', () => {
+                updateCardFilter(); // Update card filter when pack changes
+                applyFilters();
+            });
+            document.getElementById('cardFilter').addEventListener('change', applyFilters);
             document.getElementById('searchInput').addEventListener('input', applyFilters);
         }
 
         function updateCardFilter() {
-            const cardContainer = document.getElementById('cardFilterContainer');
-            const selectedPacks = getCheckedValues('packFilterContainer');
-            const previousSelection = new Set(getCheckedValues('cardFilterContainer'));
-            const firstRender = !cardContainer.dataset.initialized;
-            const existingCardInputs = Array.from(cardContainer.querySelectorAll('input[type="checkbox"]'));
-            const hadAllChecked = existingCardInputs.length === 0 || existingCardInputs.every(cb => cb.checked);
-
-            // Filter data based on current pack selections
-            const dataToCount = selectedPacks.length > 0
-                ? allData.filter(row => selectedPacks.includes(row.packType))
+            const t = translations[currentLanguage];
+            const packFilter = document.getElementById('packFilter').value;
+            const cardFilter = document.getElementById('cardFilter');
+            const currentSelection = cardFilter.value; // Preserve current selection
+            
+            // Filter data based on current pack selection
+            const dataToCount = packFilter 
+                ? allData.filter(row => row.packType === packFilter)
                 : allData;
             
             // Calculate card counts from filtered data
@@ -1451,27 +1345,18 @@
                 });
             });
 
-            // Rebuild the card filter checkboxes
-            cardContainer.innerHTML = '';
+            // Rebuild the card filter dropdown
+            cardFilter.innerHTML = `<option value="">${t.allCards}</option>`;
             cardTypes.forEach((count, card) => {
-                const label = document.createElement('label');
-                label.className = 'checkbox-item';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = card;
-                checkbox.id = makeSafeId('card', card);
-                checkbox.checked = firstRender || previousSelection.has(card) || hadAllChecked;
-
-                const text = document.createElement('span');
-                text.innerHTML = `${getCardDisplayName(card)} (${count})`;
-
-                label.appendChild(checkbox);
-                label.appendChild(text);
-                cardContainer.appendChild(label);
+                cardFilter.innerHTML += `<option value="${card}">${getCardDisplayName(card)} (${count})</option>`;
             });
-
-            cardContainer.dataset.initialized = 'true';
+            
+            // Restore previous selection if it still exists
+            if (currentSelection && Array.from(cardFilter.options).some(opt => opt.value === currentSelection)) {
+                cardFilter.value = currentSelection;
+            } else {
+                cardFilter.value = ''; // Reset if previous selection no longer exists
+            }
         }
 
         function sortData(column) {
@@ -1488,21 +1373,13 @@
         }
 
         function applyFilters() {
-            const selectedPacks = getCheckedValues('packFilterContainer');
-            const selectedCards = getCheckedValues('cardFilterContainer');
+            const packFilter = document.getElementById('packFilter').value;
+            const cardFilter = document.getElementById('cardFilter').value;
             const searchText = document.getElementById('searchInput').value.toLowerCase();
 
-            if (selectedPacks.length === 0 || selectedCards.length === 0) {
-                filteredData = [];
-                expandedAccounts.clear();
-                allExpanded = false;
-                renderTable();
-                return;
-            }
-
             filteredData = allData.filter(row => {
-                if (!selectedPacks.includes(row.packType)) return false;
-                if (!row.cardTypes.some(type => selectedCards.includes(type))) return false;
+                if (packFilter && row.packType !== packFilter) return false;
+                if (cardFilter && !row.cardTypes.includes(cardFilter)) return false;
                 if (searchText) {
                     const searchableText = (row.cleanFilename + row.deviceAccount + row.originalFilename).toLowerCase();
                     if (!searchableText.includes(searchText)) return false;
@@ -1511,7 +1388,6 @@
             });
 
             expandedAccounts.clear();
-            allExpanded = false;
             renderTable();
         }
 
@@ -1572,7 +1448,6 @@
         }
 
         function toggleAccount(deviceAccount) {
-            allExpanded = false;
             if (expandedAccounts.has(deviceAccount)) {
                 expandedAccounts.delete(deviceAccount);
             } else {
@@ -1603,7 +1478,6 @@
                         </td>
                     </tr>
                 `;
-                updateExpandButtonText();
                 return;
             }
 
@@ -1634,11 +1508,11 @@
                 });
             } else if (sortColumn === 'shinedust') {
                 aggregated.sort((a, b) => {
-                    const shinedustA = accountShinedustMap.has(a.deviceAccount)
-                        ? parseInt(accountShinedustMap.get(a.deviceAccount), 10) || 0
+                    const shinedustA = a.details.length > 0 && a.details[a.details.length - 1].shinedust 
+                        ? parseInt(a.details[a.details.length - 1].shinedust) 
                         : 0;
-                    const shinedustB = accountShinedustMap.has(b.deviceAccount)
-                        ? parseInt(accountShinedustMap.get(b.deviceAccount), 10) || 0
+                    const shinedustB = b.details.length > 0 && b.details[b.details.length - 1].shinedust 
+                        ? parseInt(b.details[b.details.length - 1].shinedust) 
                         : 0;
                     return sortDirection === 'asc' ? shinedustA - shinedustB : shinedustB - shinedustA;
                 });
@@ -1766,8 +1640,6 @@
                     }
                 });
             });
-
-            updateExpandButtonText();
         }
 
         function openPopup(event) {
@@ -1851,17 +1723,13 @@
 
                 <input type="text" id="searchInput" placeholder="search account..." disabled>
 
-                <div class="filter-stack">
-                    <span class="filter-label" data-i18n="allPacks">all packs</span>
-                    <div id="packFilterContainer" class="checkbox-group"></div>
-                </div>
+                <select id="packFilter" disabled>
+                    <option value="">all packs</option>
+                </select>
 
-                <div class="filter-stack">
-                    <span class="filter-label" data-i18n="allCards">all cards</span>
-                    <div id="cardFilterContainer" class="checkbox-group"></div>
-                </div>
-
-                <button class="btn" id="expandToggleBtn" onclick="toggleExpandAll()" disabled><i class="fas fa-expand"></i> expand all</button>
+                <select id="cardFilter" disabled>
+                    <option value="">all cards</option>
+                </select>
                 
                 <button class="btn export-btn" onclick="exportFiltered()" id="exportBtn" disabled><i class="fas fa-download"></i> export</button>
             </div>

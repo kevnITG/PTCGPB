@@ -52,6 +52,10 @@ Loop %Instances% {
 
 ExitApp
 
+
+
+
+
 killInstance(instanceNum := "")
 {
     pID := checkInstance(instanceNum)
@@ -137,7 +141,7 @@ getMumuInstanceNumFromPlayerName(scriptName := "") {
 */
 Run_(target, args:="", workdir:="") {
     try
-    ShellRun(target, args, workdir)
+        ShellRun(target, args, workdir)
     catch e
         Run % args="" ? target : target " " args, % workdir
 }
