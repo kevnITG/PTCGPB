@@ -66,10 +66,10 @@ Gui, Show, w470 h400, Arturo's Account Injection Tool ;'
 Return
 
 OnGuiClose:
-ExitApp
+    ExitApp
 
 GuiClose:
-ExitApp
+    ExitApp
 
 BrowseFile:
     FileSelectFile, selectedFile, 3, , Select XML File, XML Files (*.xml)
@@ -79,7 +79,7 @@ BrowseFile:
         GuiControl,, fileName, %fileNameNoExtNoPath%
         selectedFilePath := selectedFile
     }
-return
+    return
 
 SaveSettings:
     Gui, Submit, NoHide
@@ -89,38 +89,38 @@ SaveSettings:
     IniWrite, %folderPath%, InjectAccount.ini, UserSettings, folderPath
     IniWrite, %selectedFilePath%, InjectAccount.ini, UserSettings, selectedFilePath
 
-    adbPath := folderPath . "\MuMuPlayerGlobal-12.0\shell\adb.exe"
-    findAdbPorts(folderPath)
+adbPath := folderPath . "\MuMuPlayerGlobal-12.0\shell\adb.exe"
+findAdbPorts(folderPath)
 
-    if(!WinExist(winTitle)) {
-        Msgbox, 16, , Can't find instance: %winTitle%. Make sure that instance is running.;'
-        ExitApp
-    }
+if(!WinExist(winTitle)) {
+    Msgbox, 16, , Can't find instance: %winTitle%. Make sure that instance is running.;'
+    ExitApp
+}
 
-    if !FileExist(adbPath) ;if international mumu file path isn't found look for chinese domestic path
-        adbPath := folderPath . "\MuMu Player 12\shell\adb.exe"
+if !FileExist(adbPath) ;if international mumu file path isn't found look for chinese domestic path
+    adbPath := folderPath . "\MuMu Player 12\shell\adb.exe"
 
-    if !FileExist(adbPath) {
-        MsgBox, 16, , Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
-        ExitApp
-    }
+if !FileExist(adbPath) {
+    MsgBox, 16, , Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
+    ExitApp
+}
 
-    if(!adbPorts) {
-        Msgbox, 16, , Invalid port... Check the common issues section in the readme/github guide.
-        ExitApp
-    }
+if(!adbPorts) {
+    Msgbox, 16, , Invalid port... Check the common issues section in the readme/github guide.
+    ExitApp
+}
 
-    filePath := selectedFilePath
-    if (filePath = "")
-        filePath := A_ScriptDir . "\" . fileName . ".xml"
+filePath := selectedFilePath
+if (filePath = "")
+    filePath := A_ScriptDir . "\" . fileName . ".xml"
 
-    if(!FileExist(filePath)) {
-        Msgbox, 16, , Can't find XML file: %filePath% ;'
-        ExitApp
-    }
-    RunWait, %adbPath% connect 127.0.0.1:%adbPorts%,, Hide
+if(!FileExist(filePath)) {
+    Msgbox, 16, , Can't find XML file: %filePath% ;'
+    ExitApp
+}
+RunWait, %adbPath% connect 127.0.0.1:%adbPorts%,, Hide
 
-    MaxRetries := 10
+MaxRetries := 10
     RetryCount := 0
     Loop {
         try {
@@ -155,6 +155,7 @@ SaveSettings:
         adbShell := ""
     }
 return
+
 
 findAdbPorts(baseFolder := "C:\Program Files\Netease") {
     global adbPorts, winTitle
@@ -326,7 +327,7 @@ GetInstanceList(baseFolder) {
 RefreshInstances:
     refreshedList := GetInstanceList(folderPath)
     GuiControl,, winTitle, |%refreshedList%
-return
+    return
 
 RunInstance:
     Gui, Submit, NoHide
@@ -362,4 +363,4 @@ RunInstance:
     } else {
         MsgBox, 16, Error, Could not find instance number for %winTitle%
     }
-return
+    return

@@ -81,17 +81,17 @@ loadAccount() {
                     break
                 }
 
-                if(InStr(fileLines[1], "T")) {
-                    ; account has a pack under test
+				if(InStr(fileLines[1], "T")) {
+					; account has a pack under test
 
-                }
-                if (accountModifiedTimeDiff >= 24){
-                    if(!InStr(fileLines[1], "T") || accountModifiedTimeDiff >= 5*24) {
-                        ; otherwise account has a pack under test
-                        accountFileName := fileLines[1]
-                        break
-                    }
-                }
+				}
+				if (accountModifiedTimeDiff >= 24){
+					if(!InStr(fileLines[1], "T") || accountModifiedTimeDiff >= 5*24) {
+						; otherwise account has a pack under test
+						accountFileName := fileLines[1]
+						break
+					}
+				}
 
                 if (foundValidAccount)
                     break
@@ -774,7 +774,7 @@ CreateAccountList(instance) {
         if(InStr(A_LoopFileName, "(") && InStr(A_LoopFileName, "T") && !InStr(A_LoopFileName, "W")) {
             if(hoursDiff < 5*24) {  ; Always 5 days for T-flagged accounts
                 ; if (verboseLogging)
-                ; LogToFile("Skipping account with T flag (testing): " . A_LoopFileName . " (age: " . hoursDiff . " hours, needs 5 days)")
+                    ; LogToFile("Skipping account with T flag (testing): " . A_LoopFileName . " (age: " . hoursDiff . " hours, needs 5 days)")
                 continue
             }
         }
@@ -788,13 +788,13 @@ CreateAccountList(instance) {
         } else {
             packCount := 10  ; Default for unrecognized formats
             ; if (verboseLogging)
-            ; LogToFile("Unknown filename format: " . A_LoopFileName . ", assigned default pack count: 10")
+                ; LogToFile("Unknown filename format: " . A_LoopFileName . ", assigned default pack count: 10")
         }
 
         ; Check if pack count fits the current injection range
         if (packCount < minPacks || packCount > maxPacks) {
             ; if (verboseLogging)
-            ; LogToFile("  - SKIPPING: " . A_LoopFileName . " - Pack count " . packCount . " outside range " . minPacks . "-" . maxPacks)
+                ; LogToFile("  - SKIPPING: " . A_LoopFileName . " - Pack count " . packCount . " outside range " . minPacks . "-" . maxPacks)
             continue
         }
 
@@ -803,7 +803,7 @@ CreateAccountList(instance) {
         fileTimes.Push(modTime)
         packCounts.Push(packCount)
         ; if (verboseLogging)
-        ; LogToFile("  - KEEPING: " . A_LoopFileName . " - Pack count " . packCount . " inside range " . minPacks . "-" . maxPacks . " (age: " . hoursDiff . " hours)")
+            ; LogToFile("  - KEEPING: " . A_LoopFileName . " - Pack count " . packCount . " inside range " . minPacks . "-" . maxPacks . " (age: " . hoursDiff . " hours)")
     }
 
     ; Log counts
