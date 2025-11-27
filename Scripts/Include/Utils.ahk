@@ -51,13 +51,13 @@ IsLeapYear(year) {
 DownloadFile(url, filename) {
     url := url  ; Change to your hosted .txt URL "https://pastebin.com/raw/vYxsiqSs"
     RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
-	RegRead, proxyServer, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyServer
+    RegRead, proxyServer, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyServer
     localPath = %A_ScriptDir%\..\%filename% ; Change to the folder you want to save the file
     errored := false
     try {
         whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
         if (proxyEnabled)
-			whr.SetProxy(2, proxyServer)
+            whr.SetProxy(2, proxyServer)
         whr.Open("GET", url, true)
         whr.Send()
         whr.WaitForResponse()
@@ -112,22 +112,22 @@ MigrateDeleteMethod(oldMethod) {
 ; getChangeDateTime - Calculate the server reset time in local timezone
 ;-------------------------------------------------------------------------------
 getChangeDateTime() {
-	offset := A_Now
-	currenttimeutc := A_NowUTC
-	EnvSub, offset, %currenttimeutc%, Hours   ;offset from local timezone to UTC
+    offset := A_Now
+    currenttimeutc := A_NowUTC
+    EnvSub, offset, %currenttimeutc%, Hours   ;offset from local timezone to UTC
 
     resetTime := SubStr(A_Now, 1, 8) "060000" ;today at 6am [utc] zero seconds is the reset time at UTC
-	resetTime += offset, Hours                ;reset time in local timezone
+    resetTime += offset, Hours                ;reset time in local timezone
 
-	;find the closest reset time
-	currentTime := A_Now
-	timeToReset := resetTime
-	EnvSub, timeToReset, %currentTime%, Hours
-	if(timeToReset > 12) {
-		resetTime += -1, Days
-	} else if (timeToReset < -12) {
-		resetTime += 1, Days
-	}
+    ;find the closest reset time
+    currentTime := A_Now
+    timeToReset := resetTime
+    EnvSub, timeToReset, %currentTime%, Hours
+    if(timeToReset > 12) {
+        resetTime += -1, Days
+    } else if (timeToReset < -12) {
+        resetTime += 1, Days
+    }
 
     return resetTime
 }
@@ -149,16 +149,16 @@ checkShouldDoMissions() {
         IniRead, skipMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, skipMissionsInjectMissions, 0
         if (skipMissions = 1) {
             ; if(verboseLogging)
-                ; LogToFile("Skipping missions for Inject Missions method (user setting)")
+            ; LogToFile("Skipping missions for Inject Missions method (user setting)")
             return false
         }
         ; if(verboseLogging)
-            ; LogToFile("Executing missions for Inject Missions method (user setting enabled)")
+        ; LogToFile("Executing missions for Inject Missions method (user setting enabled)")
         return true
     }
     else if (deleteMethod = "Inject 13P+" || deleteMethod = "Inject Wonderpick 96P+") {
         ; if(verboseLogging)
-            ; LogToFile("Skipping missions for " . deleteMethod . " method - missions only run for 'Inject Missions'")
+        ; LogToFile("Skipping missions for " . deleteMethod . " method - missions only run for 'Inject Missions'")
         return false
     }
     else {

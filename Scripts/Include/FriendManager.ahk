@@ -23,8 +23,8 @@ AddFriends(renew := false, getFC := false) {
 
     friendIDs := ReadFile("ids")
     friended := true
-	if(!getFC && !friendIDs && friendID = "")
-		return false
+    if(!getFC && !friendIDs && friendID = "")
+        return false
 
     failSafe := A_TickCount
     failSafeTime := 0
@@ -166,7 +166,7 @@ AddFriends(renew := false, getFC := false) {
 ;-------------------------------------------------------------------------------
 RemoveFriends() {
     global friendIDs, friended, friendID, packsInPool, scriptName, stopToggle, scaleParam
-	friendIDs := ReadFile("ids")
+    friendIDs := ReadFile("ids")
 
     if(!friendIDs && friendID = "") {
         friended := false
@@ -204,8 +204,8 @@ RemoveFriends() {
                     pos2 += 5
                 }
                 adbClick_wbb(pos1, pos2)
-                }
             }
+        }
         Sleep, 500
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
@@ -281,7 +281,7 @@ RemoveFriends() {
 
     ; Exit friend removal process
     CreateStatusMessage("Friend removal completed. Processed " . friendsProcessed . " friends. Returning to main...",,,, false)
-	IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+    IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
     friended := false
     CreateStatusMessage("Friends removed successfully!",,,, false)
 
@@ -295,23 +295,23 @@ RemoveFriends() {
 ; showcaseLikes - Like community showcases from ID list
 ;-------------------------------------------------------------------------------
 showcaseLikes() {
-	; Liking showcase script
+    ; Liking showcase script
     FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 152, 335, 200)
-	Loop, Read, %A_ScriptDir%\..\showcase_ids.txt
-		{
-			showcaseID := Trim(A_LoopReadLine)
-            Delay(2)
-			FindImageAndClick(215, 252, 240, 277, , "FriendIDSearch", 224, 472, 200)
-            Delay(2)
-			FindImageAndClick(157, 498, 225, 522, , "ShowcaseInput", 143, 273, 200)
-			Delay(3)
-			adbInput(showcaseID)					; Pasting ID
-			Delay(1)
-			adbClick(212, 384)						; Pressing OK
-			FindImageAndClick(98, 187, 125, 214, ,"ShowcaseLiked", 175, 200, 200)
-            Delay(2)
-			FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 140, 495, 200)
-		}
+    Loop, Read, %A_ScriptDir%\..\showcase_ids.txt
+    {
+        showcaseID := Trim(A_LoopReadLine)
+        Delay(2)
+        FindImageAndClick(215, 252, 240, 277, , "FriendIDSearch", 224, 472, 200)
+        Delay(2)
+        FindImageAndClick(157, 498, 225, 522, , "ShowcaseInput", 143, 273, 200)
+        Delay(3)
+        adbInput(showcaseID)					; Pasting ID
+        Delay(1)
+        adbClick(212, 384)						; Pressing OK
+        FindImageAndClick(98, 187, 125, 214, ,"ShowcaseLiked", 175, 200, 200)
+        Delay(2)
+        FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 140, 495, 200)
+    }
 }
 
 ;-------------------------------------------------------------------------------

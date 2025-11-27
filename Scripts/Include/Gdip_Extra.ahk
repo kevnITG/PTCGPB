@@ -18,7 +18,7 @@ Gdip_ResizeBitmap(pBitmap, PercentOrWH, Dispose=1) {
         NewHeight := (NewHeight = "") ? origH/(origW/NewWidth) : NewHeight
     }
     else
-    NewWidth := origW*PercentOrWH/100, NewHeight := origH*PercentOrWH/100
+        NewWidth := origW*PercentOrWH/100, NewHeight := origH*PercentOrWH/100
     pBitmap2 := Gdip_CreateBitmap(NewWidth, NewHeight)
     G2 := Gdip_GraphicsFromImage(pBitmap2), Gdip_SetSmoothingMode(G2, 4), Gdip_SetInterpolationMode(G2, 7)
     Gdip_DrawImage(G2, pBitmap, 0, 0, NewWidth, NewHeight)
