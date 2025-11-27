@@ -3902,13 +3902,15 @@ GetEventRewards(frommain := true){
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
-        if (FindOrLoseImage(213, 203, 221, 210, , "MissionWater", 0, failSafeTime)){
+        if (FindOrLoseImage(199, 203, 212, 211, , "MissionWater", 0, failSafeTime)){
             break
         }
         adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-        Sleep, 750
+        Delay(4)
         if (failSafeTime > 10){
-            break
+            adbInput("111")
+            Sleep, 1000
+            return
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
         if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
@@ -3931,9 +3933,10 @@ GetEventRewards(frommain := true){
         if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
             break
         }
-        else if (failSafeTime > 15){
-            GotRewards := false
-            break
+        if (failSafeTime > 10){
+            adbInput("111")
+            Sleep, 1000
+            return
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
         if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
@@ -3952,7 +3955,9 @@ GetEventRewards(frommain := true){
         adbClick_wbb(6, 465) ; used to scroll to other missions further left.
         Sleep, 750
         if (failSafeTime > 10){
-            break
+            adbInput("111")
+            Sleep, 1000
+            return
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
         if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
@@ -3975,9 +3980,10 @@ GetEventRewards(frommain := true){
         if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
             break
         }
-        else if (failSafeTime > 15){
-            GotRewards := false
-            break
+        if (failSafeTime > 10){
+            adbInput("111")
+            Sleep, 1000
+            return
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
         if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
@@ -3996,7 +4002,9 @@ GetEventRewards(frommain := true){
             break
         }
         if (failSafeTime > 10){
-            break
+            adbInput("111")
+            Sleep, 1000
+            return
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
         if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
@@ -4019,9 +4027,10 @@ GetEventRewards(frommain := true){
         if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
             break
         }
-        else if (failSafeTime > 15){
-            GotRewards := false
-            break
+        if (failSafeTime > 10){
+            adbInput("111")
+            Sleep, 1000
+            return
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
         if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
