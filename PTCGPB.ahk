@@ -1190,7 +1190,10 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (checkWPthanks ? "Checked" : "") " vcheckWPthanks_Popup x" . col1X . " y" . yPos . " cWhite", Check for Wonderpick Thanks
     yPos += 20
     
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x" . col1X . " y" . yPos . " cWhite", No Speedmod Menu Clicks
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (ClaimGiftsPacks ? "Checked" : "") " vClaimGiftsPacks_Popup x" . col1X . " y" . yPos . " cWhite", ClaimGiftsPacks
+    yPos += 20
+	
+	Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x" . col1X . " y" . yPos . " cWhite", No Speedmod Menu Clicks
     yPos += 35
     
     sectionColor := "cWhite"
@@ -1296,11 +1299,12 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Font, s10 cWhite, Segoe UI
     
     finalY := yPos2
+	finalY += 20 ; longer windows for ClaimGiftsPacks Checkbox HACK - This placement also lowers buttons vs before form draw define | buttons still offcenter to upper groupbox
     buttonY := finalY - 5
     Gui, ToolsAndSystemSelect:Add, Button, x140 y%buttonY% w70 h30 gApplyToolsAndSystemSettings, Apply
     Gui, ToolsAndSystemSelect:Add, Button, x220 y%buttonY% w70 h30 gCancelToolsAndSystemSettings, Cancel
     finalY += 35
-    
+	
     Gui, ToolsAndSystemSelect:Show, x%popupX% y%popupY% w410 h%finalY%
 return
 
@@ -1311,6 +1315,7 @@ ApplyToolsAndSystemSettings:
     statusMessage := statusMessage_Popup
     showcaseEnabled := showcaseEnabled_Popup
     claimDailyMission := claimDailyMission_Popup
+	ClaimGiftsPacks := ClaimGiftsPacks_Popup
     slowMotion := slowMotion_Popup
     claimSpecialMissions := claimSpecialMissions_Popup
     wonderpickForEventMissions := wonderpickForEventMissions_Popup
@@ -1333,6 +1338,9 @@ ApplyToolsAndSystemSettings:
     GuiControl,, statusMessage, %statusMessage%
     GuiControl,, showcaseEnabled, %showcaseEnabled%
     GuiControl,, claimDailyMission, %claimDailyMission% 
+	
+	GuiControl,, ClaimGiftsPacks, %ClaimGiftsPacks%
+	
     GuiControl,, slowMotion, %slowMotion%
     GuiControl,, claimSpecialMissions, %claimSpecialMissions%
     GuiControl,, wonderpickForEventMissions, %wonderpickForEventMissions%
@@ -1499,6 +1507,8 @@ Save:
     else if (injectSortMethod = "PacksDesc")
       additionalSettings .= "Most Packs First`n"
   }
+  if (ClaimGiftsPacks)
+    additionalSettings .= SetUpDictionary.Confirm_ClaimGiftsPacks . "`n"
   
   if (additionalSettings != "") {
     confirmMsg .= "`n" . SetUpDictionary.Confirm_AdditionalSettings . "`n" . additionalSettings
@@ -1998,6 +2008,8 @@ LoadSettingsFromIni() {
       IniRead, showcaseLikes, Settings.ini, UserSettings, showcaseLikes, 5
       IniRead, autoUseGPTest, Settings.ini, UserSettings, autoUseGPTest, 0
       IniRead, applyRoleFilters, Settings.ini, UserSettings, applyRoleFilters, 0
+	  
+	  IniRead, ClaimGiftsPacks, Settings.ini, UserSettings, ClaimGiftsPacks, 0
 
       IniRead, minStarsA1Charizard, Settings.ini, UserSettings, minStarsA1Charizard, 0
       IniRead, minStarsA1Mewtwo, Settings.ini, UserSettings, minStarsA1Mewtwo, 0
@@ -2098,6 +2110,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "minStarsEnabled=0`n"
       iniContent .= "showcaseEnabled=0`n"
       iniContent .= "showcaseLikes=5`n"
+	  iniContent .= "ClaimGiftsPacks=0`n"
       iniContent .= "rowGap=90`n"
       iniContent .= "variablePackCount=15`n"
       iniContent .= "claimSpecialMissions=0`n"
@@ -2142,6 +2155,7 @@ SaveAllSettings() {
    global menuExpanded
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
    global checkWPthanks
+   global ClaimGiftsPacks
 
    if (deleteMethod != "Inject Wonderpick 96P+") {
        packMethod := false
@@ -2301,6 +2315,7 @@ SaveAllSettings() {
    iniContent_Second .= "skipMissionsInjectMissions=" skipMissionsInjectMissions "`n"
    iniContent_Second .= "showcaseEnabled=" showcaseEnabled "`n"
    iniContent_Second .= "showcaseLikes=5`n"
+   iniContent_Second .= "ClaimGiftsPacks=" ClaimGiftsPacks "`n"
    iniContent_Second .= "minStarsA1Mewtwo=" minStarsA1Mewtwo "`n"
    iniContent_Second .= "minStarsA1Charizard=" minStarsA1Charizard "`n"
    iniContent_Second .= "minStarsA1Pikachu=" minStarsA1Pikachu "`n"
@@ -2363,6 +2378,7 @@ StartBot() {
    global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
    global MegaBlaziken, MegaGyarados, MegaAltaria, packMethod, nukeAccount
    global SelectedMonitorIndex, localVersion, githubUser, rerollTime, PackGuiBuild
+   global ClaimGiftsPacks
    
    PackGuiBuild := 0
    rerollTime := A_TickCount
