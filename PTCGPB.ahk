@@ -1496,6 +1496,8 @@ Save:
     additionalSettings .= SetUpDictionary.Confirm_ClaimMissions . "`n"
   if (showcaseEnabled)
     additionalSettings .= "• Showcase Likes`n"
+  if (ClaimGiftsPacks)
+    additionalSettings .= "• ClaimGiftsPacks`n"
   if (injectMethod) {
     additionalSettings .= SetUpDictionary.Confirm_SortBy . " "
     if (injectSortMethod = "ModifiedAsc")
