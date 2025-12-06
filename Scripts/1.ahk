@@ -986,7 +986,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     static lastStatusTime := 0
 
     if(slowMotion) {
-        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three")
+        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three" || imageName = "speedmodMenu2" || imageName = "One2" || imageName = "Two2" || imageName = "Three2")
             return true
     }
     if(searchVariation = "")
@@ -1253,7 +1253,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
     global winTitle, failSafe, confirmed, slowMotion
 
     if(slowMotion) {
-        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three")
+        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three" || imageName = "speedmodMenu2" || imageName = "One2" || imageName = "Two2" || imageName = "Three2")
             return true
     }
     if(searchVariation = "")
