@@ -2767,7 +2767,7 @@ DoTutorial() {
 
     if(setSpeed = 3){
         FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) ; click mod settings
-        FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
+        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) ; click mod settings
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -2846,7 +2846,7 @@ DoTutorial() {
     FindImageAndClick(225, 273, 235, 290, , "Pack", 140, 424) ;wait for pack to be ready  to trace
     if(setSpeed > 1) {
         FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) ; click mod settings
-        FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
+        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) ; click mod settings
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -2876,7 +2876,7 @@ DoTutorial() {
     FindImageAndClick(34, 99, 74, 131, , "Swipe", 140, 375) ;click through cards until needing to swipe up
     if(setSpeed > 1) {
         FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) ; click mod settings
-        FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
+        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) ; click mod settings
         Delay(1)
     }
     failSafe := A_TickCount
@@ -2945,7 +2945,7 @@ DoTutorial() {
     FindImageAndClick(225, 273, 235, 290, , "Pack", 239, 497) ;wait for pack to be ready  to Trace
     if(setSpeed > 1) {
         FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) ; click mod settings
-        FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
+        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) ; click mod settings
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -3456,7 +3456,7 @@ PackOpening() {
 
     if(setSpeed > 1) {
         FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) ; click mod settings
-        FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
+        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) ; click mod settings
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -3625,7 +3625,7 @@ HourglassOpening(HG := false, NEIRestart := true) {
 
     if(setSpeed > 1) {
         FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) ; click mod settings
-        FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
+        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) ; click mod settings
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
