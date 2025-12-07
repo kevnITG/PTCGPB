@@ -3898,53 +3898,6 @@ GetEventRewards(frommain := true){
     ; adbClick_wbb(120, 465) ; used to click the middle mission button
     ; adbClick_wbb(25, 465) ;used to click the left-most mission button
 
-    ;====== Water Mission / Wonder Pick Event 11.27.2025 ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        if (FindOrLoseImage(199, 203, 212, 211, , "MissionWater", 0, failSafeTime)){
-            break
-        }
-        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-        Delay(4)
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-    ; ====== Collect all rewards ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        adbClick_wbb(172, 427) ;clicks complete all and ok
-        Sleep, 1500
-        adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
-        Sleep, 1500
-        if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
-            break
-        }
-        if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
-            break
-        }
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
     ;====== First Anniversary Celebration SpecialMissions pt2 ======
     failSafe := A_TickCount
     failSafeTime := 0
