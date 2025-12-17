@@ -106,7 +106,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.1.1"
+   ,localVersion := "v9.1.2"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -365,7 +365,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.1.1 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.1.2 kevinnnn"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -1933,6 +1933,9 @@ LoadSettingsFromIni() {
       IniRead, injectSortMethod, Settings.ini, UserSettings, injectSortMethod, PacksDesc
       IniRead, godPack, Settings.ini, UserSettings, godPack, Continue
       IniRead, claimSpecialMissions, Settings.ini, UserSettings, claimSpecialMissions, 0
+      ; Force claimSpecialMissions to always be 0
+      claimSpecialMissions := 0
+      IniWrite, %claimSpecialMissions%, Settings.ini, UserSettings, claimSpecialMissions
       IniRead, claimDailyMission, Settings.ini, UserSettings, claimDailyMission, 0
       IniRead, wonderpickForEventMissions, Settings.ini, UserSettings, wonderpickForEventMissions, 0
       ; wonderpickForEventMissions := 0 ; forced turned off during Sneak Peek for now...
@@ -2239,7 +2242,8 @@ SaveAllSettings() {
    iniContent .= "heartBeat=" heartBeat "`n"
    iniContent .= "menuExpanded=" menuExpanded "`n"
    iniContent .= "groupRerollEnabled=" groupRerollEnabled "`n"
-   iniContent .= "claimSpecialMissions=" claimSpecialMissions "`n"
+   ; Force claimSpecialMissions to always be 0
+   iniContent .= "claimSpecialMissions=0`n"
    iniContent .= "claimDailyMission=" claimDailyMission "`n"
    iniContent .= "wonderpickForEventMissions=" wonderpickForEventMissions "`n"
    iniContent .= "checkWPthanks=" checkWPthanks "`n"
