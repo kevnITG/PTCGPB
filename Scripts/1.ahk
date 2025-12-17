@@ -28,8 +28,8 @@ DllCall("AllocConsole")
 WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
-global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria
-global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
+global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze
+global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
 global DeadCheck
 global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards, s4tDiscordWebhookURL, s4tDiscordUserId, s4tSendAccountXml
 global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star
@@ -130,9 +130,10 @@ IniRead, PseudoGodPack, %A_ScriptDir%\..\Settings.ini, UserSettings, PseudoGodPa
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsShiny, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsShiny, 0
 
-IniRead, MegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaGyarados, 1
-IniRead, MegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaBlaziken, 1
-IniRead, MegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaAltaria, 1
+IniRead, CrimsonBlaze, %A_ScriptDir%\..\Settings.ini, UserSettings, CrimsonBlaze, 1
+IniRead, MegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaGyarados, 0
+IniRead, MegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaBlaziken, 0
+IniRead, MegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaAltaria, 0
 IniRead, Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, Deluxe, 0
 IniRead, Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, Springs, 0
 IniRead, HoOh, %A_ScriptDir%\..\Settings.ini, UserSettings, HoOh, 0
@@ -166,6 +167,7 @@ IniRead, minStarsA4HoOh, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4
 IniRead, minStarsA4Lugia, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Lugia, 0
 IniRead, minStarsA4Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Springs, 0
 IniRead, minStarsA4Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Deluxe, 0
+IniRead, minStarsCrimsonBlaze, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsCrimsonBlaze, 0
 IniRead, minStarsMegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaGyarados, 0
 IniRead, minStarsMegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaBlaziken, 0
 IniRead, minStarsMegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaAltaria, 0
@@ -216,8 +218,8 @@ if(s4tEnabled){
     maxAccountPackNum := 9999
 }
 
-pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria"]
-shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1, "MegaGyarados": 1, "MegaBlaziken": 1, "MegaAltaria": 1}
+pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria", "CrimsonBlaze"]
+shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1, "MegaGyarados": 1, "MegaBlaziken": 1, "MegaAltaria": 1, "CrimsonBlaze": 1}
 
 packArray := []  ; Initialize an empty array
 
@@ -3081,23 +3083,23 @@ SelectPack(HG := false) {
         packx := RightPackX
     } else if (openPack == "MegaGyarados") {
         packx := LeftPackX
-    } else {
+    } else { ; do not set this to a specific if openPack == "something" as all packs need to reference MiddlePackX as pack position.
         packx := MiddlePackX
     }
 
-    if(openPack == "MegaBlaziken" || openPack == "MegaGyarados" || openPack == "MegaAltaria") {
+    if(openPack == "CrimsonBlaze") {
         PackIsInHomeScreen := 1
     } else {
         PackIsInHomeScreen := 0
     }
 
-    if(openPack == "MegaBlaziken") {
+    if(openPack == "CrimsonBlaze") {
         PackIsLatest := 1
     } else {
         PackIsLatest := 0
     }
 
-    if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") {
+    if (openPack == "CrimsonBlaze" || openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") {
         packInTopRowsOfSelectExpansion := 1
     } else {
         packInTopRowsOfSelectExpansion := 0
@@ -3176,8 +3178,7 @@ SelectPack(HG := false) {
         ; packs that can be opened after clicking A series
         if (openPack = "Springs" || openPack = "HoOh" || openPack = "Lugia" || openPack = "Eevee") {
             Delay(4)
-            adbClick(156, 455) ; click A series. need more robust system later
-            Delay(4)
+
             if (openPack == "Springs") {
                 packx := SelectExpansionRightColumnMiddleX
                 packy := 298
@@ -3197,8 +3198,6 @@ SelectPack(HG := false) {
         if (openPack = "Buzzwole" || openPack = "Solgaleo" || openPack = "Lunala") {
 
             Delay(4)
-            adbClick(156, 455) ; click A series. need more robust system later
-            Delay(4)
 
             X := 266
             Y1 := 430
@@ -3206,7 +3205,7 @@ SelectPack(HG := false) {
 
             Loop, 1 {
                 adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
-                Sleep, 300 ;
+                Sleep, 600 ;
             }
             if (openPack = "Buzzwole") {
                 packx := SelectExpansionLeftColumnMiddleX
@@ -3222,26 +3221,23 @@ SelectPack(HG := false) {
 
         ; packs that can be opened after fully swiping down
         if (openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu" || openPack = "Shining" || openPack = "Arceus") {
-
             Delay(4)
-            adbClick(156, 455) ; click A series. need more robust system later
-            Delay(4)
-
+            
             X := 266
             Y1 := 430
             Y2 := 50
 
             Loop, 5 {
                 adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
-                Sleep, 300 ;
+                Sleep, 500 ;
             }
 
             if (openPack = "Shining") {
                 packx := SelectExpansionLeftColumnMiddleX
-                packy := 113
+                packy := 116
             } else if (openPack = "Arceus") {
                 packx := SelectExpansionRightColumnMiddleX
-                packy := 113
+                packy := 116
             } else if (openPack = "Dialga") {
                 packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
                 packy := 209
@@ -3264,20 +3260,23 @@ SelectPack(HG := false) {
             }
         }
 
-        if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
+        if (openPack == "CrimsonBlaze" || openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
             Delay(4)
             adbClick(52, 455) ; click B series. need more robust system later
             Delay(4)
-            if (openPack == "MegaGyarados") {
-                packy := SelectExpansionFirstRowY
-                ; packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
-                packx := 18 ; custom location to avoid accidentally rotating through pack wheel on following screen
-            } else if (openPack == "MegaBlaziken") {
+            if (openPack == "CrimsonBlaze") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionLeftColumnMiddleX
+            } else if (openPack == "MegaGyarados") {
+                packy := SelectExpansionFirstRowY
+                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionLeft
+                ; packx := 18 ; custom location to avoid accidentally rotating through pack wheel on following screen
+            } else if (openPack == "MegaBlaziken") {
+                packy := SelectExpansionFirstRowY
+                packx := SelectExpansionRightColumnMiddleX
             } else if (openPack == "MegaAltaria") {
                 packy := SelectExpansionFirstRowY
-                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
+                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionRight
             }
         }
 

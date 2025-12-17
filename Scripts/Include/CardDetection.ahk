@@ -262,7 +262,7 @@ FindCard(prefix) {
 ; FindGodPack - Detect if current pack is a god pack
 ;-------------------------------------------------------------------------------
 FindGodPack(invalidPack := false) {
-    global keepAccount, openPack, minStars, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
+    global keepAccount, openPack, minStars, minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
     global minStarsA4Deluxe, minStarsA4Springs, minStarsA4HoOh, minStarsA4Lugia, minStarsA3b, minStarsA3a
     global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA2b, minStarsA2a, minStarsA2Dialga, minStarsA2Palkia
     global minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsShiny, shinyPacks
@@ -282,7 +282,9 @@ FindGodPack(invalidPack := false) {
     requiredStars := minStars ; Default to general minStars
 
     ; Check specific selections first, then default to shiny
-        if (openPack == "MegaGyarados") {
+        if (openPack == "CrimsonBlaze") {
+            requiredStars := minStarsCrimsonBlaze
+        } else if (openPack == "MegaGyarados") {
             requiredStars := minStarsMegaGyarados
         } else if (openPack == "MegaBlaziken") {
             requiredStars := minStarsMegaBlaziken
