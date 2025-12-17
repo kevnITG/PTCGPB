@@ -1051,6 +1051,46 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
 
+        ; Search for new privacy and TOS clearing popup; can be removed later patch
+    if (imageName = "Points" || imageName = "Social" || imageName = "Country") {
+        Path = %imagePath%newPrivacyTOSpopup.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 221, 394, 236, 407, searchVariation)
+        if (vRet = 1) {
+            CreateStatusMessage("Accepting Privacy and TOS popup.",,,, false)
+            Sleep, 1000
+            adbClick_wbb(142, 372)
+            adbClick_wbb(142, 372)
+            Sleep, 3000
+            adbClick_wbb(140, 336) ; Privacy Notice
+            adbClick_wbb(140, 336) ; Privacy Notice
+            Sleep, 3000
+            adbClick_wbb(138, 487) ; Close Privacy Notice
+            adbClick_wbb(138, 487) ; Close Privacy Notice
+            Sleep, 1000
+            adbClick_wbb(47, 371) ; Agree to Privacy Notice
+            Sleep, 200
+            adbClick_wbb(143, 488) ; OK
+            Sleep, 500
+            adbClick_wbb(141, 371) ; OK
+            adbClick_wbb(141, 371) ; OK
+            Sleep, 2000
+            adbClick_wbb(140, 336) ; Terms of Use
+            adbClick_wbb(140, 336) ; Terms of Use
+            Sleep, 3000
+            adbClick_wbb(138, 487) ; Close Terms of Use
+            adbClick_wbb(138, 487) ; Close Terms of Use
+            Sleep, 1000
+            adbClick_wbb(47, 371) ; Agree to Privacy Notice
+            Sleep, 200
+            adbClick_wbb(143, 488) ; OK
+            Sleep, 500
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
+    }
+
     ; Handle 7/2025 trade news update popup, remove later patch
     if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll" || imageName = "inHamburgerMenu" || imageName = "Trade") {
         Path = %imagePath%Privacy.png ; this is just the "X" button on several pop-up menus
@@ -1443,6 +1483,46 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             if (vRet = 1) {
                 adbClick_wbb(145, 451)
             }
+        }
+
+        ; Search for new privacy and TOS clearing popup; can be removed later patch
+        if (imageName = "Points" || imageName = "Social" || imageName = "Country") {
+            Path = %imagePath%newPrivacyTOSpopup.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 221, 394, 236, 407, searchVariation)
+            if (vRet = 1) {
+                CreateStatusMessage("Accepting Privacy and TOS popup.",,,, false)
+                Sleep, 1000
+                adbClick_wbb(142, 372)
+                adbClick_wbb(142, 372)
+                Sleep, 2000
+                adbClick_wbb(140, 336) ; Privacy Notice
+                adbClick_wbb(140, 336) ; Privacy Notice
+                Sleep, 2000
+                adbClick_wbb(138, 487) ; Close Privacy Notice
+                adbClick_wbb(138, 487) ; Close Privacy Notice
+                Sleep, 1000
+                adbClick_wbb(47, 371) ; Agree to Privacy Notice
+                Sleep, 200
+                adbClick_wbb(143, 488) ; OK
+                Sleep, 500
+                adbClick_wbb(141, 371) ; OK
+                adbClick_wbb(141, 371) ; OK
+                Sleep, 1500
+                adbClick_wbb(140, 336) ; Terms of Use
+                adbClick_wbb(140, 336) ; Terms of Use
+                Sleep, 2000
+                adbClick_wbb(138, 487) ; Close Terms of Use
+                adbClick_wbb(138, 487) ; Close Terms of Use
+                Sleep, 1000
+                adbClick_wbb(47, 371) ; Agree to Privacy Notice
+                Sleep, 200
+                adbClick_wbb(143, 488) ; OK
+                Sleep, 500
+                Gdip_DisposeImage(pBitmap)
+                return confirmed
+            }
+
         }
 
         ; Search for 7/2025 trade news update popup; can be removed later patch
