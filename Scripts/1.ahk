@@ -1058,13 +1058,13 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 221, 394, 236, 407, searchVariation)
         if (vRet = 1) {
             CreateStatusMessage("Accepting Privacy and TOS popup.",,,, false)
-            Sleep, 1000
+            Sleep, 3000
             adbClick_wbb(142, 372)
             adbClick_wbb(142, 372)
-            Sleep, 3000
+            Sleep, 2000
             adbClick_wbb(140, 336) ; Privacy Notice
             adbClick_wbb(140, 336) ; Privacy Notice
-            Sleep, 3000
+            Sleep, 2000
             adbClick_wbb(138, 487) ; Close Privacy Notice
             adbClick_wbb(138, 487) ; Close Privacy Notice
             Sleep, 1000
@@ -1077,7 +1077,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             Sleep, 2000
             adbClick_wbb(140, 336) ; Terms of Use
             adbClick_wbb(140, 336) ; Terms of Use
-            Sleep, 3000
+            Sleep, 2000
             adbClick_wbb(138, 487) ; Close Terms of Use
             adbClick_wbb(138, 487) ; Close Terms of Use
             Sleep, 1000
