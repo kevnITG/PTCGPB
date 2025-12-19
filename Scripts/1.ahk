@@ -3335,7 +3335,7 @@ SelectPack(HG := false) {
 
             Loop, 6 {
                 adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
-                Sleep, 600 ;
+                Sleep, 300 ;
             }
 
             if(setSpeed > 1) {
