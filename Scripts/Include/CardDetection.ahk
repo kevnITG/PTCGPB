@@ -59,17 +59,15 @@ DetectFourCardPack() {
 FindBorders(prefix) {
     global currentPackIs6Card, currentPackIs4Card, scaleParam, winTitle, defaultLanguage
     count := 0
-    searchVariation := 40 ;
-    if (prefix = "normal") {
-        searchVariation := 75 ; Increasing for megas patch...
-    }
-    searchVariation6Card := 60 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
-    searchVariation4Card := 60 ;
+    searchVariation := 90 ;
+
+    searchVariation6Card := 90 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
+    searchVariation4Card := 90 ;
 
     if (prefix = "shiny2star") { ; some aren't being detected at lower variations
-        searchVariation := 75
-        searchVariation6Card := 75
-        searchVariation4Card := 75
+        searchVariation := 90
+        searchVariation6Card := 90
+        searchVariation4Card := 90
     }
 
     is6CardPack := currentPackIs6Card
