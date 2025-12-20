@@ -66,7 +66,7 @@ FindBorders(prefix) {
 
     if (prefix = "shiny2star") { ; some aren't being detected at lower variations
         searchVariation := 90
-        searchVariation6Card := 90
+        searchVariation6Card := 40
         searchVariation4Card := 90
     }
 
@@ -130,7 +130,7 @@ FindBorders(prefix) {
                 ,[237, 175, 262, 187]
                 ,[74, 293, 97, 305]
                 ,[153, 293, 180, 305]
-                ,[255, 388, 257, 399]]
+                ,[254, 386, 258, 401]]
         } else {
             borderCoords := [[74, 175, 97, 187]
                 ,[153, 175, 180, 187]
