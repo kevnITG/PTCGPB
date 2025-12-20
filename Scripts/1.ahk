@@ -3276,35 +3276,17 @@ SelectPack(HG := false) {
 
         ; packs that can be opened after swiping once
         if (openPack = "Buzzwole" || openPack = "Solgaleo" || openPack = "Lunala") {
-
-            Delay(4)
-
-            if(setSpeed > 1) {
-                FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
-                FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) 
-                Delay(1)
-                adbClick_wbb(51, 297)
-                Delay(1)
-            }
+            Delay(3)
 
             X := 266
             Y1 := 430
             Y2 := 50
 
             Loop, 1 {
-                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
+                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . swipeSpeed)
                 Sleep, 600 ;
-                
-                if(setSpeed > 1) {
-                    if(setSpeed = 3) {
-                        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                        FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) ; click mod settings
-                    } else {
-                        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                        FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) ; click mod settings
-                    }
-                }
             }
+
             if (openPack = "Buzzwole") {
                 packx := SelectExpansionLeftColumnMiddleX
                 packy := 444
@@ -3319,36 +3301,15 @@ SelectPack(HG := false) {
 
         ; packs that can be opened after fully swiping down
         if (openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu" || openPack = "Shining" || openPack = "Arceus") {
-            Delay(4)
+            Delay(3)
             
-            if(setSpeed > 1) {
-                FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
-                FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) 
-                Delay(1)
-                adbClick_wbb(51, 297)
-                Delay(1)
-            }
-
             X := 266
             Y1 := 430
             Y2 := 50
 
             Loop, 6 {
-                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
+                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . swipeSpeed)
                 Sleep, 300 ;
-            }
-
-            if(setSpeed > 1) {
-                if(setSpeed = 3) {
-                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                    FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) ; click mod settings
-                } else {
-                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                    FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) ; click mod settings
-                }
-                Delay(1)
-                adbClick_wbb(51, 297)
-                Delay(1)
             }
 
             if (openPack = "Shining") {
