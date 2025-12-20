@@ -3161,7 +3161,7 @@ SelectPack(HG := false) {
     packy := HomeScreenAllPackY
     if (openPack == "MegaAltaria") {
         packx := RightPackX
-    } else if (openPack == "MegaGyarados") {
+    } else if (openPack == "MegaBlaziken") {
         packx := LeftPackX
     } else { ; do not set this to a specific if openPack == "something" as all packs need to reference MiddlePackX as pack position.
         packx := MiddlePackX
@@ -3357,6 +3357,8 @@ SelectPack(HG := false) {
             } else if (openPack == "MegaAltaria") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionRightColumnMiddleX + 3PackExpansionRight
+                packx := 258 ; custom locations to avoid accidentally rotating through pack wheel on following screen
+                packy := 309 ; custom locations to avoid accidentally rotating through pack wheel on following screen
             }
         }
 
