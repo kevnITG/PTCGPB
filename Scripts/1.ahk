@@ -1240,7 +1240,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
 
-    if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
+    if(imageName = "Social" || imageName = "CommunityShowcase" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
         TradeTutorial()
     }
 
