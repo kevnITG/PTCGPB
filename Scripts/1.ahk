@@ -1665,7 +1665,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if(imageName = "Points" || imageName = "Home") { ;look for level up ok "button"
             LevelUp()
         }
-        if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
+        if(imageName = "Social" || imageName = "CommunityShowcase" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
             TradeTutorial()
         }
         if(skip) {
