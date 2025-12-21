@@ -692,6 +692,17 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         EndOfRun:
 
+        ; Showcase likes
+        IniRead, showcaseNumber, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
+        IniRead, showcaseEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseEnabled
+        if (showcaseNumber > 0 && showcaseEnabled = 1) {
+            showcaseNumber -= 1
+            IniWrite, %showcaseNumber%, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
+            FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+            showcaseLikes()
+            ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+        }
+
         if(ocrShinedust && injectMethod && loadedAccount && s4tEnabled) {
             GoToMain()
             ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
@@ -3307,9 +3318,9 @@ SelectPack(HG := false) {
             Y1 := 430
             Y2 := 50
 
-            Loop, 6 {
+            Loop, 8 {
                 adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . swipeSpeed)
-                Sleep, 300 ;
+                Sleep, 100 ;
             }
 
             if (openPack = "Shining") {

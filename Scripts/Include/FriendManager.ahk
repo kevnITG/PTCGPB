@@ -61,14 +61,17 @@ AddFriends(renew := false, getFC := false) {
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
     }
-    IniRead, showcaseNumber, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
-    IniRead, showcaseEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseEnabled
-    if (showcaseNumber > 0 && showcaseEnabled = 1 && packsThisRun = 0) {
-        showcaseNumber -= 1
-        IniWrite, %showcaseNumber%, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
-        showcaseLikes()
-        FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
-    }
+    
+    ; ======== Showcase Likes - Moved out of AddFriends() and into regular EndOfRun 1.ahk to support Inject 13P+ =========
+    
+    ; IniRead, showcaseNumber, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
+    ; IniRead, showcaseEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseEnabled
+    ; if (showcaseNumber > 0 && showcaseEnabled = 1 && packsThisRun = 0) {
+    ;     showcaseNumber -= 1
+    ;     IniWrite, %showcaseNumber%, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
+    ;     showcaseLikes()
+    ;     FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+    ; }
 
     FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
     FindImageAndClick(205, 430, 255, 475, , "Search", 240, 120, 1500)
