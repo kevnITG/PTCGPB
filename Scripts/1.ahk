@@ -1240,10 +1240,15 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
 
-    if(imageName = "Social" || imageName = "CommunityShowcase" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
+    if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
         TradeTutorial()
     }
-
+    if(imageName = "CommunityShowcase")
+        TradeTutorial()
+        Delay(4)
+        adbClick(140,508)
+        Delay(4)
+    }
     Path = %imagePath%NoResponse.png
     pNeedle := GetNeedle(Path)
     ; ImageSearch within the region
@@ -1665,8 +1670,14 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if(imageName = "Points" || imageName = "Home") { ;look for level up ok "button"
             LevelUp()
         }
-        if(imageName = "Social" || imageName = "CommunityShowcase" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
+        if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
             TradeTutorial()
+        }
+        if(imageName = "CommunityShowcase")
+            TradeTutorial()
+            Delay(4)
+            adbClick(140,508)
+            Delay(4)
         }
         if(skip) {
             ElapsedTime := (A_TickCount - StartSkipTime) // 1000
