@@ -110,6 +110,7 @@ AddFriends(renew := false, getFC := false) {
         failSafe := A_TickCount
         failSafeTime := 0
         Loop {
+            Delay(1)
             adbInput(value)
             Delay(1)
             if(FindOrLoseImage(205, 430, 255, 475, , "Search2", 0, failSafeTime)) {

@@ -1243,7 +1243,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
         TradeTutorial()
     }
-    if(imageName = "CommunityShowcase")
+    if(imageName = "CommunityShowcase") {
         TradeTutorial()
         Delay(4)
         adbClick(140,508)
@@ -1673,7 +1673,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
             TradeTutorial()
         }
-        if(imageName = "CommunityShowcase")
+        if(imageName = "CommunityShowcase") {
             TradeTutorial()
             Delay(4)
             adbClick(140,508)
