@@ -692,17 +692,6 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         EndOfRun:
 
-        ; Showcase likes
-        IniRead, showcaseNumber, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
-        IniRead, showcaseEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseEnabled
-        if (showcaseNumber > 0 && showcaseEnabled = 1) {
-            showcaseNumber -= 1
-            IniWrite, %showcaseNumber%, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
-            FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
-            showcaseLikes()
-            ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
-        }
-
         if(ocrShinedust && injectMethod && loadedAccount && s4tEnabled) {
             GoToMain()
             ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
@@ -737,6 +726,17 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         ; Friend removal for Inject Wonderpick 96P+
         if (injectMethod && friended && !keepAccount) {
             RemoveFriends()
+        }
+        
+        ; Showcase likes
+        IniRead, showcaseNumber, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
+        IniRead, showcaseEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseEnabled
+        if (showcaseNumber > 0 && showcaseEnabled = 1) {
+            showcaseNumber -= 1
+            IniWrite, %showcaseNumber%, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
+            FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+            showcaseLikes()
+            ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
         }
 
         ; BallCity 2025.02.21 - Track monitor
@@ -1240,14 +1240,11 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
 
-    if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
+    if(imageName = "Social" || imageName = "Shop" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
         TradeTutorial()
     }
     if(imageName = "CommunityShowcase") {
-        TradeTutorial()
-        Delay(4)
-        adbClick(140,508)
-        Delay(4)
+        TradeTutorialForShowcase()
     }
     Path = %imagePath%NoResponse.png
     pNeedle := GetNeedle(Path)
@@ -1670,14 +1667,11 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if(imageName = "Points" || imageName = "Home") { ;look for level up ok "button"
             LevelUp()
         }
-        if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
+        if(imageName = "Social" || imageName = "Shop" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
             TradeTutorial()
         }
         if(imageName = "CommunityShowcase") {
-            TradeTutorial()
-            Delay(4)
-            adbClick(140,508)
-            Delay(4)
+            TradeTutorialForShowcase()
         }
         if(skip) {
             ElapsedTime := (A_TickCount - StartSkipTime) // 1000

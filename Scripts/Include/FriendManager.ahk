@@ -296,14 +296,17 @@ RemoveFriends() {
 }
 
 ;-------------------------------------------------------------------------------
-; showcaseLikes - Like community showcases from ID list
+; showcaseLikes
 ;-------------------------------------------------------------------------------
 showcaseLikes() {
-	; Liking showcase script
     FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 152, 335, 200)
+        failSafe := A_TickCount
+        failSafeTime := 0
 	Loop, Read, %A_ScriptDir%\..\showcase_ids.txt
 		{
 			showcaseID := Trim(A_LoopReadLine)
+            Delay(2)
+            TradeTutorialForShowcase()
             Delay(2)
 			FindImageAndClick(215, 252, 240, 277, , "FriendIDSearch", 224, 472, 200)
             Delay(2)
@@ -315,6 +318,8 @@ showcaseLikes() {
 			FindImageAndClick(98, 187, 125, 214, ,"ShowcaseLiked", 175, 200, 200)
             Delay(2)
 			FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 140, 495, 200)
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            CreateStatusMessage("Waiting for Showcase Likes for `n(" . failSafeTime . "/90 seconds)")
 		}
 }
 
@@ -343,6 +348,8 @@ EraseInput(num := 0, total := 0) {
 ;-------------------------------------------------------------------------------
 TradeTutorial() {
     if(FindOrLoseImage(100, 120, 175, 145, , "Trade", 0)) {
+        failSafe := A_TickCount
+        failSafeTime := 0
         Loop{
             adbClick_wbb(167, 447)
             Delay(1)
@@ -354,9 +361,52 @@ TradeTutorial() {
                 break
             adbClick_wbb(38, 460)
             Delay(1)
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            CreateStatusMessage("Waiting for Trade Tutorial for `n(" . failSafeTime . "/90 seconds)")
         }
 
         FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500,,2)
+    }
+    Delay(1)
+}
+
+;-------------------------------------------------------------------------------
+; TradeTutorialForShowcase - Handle trade tutorial popup for showcase likes
+;-------------------------------------------------------------------------------
+TradeTutorialForShowcase() {
+    if(FindOrLoseImage(100, 120, 175, 145, , "Trade", 0)) {
+        failSafe := A_TickCount
+        failSafeTime := 0
+        Loop{
+            if(FindOrLoseImage(226, 100, 270, 135, ,"Add", 0))
+                break
+            adbClick_wbb(167, 447)
+            Delay(0.3)
+            adbClick_wbb(167, 447)
+            Delay(0.3)
+            adbClick_wbb(167, 447)
+            Delay(0.3)
+            adbClick_wbb(167, 447)
+            Delay(0.3)
+            adbClick_wbb(167, 447)
+            Delay(1)
+            adbClick_wbb(38, 460)
+            Delay(6) ; Add more delay to check for the load & Add2 or Add to appear.
+            if(FindOrLoseImage(226, 100, 270, 135, ,"Add", 0))
+                break
+            Delay(2)
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            CreateStatusMessage("Waiting for Trade Tutorial for `n(" . failSafeTime . "/90 seconds)")
+        }
+        Delay(6)
+        if(FindOrLoseImage(226, 100, 270, 135, ,"Add", 0)) {
+            adbClick(140, 508)
+            Delay(6)
+        }
+        if(FindOrLoseImage(15, 455, 40, 475, ,"Add2", 0)) {
+            FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 152, 335, 200)
+            Delay(2)
+        }
     }
     Delay(1)
 }
