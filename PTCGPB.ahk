@@ -2379,6 +2379,7 @@ StartBot() {
    global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
    global MegaBlaziken, MegaGyarados, MegaAltaria, CrimsonBlaze, packMethod, nukeAccount
    global SelectedMonitorIndex, localVersion, githubUser, rerollTime, PackGuiBuild
+   global useAdbManager
    
    PackGuiBuild := 0
    rerollTime := A_TickCount
@@ -2476,35 +2477,29 @@ StartBot() {
       }
       
       Run, %Command%
-   }
 
-	; --- Launch adbmanager if useAdbManager is true ---
-	if(useAdbManager) {
-		Loop, %Instances%
-		{
+      ; --- Launch adbmanager if useAdbManager is true ---
+      if(useAdbManager) {
 			if (A_Index != 1) {
-				SourceFile := "Scripts\1.adbmanager.ahk" ; Path to the source .ahk file
-				TargetFolder := "Scripts\" ; Path to the target folder
-				TargetFile := TargetFolder . A_Index . ".adbmanager.ahk" ; Generate target file path
+				SourceFile := "Scripts\1.adbmanager.ahk"
+				TargetFolder := "Scripts\"
+				TargetFile := TargetFolder . A_Index . ".adbmanager.ahk"
 				if(Instances > 1) {
 					FileDelete, %TargetFile%
-					FileCopy, %SourceFile%, %TargetFile%, 1 ; Copy source file to target
+					FileCopy, %SourceFile%, %TargetFile%, 1
 				}
 				if (ErrorLevel)
 					MsgBox, Failed to create %TargetFile%. Ensure permissions and paths are correct.
 			}
 
-			FileName := "Scripts\" . A_Index . ".adbmanager.ahk"
-			Command := FileName
-
-			if ((Mains > 1 || A_Index > 1) && instanceStartDelay > 0) {
-				instanceStartDelayMS := instanceStartDelay * 1000
-				Sleep, instanceStartDelayMS
-			}
-
-			Run, %Command%
-		}
-	}
+         FileName := "Scripts\" . A_Index . ".adbmanager.ahk"
+         if (!FileExist(FileName)) {
+            MsgBox, 16,, ADB Manager script not found: %FileName%`nMake sure 1.adbmanager.ahk exists.
+         } else {
+            Run, %FileName%
+         }
+      }
+   }
    
    if(autoLaunchMonitor) {
       monitorFile := A_ScriptDir . "\Scripts\Include\Monitor.ahk"
