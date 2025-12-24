@@ -456,6 +456,10 @@ spendHourGlassSettings:
   }
 Return
 
+useAdbManagerHandler:
+  Gui, Submit, NoHide
+return
+
 SortByDropdownHandler:
   Gui, Submit, NoHide
   GuiControlGet, selectedOption,, SortByDropdown
@@ -1192,6 +1196,8 @@ ShowToolsAndSystemSettings:
     yPos += 20
     
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x" . col1X . " y" . yPos . " cWhite", No Speedmod Menu Clicks
+    yPos += 20
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (useAdbManager ? "Checked" : "") " vuseAdbManager_Popup x" . col1X . " y" . yPos . " cWhite", Use ADB Manager
     yPos += 35
     
     sectionColor := "cWhite"
@@ -1309,6 +1315,7 @@ ApplyToolsAndSystemSettings:
     showcaseEnabled := showcaseEnabled_Popup
     claimDailyMission := claimDailyMission_Popup
     slowMotion := slowMotion_Popup
+    useAdbManager := useAdbManager_Popup
     claimSpecialMissions := claimSpecialMissions_Popup
     wonderpickForEventMissions := wonderpickForEventMissions_Popup
     
@@ -1870,6 +1877,7 @@ IsNumeric(var) {
 LoadSettingsFromIni() {
    global
    if (FileExist("Settings.ini")) {
+      IniRead, useAdbManager, Settings.ini, UserSettings, useAdbManager, 0
       IniRead, IsLanguageSet, Settings.ini, UserSettings, IsLanguageSet, 1
       IniRead, defaultBotLanguage, Settings.ini, UserSettings, defaultBotLanguage, 1
       IniRead, BotLanguage, Settings.ini, UserSettings, BotLanguage, English
@@ -2067,6 +2075,7 @@ CreateDefaultSettingsFile() {
    if (!FileExist("Settings.ini")) {
       iniContent := "[UserSettings]`n"
       iniContent .= "IsLanguageSet=0`n"
+      iniContent .= "useAdbManager=0`n"
       iniContent .= "defaultBotLanguage=1`n"
       iniContent .= "BotLanguage=English`n"
       iniContent .= "shownLicense=0`n"
@@ -2121,7 +2130,7 @@ CreateDefaultSettingsFile() {
 
 SaveAllSettings() {
    global IsLanguageSet, defaultBotLanguage, BotLanguage, currentfont, FontColor
-   global CurrentTheme, shownLicense
+   global CurrentTheme, shownLicense, useAdbManager
    global FriendID, AccountName, waitTime, Delay, folderPath, discordWebhookURL, discordUserId, Columns, godPack
    global Instances, instanceStartDelay, defaultLanguage, SelectedMonitorIndex, swipeSpeed, deleteMethod
    global runMain, Mains, heartBeat, heartBeatWebhookURL, heartBeatName, nukeAccount, packMethod
@@ -2177,6 +2186,7 @@ SaveAllSettings() {
    iniContent .= "autoLaunchMonitor=" autoLaunchMonitor "`n"
    iniContent .= "applyRoleFilters=" applyRoleFilters "`n"
    iniContent .= "debugMode=" debugMode "`n"
+   iniContent .= "useAdbManager=" useAdbManager "`n"
    iniContent .= "tesseractOption=" useTesseract "`n"
    iniContent .= "statusMessage=" statusMessage "`n"
    iniContent .= "minStarsEnabled=" minStarsEnabled "`n"
