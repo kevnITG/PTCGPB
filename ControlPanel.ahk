@@ -760,7 +760,7 @@ updateStatistics() {
     accountsLeft := 0
     ; Debug: Check Instances value
     Loop, %Instances% {
-        listFile := A_ScriptDir . "\Accounts\Saved\" . A_Index . "\list.txt"
+        listFile := A_ScriptDir . "\Accounts\Saved\" . A_Index . "\list_current.txt"
         if FileExist(listFile) {
             FileRead, content, %listFile%
             Loop, Parse, content, `n, `r
