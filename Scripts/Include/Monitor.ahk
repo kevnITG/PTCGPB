@@ -11,10 +11,13 @@ if not A_IsAdmin
     ExitApp
 }
 
+global useADBManager
+
 settingsPath := A_ScriptDir "\..\..\Settings.ini"
 
 IniRead, instanceLaunchDelay, %settingsPath%, UserSettings, instanceLaunchDelay, 5
 IniRead, waitAfterBulkLaunch, %settingsPath%, UserSettings, waitAfterBulkLaunch, 40000
+IniRead, useADBManager, %settingsPath%, UserSettings, useADBManager, 0
 IniRead, Instances, %settingsPath%, UserSettings, Instances, 1
 IniRead, folderPath, %settingsPath%, UserSettings, folderPath, C:\Program Files\Netease
 mumuFolder = %folderPath%\MuMuPlayerGlobal-12.0
@@ -49,6 +52,11 @@ Loop {
             
             killedAHK := killAHK(scriptName)
             killedInstance := killInstance(instanceNum)
+
+            if (useADBManager) {
+                adbScriptName := instanceNum . ".adbmanager.ahk"
+                killedADB := killAHK(adbScriptName)
+            }
             Sleep, 3000
             
             cntAHK := checkAHK(scriptName)
@@ -68,7 +76,21 @@ Loop {
                 ;Command := "Scripts\" . scriptName
                 ;Run, %Command%
                 scriptPath := A_ScriptDir "\.." "\" scriptName
-                Run, "%A_AhkPath%" /restart "%scriptPath%"
+                adbscriptPath := A_ScriptDir "\.." "\" adbScriptName
+                if (useADBManager) {
+                    ; First check and kill any running ADB manager script
+                    if (checkAHK(adbScriptName) > 0) {
+                        killAHK(adbScriptName)
+                        LogToFile("Killed existing " . adbScriptName . " before launch", "Monitor.txt")
+                    }
+                    
+                    ; Launch ADB manager first, wait, then launch main script
+                    Run, "%A_AhkPath%" /restart "%adbscriptPath%"
+                    Sleep, 2000  ; Wait 2 seconds
+                    Run, "%A_AhkPath%" /restart "%scriptPath%"
+                } else {
+                    Run, "%A_AhkPath%" /restart "%scriptPath%"
+                }
             }
         }
     }
