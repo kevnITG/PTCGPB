@@ -2477,6 +2477,34 @@ StartBot() {
       
       Run, %Command%
    }
+
+	; --- Launch adbmanager if useAdbManager is true ---
+	if(useAdbManager) {
+		Loop, %Instances%
+		{
+			if (A_Index != 1) {
+				SourceFile := "Scripts\1.adbmanager.ahk" ; Path to the source .ahk file
+				TargetFolder := "Scripts\" ; Path to the target folder
+				TargetFile := TargetFolder . A_Index . ".adbmanager.ahk" ; Generate target file path
+				if(Instances > 1) {
+					FileDelete, %TargetFile%
+					FileCopy, %SourceFile%, %TargetFile%, 1 ; Copy source file to target
+				}
+				if (ErrorLevel)
+					MsgBox, Failed to create %TargetFile%. Ensure permissions and paths are correct.
+			}
+
+			FileName := "Scripts\" . A_Index . ".adbmanager.ahk"
+			Command := FileName
+
+			if ((Mains > 1 || A_Index > 1) && instanceStartDelay > 0) {
+				instanceStartDelayMS := instanceStartDelay * 1000
+				Sleep, instanceStartDelayMS
+			}
+
+			Run, %Command%
+		}
+	}
    
    if(autoLaunchMonitor) {
       monitorFile := A_ScriptDir . "\Scripts\Include\Monitor.ahk"
