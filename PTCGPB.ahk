@@ -106,7 +106,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.2.3"
+   ,localVersion := "v9.2.4"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -365,7 +365,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.2.3 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.2.4 kevinnnn"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -940,12 +940,8 @@ ShowSystemSettings:
     Gui, SystemSettingsSelect:Add, DropDownList, x15 y%yPos% w125 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     
     Gui, SystemSettingsSelect:Add, Text, x155 y%yPos% %sectionColor%, % currentDictionary.Txt_Scale
-    if (defaultLanguage = "Scale125") {
-        defaultLang := 1
-    } else if (defaultLanguage = "Scale100") {
-        defaultLang := 2
-    }
-    Gui, SystemSettingsSelect:Add, DropDownList, x155 y%yPos% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125|Scale100
+    defaultLang := 1
+    Gui, SystemSettingsSelect:Add, DropDownList, x155 y%yPos% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125
     yPos += 35
     
     Gui, SystemSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_RowGap
@@ -1229,12 +1225,8 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, DropDownList, x%col2X% y%yPos2% w100 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     
     Gui, ToolsAndSystemSelect:Add, Text, x325 y15 %sectionColor%, % currentDictionary.Txt_Scale
-    if (defaultLanguage = "Scale125") {
-        defaultLang := 1
-    } else if (defaultLanguage = "Scale100") {
-        defaultLang := 2
-    }
-    Gui, ToolsAndSystemSelect:Add, DropDownList, x325 y%yPos2% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125|Scale100
+    defaultLang := 1
+    Gui, ToolsAndSystemSelect:Add, DropDownList, x325 y%yPos2% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125
     yPos2 += 25
     
     rowGapY := yPos2 + 2
@@ -1623,9 +1615,7 @@ ArrangeWindows:
 	} else {
          scaleParam := 277
      }
-    } else if (defaultLanguage = "Scale100") {
-       scaleParam := 287
-    }
+   }
 
     windowsPositioned := 0
 
@@ -1905,6 +1895,7 @@ LoadSettingsFromIni() {
       
       IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
       IniRead, defaultLanguage, Settings.ini, UserSettings, defaultLanguage, Scale125
+      if (defaultLanguage = "Scale100") defaultLanguage := "Scale125"
       IniRead, rowGap, Settings.ini, UserSettings, rowGap, 90
       IniRead, folderPath, Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
       IniRead, ocrLanguage, Settings.ini, UserSettings, ocrLanguage, en
@@ -2415,8 +2406,6 @@ StartBot() {
    
    if (defaultLanguage = "Scale125") {
       scaleParam := 277
-   } else if (defaultLanguage = "Scale100") {
-      scaleParam := 287
    }
    
    if (runMain) {

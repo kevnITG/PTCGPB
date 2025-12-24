@@ -3582,7 +3582,7 @@ PackOpening() {
     }
 
     FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497, 100) ;skip through cards until results opening screen
-
+    Delay(4) ; trying to avoid loading icons 2025.12.23 kevinnnn
     CheckPack()
 
     if(!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum)

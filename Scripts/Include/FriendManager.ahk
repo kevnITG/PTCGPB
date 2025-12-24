@@ -19,9 +19,15 @@
 ;-------------------------------------------------------------------------------
 AddFriends(renew := false, getFC := false) {
     global FriendID, friendIds, waitTime, friendCode, scriptName, friended, packsThisRun
-    global scaleParam
+    global scaleParam, deleteMethod
 
-    friendIDs := ReadFile("ids")
+    IniRead, groupRerollEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, groupRerollEnabled, 1
+
+    if (deleteMethod != "Inject 13P+" && deleteMethod != "Inject Wonderpick 96P+" || groupRerollEnabled) {
+        friendIDs := ReadFile("ids")
+    } else {
+        friendIDs := false
+    }
     friended := true
 	if(!getFC && !friendIDs && friendID = "")
 		return false
@@ -302,21 +308,40 @@ showcaseLikes() {
     FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 152, 335, 200)
         failSafe := A_TickCount
         failSafeTime := 0
-	Loop, Read, %A_ScriptDir%\..\showcase_ids.txt
+
+    ; Read the entire file to avoid concurrent access issues
+    FileRead, content, %A_ScriptDir%\..\showcase_ids.txt
+    ; Remove BOM if present
+    if (SubStr(content, 1, 1) = Chr(0xFEFF))
+        content := SubStr(content, 2)
+    ; Split into lines
+    showcaseIDs := StrSplit(content, "`n", "`r")
+    ; Trim and filter non-empty
+    filteredIDs := []
+    for index, line in showcaseIDs {
+        trimmed := Trim(line)
+        if (trimmed != "")
+            filteredIDs.Push(trimmed)
+    }
+
+	Loop % filteredIDs.Length()
 		{
-			showcaseID := Trim(A_LoopReadLine)
+			showcaseID := filteredIDs[A_Index]
+            ; Log for debugging
+            LogToFile("Processing showcase ID: " . showcaseID, "ShowcaseLog.txt")
             Delay(2)
             TradeTutorialForShowcase()
             Delay(2)
 			FindImageAndClick(215, 252, 240, 277, , "FriendIDSearch", 224, 472, 200)
             Delay(2)
 			FindImageAndClick(157, 498, 225, 522, , "ShowcaseInput", 143, 273, 200)
-			Delay(3)
+			Delay(2)
 			adbInput(showcaseID)					; Pasting ID
-			Delay(1)
+			Delay(2)
 			adbClick(212, 384)						; Pressing OK
+            Delay(1)
 			FindImageAndClick(98, 187, 125, 214, ,"ShowcaseLiked", 175, 200, 200)
-            Delay(2)
+            Delay(4)
 			FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 140, 495, 200)
             failSafeTime := (A_TickCount - failSafe) // 1000
             CreateStatusMessage("Waiting for Showcase Likes for `n(" . failSafeTime . "/90 seconds)")
