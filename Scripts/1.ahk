@@ -23,9 +23,14 @@ SetTitleMatchMode, 3
 CoordMode, Pixel, Screen
 #NoEnv
 
-; Allocate and hide the console window to reduce flashing
-DllCall("AllocConsole")
-WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
+global useAdbManager, managerHWND
+IniRead, useAdbManager, %A_ScriptDir%\..\Settings.ini, UserSettings, useAdbManager, 1
+
+; We don't need this when using ADB Manager
+if(!useAdbManager) {
+	DllCall("AllocConsole")
+	WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
+}
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
 global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze
@@ -77,6 +82,8 @@ dbg_bboxNpause :=0
 dbg_bbox_click :=0
 
 scriptName := StrReplace(A_ScriptName, ".ahk")
+adbManagerScriptPath := A_ScriptDir . "\" . scriptName . ".adbmanager.ahk"
+managerWindowTitle := scriptName . "adbmanager"
 winTitle := scriptName
 foundGP := false
 injectMethod := false
@@ -258,6 +265,10 @@ Sleep, 1000
 
 ConnectAdb(folderPath)
 
+if(useAdbManager) {
+	findOrLaunchAdbManager(adbManagerScriptPath)
+}
+
 Sleep, 2000
 CreateStatusMessage("Disabling background services...")
 DisableBackgroundServices()
@@ -328,7 +339,9 @@ setSpeed := 3 ;always 1x/3x
 if(InStr(deleteMethod, "Inject"))
     injectMethod := true
 
-initializeAdbShell()
+if(!useAdbManager) {
+	initializeAdbShell()
+}
 
 createAccountList(scriptName)
 

@@ -10,6 +10,7 @@ Screenshots/Trades/**
 Scripts/*.ahk
 Scripts/*.ini
 !Scripts/1.ahk
+!Scripts/1.*.ahk
 !Scripts/Main.ahk
 *.txt
 *.ini

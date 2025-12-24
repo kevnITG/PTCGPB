@@ -1,6 +1,6 @@
 global adbPort, adbShell, adbPath
 #Include *i %A_LineFile%\..\Gdip_All.ahk
-
+DetectHiddenWindows, On ; Important to find hidden windows later if needed
 KillADBProcesses() {
     ; Use AHK's Process command to close adb.exe
     Process, Close, adb.exe
@@ -74,6 +74,10 @@ ConnectAdb(folderPath := "C:\Program Files\Netease") {
     if(!adbPort) {
         Msgbox, Invalid port... Check the common issues section in the readme/github guide.
         ExitApp
+    }
+
+    if(useAdbManager) {
+        return true
     }
 
     MaxRetries := 5
@@ -222,7 +226,10 @@ initializeAdbShell() {
 }
 
 adbEnsureShell() {
-    global adbShell
+    global adbShell, useAdbManager
+    if(useAdbManager){
+        return
+    }
     if (!IsObject(adbShell) || adbShell.Status != 0) {
         adbShell := ""
         initializeAdbShell()
@@ -237,8 +244,13 @@ adbWriteRaw(command) {
     Loop {
         adbEnsureShell()
         try {
-            adbShell.StdIn.WriteLine(command)
-            return true
+            if(useAdbManager){
+                SendAdbCommand(command)
+                return true
+            } else {
+                adbShell.StdIn.WriteLine(command)
+                return true
+            }
         } catch e {
             errorMessage := IsObject(e) ? e.Message : e
             retries++
@@ -252,9 +264,14 @@ adbWriteRaw(command) {
 }
 
 waitadb() {
-    global adbShell
+    global adbShell, useAdbManager
     retries := 0
     MaxRetries := 3
+
+    if(useAdbManager) {
+        Sleep, 50
+        return
+    }
 
     Loop {
         adbEnsureShell()
@@ -370,5 +387,65 @@ adbTakeScreenshot(outputFile) {
         command := """" . adbPath . """ -s " . deviceAddress . " exec-out screencap -p > """ .  outputFile . """"
         RunWait, %ComSpec% /c "%command%", , Hide
         return
+    }
+}
+
+; --- Function to find the manager window ---
+findOrLaunchAdbManager(adbManagerScriptPath := "") {
+    global managerHWND, managerWindowTitle
+    
+    MaxRetries := 5
+    RetryCount := 0
+    
+    Loop %MaxRetries% {
+        managerHWND := WinExist(managerWindowTitle)
+        If (managerHWND) {
+            Return True
+        }
+        
+        If (RetryCount = 0 && adbManagerScriptPath) {
+            Run, %adbManagerScriptPath%
+            Sleep, 2000
+        }
+        
+        RetryCount++
+        If (RetryCount < MaxRetries) {
+            Sleep, 3000  ; Wait 3 seconds before next attempt
+        }
+    }
+    MsgBox, managerWindowTitle: %managerWindowTitle%
+    LogToFile("findOrLaunchAdbManager Error: Cannot find ADB Manager window '%managerWindowTitle%' after %MaxRetries% attempts.", "adbManager.txt")
+    Reload
+    Return False
+}
+
+; --- Function to Send Commands via WM_COPYDATA ---
+SendAdbCommand(commandString) {
+    global managerHWND
+    If (!managerHWND) {
+        LogToFile("SendAdbCommand Error: Manager HWND not found. Trying to find it again.", "adbManager.txt")
+    }
+    ; Create the data structure
+    VarSetCapacity(COPYDATASTRUCT, 3*A_PtrSize, 0)
+    VarSetCapacity(commandToSend, StrLen(commandString) + 1, 0)
+    StrPut(commandString, &commandToSend, "CP0")
+    
+    ; Set up the COPYDATASTRUCT
+    NumPut(0, COPYDATASTRUCT, 0, "Ptr")  ; dwData
+    NumPut(StrLen(commandString), COPYDATASTRUCT, A_PtrSize, "UInt")  ; cbData
+    NumPut(&commandToSend, COPYDATASTRUCT, 2*A_PtrSize, "Ptr")  ; lpData
+
+    ; Send the message
+    prevDHW := A_DetectHiddenWindows
+    DetectHiddenWindows, On
+    SendMessage, 0x4A, 0, &COPYDATASTRUCT, , ahk_id %managerHWND%
+    DetectHiddenWindows, %prevDHW%
+
+    If (ErrorLevel = "FAIL") {
+        LogToFile("SendAdbCommand Error: SendMessage failed. Manager script might have closed. Command '%commandString%' NOT sent.", "adbManager.txt")
+        managerHWND := ""
+        Return False
+    } Else {
+        Return True
     }
 }
