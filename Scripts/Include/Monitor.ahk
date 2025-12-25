@@ -38,6 +38,8 @@ Loop {
     nowEpoch := A_NowUTC
     EnvSub, nowEpoch, 1970, seconds
 
+    InstancesWithXmls := Instances
+
     Loop %Instances% {
         instanceNum := Format("{:u}", A_Index)
 
@@ -74,6 +76,7 @@ Loop {
             if (nonEmptyLines = 0) {
                 ; No account left → safe to shut down (saves RAM/CPU)
                 doShutdown := true
+                InstancesWithXmls--
                 LogToFile("Instance " . instanceNum . " has no remaining accounts. Scheduling shutdown.", "Monitor.txt")
             }
             else if (secondsSinceLastEnd > stuckThreshold) {
@@ -139,6 +142,34 @@ Loop {
             
         }
     }
+
+    if(InstancesWithXmls < 1){
+        LogToFile("All instances have finished processing accounts (no Create Bots mode). Performing final cleanup and exiting.", "Monitor.txt")
+
+        ; Kill all bot scripts
+        Loop %Instances% {
+            instanceNum := Format("{:u}", A_Index)
+            killAHK(instanceNum . ".ahk")
+            if (useADBManager)
+                killAHK(instanceNum . ".adbmanager.ahk")
+        }
+        
+        ; Kill all MuMu emulator instances
+        Loop %Instances% {
+            killInstance(A_Index)
+        }
+        
+        ; Optional: kill other global scripts if still running
+        killAHK("Main.ahk")
+        killAHK("PTCGPB.ahk")
+        killAHK("ControlPanel.ahk")
+        
+        ; Final log and exit
+        LogToFile("Final cleanup complete. Monitor exiting.", "Monitor.txt")
+        ExitApp
+
+    }
+
     Sleep, 30000
 }
 
