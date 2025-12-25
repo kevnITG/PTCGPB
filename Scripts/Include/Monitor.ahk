@@ -45,6 +45,7 @@ Loop {
         instanceIni := A_ScriptDir "\..\" instanceNum ".ini"
         
         IniRead, LastEndEpoch, %instanceIni%, Metrics, LastEndEpoch, 0
+        IniRead, deleteMethod, %A_ScriptDir%\..\%instanceNum%.ini, UserSettings, deleteMethod, Create Bots (13P)
         secondsSinceLastEnd := nowEpoch - LastEndEpoch
         
         if(LastEndEpoch > 0 && secondsSinceLastEnd > (5 * 60))
@@ -52,7 +53,16 @@ Loop {
             ; Directly count .xml files older than 24 hours in the instance's Saved folder
             saveDir := A_ScriptDir "\..\..\Accounts\Saved\" . instanceNum
             
-            nonEmptyLines := CountOldXmlFiles(saveDir)
+            ; If it's in account creation mode dont kill the instance based on xmls>24hr count.
+            if(deleteMethod == "Create Bots (13P)"){
+                nonEmptyLines := 999
+                ; wait 30 min before calling it stuck
+                stuckThreshold := 30 * 60
+            } else {
+                nonEmptyLines := CountOldXmlFiles(saveDir)
+                ; wait 15 min before calling it stuck
+                stuckThreshold := 15 * 60
+            }
 
             ; Determine what action to take
             doShutdown := false
@@ -66,7 +76,7 @@ Loop {
                 doShutdown := true
                 LogToFile("Instance " . instanceNum . " has no remaining accounts. Scheduling shutdown.", "Monitor.txt")
             }
-            else if (secondsSinceLastEnd > (15 * 60)) {
+            else if (secondsSinceLastEnd > stuckThreshold) {
                 ; Has account but no progress for 15+ min → likely frozen
                 doRestart := true
                 LogToFile("Instance " . instanceNum . " appears stuck (idle " . secondsSinceLastEnd . "s). Scheduling kill + restart.", "Monitor.txt")

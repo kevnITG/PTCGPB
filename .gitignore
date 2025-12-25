@@ -30,3 +30,5 @@ Accounts/Trades/*.json
 .claude/
 
 .REFACTORING_SUMMARY.md
+.vscode/settings.json
+/Accounts/Saved/tmp
