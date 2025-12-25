@@ -202,11 +202,11 @@ return
 
 ; Functions for killing AHK scripts
 KillAllAHK:
-    Loop %Instances% {
+    Loop 6 {
         killAHK(A_Index . ".ahk")
     }
     if (useADBManager) {
-        Loop %Instances% {
+        Loop 6 {
             killAHK(A_Index . ".adbmanager.ahk")
         }
     }
@@ -284,7 +284,7 @@ UpdateStatus:
     }
     
     ; Check regular instances
-    Loop %Instances% {
+    Loop 6 {
         if (checkInstance(A_Index))
             status .= A_Index . ", "
         if (checkAHK(A_Index . ".ahk"))
@@ -741,40 +741,130 @@ updateButtonColors() {
 ; Function to update statistics
 updateStatistics() {
     ; Get start time from Settings.ini
-    IniRead, rerollStartTime, Settings.ini, UserSettings, rerollStartTime, 0
+    metricFile := A_ScriptDir . "\Scripts\1.ini"
+    IniRead, rerollStartTime, %metricFile%, Metrics, rerollStartTime, 0
     
     ; Calculate time elapsed in minutes
     timeElapsed := Floor((A_TickCount - rerollStartTime) / 60000)
-    GuiControl,, TimeElapsed, Time Elapsed: %timeElapsed%m
+    GuiControl,, TimeElapsed, Time Elapsed: %timeElapsed% min
     
     ; Get total accounts processed
-    total := SumVariablesInJsonFile()
-    GuiControl,, AccProcessed, Acc Processed: %total%
+    accountProcessed := 0
+    Loop, %Instances% {
+        saveDir := A_ScriptDir . "\Accounts\Saved\" . A_Index
+        tmpaccountProcessed := countProcessedXmlThisRun(saveDir, rerollStartTime)
+        accountProcessed += tmpaccountProcessed
+    }
+    GuiControl,, AccProcessed, Acc Processed: %accountProcessed%
     
     ; Calculate rate (accounts per hour)
     hours := timeElapsed / 60
-    rate := hours > 0 ? Round(total / hours, 2) : 0
+    rate := hours > 0 ? Round(accountProcessed / hours, 2) : 0
     GuiControl,, AccRate, Rate: %rate% acc/hr
     
     ; Calculate accounts left
     accountsLeft := 0
     ; Debug: Check Instances value
     Loop, %Instances% {
-        listFile := A_ScriptDir . "\Accounts\Saved\" . A_Index . "\list_current.txt"
-        if FileExist(listFile) {
-            FileRead, content, %listFile%
-            Loop, Parse, content, `n, `r
-            {
-                if (A_LoopField != "")
-                    accountsLeft++
-            }
-        }
+        saveDir := A_ScriptDir . "\Accounts\Saved\" . A_Index
+        tmpaccountsLeft := CountOldXmlFiles(saveDir)
+        accountsLeft += tmpaccountsLeft
     }
     GuiControl,, AccLeft, Acc Left: %accountsLeft%
     
     ; Calculate ETA in minutes
     etaMinutes := rate > 0 ? Round(accountsLeft / rate * 60) : 0
     GuiControl,, ETATime, ETA Time Left: %etaMinutes%m
+}
+
+countProcessedXmlThisRun(directory, rerollStartTime) {
+    count := 0
+    if !FileExist(directory) {
+        return 0
+    }
+    
+    if (rerollStartTime = 0 || rerollStartTime = "ERROR" || rerollStartTime = "") {
+        return 0  ; No valid start time recorded
+    }
+    
+    ; Current tick count
+    currentTick := A_TickCount
+    
+    ; Current time in UTC for age calculation
+    nowUTC := A_NowUTC
+    nowUnix := nowUTC
+    EnvSub, nowUnix, 19700101000000, Seconds  ; Unix timestamp now (UTC)
+    
+    thresholdSeconds := 24 * 3600  ; 24 hours in seconds
+    
+    Loop, Files, %directory%\*.xml
+    {
+        FileGetTime, modTime, %A_LoopFileFullPath%, M  ; Local modified time: YYYYMMDDHH24MISS
+        if (modTime = "") {
+            continue
+        }
+        
+        ; Convert file modified time (local) to tick count approximation
+        ; We use FileGetTime with R (creation) or M, then convert via known method
+        ; AHK doesn't have direct FileTime -> TickCount, but we can use A_Now + offset trick
+        
+        ; Safer approach: convert modTime to UTC, then to Unix, then estimate tick
+        ; But we only need to know if modTime > rerollStartTime in real time
+        
+        ; Instead: convert modTime to A_TickCount-equivalent by comparing to current time
+        
+        currentLocalTime := A_Now
+        modTimeUTC := modTime
+        EnvSub, modTimeUTC, %A_TimeZoneBias%, Minutes  ; Adjust local -> UTC
+        
+        modUnix := modTimeUTC
+        EnvSub, modUnix, 19700101000000, Seconds
+        
+        timeDiffSeconds := nowUnix - modUnix
+        
+        ; If file is more than 24 hours old, skip early
+        if (timeDiffSeconds >= thresholdSeconds) {
+            continue
+        }
+        
+        ; Now check if file was modified AFTER the reroll started
+        ; We estimate file's tick count as: currentTick - (timeDiffSeconds * 1000)
+        estimatedFileTick := currentTick - (timeDiffSeconds * 1000)
+        
+        if (estimatedFileTick > rerollStartTime) {
+            count++
+        }
+    }
+    
+    return count
+}
+
+CountOldXmlFiles(directory) {
+    count := 0
+    if !FileExist(directory) {
+        return 0
+    }
+    
+    ; Current time in UTC for consistency
+    now := A_NowUTC
+    EnvSub, now, 1970, seconds          ; Unix timestamp now
+    threshold := 24 * 3600              ; 24 hours in seconds
+    
+    Loop, Files, %directory%\*.xml
+    {
+        FileGetTime, modTime, %A_LoopFileFullPath%, M   ; Modified time
+        if (modTime = "")                                ; Skip if can't read
+            continue
+        
+        ; Convert modified time to Unix timestamp
+        modTimeUTC := modTime
+        EnvSub, modTimeUTC, 1970, seconds
+        
+        if (now - modTimeUTC > threshold) {
+            count++
+        }
+    }
+    return count
 }
 
 ; Function to sum variables in JSON file (copied from PTCGPB.ahk)
