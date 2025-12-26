@@ -850,9 +850,9 @@ CreateAccountList(instance) {
             if (below96_names.MaxIndex())
                 SortArraysByProperty(below96_names, below96_times, below96_packs, "packs", 0)
 
-            ; Sort above96 descending (highest over/at 96 first)
+            ; Sort above96 ascending (lowest over/at 96 first)
             if (above96_names.MaxIndex())
-                SortArraysByProperty(above96_names, above96_times, above96_packs, "packs", 0)
+                SortArraysByProperty(above96_names, above96_times, above96_packs, "packs", 1)
 
             ; Combine: below96 first, then above96
             fileNames := [], fileTimes := [], packCounts := []
