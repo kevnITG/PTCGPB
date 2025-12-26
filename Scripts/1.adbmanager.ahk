@@ -13,7 +13,7 @@ global adbShell := "" ; Make it global so OnMessage handler can access it
 
 ; --- Configuration ---
 scriptName := StrReplace(A_ScriptName, ".adbmanager.ahk")
-folderPath := "C:\Program Files\Netease"
+IniRead, folderPath, %A_ScriptDir%\..\Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
 adbPort := findAdbPorts(folderPath)
 adbSerial := "127.0.0.1:" . adbPort
 managerWindowTitle := scriptName . "adbmanager" ; Unique title for finding this script for command sending
