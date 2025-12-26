@@ -105,8 +105,8 @@ Gui, Add, Button, x330 y100 w180 h30 gToggleMonitor vToggleMonitor Background%mo
 baseButtonText["ToggleMonitor"] := "Toggle Monitor.ahk"
 Gui, Add, Button, x330 y135 w180 h30 gTogglePTCGPB vTogglePTCGPB Background%monokaiButton% c%monokaiText%, Toggle PTCGPB.ahk
 baseButtonText["TogglePTCGPB"] := "Toggle PTCGPB.ahk"
-Gui, Add, Button, x330 y170 w180 h30 gTogglePowerSaving vTogglePowerSaving Background%monokaiButton% c%monokaiText%, Toggle PowerSaving.ahk
-baseButtonText["TogglePowerSaving"] := "Toggle PowerSaving.ahk"
+Gui, Add, Button, x330 y170 w180 h30 gxmlCounter vxmlCounter Background%monokaiButton% c%monokaiText%, XML Counter
+baseButtonText["xmlCounter"] := "XML Counter"
 Gui, Add, Button, x330 y205 w180 h30 gOpenSettings Background%monokaiButton% c%monokaiText%, Open Settings.ini
 
 ; ========== Statistics Section ==========
@@ -344,8 +344,8 @@ TogglePTCGPB:
     Gosub, UpdateStatus
 return
 
-TogglePowerSaving:
-    toggleAHK("PowerSaving.ahk")
+xmlCounter:
+    Run, %A_ScriptDir%\Accounts\xmlCounter.ahk
     Sleep, 500
     Gosub, UpdateStatus
 return
@@ -731,7 +731,7 @@ updateButtonColors() {
         GuiControl,, %btnName%, % baseText  ; Show only base text when OFF
     }
     
-    btnName := "TogglePowerSaving"
+    btnName := "xmlCounter"
     baseText := baseButtonText[btnName]
     if (checkAHK("PowerSaving.ahk")) {
         GuiControl,, %btnName%, % baseText . " *"
