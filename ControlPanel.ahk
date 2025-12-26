@@ -1,6 +1,7 @@
 #SingleInstance, Ignore
 CoordMode, Mouse, Screen
 SetTitleMatchMode, 3
+Menu, Tray, Icon, %A_ScriptDir%\GUI\Icons\control-panel2.ico
 
 if not A_IsAdmin
 {

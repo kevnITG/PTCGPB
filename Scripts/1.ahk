@@ -84,6 +84,9 @@ dbg_bboxNpause :=0
 dbg_bbox_click :=0
 
 scriptName := StrReplace(A_ScriptName, ".ahk")
+if(scriptName < 10){
+    Menu, Tray, Icon, %A_ScriptDir%\..\GUI\Icons\%scriptName%.ico
+}
 adbManagerScriptPath := A_ScriptDir . "\" . scriptName . ".adbmanager.ahk"
 managerWindowTitle := scriptName . "adbmanager"
 winTitle := scriptName
