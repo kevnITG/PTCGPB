@@ -108,7 +108,7 @@ IniRead, swipeSpeed, %A_ScriptDir%\..\Settings.ini, UserSettings, swipeSpeed, 30
 IniRead, deleteMethod, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod, Create Bots (13P)
 
 IniRead, SelectedMonitorDeviceName, %A_ScriptDir%\..\Settings.ini, UserSettings, SelectedMonitorDeviceName, "\\.\DISPLAY1"
-SelectedMonitorIndex := GetMonitorIndexFromDeviceName(SelectedDeviceName)
+SelectedMonitorIndex := GetMonitorIndexFromDeviceName(SelectedMonitorDeviceName)
 
 ; support to convert old settings.ini deleteMethods to new nomenclature
 originalDeleteMethod := deleteMethod
