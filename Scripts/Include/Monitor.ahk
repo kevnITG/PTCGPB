@@ -390,28 +390,19 @@ cleanInstanceDisk(instanceNum) {
 
 CountOldXmlFiles(directory) {
     count := 0
-    if !FileExist(directory) {
+    if !FileExist(directory)
         return 0
-    }
-    
-    ; Current time in UTC for consistency
-    now := A_NowUTC
-    EnvSub, now, 1970, seconds          ; Unix timestamp now
-    threshold := 24 * 3600              ; 24 hours in seconds
     
     Loop, Files, %directory%\*.xml
     {
-        FileGetTime, modTime, %A_LoopFileFullPath%, M   ; Modified time
-        if (modTime = "")                                ; Skip if can't read
+        FileGetTime, modTime, %A_LoopFileFullPath%, M
+        if (modTime = "")
             continue
         
-        ; Convert modified time to Unix timestamp
-        modTimeUTC := modTime
-        EnvSub, modTimeUTC, 1970, seconds
-        
-        if (now - modTimeUTC > threshold) {
+        diff := A_Now
+        diff -= modTime, Hours
+        if (diff >= 24)
             count++
-        }
     }
     return count
 }

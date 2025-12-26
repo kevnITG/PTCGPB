@@ -270,6 +270,7 @@ RefreshStatus:
 return
 
 UpdateStatus:
+    IniRead, Instances, Settings.ini, UserSettings, Instances, 1
     status := ""
     
     ; Check main instances
@@ -779,90 +780,56 @@ updateStatistics() {
 
 countProcessedXmlThisRun(directory, rerollStartTime) {
     count := 0
-    if !FileExist(directory) {
+    if !FileExist(directory)
         return 0
-    }
     
-    if (rerollStartTime = 0 || rerollStartTime = "ERROR" || rerollStartTime = "") {
-        return 0  ; No valid start time recorded
-    }
+    if (rerollStartTime = 0 || rerollStartTime = "" || rerollStartTime = "ERROR")
+        return 0
     
-    ; Current tick count
-    currentTick := A_TickCount
+    nowLocal := A_Now
     
-    ; Current time in UTC for age calculation
-    nowUTC := A_NowUTC
-    nowUnix := nowUTC
-    EnvSub, nowUnix, 19700101000000, Seconds  ; Unix timestamp now (UTC)
-    
-    thresholdSeconds := 24 * 3600  ; 24 hours in seconds
+    ; Correct: Subtract 24 hours using EnvAdd with negative value
+    twentyFourHoursAgo := A_Now
+    EnvAdd, twentyFourHoursAgo, -24, Hours
     
     Loop, Files, %directory%\*.xml
     {
-        FileGetTime, modTime, %A_LoopFileFullPath%, M  ; Local modified time: YYYYMMDDHH24MISS
-        if (modTime = "") {
+        FileGetTime, modTime, %A_LoopFileFullPath%, M
+        if (modTime = "")
             continue
-        }
         
-        ; Convert file modified time (local) to tick count approximation
-        ; We use FileGetTime with R (creation) or M, then convert via known method
-        ; AHK doesn't have direct FileTime -> TickCount, but we can use A_Now + offset trick
-        
-        ; Safer approach: convert modTime to UTC, then to Unix, then estimate tick
-        ; But we only need to know if modTime > rerollStartTime in real time
-        
-        ; Instead: convert modTime to A_TickCount-equivalent by comparing to current time
-        
-        currentLocalTime := A_Now
-        modTimeUTC := modTime
-        EnvSub, modTimeUTC, %A_TimeZoneBias%, Minutes  ; Adjust local -> UTC
-        
-        modUnix := modTimeUTC
-        EnvSub, modUnix, 19700101000000, Seconds
-        
-        timeDiffSeconds := nowUnix - modUnix
-        
-        ; If file is more than 24 hours old, skip early
-        if (timeDiffSeconds >= thresholdSeconds) {
+        ; First: skip if file is 24 hours old or older (fast early check)
+        if (modTime < twentyFourHoursAgo)
             continue
-        }
         
-        ; Now check if file was modified AFTER the reroll started
-        ; We estimate file's tick count as: currentTick - (timeDiffSeconds * 1000)
-        estimatedFileTick := currentTick - (timeDiffSeconds * 1000)
+        ; Second: estimate file's TickCount
+        diff := A_Now
+        EnvSub, diff, %modTime%, Seconds  ; diff now holds seconds since modification
         
-        if (estimatedFileTick > rerollStartTime) {
+        estimatedFileTick := A_TickCount - (diff * 1000)
+        
+        ; Count only if modified AFTER reroll started
+        if (estimatedFileTick > rerollStartTime)
             count++
-        }
     }
-    
     return count
 }
 
 CountOldXmlFiles(directory) {
     count := 0
-    if !FileExist(directory) {
+    if !FileExist(directory)
         return 0
-    }
-    
-    ; Current time in UTC for consistency
-    now := A_NowUTC
-    EnvSub, now, 1970, seconds          ; Unix timestamp now
-    threshold := 24 * 3600              ; 24 hours in seconds
     
     Loop, Files, %directory%\*.xml
     {
-        FileGetTime, modTime, %A_LoopFileFullPath%, M   ; Modified time
-        if (modTime = "")                                ; Skip if can't read
+        FileGetTime, modTime, %A_LoopFileFullPath%, M
+        if (modTime = "")
             continue
         
-        ; Convert modified time to Unix timestamp
-        modTimeUTC := modTime
-        EnvSub, modTimeUTC, 1970, seconds
-        
-        if (now - modTimeUTC > threshold) {
+        diff := A_Now
+        diff -= modTime, Hours
+        if (diff >= 24)
             count++
-        }
     }
     return count
 }
