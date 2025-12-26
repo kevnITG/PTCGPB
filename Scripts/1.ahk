@@ -33,7 +33,7 @@ if(!useAdbManager) {
 }
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
-global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze
+global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, UnknownGiftPack
 global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
 global DeadCheck
 global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards, s4tDiscordWebhookURL, s4tDiscordUserId, s4tSendAccountXml
@@ -44,6 +44,8 @@ global s4tPendingTradeables := []
 global deviceAccountXmlMap := {} ; prevents Create Bots + s4t making duplicate .xmls within a single run
 global ocrShinedust
 global titleHeight, MuMuv5
+
+global ClaimGiftsPacks
 
 global avgtotalSeconds
 global verboseLogging
@@ -195,6 +197,8 @@ IniRead, wonderpickForEventMissions, %A_ScriptDir%\..\Settings.ini, UserSettings
 IniRead, checkWPthanks, %A_ScriptDir%\..\Settings.ini, UserSettings, checkWPthanks, 0
 wpThanksSavedUsername := ""
 wpThanksSavedFriendCode := ""
+
+IniRead, ClaimGiftsPacks, %A_ScriptDir%\..\Settings.ini, UserSettings, ClaimGiftsPacks, 0
 
 IniRead, s4tEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tEnabled, 0
 IniRead, s4tSilent, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tSilent, 1
@@ -735,7 +739,11 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         if (spendHourGlass = 1 && !(deleteMethod = "Inject 13P+" && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
             SpendAllHourglass()
         }
-
+		
+		if ClaimGiftsPacks{
+			OpenGiftPacks()
+		}
+		
         ; Friend removal for Inject Wonderpick 96P+
         if (injectMethod && friended && !keepAccount) {
             RemoveFriends()
@@ -4275,6 +4283,136 @@ HandleMissionDeckFailsafe() {
     adbInput("111") ; ESC to home screen
     Sleep, 1000
     return true
+}
+
+OpenGiftPacks(){
+	GoToMain()
+	
+    global openPack
+    properPack := openPack
+    openPack := "UnknownGiftPack"
+
+	; Navigate to gifts/mail screen with timeout protection
+    failSafe := A_TickCount
+    failSafeTime := 0
+    FindImageAndClick(240, 70, 270, 110, , "Mail", 34, 518, 1000)
+    Loop {
+        adbClick_wbb(250, 90)
+		Delay(1)
+        if (FindOrLoseImage(164, 431, 224, 460, , "ClaimAll", 0, failSafeTime)) {
+            break
+        }
+        ;if (FindOrLoseImage(200, 424, 237, 432, , "ClaimAllDisabled", 0, failSafeTime)) {
+        ;    break
+        ;}
+    }
+    noClaim := false
+    Loop {
+        failSafe := A_TickCount
+        failSafeTime := 0
+        noClaim := true
+        Loop {
+            ;if (FindOrLoseImage(208, 168, 231, 175, , "Claim", 0, failSafeTime)) {
+            if(FindOrLoseImage(199, 278, 203, 287, , "PackCode", 0, failSafeTime)) {
+                noClaim := false
+            ;if (FindOrLoseImage(164, 431, 224, 460, , "ClaimAll", 0, failSafeTime)) {
+                break
+            }
+            adbClick_wbb(224, 173)
+            Delay(1)
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            CreateStatusMessage("Looking for pack... `n(" . failSafeTime . "/15 seconds)")
+            if(failSafeTime > 15) {
+                adbClick_wbb(140, 510)
+                break
+            }
+        }
+        if (noClaim) {
+            break
+        }
+        Delay(1)
+        packClaimed := false
+        failSafe := A_TickCount
+        failSafeTime := 0
+        Loop {
+            adbClick_wbb(216, 172)
+            Delay(5)
+            adbClick_wbb(150, 400)
+            if(FindOrLoseImage(164, 431, 224, 460, , "ClaimAll", 0, failSafeTime)) {
+                break
+            }
+            ;if (FindOrLoseImage(200, 424, 237, 432, , "ClaimAllDisabled", 0, failSafeTime)) {
+            ;    break
+            ;}
+            if(FindOrLoseImage(199, 278, 203, 287, , "PackCode", 0, failSafeTime)) {
+                packClaimed := true
+                break
+            }
+            failSafeTime := (A_TickCount - failSafe) // 1000
+        }
+        if (packClaimed) {
+            failSafeTime := 0
+			Delay(1)
+
+			if(setSpeed > 1) {
+			FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
+			FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
+			Delay(1)
+			adbClick_wbb(41, 339)
+			Delay(1)
+			}
+			failSafe := A_TickCount
+			failSafeTime := 0
+			Loop {
+				adbSwipe_wbb(adbSwipeParams)
+				Sleep, 5
+				if(FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
+					if(setSpeed > 1) {
+						if(setSpeed = 3) {
+							FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
+							FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click 3x
+						} else {
+							FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000)
+							FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click 2x
+						}
+					}
+					adbClick_wbb(41, 339)
+					
+					
+					
+					break ;HERE WE GIVE TONEXT FUNCTION
+				}
+				failSafeTime := (A_TickCount - failSafe) // 1000
+				CreateStatusMessage("Waiting for Pack`n(" . failSafeTime . "/45 seconds)")
+			}
+
+			
+            FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497, 40)
+            CheckPack()
+			
+			failSafe := A_TickCount
+            failSafeTime := 0
+			Loop {
+                    if(FindOrLoseImage(233, 486, 272, 519, , "Skip", 0, failSafeTime)) {
+                        adbClick_wbb(239, 497)
+                    } else {
+                        adbClick_wbb(100, 494)
+                        Delay(2)
+                    }
+                    if(FindOrLoseImage(164, 431, 224, 460, , "ClaimAll", 0, failSafeTime)) {
+                        packClaimed := false
+                        break
+                    }
+                    if(FindOrLoseImage(199, 278, 203, 287, , "PackCode", 0, failSafeTime)) {
+                        break
+                    }
+					Sleep, 10
+            }
+			
+        }
+    }
+    openPack := properPack
+    GoToMain()
 }
 
 GoToMain(fromSocial := false) {
