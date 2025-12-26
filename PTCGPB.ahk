@@ -257,6 +257,9 @@ NextStep:
    sortOption := 3
    else if (injectSortMethod = "PacksDesc")
    sortOption := 4
+   else if (injectSortMethod = "Below96DescThenAboveDesc")
+   sortOption := 5
+
    Gui, Add, DropDownList, vSortByDropdown gSortByDropdownHandler choose%sortOption% x20 y325 w130 Background2A2A2A cWhite, Oldest First|Newest First|Fewest Packs First|Most Packs First|Pack Below 96P First
 
    Gui, Add, Text, x20 y260 %sectionColor% vAccountNameText, % currentDictionary.Txt_AccountName
