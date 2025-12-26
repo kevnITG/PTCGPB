@@ -347,6 +347,13 @@ if(!useAdbManager) {
 	initializeAdbShell()
 }
 
+; Clear game cache if claiming gift
+if (ClaimGiftsPacks) {
+    adbWriteRaw("rm -rf /data/data/jp.pokemon.pokemontcgp/cache/*")
+    waitadb()
+    Sleep, 100
+}
+
 createAccountList(scriptName)
 
 rerolls_local := 0
