@@ -257,7 +257,7 @@ NextStep:
    sortOption := 3
    else if (injectSortMethod = "PacksDesc")
    sortOption := 4
-   Gui, Add, DropDownList, vSortByDropdown gSortByDropdownHandler choose%sortOption% x20 y325 w130 Background2A2A2A cWhite, Oldest First|Newest First|Fewest Packs First|Most Packs First
+   Gui, Add, DropDownList, vSortByDropdown gSortByDropdownHandler choose%sortOption% x20 y325 w130 Background2A2A2A cWhite, Oldest First|Newest First|Fewest Packs First|Most Packs First|Pack Below 96P First
 
    Gui, Add, Text, x20 y260 %sectionColor% vAccountNameText, % currentDictionary.Txt_AccountName
    Gui, Add, Edit, vAccountName w90 x130 y260 h20 -E0x200 Background2A2A2A cWhite Center, %AccountName%
@@ -471,6 +471,8 @@ SortByDropdownHandler:
     injectSortMethod := "PacksAsc"
   else if (selectedOption = "Most Packs First")
     injectSortMethod := "PacksDesc"
+  else if (selectedOption = "Pack Below 96P First")
+    injectSortMethod := "Below96DescThenAboveDesc"
 return
 
 UpdatePackSelectionButtonText() {

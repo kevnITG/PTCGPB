@@ -828,10 +828,49 @@ CreateAccountList(instance) {
             SortArraysByProperty(fileNames, fileTimes, packCounts, "packs", 1)
         } else if (sortMethod == "PacksDesc") {
             SortArraysByProperty(fileNames, fileTimes, packCounts, "packs", 0)
+        } else if (sortMethod == "Below96DescThenAboveDesc") {
+            ; Split into two groups: <96 and >=96
+            below96_names := [], below96_times := [], below96_packs := []
+            above96_names := [], above96_times := [], above96_packs := []
+
+            Loop, % fileNames.MaxIndex() {
+                packs := packCounts[A_Index]
+                if (packs < 96) {
+                    below96_names.Push(fileNames[A_Index])
+                    below96_times.Push(fileTimes[A_Index])
+                    below96_packs.Push(packs)
+                } else {
+                    above96_names.Push(fileNames[A_Index])
+                    above96_times.Push(fileTimes[A_Index])
+                    above96_packs.Push(packs)
+                }
+            }
+
+            ; Sort below96 descending (highest under 96 first)
+            if (below96_names.MaxIndex())
+                SortArraysByProperty(below96_names, below96_times, below96_packs, "packs", 0)
+
+            ; Sort above96 descending (highest over/at 96 first)
+            if (above96_names.MaxIndex())
+                SortArraysByProperty(above96_names, above96_times, above96_packs, "packs", 0)
+
+            ; Combine: below96 first, then above96
+            fileNames := [], fileTimes := [], packCounts := []
+            Loop, % below96_names.MaxIndex() {
+                fileNames.Push(below96_names[A_Index])
+                fileTimes.Push(below96_times[A_Index])
+                packCounts.Push(below96_packs[A_Index])
+            }
+            Loop, % above96_names.MaxIndex() {
+                fileNames.Push(above96_names[A_Index])
+                fileTimes.Push(above96_times[A_Index])
+                packCounts.Push(above96_packs[A_Index])
+            }
         } else {
-            ; Default to ModifiedAsc if unknown sort method
+            ; Default fallback
             SortArraysByProperty(fileNames, fileTimes, packCounts, "time", 1)
         }
+        
     }
 
     ; Write sorted files to list.txt and list_current.txt
