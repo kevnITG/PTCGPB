@@ -4321,8 +4321,8 @@ OpenGiftPacks(){
             adbClick_wbb(224, 173)
             Delay(1)
             failSafeTime := (A_TickCount - failSafe) // 1000
-            CreateStatusMessage("Looking for pack... `n(" . failSafeTime . "/15 seconds)")
-            if(failSafeTime > 15) {
+            CreateStatusMessage("Looking for pack... `n(" . failSafeTime . "/7 seconds)")
+            if(failSafeTime > 7) {
                 adbClick_wbb(140, 510)
                 break
             }
