@@ -326,3 +326,16 @@ CompareIndicesByPacksDesc(packs, a, b) {
     packsB := packs[b]
     return packsB < packsA ? -1 : (packsB > packsA ? 1 : 0)
 }
+
+;-------------------------------------------------------------------------------
+; Find the monitor index with device name 
+;-------------------------------------------------------------------------------
+GetMonitorIndexFromDeviceName(TargetDeviceName) {
+    SysGet, MonitorCount, MonitorCount
+    Loop, %MonitorCount% {
+        SysGet, ThisName, MonitorName, %A_Index%
+        if (ThisName = TargetDeviceName)
+            return A_Index
+    }
+    return 1
+}

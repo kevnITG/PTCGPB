@@ -938,13 +938,29 @@ ShowSystemSettings:
     yPos := 15
     Gui, SystemSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_Monitor
     yPos += 20
-    SysGet, MonitorCount, MonitorCount
-    MonitorOptions := ""
-    Loop, %MonitorCount% {
-        SysGet, MonitorName, MonitorName, %A_Index%
-        SysGet, Monitor, Monitor, %A_Index%
-        MonitorOptions .= (A_Index > 1 ? "|" : "") "" A_Index ": (" MonitorRight - MonitorLeft "x" MonitorBottom - MonitorTop ")"
-    }
+
+   SysGet, MonitorCount, MonitorCount
+   MonitorOptions := ""
+   CurrentSavedDeviceName := ""  ; Will be read below
+
+   ; Read previously saved stable DeviceName
+   IniRead, SavedDeviceName, Settings.ini, UserSettings, SelectedMonitorDeviceName, \\.\DISPLAY1
+
+   defaultIndex := 1
+   Loop, %MonitorCount% {
+      SysGet, MonName, MonitorName, %A_Index%
+      SysGet, Mon, Monitor, %A_Index%
+      Width := MonRight - MonLeft
+      Height := MonBottom - MonTop
+      DisplayText := A_Index ": (" Width "x" Height ") - " MonName
+      MonitorOptions .= (A_Index = 1 ? "" : "|") DisplayText
+
+      ; If this monitor matches the saved DeviceName, set as default
+      if (MonName = SavedDeviceName) {
+         defaultIndex := A_Index
+      }
+   }
+
     SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
     Gui, SystemSettingsSelect:Add, DropDownList, x15 y%yPos% w125 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     
@@ -1228,13 +1244,28 @@ ShowToolsAndSystemSettings:
     
     Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%yPos2% %sectionColor%, % currentDictionary.Txt_Monitor
     yPos2 += 20
-    SysGet, MonitorCount, MonitorCount
-    MonitorOptions := ""
-    Loop, %MonitorCount% {
-        SysGet, MonitorName, MonitorName, %A_Index%
-        SysGet, Monitor, Monitor, %A_Index%
-        MonitorOptions .= (A_Index > 1 ? "|" : "") "" A_Index ": (" MonitorRight - MonitorLeft "x" MonitorBottom - MonitorTop ")"
-    }
+   SysGet, MonitorCount, MonitorCount
+   MonitorOptions := ""
+   CurrentSavedDeviceName := ""  ; Will be read below
+
+   ; Read previously saved stable DeviceName
+   IniRead, SavedDeviceName, Settings.ini, UserSettings, SelectedMonitorDeviceName, \\.\DISPLAY1
+
+   defaultIndex := 1
+   Loop, %MonitorCount% {
+      SysGet, MonName, MonitorName, %A_Index%
+      SysGet, Mon, Monitor, %A_Index%
+      Width := MonRight - MonLeft
+      Height := MonBottom - MonTop
+      DisplayText := A_Index ": (" Width "x" Height ") - " MonName
+      MonitorOptions .= (A_Index = 1 ? "" : "|") DisplayText
+
+      ; If this monitor matches the saved DeviceName, set as default
+      if (MonName = SavedDeviceName) {
+         defaultIndex := A_Index
+      }
+   }
+
     SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
     Gui, ToolsAndSystemSelect:Add, DropDownList, x%col2X% y%yPos2% w100 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     
@@ -1429,6 +1460,19 @@ ClearSpecialMissionHistory:
     
 Save:
   Gui, Submit, NoHide
+
+  ; Save monitor Monitor name
+   SelectedText := SelectedMonitorIndex
+   RegExMatch(SelectedText, "- (\\\\\.\\DISPLAY\d+)", match)
+   SelectedMonitorDeviceName := match1
+
+   if (SelectedMonitorDeviceName = "") {
+      ; Fallback: extract index and get current name
+      RegExMatch(SelectedText, "^(\d+)", match)
+      SysGet, SelectedMonitorDeviceName, MonitorName, % match1
+   }
+
+   SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
 
   if (deleteMethod != "Inject Wonderpick 96P+") {
    s4tWP := false
@@ -1919,6 +1963,7 @@ LoadSettingsFromIni() {
       IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 1 ; default is now OFF for no-mod-menu support
       
       IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
+      IniRead, SelectedMonitorDeviceName, Settings.ini, UserSettings, SelectedMonitorDeviceName, "\\.\DISPLAY1"
       IniRead, defaultLanguage, Settings.ini, UserSettings, defaultLanguage, Scale125
       if (defaultLanguage = "Scale100") defaultLanguage := "Scale125"
       IniRead, rowGap, Settings.ini, UserSettings, rowGap, 90
@@ -2175,6 +2220,7 @@ SaveAllSettings() {
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
    global checkWPthanks
    global ClaimGiftsPacks
+   global SelectedMonitorDeviceName
 
    if (deleteMethod != "Inject Wonderpick 96P+") {
        packMethod := false
@@ -2320,6 +2366,7 @@ SaveAllSettings() {
    iniContent_Second .= "defaultLanguage=" defaultLanguage "`n"
    iniContent_Second .= "rowGap=" rowGap "`n"
    iniContent_Second .= "SelectedMonitorIndex=" SelectedMonitorIndex "`n"
+   iniContent_Second .= "SelectedMonitorDeviceName=" SelectedMonitorDeviceName "`n"
    iniContent_Second .= "swipeSpeed=" swipeSpeed "`n"
    iniContent_Second .= "Mains=" Mains "`n"
    iniContent_Second .= "TestTime=" TestTime "`n"

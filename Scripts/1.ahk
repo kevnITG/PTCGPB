@@ -104,9 +104,11 @@ IniRead, godPack, %A_ScriptDir%\..\Settings.ini, UserSettings, godPack, Continue
 IniRead, Instances, %A_ScriptDir%\..\Settings.ini, UserSettings, Instances, 1
 IniRead, defaultLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, defaultLanguage, Scale125
 IniRead, rowGap, %A_ScriptDir%\..\Settings.ini, UserSettings, rowGap, 100
-IniRead, SelectedMonitorIndex, %A_ScriptDir%\..\Settings.ini, UserSettings, SelectedMonitorIndex, 1
 IniRead, swipeSpeed, %A_ScriptDir%\..\Settings.ini, UserSettings, swipeSpeed, 300
 IniRead, deleteMethod, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod, Create Bots (13P)
+
+IniRead, SelectedMonitorDeviceName, %A_ScriptDir%\..\Settings.ini, UserSettings, SelectedMonitorDeviceName, "\\.\DISPLAY1"
+SelectedMonitorIndex := GetMonitorIndexFromDeviceName(SelectedDeviceName)
 
 ; support to convert old settings.ini deleteMethods to new nomenclature
 originalDeleteMethod := deleteMethod
