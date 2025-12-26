@@ -579,6 +579,10 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             }
         }
 
+		if ClaimGiftsPacks{
+			OpenGiftPacks()
+		}
+
         ; Daily Mission 4hg collection and/or extra 3rd pack opening
         if((deleteMethod = "Inject Wonderpick 96P+" || deleteMethod = "Inject 13P+") && (claimDailyMission || openExtraPack)) {
 
@@ -739,10 +743,6 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         if (spendHourGlass = 1 && !(deleteMethod = "Inject 13P+" && accountOpenPacks >= maxAccountPackNum || deleteMethod = "Inject Missions" && accountOpenPacks >= maxAccountPackNum)) {
             SpendAllHourglass()
         }
-		
-		if ClaimGiftsPacks{
-			OpenGiftPacks()
-		}
 		
         ; Friend removal for Inject Wonderpick 96P+
         if (injectMethod && friended && !keepAccount) {
