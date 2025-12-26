@@ -1469,7 +1469,7 @@ Save:
    if (SelectedMonitorDeviceName = "") {
       ; Fallback: extract index and get current name
       RegExMatch(SelectedText, "^(\d+)", match)
-      SysGet, SelectedMonitorDeviceName, MonitorName, % match1
+      SysGet, SelectedMonitorDeviceName, MonitorName, 1
    }
 
    SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
