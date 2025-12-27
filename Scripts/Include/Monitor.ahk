@@ -233,17 +233,18 @@ killInstance(instanceNum := "") {
     maxRetries := 3
     retryDelay := 2000
     
-    mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
+    ; Temporary disable this method of shuting down stuck instances.
+    ; mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
     
-    if (mumuNum != "") {
-        RunWait, %mumuManagerPath% api -v %mumuNum% shutdown_player,, Hide
-        Sleep, 5000
-        if (!checkInstance(instanceNum)) {
-            killed := 1
-            LogToFile("Proper shutdown via MuMuManager for instance " . instanceNum, "Monitor.txt")
-            return killed
-        }
-    }
+    ; if (mumuNum != "") {
+    ;     RunWait, %mumuManagerPath% api -v %mumuNum% shutdown_player,, Hide
+    ;     Sleep, 5000
+    ;     if (!checkInstance(instanceNum)) {
+    ;         killed := 1
+    ;         LogToFile("Proper shutdown via MuMuManager for instance " . instanceNum, "Monitor.txt")
+    ;         return killed
+    ;     }
+    ; }
     
     pID := checkInstance(instanceNum)
     if pID {
