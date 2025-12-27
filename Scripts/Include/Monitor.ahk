@@ -13,17 +13,35 @@ if not A_IsAdmin
 
 Menu, Tray, Icon, %A_ScriptDir%\..\..\GUI\Icons\monitor.ico
 
-
+global Columns, runMain, Mains, defaultLanguage, scaleParam, SelectedMonitorIndex, titleHeight, MuMuv5
 global useADBManager
 
 settingsPath := A_ScriptDir "\..\..\Settings.ini"
-
 IniRead, instanceLaunchDelay, %settingsPath%, UserSettings, instanceLaunchDelay, 5
 IniRead, waitAfterBulkLaunch, %settingsPath%, UserSettings, waitAfterBulkLaunch, 40000
 IniRead, Instances, %settingsPath%, UserSettings, Instances, 1
 IniRead, folderPath, %settingsPath%, UserSettings, folderPath, C:\Program Files\Netease
 IniRead, useADBManager, %settingsPath%, UserSettings, useADBManager, 0
 IniRead, AutoDiskClean, %settingsPath%, UserSettings, AutoDiskClean, 0
+IniRead, runMain, %settingsPath%, UserSettings, runMain, 1
+IniRead, Mains, %settingsPath%, UserSettings, Mains, 1
+IniRead, defaultLanguage, %settingsPath%, UserSettings, defaultLanguage, Scale125
+IniRead, Columns, %settingsPath%, UserSettings, Columns, 5
+IniRead, SelectedMonitorDeviceName, %settingsPath%, UserSettings, SelectedMonitorDeviceName, "\\.\DISPLAY1"
+
+SelectedMonitorIndex := GetMonitorIndexFromDeviceName(SelectedMonitorDeviceName)
+
+MuMuv5 := isMuMuv5()
+
+if (InStr(defaultLanguage, "100")) {
+    scaleParam := 287
+} else {
+    if (MuMuv5) {
+        scaleParam := 283
+    } else {
+        scaleParam := 277
+    }
+}
 
 mumuFolder = %folderPath%\MuMuPlayerGlobal-12.0
 if !FileExist(mumuFolder)
@@ -130,6 +148,10 @@ Loop {
                 launchInstance(instanceNum)
                 Sleep, % instanceLaunchDelay * 1000
                 Sleep, %waitAfterBulkLaunch%
+
+                ; Position the window
+                DirectlyPositionWindow(instanceNum)
+                Sleep, % instanceLaunchDelay * 1000
                 
                 ; Relaunch bot scripts
                 scriptPath := A_ScriptDir "\..\" scriptName
@@ -410,5 +432,62 @@ CountOldXmlFiles(directory) {
     }
     return count
 }
+
+isMuMuv5(){
+    global folderPath
+    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMu Player 12"
+    if FileExist(mumuFolder . "\nx_main")
+        return true
+    return false
+}
+
+DirectlyPositionWindow(instanceNum := "") {
+    global Columns, runMain, Mains, scaleParam, SelectedMonitorIndex, titleHeight
+
+    rowGap := 100
+
+    ; Get monitor information
+    SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+    SysGet, Monitor, Monitor, %SelectedMonitorIndex%
+
+    ; Calculate position based on instance number
+    Title := instanceNum
+
+    if (runMain) {
+        instanceIndex := (Mains - 1) + Title + 1
+    } else {
+        instanceIndex := Title
+    }
+
+    if (MuMuv5) {
+        titleHeight := 50
+    } else {
+        titleHeight := 45
+    }
+
+    borderWidth := 4 - 1
+    rowHeight := titleHeight + 489 + 4
+    currentRow := Floor((instanceIndex - 1) / Columns)
+
+    y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
+    ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+    if (MuMuv5) {
+        x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+    } else {
+        x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+    }
+
+    WinSet, Style, -0xC00000, %Title%
+    WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
+    WinSet, Style, +0xC00000, %Title%
+    WinSet, Redraw, , %Title%
+
+    CreateStatusMessage("Positioned window at x:" . x . " y:" . y,,,, false)
+
+    return true
+}
+
 
 ~+F7::ExitApp
