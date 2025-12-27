@@ -84,8 +84,8 @@ Loop {
                 stuckThreshold := 30 * 60
             } else {
                 nonEmptyLines := CountOldXmlFiles(saveDir)
-                ; wait 15 min before calling it stuck
-                stuckThreshold := 15 * 60
+                ; wait 11 min before calling it stuck
+                stuckThreshold := 11 * 60
             }
 
             ; Determine what action to take
