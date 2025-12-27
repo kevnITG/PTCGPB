@@ -58,6 +58,15 @@ CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debug
 
             Gui, %GuiName%:Show, NoActivate x%X% y%Y% w275 h%guiheight%
         }
+        
+        ; Update position if the mumu window is moved
+        if WinExist(winTitle) {
+            WinGetPos, wx, wy, , , %winTitle%
+            newX := wx + X + 5
+            newY := wy + Y
+            Gui, %GuiName%:Show, NoActivate x%newX% y%newY% w275 h%guiheight%
+        }
+
         SetTextAndResize(hwnds[GuiName], Message)
         Gui, %GuiName%:Show, NoActivate  w275 h%guiheight%
 

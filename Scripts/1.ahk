@@ -284,46 +284,15 @@ DisableBackgroundServices()
 Sleep, 5000
 
 resetWindows()
-MaxRetries := 10
-RetryCount := 0
-Loop {
-    try {
-        WinGetPos, x, y, Width, Height, %winTitle%
-        sleep, 2000
-        ;Winset, Alwaysontop, On, %winTitle%
-        OwnerWND := WinExist(winTitle)
-        x4 := x + 5
-        y4 := y +535
-        buttonWidth := 50
-        if (scaleParam = 287)
-            buttonWidth := buttonWidth + 5
 
-        Gui, New, +Owner%OwnerWND% -AlwaysOnTop +ToolWindow -Caption +LastFound -DPIScale
-        Gui, Default
-        Gui, Margin, 4, 4  ; Set margin for the GUI
-        Gui, Font, s5 cGray Norm Bold, Segoe UI  ; Normal font for input labels
-        Gui, Add, Button, % "x" . (buttonWidth * 0) . " y0 w" . buttonWidth . " h25 gReloadScript", Reload  (Shift+F5)
-        Gui, Add, Button, % "x" . (buttonWidth * 1) . " y0 w" . buttonWidth . " h25 gPauseScript", Pause (Shift+F6)
-        Gui, Add, Button, % "x" . (buttonWidth * 2) . " y0 w" . buttonWidth . " h25 gResumeScript", Resume (Shift+F6)
-        Gui, Add, Button, % "x" . (buttonWidth * 3) . " y0 w" . buttonWidth . " h25 gStopScript", Stop (Shift+F7)
-        ;if(winTitle=1)
-        Gui, Add, Button, % "x" . (buttonWidth * 4) . " y0 w" . buttonWidth . " h25 gDevMode", Dev Mode (Shift+F8)
-        DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1  ; HWND_BOTTOM
-            , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
-        Gui, Show, NoActivate x%x4% y%y4%  w275 h30
-        break
-    }
-    catch {
-        RetryCount++
-        if (RetryCount >= MaxRetries) {
-            CreateStatusMessage("Failed to create button GUI.",,,, false)
-            break
-        }
-        Sleep, 1000
-    }
-    Delay(1)
-    CreateStatusMessage("Trying to create button GUI...")
-}
+; Create the gui button
+global ButtonGUICreated := false
+global ButtonGUIName
+CreateButtonGUI()
+
+; refresh the gui button location
+SetTimer, UpdateButtonGUIPosition, 2000
+
 
 if (!godPack)
     godPack = 1
@@ -4425,6 +4394,80 @@ OpenGiftPacks(){
     }
     openPack := properPack
     GoToMain()
+}
+
+CreateButtonGUI() {
+    global ButtonGUICreated, winTitle, ButtonGUIName
+
+    if (ButtonGUICreated)
+        return
+
+    RetryCount := 0
+    MaxRetries := 10
+
+    Loop {
+        try {
+            WinGetPos, x, y, Width, Height, %winTitle%
+            OwnerWND := WinExist(winTitle)
+
+            x4 := x + 5
+            y4 := y + 535
+
+            buttonWidth := 50
+            if (scaleParam = 287)
+                buttonWidth += 5
+
+            ; Store the full GUI name for reliable reuse
+            ButtonGUIName := "ButtonBar" . winTitle
+
+            Gui, %ButtonGUIName%:New, +Owner%OwnerWND% -AlwaysOnTop +ToolWindow -Caption -DPIScale
+            Gui, Margin, 4, 4
+            Gui, Font, s5 cGray Norm Bold, Segoe UI
+            Gui, Add, Button, x0     y0 w%buttonWidth% h25 gReloadScript,  Reload  (Shift+F5)
+            Gui, Add, Button, x+0    y0 w%buttonWidth% h25 gPauseScript,   Pause (Shift+F6)
+            Gui, Add, Button, x+0    y0 w%buttonWidth% h25 gResumeScript,  Resume (Shift+F6)
+            Gui, Add, Button, x+0    y0 w%buttonWidth% h25 gStopScript,    Stop (Shift+F7)
+            Gui, Add, Button, x+0    y0 w%buttonWidth% h25 gDevMode,       Dev Mode (Shift+F8)
+
+            DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)
+
+            ; Show initially using your original x4/y4 style
+            Gui, %ButtonGUIName%:Show, NoActivate x%x4% y%y4% w275 h30
+
+            ButtonGUICreated := true
+            CreateStatusMessage("Button GUI created.")
+            return true
+        }
+        catch {
+            RetryCount++
+            if (RetryCount >= MaxRetries) {
+                CreateStatusMessage("Failed to create button GUI.",,,, false)
+                return false
+            }
+            Sleep, 1000
+        }
+        CreateStatusMessage("Trying to create button GUI...")
+        Sleep, 1000
+    }
+}
+
+UpdateButtonGUIPosition() {
+    global winTitle, ButtonGUICreated, ButtonGUIName
+
+    if (!ButtonGUICreated)
+        return
+
+    if !WinExist(winTitle)
+        return
+
+    WinGetPos, x, y, , , %winTitle%
+
+    ; Same calculation style as your original
+    newX := x + 5
+    newY := y + 535
+
+    ; Use the stored full GUI name and show with new coordinates
+    Gui, %ButtonGUIName%:Show, NoActivate x%newX% y%newY% w275 h30
 }
 
 GoToMain(fromSocial := false) {
