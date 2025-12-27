@@ -1,4 +1,5 @@
 #Include %A_ScriptDir%\Logging.ahk
+#Include %A_ScriptDir%\Utils.ahk
 
 #SingleInstance, force
 CoordMode, Mouse, Screen
@@ -337,11 +338,6 @@ getMumuInstanceNumFromPlayerName(scriptName := "") {
     return ""
 }
 
-; Temporary function to avoid an error in Logging.ahk
-ReadFile(filename) {
-    return false
-}
-
 Run_(target, args:="", workdir:="") {
     try
         ShellRun(target, args, workdir)
@@ -431,16 +427,6 @@ CountOldXmlFiles(directory) {
             count++
     }
     return count
-}
-
-isMuMuv5(){
-    global folderPath
-    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMu Player 12"
-    if FileExist(mumuFolder . "\nx_main")
-        return true
-    return false
 }
 
 DirectlyPositionWindow(instanceNum := "") {
