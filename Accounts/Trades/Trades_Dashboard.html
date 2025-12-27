@@ -248,6 +248,20 @@
             background: #f5f5f5;
         }
 
+        .select-all-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .select-all-buttons .btn {
+            padding: 4px 12px;
+            font-size: 0.8em;
+            min-width: 100px;
+        }
+
         .checkbox-item input {
             accent-color: #1a1a1a;
             cursor: pointer;
@@ -598,7 +612,7 @@
         #fileInput {
             display: none;
         }
-        
+
         .export-btn {
             background: #1a1a1a;
             color: white;
@@ -775,7 +789,9 @@
                 "4diamond": "◆◆◆◆",
                 "3diamond": "◆◆◆",
                 "2diamond": "◆◆",
-                "1diamond": "◆"
+                "1diamond": "◆",
+                selectAll: "select all",
+                deselectAll: "deselect all"
             },
             zh: {
                 uniqueAccounts: "独特帐户",
@@ -832,7 +848,9 @@
                 "4diamond": "◆◆◆◆",
                 "3diamond": "◆◆◆",
                 "2diamond": "◆◆",
-                "1diamond": "◆"
+                "1diamond": "◆",
+                selectAll: "全选",
+                deselectAll: "取消全选"
             },
             ja: {
                 uniqueAccounts: "固有アカウント",
@@ -889,7 +907,9 @@
                 "4diamond": "◆◆◆◆",
                 "3diamond": "◆◆◆",
                 "2diamond": "◆◆",
-                "1diamond": "◆"
+                "1diamond": "◆",
+                selectAll: "すべて選択",
+                deselectAll: "すべて選択解除"
             },
             de: {
                 uniqueAccounts: "eindeutige Konten",
@@ -946,7 +966,9 @@
                 "4diamond": "◆◆◆◆",
                 "3diamond": "◆◆◆",
                 "2diamond": "◆◆",
-                "1diamond": "◆"
+                "1diamond": "◆",
+                selectAll: "Alle auswählen",
+                deselectAll: "Alle abwählen"
             },
             fr: {
                 uniqueAccounts: "comptes uniques",
@@ -1003,7 +1025,9 @@
                 "4diamond": "◆◆◆◆",
                 "3diamond": "◆◆◆",
                 "2diamond": "◆◆",
-                "1diamond": "◆"
+                "1diamond": "◆",
+                selectAll: "Tout sélectionner",
+                deselectAll: "Tout désélectionner"
             },
             ko: {
                 uniqueAccounts: "고유 계정",
@@ -1060,7 +1084,9 @@
                 "4diamond": "◆◆◆◆",
                 "3diamond": "◆◆◆",
                 "2diamond": "◆◆",
-                "1diamond": "◆"
+                "1diamond": "◆",
+                selectAll: "모두 선택",
+                deselectAll: "모두 선택 해제"
             },
             es: {
                 uniqueAccounts: "cuentas únicas",
@@ -1117,7 +1143,9 @@
                 "4diamond": "◆◆◆◆",
                 "3diamond": "◆◆◆",
                 "2diamond": "◆◆",
-                "1diamond": "◆"
+                "1diamond": "◆",
+                selectAll: "Seleccionar todo",
+                deselectAll: "Deseleccionar todo"
             }
         };
 
@@ -1136,7 +1164,7 @@
         function changeLanguage() {
             const select = document.getElementById('languageSelect');
             currentLanguage = select.value;
-            
+
             updateUIText();
             if (csvLoaded) {
                 populatePackFilter();
@@ -1147,11 +1175,11 @@
 
         function updateUIText() {
             const t = translations[currentLanguage];
-            
+
             // Update stats labels (use innerHTML to preserve icons)
             document.querySelector('#uniqueAccounts').nextElementSibling.innerHTML = '<i class="fas fa-users"></i> ' + t.uniqueAccounts;
             document.querySelector('#totalCards').nextElementSibling.innerHTML = '<i class="fas fa-layer-group"></i> ' + t.totalCards;
-            
+
             // Update table headers
             const headerElements = document.querySelectorAll('[data-i18n]');
             headerElements.forEach(el => {
@@ -1160,17 +1188,17 @@
                     el.textContent = t[key];
                 }
             });
-            
+
             // Update button if visible (use innerHTML to preserve icons)
             const loadBtn = document.getElementById('loadCSVBtn');
             if (loadBtn && loadBtn.style.display !== 'none') {
                 loadBtn.innerHTML = '<i class="fas fa-upload"></i> ' + t.loadCSV;
             }
-            
+
             document.getElementById('searchInput').placeholder = t.searchPlaceholder;
             // Update export button (use innerHTML to preserve icons)
             document.getElementById('exportBtn').innerHTML = '<i class="fas fa-download"></i> ' + t.exportBtn;
-            
+
             // Update empty state if visible
             const emptyState = document.querySelector('.empty-state');
             if (emptyState) {
@@ -1246,6 +1274,70 @@
                 .map(cb => cb.value);
         }
 
+        function selectAllCheckboxes(containerId) {
+            const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]`);
+            checkboxes.forEach(cb => {
+                cb.checked = true;
+            });
+            // Trigger the change event to update filters
+            document.getElementById(containerId).onchange();
+        }
+
+        function deselectAllCheckboxes(containerId) {
+            const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]`);
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+            });
+            // Trigger the change event to update filters
+            document.getElementById(containerId).onchange();
+        }
+
+        function addSelectAllButtons(containerId) {
+            // Find the filter-stack that contains our container
+            const container = document.getElementById(containerId);
+            const filterStack = container.closest('.filter-stack');
+
+            if (!filterStack) return;
+
+            // Check if buttons already exist to avoid duplicates
+            const existingButtons = filterStack.querySelector('.select-all-buttons');
+            if (existingButtons) {
+                existingButtons.remove();
+            }
+
+            // Create buttons container
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'select-all-buttons';
+            buttonsContainer.style.marginTop = '4px';
+            buttonsContainer.style.marginBottom = '8px';
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.style.gap = '8px';
+
+            // Create Select All button
+            const selectAllBtn = document.createElement('button');
+            selectAllBtn.className = 'btn';
+            selectAllBtn.textContent = translations[currentLanguage].selectAll || 'Select All';
+            selectAllBtn.onclick = () => selectAllCheckboxes(containerId);
+
+            // Create Deselect All button
+            const deselectAllBtn = document.createElement('button');
+            deselectAllBtn.className = 'btn';
+            deselectAllBtn.textContent = translations[currentLanguage].deselectAll || 'Deselect All';
+            deselectAllBtn.onclick = () => deselectAllCheckboxes(containerId);
+
+            buttonsContainer.appendChild(selectAllBtn);
+            buttonsContainer.appendChild(deselectAllBtn);
+
+            // Insert buttons after the filter-label but before the checkbox container
+            const filterLabel = filterStack.querySelector('.filter-label');
+            if (filterLabel) {
+                filterLabel.insertAdjacentElement('afterend', buttonsContainer);
+            } else {
+                // Fallback: insert at the beginning of the filter-stack
+                filterStack.insertBefore(buttonsContainer, filterStack.firstChild);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const popup = document.getElementById('popup');
             const closeBtn = document.getElementById('closeBtn');
@@ -1285,12 +1377,12 @@
 
         function parseCSV(csvText) {
             const lines = csvText.trim().split('\n');
-            
+
             allData = [];
-            
+
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
-                
+
                 const values = lines[i].split(',');
                 const row = {
                     timestamp: values[0],
@@ -1324,7 +1416,7 @@
         function updateShinedustMap() {
             // Clear existing map
             accountShinedustMap.clear();
-            
+
             // Group data by deviceAccount
             const accountGroups = new Map();
             allData.forEach(row => {
@@ -1333,7 +1425,7 @@
                 }
                 accountGroups.get(row.deviceAccount).push(row);
             });
-            
+
             // For each account, find the latest shinedust value
             accountGroups.forEach((rows, deviceAccount) => {
                 // Sort by timestamp to get the latest entry
@@ -1342,10 +1434,10 @@
                     const dateB = new Date(b.timestamp);
                     return dateB - dateA; // Descending order (latest first)
                 });
-                
+
                 // Find the first entry with a shinedust value
                 const latestShinedustEntry = sortedRows.find(row => row.shinedust && row.shinedust.trim() !== '');
-                
+
                 if (latestShinedustEntry) {
                     accountShinedustMap.set(deviceAccount, latestShinedustEntry.shinedust);
                 }
@@ -1362,7 +1454,7 @@
 
         function updateStats() {
             const uniqueAccounts = new Set(allData.map(row => row.deviceAccount)).size;
-            const totalCards = allData.reduce((sum, row) => 
+            const totalCards = allData.reduce((sum, row) =>
                 sum + row.cardCounts.reduce((a, b) => a + b, 0), 0
             );
 
@@ -1385,6 +1477,7 @@
             const hadAllChecked = existingPackInputs.length === 0 || existingPackInputs.every(cb => cb.checked);
 
             container.innerHTML = '';
+
             packTypes.forEach(pack => {
                 const label = document.createElement('label');
                 label.className = 'checkbox-item';
@@ -1404,6 +1497,8 @@
             });
 
             container.dataset.initialized = 'true';
+
+            addSelectAllButtons('packFilterContainer');
         }
 
         function setupFilterListeners() {
@@ -1424,7 +1519,7 @@
 
             const newSearchInput = searchInput.cloneNode(true);
             searchInput.parentNode.replaceChild(newSearchInput, searchInput);
-            
+
             // Add fresh listeners
             document.getElementById('searchInput').addEventListener('input', applyFilters);
         }
@@ -1441,7 +1536,7 @@
             const dataToCount = selectedPacks.length > 0
                 ? allData.filter(row => selectedPacks.includes(row.packType))
                 : allData;
-            
+
             // Calculate card counts from filtered data
             const cardTypes = new Map();
             dataToCount.forEach(row => {
@@ -1453,6 +1548,7 @@
 
             // Rebuild the card filter checkboxes
             cardContainer.innerHTML = '';
+
             cardTypes.forEach((count, card) => {
                 const label = document.createElement('label');
                 label.className = 'checkbox-item';
@@ -1472,6 +1568,8 @@
             });
 
             cardContainer.dataset.initialized = 'true';
+
+            addSelectAllButtons('cardFilterContainer');
         }
 
         function sortData(column) {
@@ -1483,7 +1581,7 @@
                 sortColumn = column;
                 sortDirection = 'desc';
             }
-            
+
             renderTable();
         }
 
@@ -1537,7 +1635,7 @@
 
         function aggregateByAccount(data) {
             const accountMap = new Map();
-            
+
             data.forEach(row => {
                 const key = row.deviceAccount;
                 if (!accountMap.has(key)) {
@@ -1551,13 +1649,13 @@
                         details: []
                     });
                 }
-                
+
                 const account = accountMap.get(key);
                 account.totalPulls++;
                 account.packTypes.add(row.packType);
                 account.lastSeen = row.timestamp;
                 account.details.push(row);
-                
+
                 row.cardTypes.forEach((cardType, idx) => {
                     const count = row.cardCounts[idx];
                     if (account.cards.has(cardType)) {
@@ -1567,7 +1665,7 @@
                     }
                 });
             });
-            
+
             return Array.from(accountMap.values());
         }
 
@@ -1593,7 +1691,7 @@
             const t = translations[currentLanguage];
             const thead = document.getElementById('tableHead');
             const tbody = document.getElementById('tableBody');
-            
+
             if (filteredData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
@@ -1624,7 +1722,7 @@
             `;
 
             let aggregated = aggregateByAccount(filteredData);
-            
+
             // Apply sorting
             if (sortColumn === 'date') {
                 aggregated.sort((a, b) => {
@@ -1645,14 +1743,14 @@
             }
 
             tbody.innerHTML = '';
-            
+
             aggregated.forEach(account => {
                 const tr = document.createElement('tr');
                 const isExpanded = expandedAccounts.has(account.deviceAccount);
                 tr.className = isExpanded ? 'expandable expanded' : 'expandable';
-                
+
                 const expandIcon = isExpanded ? '▼' : '▶';
-                
+
                 const cardsHTML = Array.from(account.cards.entries())
                     .map(([type, count]) => {
                         const typeLower = type.toLowerCase();
@@ -1667,7 +1765,7 @@
 
                 const xmlFilenames = [...new Set(account.details.map(d => d.cleanFilename))].join(', ');
                 const originalFileName = account.details.map(d => d.originalFilename).join(',');
-                
+
                 // Get latest shinedust value from the stored map (not affected by filtering)
                 const latestShinedust = accountShinedustMap.get(account.deviceAccount) || '';
 
@@ -1690,22 +1788,22 @@
                     <td class="time-cell">${account.lastSeen.split(' ')[0]}</td>
                     <td class="col-age">${ageDays}</td>
                 `;
-                
+
                 tr.onclick = () => toggleAccount(account.deviceAccount);
                 tbody.appendChild(tr);
 
                 if (isExpanded) {
                     let detailRowHtml = '';
                     let screenshotTag = '';
-                    const validDetails = account.details.filter(detail => 
+                    const validDetails = account.details.filter(detail =>
                         !(detail.packType.length == 0 && detail.shinedust > 0)
                     );
-                    
+
                     validDetails.forEach((detail, index) => {
                         const detailTr = document.createElement('tr');
                         const isLastDetail = index === validDetails.length - 1;
                         detailTr.className = isLastDetail ? 'detail-row last-detail-row' : 'detail-row';
-                        
+
                         const detailCardsHTML = detail.cardTypes.map((type, idx) => {
                             const typeLower = type.toLowerCase();
                             return `<span class="badge badge-card badge-${typeLower}">${getCardDisplayName(type)} ×${detail.cardCounts[idx]}</span>`;
@@ -1732,7 +1830,7 @@
                             <td class="col-age"></td>
                         `;
                         detailTr.innerHTML = detailRowHtml;
-                        
+
                         tbody.appendChild(detailTr);
                     });
                 }
@@ -1787,7 +1885,7 @@
             }
 
             const headers = 'Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot,Shinedust\n';
-            const rows = filteredData.map(row => 
+            const rows = filteredData.map(row =>
                 `${row.timestamp},${row.originalFilename},${row.cleanFilename},${row.deviceAccount},${row.packType},${row.cardTypes.join('|')},${row.cardCounts.join('|')},${row.packScreenshot},${row.shinedust || ''}`
             ).join('\n');
 
@@ -1802,7 +1900,7 @@
         }
     </script>
 </head>
-<body>    
+<body>
     <div class="popup-overlay" id="popup">
         <div class="popup-content">
             <img id="popup-img" src="" alt="Enlarged Image">
@@ -1862,7 +1960,7 @@
                 </div>
 
                 <button class="btn" id="expandToggleBtn" onclick="toggleExpandAll()" disabled><i class="fas fa-expand"></i> expand all</button>
-                
+
                 <button class="btn export-btn" onclick="exportFiltered()" id="exportBtn" disabled><i class="fas fa-download"></i> export</button>
             </div>
         </div>

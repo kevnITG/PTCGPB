@@ -10,6 +10,7 @@ Screenshots/Trades/**
 Scripts/*.ahk
 Scripts/*.ini
 !Scripts/1.ahk
+!Scripts/1.*.ahk
 !Scripts/Main.ahk
 *.txt
 *.ini
@@ -29,3 +30,5 @@ Accounts/Trades/*.json
 .claude/
 
 .REFACTORING_SUMMARY.md
+.vscode/settings.json
+/Accounts/Saved/tmp

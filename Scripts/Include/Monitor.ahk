@@ -1,4 +1,5 @@
 #Include %A_ScriptDir%\Logging.ahk
+#Include %A_ScriptDir%\Utils.ahk
 
 #SingleInstance, force
 CoordMode, Mouse, Screen
@@ -11,76 +12,199 @@ if not A_IsAdmin
     ExitApp
 }
 
-settingsPath := A_ScriptDir "\..\..\Settings.ini"
+Menu, Tray, Icon, %A_ScriptDir%\..\..\GUI\Icons\monitor.ico
 
+global Columns, runMain, Mains, defaultLanguage, scaleParam, SelectedMonitorIndex, titleHeight, MuMuv5
+global useADBManager
+
+settingsPath := A_ScriptDir "\..\..\Settings.ini"
 IniRead, instanceLaunchDelay, %settingsPath%, UserSettings, instanceLaunchDelay, 5
 IniRead, waitAfterBulkLaunch, %settingsPath%, UserSettings, waitAfterBulkLaunch, 40000
 IniRead, Instances, %settingsPath%, UserSettings, Instances, 1
 IniRead, folderPath, %settingsPath%, UserSettings, folderPath, C:\Program Files\Netease
+IniRead, useADBManager, %settingsPath%, UserSettings, useADBManager, 0
+IniRead, AutoDiskClean, %settingsPath%, UserSettings, AutoDiskClean, 0
+IniRead, runMain, %settingsPath%, UserSettings, runMain, 1
+IniRead, Mains, %settingsPath%, UserSettings, Mains, 1
+IniRead, defaultLanguage, %settingsPath%, UserSettings, defaultLanguage, Scale125
+IniRead, Columns, %settingsPath%, UserSettings, Columns, 5
+IniRead, SelectedMonitorDeviceName, %settingsPath%, UserSettings, SelectedMonitorDeviceName, "\\.\DISPLAY1"
+
+SelectedMonitorIndex := GetMonitorIndexFromDeviceName(SelectedMonitorDeviceName)
+
+MuMuv5 := isMuMuv5()
+
+if (InStr(defaultLanguage, "100")) {
+    scaleParam := 287
+} else {
+    if (MuMuv5) {
+        scaleParam := 283
+    } else {
+        scaleParam := 277
+    }
+}
+
 mumuFolder = %folderPath%\MuMuPlayerGlobal-12.0
 if !FileExist(mumuFolder)
     mumuFolder = %folderPath%\MuMu Player 12
+
+; Set MuMuManager.exe location
+mumuManagerPath := mumuFolder "\shell\MuMuManager.exe"
+
 if !FileExist(mumuFolder){
-    MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
+    MsgBox, 16, , Can't Find MuMu folder! Double check your folderPath in Settings.ini.`nDefault is C:\Program Files\Netease
     ExitApp
 }
+
 Loop {
-    ; Loop through each instance, check if it's started, and start it if it's not
-    launched := 0
-    
     nowEpoch := A_NowUTC
     EnvSub, nowEpoch, 1970, seconds
-    
+
+    InstancesWithXmls := Instances
+
     Loop %Instances% {
         instanceNum := Format("{:u}", A_Index)
+
+        ; Instance .ini files are one level up (new structure)
+        instanceIni := A_ScriptDir "\..\" instanceNum ".ini"
         
-        IniRead, LastEndEpoch, %A_ScriptDir%\..\%instanceNum%.ini, Metrics, LastEndEpoch, 0
+        IniRead, LastEndEpoch, %instanceIni%, Metrics, LastEndEpoch, 0
         IniRead, deleteMethod, %A_ScriptDir%\..\%instanceNum%.ini, UserSettings, deleteMethod, Create Bots (13P)
         secondsSinceLastEnd := nowEpoch - LastEndEpoch
-        ; Set threshold: 30 minutes for Create Bots, 11 minutes for others
-        threshold := (deleteMethod == "Create Bots (13P)") ? (30 * 60) : (11 * 60)
-        if(LastEndEpoch > 0 && secondsSinceLastEnd > threshold)
+        
+        if(LastEndEpoch > 0 && secondsSinceLastEnd > (5 * 60))
         {
-            ; msgbox, Killing Instance %instanceNum%! Last Run Completed %secondsSinceLastEnd% Seconds Ago
-            msg := "Killing Instance " . instanceNum . "! Last Run Completed " . secondsSinceLastEnd . " Seconds Ago"
-            LogToFile(msg, "Monitor.txt")
+            ; Directly count .xml files older than 24 hours in the instance's Saved folder
+            saveDir := A_ScriptDir "\..\..\Accounts\Saved\" . instanceNum
             
-            scriptName := instanceNum . ".ahk"
-            
-            killedAHK := killAHK(scriptName)
-            killedInstance := killInstance(instanceNum)
-            Sleep, 3000
-            
-            cntAHK := checkAHK(scriptName)
-            pID := checkInstance(instanceNum)
-            if not pID && not cntAHK {
-                ; Change the last end date to now so that we don't keep trying to restart this beast
-                IniWrite, %nowEpoch%, %A_ScriptDir%\..\%instanceNum%.ini, Metrics, LastEndEpoch
-                
-                launchInstance(instanceNum)
-                
-                sleepTime := instanceLaunchDelay * 1000
-                Sleep, % sleepTime
-                launched := launched + 1
-                
-                Sleep, %waitAfterBulkLaunch%
-                
-                ;Command := "Scripts\" . scriptName
-                ;Run, %Command%
-                scriptPath := A_ScriptDir "\.." "\" scriptName
-                Run, "%A_AhkPath%" /restart "%scriptPath%"
+            ; If it's in account creation mode dont kill the instance based on xmls>24hr count.
+            if(deleteMethod == "Create Bots (13P)"){
+                nonEmptyLines := 999
+                ; wait 30 min before calling it stuck
+                stuckThreshold := 30 * 60
+            } else {
+                nonEmptyLines := CountOldXmlFiles(saveDir)
+                ; wait 11 min before calling it stuck
+                stuckThreshold := 11 * 60
             }
+
+            ; Determine what action to take
+            doShutdown := false
+            doRestart := false
+
+            msg := "Instance " . instanceNum . ": " . nonEmptyLines . " accounts >24h old, last end " . secondsSinceLastEnd . "s ago"
+            LogToFile(msg, "Monitor.txt")
+
+            if (nonEmptyLines = 0) {
+                ; No account left → safe to shut down (saves RAM/CPU)
+                doShutdown := true
+                InstancesWithXmls--
+                LogToFile("Instance " . instanceNum . " has no remaining accounts. Scheduling shutdown.", "Monitor.txt")
+            }
+            else if (secondsSinceLastEnd > stuckThreshold) {
+                ; Has account but no progress for 15+ min → likely frozen
+                doRestart := true
+                LogToFile("Instance " . instanceNum . " appears stuck (idle " . secondsSinceLastEnd . "s). Scheduling kill + restart.", "Monitor.txt")
+            }
+            else {
+                ; Has accounts and recent activity → everything is fine
+                LogToFile("Instance " . instanceNum . " is running normally.", "Monitor.txt")
+            }
+
+            ; Only act if needed
+            if (doShutdown || doRestart) {
+                ; --- Kill phase (common to both shutdown and restart) ---
+                scriptName := instanceNum . ".ahk"
+                killAHK(scriptName)
+                
+                if (useADBManager) {
+                    adbScriptName := instanceNum . ".adbmanager.ahk"
+                    killAHK(adbScriptName)
+                }
+                
+                killInstance(instanceNum)
+                
+                ; Verify everything is actually dead
+                cntAHK := checkAHK(scriptName)
+                cntADB := useADBManager ? checkAHK(adbScriptName) : 0
+                pID := checkInstance(instanceNum)
+                
+                if (pID || cntAHK || (useADBManager && cntADB)) {
+                    LogToFile("Failed to fully terminate instance " . instanceNum . " during cleanup.", "Monitor.txt")
+                } else {
+                    LogToFile("Successfully terminated processes for instance " . instanceNum, "Monitor.txt")
+                }
+            }
+
+            ; --- Restart phase (only if needed) ---
+            if (doRestart) {
+                ; Update timestamp to prevent immediate re-trigger
+                IniWrite, %nowEpoch%, %instanceIni%, Metrics, LastEndEpoch
+                
+                ; Optional: clean disk and signal cache clear
+                if (AutoDiskClean)
+                    cleanInstanceDisk(instanceNum)
+                                
+                ; Launch emulator
+                launchInstance(instanceNum)
+                Sleep, % instanceLaunchDelay * 1000
+                Sleep, %waitAfterBulkLaunch%
+
+                ; Position the window
+                DirectlyPositionWindow(instanceNum)
+                Sleep, % instanceLaunchDelay * 1000
+                
+                ; Relaunch bot scripts
+                scriptPath := A_ScriptDir "\..\" scriptName
+                if (useADBManager) {
+                    adbScriptPath := A_ScriptDir "\..\" adbScriptName
+                    Run "%A_AhkPath%" /restart "%adbScriptPath%"
+                    Sleep, 2000
+                }
+                Run "%A_AhkPath%" /restart "%scriptPath%"
+                
+                LogToFile("Restarted instance " . instanceNum . " and bot script(s).", "Monitor.txt")
+            }
+            
         }
     }
-    
-    ; Check for dead instances every 30 seconds
+
+    if(InstancesWithXmls < 1){
+        LogToFile("All instances have finished processing accounts (no Create Bots mode). Performing final cleanup and exiting.", "Monitor.txt")
+
+        ; Kill all bot scripts
+        Loop %Instances% {
+            instanceNum := Format("{:u}", A_Index)
+            killAHK(instanceNum . ".ahk")
+            if (useADBManager)
+                killAHK(instanceNum . ".adbmanager.ahk")
+        }
+        
+        ; Kill all MuMu emulator instances
+        Loop %Instances% {
+            killInstance(A_Index)
+        }
+        
+        ; Optional: kill other global scripts if still running
+        killAHK("Main.ahk")
+        killAHK("PTCGPB.ahk")
+        killAHK("ControlPanel.ahk")
+        
+        ; Final log and exit
+        LogToFile("Final cleanup complete. Monitor exiting.", "Monitor.txt")
+        ExitApp
+
+    }
+
     Sleep, 30000
 }
 
 killAHK(scriptName := "")
 {
     killed := 0
-    
+    maxRetries := 3
+    retryDelay := 2000
+
     if(scriptName != "") {
         DetectHiddenWindows, On
         WinGet, IDList, List, ahk_class AutoHotkey
@@ -89,21 +213,29 @@ killAHK(scriptName := "")
             ID:=IDList%A_Index%
             WinGetTitle, ATitle, ahk_id %ID%
             if InStr(ATitle, "\" . scriptName) {
-                ; MsgBox, Killing: %ATitle%
-                WinKill, ahk_id %ID% ;kill
-                ; WinClose, %fullScriptPath% ahk_class AutoHotkey
-                killed := killed + 1
+                WinGet, pid, PID, ahk_id %ID%
+                WinKill, ahk_id %ID%
+                killed++
+
+                Process, Exist, %pid%
+                if (ErrorLevel) {
+                    Loop %maxRetries% {
+                        RunWait, taskkill /f /pid %pid% /t,, Hide
+                        Sleep %retryDelay%
+                        Process, Exist, %pid%
+                        if (!ErrorLevel)
+                            break
+                    }
+                }
             }
         }
     }
-    
     return killed
 }
 
 checkAHK(scriptName := "")
 {
     cnt := 0
-    
     if(scriptName != "") {
         DetectHiddenWindows, On
         WinGet, IDList, List, ahk_class AutoHotkey
@@ -111,52 +243,70 @@ checkAHK(scriptName := "")
         {
             ID:=IDList%A_Index%
             WinGetTitle, ATitle, ahk_id %ID%
-            if InStr(ATitle, "\" . scriptName) {
-                cnt := cnt + 1
-            }
+            if InStr(ATitle, "\" . scriptName)
+                cnt++
         }
     }
-    
     return cnt
 }
 
-killInstance(instanceNum := "")
-{
+killInstance(instanceNum := "") {
+    global mumuManagerPath
     killed := 0
+    maxRetries := 3
+    retryDelay := 2000
+    
+    ; Temporary disable this method of shuting down stuck instances.
+    ; mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
+    
+    ; if (mumuNum != "") {
+    ;     RunWait, %mumuManagerPath% api -v %mumuNum% shutdown_player,, Hide
+    ;     Sleep, 5000
+    ;     if (!checkInstance(instanceNum)) {
+    ;         killed := 1
+    ;         LogToFile("Proper shutdown via MuMuManager for instance " . instanceNum, "Monitor.txt")
+    ;         return killed
+    ;     }
+    ; }
     
     pID := checkInstance(instanceNum)
     if pID {
         Process, Close, %pID%
-        killed := killed + 1
+        killed++
+        Process, Exist, %pID%
+        if (ErrorLevel) {
+            Loop %maxRetries% {
+                RunWait, taskkill /f /pid %pID% /t,, Hide
+                Sleep %retryDelay%
+                Process, Exist, %pID%
+                if (!ErrorLevel)
+                    break
+            }
+        }
+        LogToFile("Fallback kill for instance " . instanceNum, "Monitor.txt")
     }
-    
     return killed
 }
 
 checkInstance(instanceNum := "")
 {
     ret := WinExist(instanceNum)
-    if(ret)
-    {
+    if(ret) {
         WinGet, temp_pid, PID, ahk_id %ret%
         return temp_pid
     }
-    
     return ""
 }
 
 launchInstance(instanceNum := "")
 {
     global mumuFolder
-    
     if(instanceNum != "") {
         mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
         if(mumuNum != "") {
-            ; Run, %mumuFolder%\shell\MuMuPlayer.exe -v %mumuNum%
-            ; Run_(mumuFolder . "\shell\MuMuPlayer.exe", "-v " . mumuNum)
-            mumuExe := mumuFolder . "\shell\MuMuPlayer.exe"
+            mumuExe := mumuFolder "\shell\MuMuPlayer.exe"
             if !FileExist(mumuExe)
-                mumuExe := mumuFolder . "\nx_main\MuMuNxMain.exe"
+                mumuExe := mumuFolder "\nx_main\MuMuNxMain.exe"
             Run_(mumuExe, "-v " . mumuNum)
         }
     }
@@ -164,28 +314,19 @@ launchInstance(instanceNum := "")
 
 getMumuInstanceNumFromPlayerName(scriptName := "") {
     global mumuFolder
-    
-    if(scriptName == "") {
+    if(scriptName == "")
         return ""
-    }
-    
-    ; Loop through all directories in the base folder
-    Loop, Files, %mumuFolder%\vms\*, D ; D flag to include directories only
+        
+    Loop, Files, %mumuFolder%\vms\*, D
     {
         folder := A_LoopFileFullPath
-        configFolder := folder "\configs" ; The config folder inside each directory
-        
-        ; Check if config folder exists
+        configFolder := folder "\configs"
         IfExist, %configFolder%
         {
-            ; Define paths to vm_config.json and extra_config.json
             extraConfigFile := configFolder "\extra_config.json"
-            
-            ; Check if extra_config.json exists and read playerName
             IfExist, %extraConfigFile%
             {
                 FileRead, extraConfigContent, %extraConfigFile%
-                ; Parse the JSON for playerName
                 RegExMatch(extraConfigContent, """playerName"":\s*""(.*?)""", playerName)
                 if(playerName1 == scriptName) {
                     RegExMatch(A_LoopFileFullPath, "[^-]+$", mumuNum)
@@ -194,30 +335,13 @@ getMumuInstanceNumFromPlayerName(scriptName := "") {
             }
         }
     }
+    return ""
 }
 
-; Temporary function to avoid an error in Logging.ahk
-ReadFile(filename) {
-    return false
-}
-
-; Function to run as a NON-adminstrator, since MuMu has issues if run as Administrator
-; See: https://www.reddit.com/r/AutoHotkey/comments/bfd6o1/how_to_run_without_administrator_privileges/
-/*
-  ShellRun by Lexikos
-    requires: AutoHotkey v1.1
-    license: http://creativecommons.org/publicdomain/zero/1.0/
-  
-  Credit for explaining this method goes to BrandonLive:
-  http://brandonlive.com/2008/04/27/getting-the-shell-to-run-an-application-for-you-part-2-how/
-  
-  Shell.ShellExecute(File [, Arguments, Directory, Operation, Show])
-  http://msdn.microsoft.com/en-us/library/windows/desktop/gg537745
-*/
 Run_(target, args:="", workdir:="") {
     try
-    ShellRun(target, args, workdir)
-    catch e
+        ShellRun(target, args, workdir)
+    catch
         Run % args="" ? target : target " " args, % workdir
 }
 ShellRun(prms*)
@@ -225,43 +349,131 @@ ShellRun(prms*)
     shellWindows := ComObjCreate("Shell.Application").Windows
     VarSetCapacity(_hwnd, 4, 0)
     desktop := shellWindows.FindWindowSW(0, "", 8, ComObj(0x4003, &_hwnd), 1)
-    
-    ; Retrieve top-level browser object.
     if ptlb := ComObjQuery(desktop
-        , "{4C96BE40-915C-11CF-99D3-00AA004AE837}" ; SID_STopLevelBrowser
-        , "{000214E2-0000-0000-C000-000000000046}") ; IID_IShellBrowser
+        , "{4C96BE40-915C-11CF-99D3-00AA004AE837}"
+        , "{000214E2-0000-0000-C000-000000000046}")
     {
-        ; IShellBrowser.QueryActiveShellView -> IShellView
         if DllCall(NumGet(NumGet(ptlb+0)+15*A_PtrSize), "ptr", ptlb, "ptr*", psv:=0) = 0
         {
-            ; Define IID_IDispatch.
             VarSetCapacity(IID_IDispatch, 16)
             NumPut(0x46000000000000C0, NumPut(0x20400, IID_IDispatch, "int64"), "int64")
-            
-            ; IShellView.GetItemObject -> IDispatch (object which implements IShellFolderViewDual)
             DllCall(NumGet(NumGet(psv+0)+15*A_PtrSize), "ptr", psv
                 , "uint", 0, "ptr", &IID_IDispatch, "ptr*", pdisp:=0)
-            
-            ; Get Shell object.
             shell := ComObj(9,pdisp,1).Application
-            
-            ; IShellDispatch2.ShellExecute
             shell.ShellExecute(prms*)
-            
             ObjRelease(psv)
         }
         ObjRelease(ptlb)
     }
 }
 
-isMuMuv5(){
-    global folderPath
-    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMu Player 12"
-    if FileExist(mumuFolder . "\nx_main")
-        return true
-    return false
+cleanInstanceDisk(instanceNum) {
+    global mumuFolder
+    mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
+    if (mumuNum != "") {
+        Loop, Files, %mumuFolder%\vms\*, D
+        {
+            folder := A_LoopFileFullPath
+            configFolder := folder "\configs"
+            IfExist, %configFolder%
+            {
+                extraConfigFile := configFolder "\extra_config.json"
+                IfExist, %extraConfigFile%
+                {
+                    FileRead, extraConfigContent, %extraConfigFile%
+                    RegExMatch(extraConfigContent, """playerName"":\s*""(.*?)""", playerName)
+                    if(playerName1 == instanceNum) {
+                        otaPath := folder "\ota.vdi"
+                        if FileExist(otaPath) {
+                            FileDelete, %otaPath%
+                            LogToFile("Deleted ota.vdi for instance " . instanceNum, "Monitor.txt")
+                        }
+                        break
+                    }
+                }
+            }
+        }
+    }
 }
+
+; Implement later
+; checkRestartCount(instanceNum) {
+;     instanceIni := A_ScriptDir "\..\" instanceNum ".ini"
+;     IniRead, tooManyRestarts, %instanceIni%, RestartTracking, TooManyRestarts, 0
+;     if (tooManyRestarts) {
+;         IniRead, restartCount, %instanceIni%, RestartTracking, RestartCount, 0
+;         LogToFile("Instance " . instanceNum . " forced recovery (" . restartCount . " restarts)", "Monitor.txt")
+;         IniWrite, 0, %instanceIni%, RestartTracking, TooManyRestarts
+;         IniWrite, 0, %instanceIni%, RestartTracking, RestartCount
+;         return true
+;     }
+;     return false
+; }
+
+CountOldXmlFiles(directory) {
+    count := 0
+    if !FileExist(directory)
+        return 0
+    
+    Loop, Files, %directory%\*.xml
+    {
+        FileGetTime, modTime, %A_LoopFileFullPath%, M
+        if (modTime = "")
+            continue
+        
+        diff := A_Now
+        diff -= modTime, Hours
+        if (diff >= 24)
+            count++
+    }
+    return count
+}
+
+DirectlyPositionWindow(instanceNum := "") {
+    global Columns, runMain, Mains, scaleParam, SelectedMonitorIndex, titleHeight
+
+    rowGap := 100
+
+    ; Get monitor information
+    SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+    SysGet, Monitor, Monitor, %SelectedMonitorIndex%
+
+    ; Calculate position based on instance number
+    Title := instanceNum
+
+    if (runMain) {
+        instanceIndex := (Mains - 1) + Title + 1
+    } else {
+        instanceIndex := Title
+    }
+
+    if (MuMuv5) {
+        titleHeight := 50
+    } else {
+        titleHeight := 45
+    }
+
+    borderWidth := 4 - 1
+    rowHeight := titleHeight + 489 + 4
+    currentRow := Floor((instanceIndex - 1) / Columns)
+
+    y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
+    ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+    if (MuMuv5) {
+        x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+    } else {
+        x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+    }
+
+    WinSet, Style, -0xC00000, %Title%
+    WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
+    WinSet, Style, +0xC00000, %Title%
+    WinSet, Redraw, , %Title%
+
+    CreateStatusMessage("Positioned window at x:" . x . " y:" . y,,,, false)
+
+    return true
+}
+
 
 ~+F7::ExitApp

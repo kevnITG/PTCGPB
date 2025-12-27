@@ -1,4 +1,6 @@
-﻿DisplayPackStatus(Message, X := 0, Y := 625) {
+﻿Menu, Tray, Icon, %A_ScriptDir%\GUI\Icons\ptcgpb.png
+
+DisplayPackStatus(Message, X := 0, Y := 625) {
    global SelectedMonitorIndex
    static GuiName := "ScreenPackStatus"
    
@@ -257,7 +259,10 @@ NextStep:
    sortOption := 3
    else if (injectSortMethod = "PacksDesc")
    sortOption := 4
-   Gui, Add, DropDownList, vSortByDropdown gSortByDropdownHandler choose%sortOption% x20 y325 w130 Background2A2A2A cWhite, Oldest First|Newest First|Fewest Packs First|Most Packs First
+   else if (injectSortMethod = "Below96DescThenAboveDesc")
+   sortOption := 5
+
+   Gui, Add, DropDownList, vSortByDropdown gSortByDropdownHandler choose%sortOption% x20 y325 w130 Background2A2A2A cWhite, Oldest First|Newest First|Fewest Packs First|Most Packs First|Pack Below 96P First
 
    Gui, Add, Text, x20 y260 %sectionColor% vAccountNameText, % currentDictionary.Txt_AccountName
    Gui, Add, Edit, vAccountName w90 x130 y260 h20 -E0x200 Background2A2A2A cWhite Center, %AccountName%
@@ -456,6 +461,10 @@ spendHourGlassSettings:
   }
 Return
 
+useAdbManagerHandler:
+  Gui, Submit, NoHide
+return
+
 SortByDropdownHandler:
   Gui, Submit, NoHide
   GuiControlGet, selectedOption,, SortByDropdown
@@ -467,6 +476,8 @@ SortByDropdownHandler:
     injectSortMethod := "PacksAsc"
   else if (selectedOption = "Most Packs First")
     injectSortMethod := "PacksDesc"
+  else if (selectedOption = "Pack Below 96P First")
+    injectSortMethod := "Below96DescThenAboveDesc"
 return
 
 UpdatePackSelectionButtonText() {
@@ -929,13 +940,29 @@ ShowSystemSettings:
     yPos := 15
     Gui, SystemSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_Monitor
     yPos += 20
-    SysGet, MonitorCount, MonitorCount
-    MonitorOptions := ""
-    Loop, %MonitorCount% {
-        SysGet, MonitorName, MonitorName, %A_Index%
-        SysGet, Monitor, Monitor, %A_Index%
-        MonitorOptions .= (A_Index > 1 ? "|" : "") "" A_Index ": (" MonitorRight - MonitorLeft "x" MonitorBottom - MonitorTop ")"
-    }
+
+   SysGet, MonitorCount, MonitorCount
+   MonitorOptions := ""
+   CurrentSavedDeviceName := ""  ; Will be read below
+
+   ; Read previously saved stable DeviceName
+   IniRead, SavedDeviceName, Settings.ini, UserSettings, SelectedMonitorDeviceName, \\.\DISPLAY1
+
+   defaultIndex := 1
+   Loop, %MonitorCount% {
+      SysGet, MonName, MonitorName, %A_Index%
+      SysGet, Mon, Monitor, %A_Index%
+      Width := MonRight - MonLeft
+      Height := MonBottom - MonTop
+      DisplayText := A_Index ": (" Width "x" Height ") - " MonName
+      MonitorOptions .= (A_Index = 1 ? "" : "|") DisplayText
+
+      ; If this monitor matches the saved DeviceName, set as default
+      if (MonName = SavedDeviceName) {
+         defaultIndex := A_Index
+      }
+   }
+
     SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
     Gui, SystemSettingsSelect:Add, DropDownList, x15 y%yPos% w125 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     
@@ -1191,7 +1218,12 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (checkWPthanks ? "Checked" : "") " vcheckWPthanks_Popup x" . col1X . " y" . yPos . " cWhite", Check for Wonderpick Thanks
     yPos += 20
     
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x" . col1X . " y" . yPos . " cWhite", No Speedmod Menu Clicks
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (ClaimGiftsPacks ? "Checked" : "") " vClaimGiftsPacks_Popup x" . col1X . " y" . yPos . " cWhite", ClaimGiftsPacks
+    yPos += 20
+	
+	Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x" . col1X . " y" . yPos . " cWhite", No Speedmod Menu Clicks
+    yPos += 20
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (useAdbManager ? "Checked" : "") " vuseAdbManager_Popup x" . col1X . " y" . yPos . " cWhite", Use ADB Manager
     yPos += 35
     
     sectionColor := "cWhite"
@@ -1214,13 +1246,28 @@ ShowToolsAndSystemSettings:
     
     Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%yPos2% %sectionColor%, % currentDictionary.Txt_Monitor
     yPos2 += 20
-    SysGet, MonitorCount, MonitorCount
-    MonitorOptions := ""
-    Loop, %MonitorCount% {
-        SysGet, MonitorName, MonitorName, %A_Index%
-        SysGet, Monitor, Monitor, %A_Index%
-        MonitorOptions .= (A_Index > 1 ? "|" : "") "" A_Index ": (" MonitorRight - MonitorLeft "x" MonitorBottom - MonitorTop ")"
-    }
+   SysGet, MonitorCount, MonitorCount
+   MonitorOptions := ""
+   CurrentSavedDeviceName := ""  ; Will be read below
+
+   ; Read previously saved stable DeviceName
+   IniRead, SavedDeviceName, Settings.ini, UserSettings, SelectedMonitorDeviceName, \\.\DISPLAY1
+
+   defaultIndex := 1
+   Loop, %MonitorCount% {
+      SysGet, MonName, MonitorName, %A_Index%
+      SysGet, Mon, Monitor, %A_Index%
+      Width := MonRight - MonLeft
+      Height := MonBottom - MonTop
+      DisplayText := A_Index ": (" Width "x" Height ") - " MonName
+      MonitorOptions .= (A_Index = 1 ? "" : "|") DisplayText
+
+      ; If this monitor matches the saved DeviceName, set as default
+      if (MonName = SavedDeviceName) {
+         defaultIndex := A_Index
+      }
+   }
+
     SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
     Gui, ToolsAndSystemSelect:Add, DropDownList, x%col2X% y%yPos2% w100 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     
@@ -1293,11 +1340,12 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Font, s10 cWhite, Segoe UI
     
     finalY := yPos2
+	finalY += 20 ; longer windows for ClaimGiftsPacks Checkbox HACK - This placement also lowers buttons vs before form draw define | buttons still offcenter to upper groupbox
     buttonY := finalY - 5
     Gui, ToolsAndSystemSelect:Add, Button, x140 y%buttonY% w70 h30 gApplyToolsAndSystemSettings, Apply
     Gui, ToolsAndSystemSelect:Add, Button, x220 y%buttonY% w70 h30 gCancelToolsAndSystemSettings, Cancel
     finalY += 35
-    
+	
     Gui, ToolsAndSystemSelect:Show, x%popupX% y%popupY% w410 h%finalY%
 return
 
@@ -1308,7 +1356,9 @@ ApplyToolsAndSystemSettings:
     statusMessage := statusMessage_Popup
     showcaseEnabled := showcaseEnabled_Popup
     claimDailyMission := claimDailyMission_Popup
+	ClaimGiftsPacks := ClaimGiftsPacks_Popup
     slowMotion := slowMotion_Popup
+    useAdbManager := useAdbManager_Popup
     claimSpecialMissions := claimSpecialMissions_Popup
     wonderpickForEventMissions := wonderpickForEventMissions_Popup
     
@@ -1330,6 +1380,9 @@ ApplyToolsAndSystemSettings:
     GuiControl,, statusMessage, %statusMessage%
     GuiControl,, showcaseEnabled, %showcaseEnabled%
     GuiControl,, claimDailyMission, %claimDailyMission% 
+	
+	GuiControl,, ClaimGiftsPacks, %ClaimGiftsPacks%
+	
     GuiControl,, slowMotion, %slowMotion%
     GuiControl,, claimSpecialMissions, %claimSpecialMissions%
     GuiControl,, wonderpickForEventMissions, %wonderpickForEventMissions%
@@ -1410,6 +1463,29 @@ ClearSpecialMissionHistory:
 Save:
   Gui, Submit, NoHide
 
+  ; Save monitor Monitor name
+   SelectedText := SelectedMonitorIndex
+
+   ; Extract the device name if selected from GUI dropdown
+   if (InStr(SelectedText, " - ")) {
+      RegExMatch(SelectedText, "- (\\\\\.\\DISPLAY\d+)", match)
+      SelectedMonitorDeviceName := match1
+
+   }
+
+   ; If 125% scale is selected, ensure the monitor supports it
+   if(!Find125ScaleMonitor(SelectedMonitorDeviceName) && (defaultLanguage == "Scale125")){
+      SelectedMonitorDeviceName := Find125ScaleMonitor()
+      if(!SelectedMonitorDeviceName){
+         ; Fallback: extract index and get current name, but might not work if not 125% scale
+         SysGet, SelectedMonitorDeviceName, MonitorName, 1
+         MsgBox, You have selected 125`% scale but none of your monitor is in 125`% scale.
+      }
+   }
+
+   SelectedMonitorIndex := GetMonitorIndexFromDeviceName(SelectedMonitorDeviceName)
+
+
   if (deleteMethod != "Inject Wonderpick 96P+") {
    s4tWP := false
    s4tWPMinCards := 1
@@ -1487,6 +1563,8 @@ Save:
     additionalSettings .= SetUpDictionary.Confirm_ClaimMissions . "`n"
   if (showcaseEnabled)
     additionalSettings .= "• Showcase Likes`n"
+  if (ClaimGiftsPacks)
+    additionalSettings .= "• ClaimGiftsPacks`n"
   if (injectMethod) {
     additionalSettings .= SetUpDictionary.Confirm_SortBy . " "
     if (injectSortMethod = "ModifiedAsc")
@@ -1498,6 +1576,8 @@ Save:
     else if (injectSortMethod = "PacksDesc")
       additionalSettings .= "Most Packs First`n"
   }
+  if (ClaimGiftsPacks)
+    additionalSettings .= SetUpDictionary.Confirm_ClaimGiftsPacks . "`n"
   
   if (additionalSettings != "") {
     confirmMsg .= "`n" . SetUpDictionary.Confirm_AdditionalSettings . "`n" . additionalSettings
@@ -1870,6 +1950,7 @@ IsNumeric(var) {
 LoadSettingsFromIni() {
    global
    if (FileExist("Settings.ini")) {
+      IniRead, useAdbManager, Settings.ini, UserSettings, useAdbManager, 0
       IniRead, IsLanguageSet, Settings.ini, UserSettings, IsLanguageSet, 1
       IniRead, defaultBotLanguage, Settings.ini, UserSettings, defaultBotLanguage, 1
       IniRead, BotLanguage, Settings.ini, UserSettings, BotLanguage, English
@@ -1894,6 +1975,7 @@ LoadSettingsFromIni() {
       IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 1 ; default is now OFF for no-mod-menu support
       
       IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
+      IniRead, SelectedMonitorDeviceName, Settings.ini, UserSettings, SelectedMonitorDeviceName, "\\.\DISPLAY1"
       IniRead, defaultLanguage, Settings.ini, UserSettings, defaultLanguage, Scale125
       if (defaultLanguage = "Scale100") defaultLanguage := "Scale125"
       IniRead, rowGap, Settings.ini, UserSettings, rowGap, 90
@@ -2000,6 +2082,8 @@ LoadSettingsFromIni() {
       IniRead, showcaseLikes, Settings.ini, UserSettings, showcaseLikes, 5
       IniRead, autoUseGPTest, Settings.ini, UserSettings, autoUseGPTest, 0
       IniRead, applyRoleFilters, Settings.ini, UserSettings, applyRoleFilters, 0
+	  
+	  IniRead, ClaimGiftsPacks, Settings.ini, UserSettings, ClaimGiftsPacks, 0
 
       IniRead, minStarsA1Charizard, Settings.ini, UserSettings, minStarsA1Charizard, 0
       IniRead, minStarsA1Mewtwo, Settings.ini, UserSettings, minStarsA1Mewtwo, 0
@@ -2067,6 +2151,7 @@ CreateDefaultSettingsFile() {
    if (!FileExist("Settings.ini")) {
       iniContent := "[UserSettings]`n"
       iniContent .= "IsLanguageSet=0`n"
+      iniContent .= "useAdbManager=0`n"
       iniContent .= "defaultBotLanguage=1`n"
       iniContent .= "BotLanguage=English`n"
       iniContent .= "shownLicense=0`n"
@@ -2101,6 +2186,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "minStarsEnabled=0`n"
       iniContent .= "showcaseEnabled=0`n"
       iniContent .= "showcaseLikes=5`n"
+	  iniContent .= "ClaimGiftsPacks=0`n"
       iniContent .= "rowGap=90`n"
       iniContent .= "variablePackCount=15`n"
       iniContent .= "claimSpecialMissions=0`n"
@@ -2121,7 +2207,7 @@ CreateDefaultSettingsFile() {
 
 SaveAllSettings() {
    global IsLanguageSet, defaultBotLanguage, BotLanguage, currentfont, FontColor
-   global CurrentTheme, shownLicense
+   global CurrentTheme, shownLicense, useAdbManager
    global FriendID, AccountName, waitTime, Delay, folderPath, discordWebhookURL, discordUserId, Columns, godPack
    global Instances, instanceStartDelay, defaultLanguage, SelectedMonitorIndex, swipeSpeed, deleteMethod
    global runMain, Mains, heartBeat, heartBeatWebhookURL, heartBeatName, nukeAccount, packMethod
@@ -2145,6 +2231,8 @@ SaveAllSettings() {
    global menuExpanded
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
    global checkWPthanks
+   global ClaimGiftsPacks
+   global SelectedMonitorDeviceName
 
    if (deleteMethod != "Inject Wonderpick 96P+") {
        packMethod := false
@@ -2177,6 +2265,7 @@ SaveAllSettings() {
    iniContent .= "autoLaunchMonitor=" autoLaunchMonitor "`n"
    iniContent .= "applyRoleFilters=" applyRoleFilters "`n"
    iniContent .= "debugMode=" debugMode "`n"
+   iniContent .= "useAdbManager=" useAdbManager "`n"
    iniContent .= "tesseractOption=" useTesseract "`n"
    iniContent .= "statusMessage=" statusMessage "`n"
    iniContent .= "minStarsEnabled=" minStarsEnabled "`n"
@@ -2289,6 +2378,7 @@ SaveAllSettings() {
    iniContent_Second .= "defaultLanguage=" defaultLanguage "`n"
    iniContent_Second .= "rowGap=" rowGap "`n"
    iniContent_Second .= "SelectedMonitorIndex=" SelectedMonitorIndex "`n"
+   iniContent_Second .= "SelectedMonitorDeviceName=" SelectedMonitorDeviceName "`n"
    iniContent_Second .= "swipeSpeed=" swipeSpeed "`n"
    iniContent_Second .= "Mains=" Mains "`n"
    iniContent_Second .= "TestTime=" TestTime "`n"
@@ -2306,6 +2396,7 @@ SaveAllSettings() {
    iniContent_Second .= "skipMissionsInjectMissions=" skipMissionsInjectMissions "`n"
    iniContent_Second .= "showcaseEnabled=" showcaseEnabled "`n"
    iniContent_Second .= "showcaseLikes=5`n"
+   iniContent_Second .= "ClaimGiftsPacks=" ClaimGiftsPacks "`n"
    iniContent_Second .= "minStarsA1Mewtwo=" minStarsA1Mewtwo "`n"
    iniContent_Second .= "minStarsA1Charizard=" minStarsA1Charizard "`n"
    iniContent_Second .= "minStarsA1Pikachu=" minStarsA1Pikachu "`n"
@@ -2369,6 +2460,8 @@ StartBot() {
    global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
    global MegaBlaziken, MegaGyarados, MegaAltaria, CrimsonBlaze, packMethod, nukeAccount
    global SelectedMonitorIndex, localVersion, githubUser, rerollTime, PackGuiBuild
+   global useAdbManager
+   global ClaimGiftsPacks
    
    PackGuiBuild := 0
    rerollTime := A_TickCount
@@ -2466,6 +2559,28 @@ StartBot() {
       }
       
       Run, %Command%
+
+      ; --- Launch adbmanager if useAdbManager is true ---
+      if(useAdbManager) {
+			if (A_Index != 1) {
+				SourceFile := "Scripts\1.adbmanager.ahk"
+				TargetFolder := "Scripts\"
+				TargetFile := TargetFolder . A_Index . ".adbmanager.ahk"
+				if(Instances > 1) {
+					FileDelete, %TargetFile%
+					FileCopy, %SourceFile%, %TargetFile%, 1
+				}
+				if (ErrorLevel)
+					MsgBox, Failed to create %TargetFile%. Ensure permissions and paths are correct.
+			}
+
+         FileName := "Scripts\" . A_Index . ".adbmanager.ahk"
+         if (!FileExist(FileName)) {
+            MsgBox, 16,, ADB Manager script not found: %FileName%`nMake sure 1.adbmanager.ahk exists.
+         } else {
+            Run, %FileName%
+         }
+      }
    }
    
    if(autoLaunchMonitor) {
