@@ -1,4 +1,6 @@
-﻿DisplayPackStatus(Message, X := 0, Y := 625) {
+﻿Menu, Tray, Icon, %A_ScriptDir%\GUI\Icons\ptcgpb.png
+
+DisplayPackStatus(Message, X := 0, Y := 625) {
    global SelectedMonitorIndex
    static GuiName := "ScreenPackStatus"
    

@@ -11,6 +11,9 @@ if not A_IsAdmin
     ExitApp
 }
 
+Menu, Tray, Icon, %A_ScriptDir%\..\..\GUI\Icons\monitor.ico
+
+
 global useADBManager
 
 settingsPath := A_ScriptDir "\..\..\Settings.ini"
