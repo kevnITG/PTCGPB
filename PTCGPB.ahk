@@ -1465,16 +1465,26 @@ Save:
 
   ; Save monitor Monitor name
    SelectedText := SelectedMonitorIndex
-   RegExMatch(SelectedText, "- (\\\\\.\\DISPLAY\d+)", match)
-   SelectedMonitorDeviceName := match1
 
-   if (SelectedMonitorDeviceName = "") {
-      ; Fallback: extract index and get current name
-      RegExMatch(SelectedText, "^(\d+)", match)
-      SysGet, SelectedMonitorDeviceName, MonitorName, 1
+   ; Extract the device name if selected from GUI dropdown
+   if (InStr(SelectedText, " - ")) {
+      RegExMatch(SelectedText, "- (\\\\\.\\DISPLAY\d+)", match)
+      SelectedMonitorDeviceName := match1
+
    }
 
-   SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+   ; If 125% scale is selected, ensure the monitor supports it
+   if(!Find125ScaleMonitor(SelectedMonitorDeviceName) && (defaultLanguage == "Scale125")){
+      SelectedMonitorDeviceName := Find125ScaleMonitor()
+      if(!SelectedMonitorDeviceName){
+         ; Fallback: extract index and get current name, but might not work if not 125% scale
+         SysGet, SelectedMonitorDeviceName, MonitorName, 1
+         MsgBox, You have selected 125`% scale but none of your monitor is in 125`% scale.
+      }
+   }
+
+   SelectedMonitorIndex := GetMonitorIndexFromDeviceName(SelectedMonitorDeviceName)
+
 
   if (deleteMethod != "Inject Wonderpick 96P+") {
    s4tWP := false

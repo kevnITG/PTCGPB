@@ -348,7 +348,7 @@ GetMonitorIndexFromDeviceName(TargetDeviceName) {
     return 1
 }
 
-Find125ScaleMonitor() {
+Find125ScaleMonitor(TargetDeviceName := "") {
     SysGet, MonitorCount, MonitorCount
     
     Loop %MonitorCount% {
@@ -374,9 +374,20 @@ Find125ScaleMonitor() {
             
             ; Get monitor name
             SysGet, name, MonitorName, %A_Index%
-            
-            if (dpi = 120)
+
+            if((name = TargetDeviceName) && (dpi = 120)){
+                return true
+            }
+
+            if ((TargetDeviceName = "") && (dpi = 120)){
                 return name
+            }
         }
     }
+    return false
+}
+
+GetDeviceNameFromIndex(index) {
+    SysGet, MonName, MonitorName, %index%
+    return MonName
 }
