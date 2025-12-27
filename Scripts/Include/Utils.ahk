@@ -337,5 +337,46 @@ GetMonitorIndexFromDeviceName(TargetDeviceName) {
         if (ThisName = TargetDeviceName)
             return A_Index
     }
+    ; Find the 125% scale monitor
+    scale125MonitorName := Find125ScaleMonitor()
+    Loop, %MonitorCount% {
+        SysGet, ThisName, MonitorName, %A_Index%
+        if (ThisName = scale125MonitorName)
+            return A_Index
+    }
+    ; Fallback to monitor 1 if not found
     return 1
+}
+
+Find125ScaleMonitor() {
+    SysGet, MonitorCount, MonitorCount
+    
+    Loop %MonitorCount% {
+        ; Get unscaled bounds (works best as admin for consistency)
+        SysGet, mon, Monitor, %A_Index%
+        unscaledWidth := monRight - monLeft
+        unscaledHeight := monBottom - monTop
+        
+        ; Get monitor handle from center point
+        cx := monLeft + unscaledWidth // 2
+        cy := monTop + unscaledHeight // 2
+        point := (cy << 32) | (cx & 0xFFFFFFFF)
+        hMon := DllCall("MonitorFromPoint", "Int64", point, "UInt", 2, "Ptr")
+        
+        ; Get effective DPI
+        if (DllCall("Shcore\GetDpiForMonitor", "Ptr", hMon, "Int", 0, "UInt*", dpiX, "UInt*", dpiY) = 0) {
+            dpi := dpiX  ; Usually dpiX = dpiY
+            scalePercent := Round(dpi / 96 * 100)  ; 96 = base 100%
+            
+            ; Approximate scaled (logical) resolution
+            scaledWidth := Round(unscaledWidth * 96 / dpi)
+            scaledHeight := Round(unscaledHeight * 96 / dpi)
+            
+            ; Get monitor name
+            SysGet, name, MonitorName, %A_Index%
+            
+            if (dpi = 120)
+                return name
+        }
+    }
 }
