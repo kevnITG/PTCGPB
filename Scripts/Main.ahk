@@ -43,6 +43,7 @@ if (MuMuv5) {
 
 deleteAccount := false
 scriptName := StrReplace(A_ScriptName, ".ahk")
+Menu, Tray, Icon, %A_ScriptDir%\..\GUI\Icons\Main.ico
 winTitle := scriptName
 pauseToggle := false
 showStatus := true
