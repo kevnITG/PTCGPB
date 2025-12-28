@@ -32,3 +32,4 @@ Accounts/Trades/*.json
 .REFACTORING_SUMMARY.md
 .vscode/settings.json
 /Accounts/Saved/tmp
+/DebugScripts
