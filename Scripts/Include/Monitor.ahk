@@ -142,28 +142,75 @@ Loop {
                 IniWrite, %nowEpoch%, %instanceIni%, Metrics, LastEndEpoch
                 
                 ; Optional: clean disk and signal cache clear
-                if (AutoDiskClean)
-                    cleanInstanceDisk(instanceNum)
+                ; if (AutoDiskClean)
+                ;     cleanInstanceDisk(instanceNum)
                                 
-                ; Launch emulator
-                launchInstance(instanceNum)
-                Sleep, % instanceLaunchDelay * 1000
-                Sleep, %waitAfterBulkLaunch%
-
-                ; Position the window
-                DirectlyPositionWindow(instanceNum)
-                Sleep, % instanceLaunchDelay * 1000
-                
-                ; Relaunch bot scripts
-                scriptPath := A_ScriptDir "\..\" scriptName
-                if (useADBManager) {
-                    adbScriptPath := A_ScriptDir "\..\" adbScriptName
-                    Run "%A_AhkPath%" /restart "%adbScriptPath%"
-                    Sleep, 2000
+                ; Launch emulator with retry
+                launchSuccess := false
+                Loop, 3 {
+                    launchInstance(instanceNum)
+                    Sleep, % instanceLaunchDelay * 1000
+                    Sleep, %waitAfterBulkLaunch%
+                    
+                    if (checkInstance(instanceNum)) {
+                        launchSuccess := true
+                        break
+                    }
+                    LogToFile("Attempt " . A_Index . "/3: Failed to detect running instance " . instanceNum . " after launch.", "Monitor.txt")
+                    Sleep, 10000  ; 10 sec delay before retry
                 }
-                Run "%A_AhkPath%" /restart "%scriptPath%"
                 
-                LogToFile("Restarted instance " . instanceNum . " and bot script(s).", "Monitor.txt")
+                if (!launchSuccess) {
+                    LogToFile("FAILED: Could not successfully launch instance " . instanceNum . " after 3 attempts.", "Monitor.txt")
+                } else {
+                    ; Position the window
+                    DirectlyPositionWindow(instanceNum)
+                    Sleep, % instanceLaunchDelay * 500
+                    
+                    ; Relaunch bot scripts with retry
+                    scriptPath := A_ScriptDir "\..\" scriptName
+                    scriptSuccess := false
+                    
+                    if (useADBManager) {
+                        adbScriptPath := A_ScriptDir "\..\" adbScriptName
+                        Loop, 3 {
+                            Run "%A_AhkPath%" /restart "%adbScriptPath%"
+                            Sleep, 2000
+                            
+                            if (checkAHK(adbScriptName)) {
+                                scriptSuccess := true
+                                break
+                            }
+                            LogToFile("Attempt " . A_Index . "/3: Failed to detect running " . adbScriptName, "Monitor.txt")
+                            Sleep, 3000
+                        }
+                        
+                        if (!scriptSuccess) {
+                            LogToFile("FAILED: Could not successfully launch ADB manager script " . adbScriptName . " after 3 attempts.", "Monitor.txt")
+                        }
+                    }
+                    
+                    ; Main bot script
+                    scriptSuccess := false
+                    Loop, 3 {
+                        Run "%A_AhkPath%" /restart "%scriptPath%"
+                        Sleep, 2000
+                        
+                        if (checkAHK(scriptName)) {
+                            scriptSuccess := true
+                            break
+                        }
+                        LogToFile("Attempt " . A_Index . "/3: Failed to detect running " . scriptName, "Monitor.txt")
+                        Sleep, 3000
+                    }
+                    
+                    if (!scriptSuccess) {
+                        LogToFile("FAILED: Could not successfully launch main bot script " . scriptName . " after 3 attempts.", "Monitor.txt")
+                    } else {
+                        LogToFile("Restarted instance " . instanceNum . " and bot script(s).", "Monitor.txt")
+                    }
+                }
+                
             }
             
         }
@@ -253,37 +300,52 @@ checkAHK(scriptName := "")
 killInstance(instanceNum := "") {
     global mumuManagerPath
     killed := 0
-    maxRetries := 3
-    retryDelay := 2000
     
-    ; Temporary disable this method of shuting down stuck instances.
-    ; mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
+    ; --- 1. Graceful API shutdown ---
+    mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
+    if (mumuNum != "") {
+        RunWait, %mumuManagerPath% api -v %mumuNum% shutdown_player,, Hide
+        Sleep, 8000
+        if (!checkInstance(instanceNum)) {
+            LogToFile("Proper shutdown via MuMuManager for instance " . instanceNum, "Monitor.txt")
+            return 1
+        }
+        LogToFile("API shutdown attempted but instance " . instanceNum . " still running – falling back.", "Monitor.txt")
+    }
+
+    ; --- 2. WinKill on window title ---
+    if (WinExist(instanceNum)) {
+        WinKill, % instanceNum
+        WinWaitClose, % instanceNum,, 6
+        if (ErrorLevel) {
+            WinKill, % instanceNum
+            Sleep, 3000
+        }
+
+        if (!checkInstance(instanceNum)) {
+            LogToFile("Successfully terminated instance " . instanceNum . " via WinKill.", "Monitor.txt")
+            return 1
+        }
+        LogToFile("WinKill attempted but instance partially remains – trying PID force kill.", "Monitor.txt")
+    }
     
-    ; if (mumuNum != "") {
-    ;     RunWait, %mumuManagerPath% api -v %mumuNum% shutdown_player,, Hide
-    ;     Sleep, 5000
-    ;     if (!checkInstance(instanceNum)) {
-    ;         killed := 1
-    ;         LogToFile("Proper shutdown via MuMuManager for instance " . instanceNum, "Monitor.txt")
-    ;         return killed
-    ;     }
-    ; }
-    
+    ; --- 3. Final PID hard kill ---
     pID := checkInstance(instanceNum)
-    if pID {
+    if (pID) {
         Process, Close, %pID%
-        killed++
+        Sleep, 2000
         Process, Exist, %pID%
         if (ErrorLevel) {
-            Loop %maxRetries% {
-                RunWait, taskkill /f /pid %pID% /t,, Hide
-                Sleep %retryDelay%
+            Loop, 3 {
+                RunWait, taskkill /f /pid %pID%,, Hide
+                Sleep, 2000
                 Process, Exist, %pID%
                 if (!ErrorLevel)
                     break
             }
         }
-        LogToFile("Fallback kill for instance " . instanceNum, "Monitor.txt")
+        LogToFile("Fallback PID force kill applied for instance " . instanceNum, "Monitor.txt")
+        killed := 1
     }
     return killed
 }
