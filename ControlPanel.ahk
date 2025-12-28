@@ -121,7 +121,7 @@ Gui, Add, Text, x330 y360 w180 h20 vETATime c%monokaiText%, ETA Time Left: 0m
 Gui, Show, w530 h650, PTCGP Control Panel
 
 ; Initial status check
-SetTimer, UpdateStatus, 5000
+SetTimer, UpdateStatus, 2000
 Gosub, UpdateStatus
 return
 
@@ -141,6 +141,10 @@ KillAllMumu:
             killInstance(mainInstanceName)
         }
     }
+    Sleep, 3000
+
+    ; Force kill even stuborn stuck background process.
+    killFreezeMuMuBackgroundService()
     MsgBox, All instances have been shutdown.
     Gosub, UpdateStatus
 return
@@ -398,65 +402,48 @@ checkAHK(scriptName := "") {
 killInstance(instanceNum := "") {
     global mumuManagerPath, mumuFolder
     killed := 0
-    maxRetries := 3
-    retryDelay := 2000 ; 2 seconds
     
-    ; First try to get the MuMu instance number
+    ; --- 1. Graceful API shutdown ---
     mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
-    
-    ; If we found a valid MuMu instance number, try to shut it down properly using MuMuManager
     if (mumuNum != "") {
-
-        ; If instance is already closed or not running, return
-        pID := checkInstance(instanceNum)
-        if (!pID) {
-            return killed
-        }
-
-        ; Run the MuMuManager command to properly shut down the instance
         RunWait, %mumuManagerPath% api -v %mumuNum% shutdown_player,, Hide
-        
-        ; Check every second for up to 5 seconds if instance is terminated
-        Loop, 5 {
-            Sleep, 1000
-            pID := checkInstance(instanceNum)
-            if (!pID) {
-                ; Instance was successfully shut down
-                killed := 1
-                LogToFile("Properly shut down instance " . instanceNum . " using MuMuManager", "ControlPanel.txt")
-                return killed
-            }
+        Sleep, 8000
+        if (!checkInstance(instanceNum)) {
+            LogToFile("Proper shutdown via MuMuManager for instance " . instanceNum, "ControlPanel.txt")
+            return 1
         }
+        LogToFile("API shutdown attempted but instance " . instanceNum . " still running – falling back.", "ControlPanel.txt")
     }
-    
-    ; If MuMuManager method failed or no instance number was found, fall back to the original method
-    pID := checkInstance(instanceNum)
-    if pID {
-        Process, Close, %pID%
-        killed := killed + 1
-        
-        ; Verify process is actually dead
-        Process, Exist, %pID%
+
+    ; --- 2. WinKill on window title ---
+    if (WinExist(instanceNum)) {
+        WinKill, % instanceNum
+        WinWaitClose, % instanceNum,, 6
         if (ErrorLevel) {
-            ; Forceful termination if needed
-            Loop %maxRetries% {
-                RunWait, taskkill /f /pid %pID% /t,, Hide
-                Sleep %retryDelay%
-                Process, Exist, %pID%
-                if (!ErrorLevel) {
-                    killed := 1
-                    break
-                }
-            }
+            WinKill, % instanceNum
+            Sleep, 3000
         }
-        
-        ; Try to kill any remaining MuMu processes for this instance
-        ; RunWait, taskkill /f /im MuMuVMMHeadless.exe /fi "WINDOWTITLE eq %instanceNum%" /t,, Hide
-        ; RunWait, taskkill /f /im MuMuVMMSVC.exe /fi "WINDOWTITLE eq %instanceNum%" /t,, Hide
-        
-        LogToFile("Killed instance " . instanceNum . " using fallback method", "ControlPanel.txt")
+
+        if (!checkInstance(instanceNum)) {
+            LogToFile("Successfully terminated instance " . instanceNum . " via WinKill.", "ControlPanel.txt")
+            return 1
+        }
+        LogToFile("WinKill attempted but instance partially remains – trying PID force kill.", "ControlPanel.txt")
     }
     
+    ; --- 3. Final PID hard kill ---
+    pID := checkInstance(instanceNum)
+    if (pID) {
+        Process, Close, %pID%
+        Sleep, 2000
+
+        if (!checkInstance(instanceNum)) {
+            LogToFile("Successfully terminated instance " . instanceNum . " via PID Hard kill.", "ControlPanel.txt")
+            return 1
+        }
+        LogToFile("Failed to terminate the insance " . instanceNum . " with all 3 method", "ControlPanel.txt")
+        killed := 1
+    }
     return killed
 }
 
@@ -862,4 +849,22 @@ SumVariablesInJsonFile() {
     }
 
     return sum
+}
+
+killFreezeMuMuBackgroundService() {
+    for _, proc in ["MuMuPlayer.exe", "MuMuPlayerService.exe", "MuMuVMMHeadless.exe", "MuMuVMMSVC.exe"] {
+        Loop {
+            Process, Exist, %proc%
+            pid := ErrorLevel
+            if (!pid)
+                break
+            Process, Close, %pid%
+            Sleep, 500
+            Process, Exist, %pid%
+            if (ErrorLevel) {
+                RunWait, taskkill /f /pid %pid%,, Hide
+                killed++
+            }
+        }
+    }
 }
