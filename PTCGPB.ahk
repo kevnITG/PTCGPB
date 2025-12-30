@@ -106,11 +106,11 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.0.8"
+   ,localVersion := "v9.2.5"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
-   ,intro := "Mega Rising"
+   ,intro := "Crimson Blaze"
 
 global GUI_WIDTH := 790
 global GUI_HEIGHT := 370
@@ -365,7 +365,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.0.8 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.2.5 kevinnnn"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -470,11 +470,13 @@ SortByDropdownHandler:
 return
 
 UpdatePackSelectionButtonText() {
-    global MegaGyarados, MegaBlaziken, MegaAltaria, Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole, Solgaleo, Lunala, Shining, Arceus
+    global CrimsonBlaze, MegaGyarados, MegaBlaziken, MegaAltaria, Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole, Solgaleo, Lunala, Shining, Arceus
     global Palkia, Dialga, Pikachu, Charizard, Mewtwo, Mew, currentDictionary
-    
+
     selectedPacks := []
 
+    if (CrimsonBlaze)
+        selectedPacks.Push(currentDictionary.Txt_CrimsonBlaze)
     if (MegaGyarados)
         selectedPacks.Push(currentDictionary.Txt_MegaGyarados)
     if (MegaBlaziken)
@@ -555,6 +557,8 @@ ShowPackSelection:
     Gui, PackSelect:Font, s10 cWhite, Segoe UI
 
     yPos := 10
+    Gui, PackSelect:Add, Checkbox, % (CrimsonBlaze ? "Checked" : "") " vCrimsonBlaze_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_CrimsonBlaze
+    yPos += 25
     Gui, PackSelect:Add, Checkbox, % (MegaGyarados ? "Checked" : "") " vMegaGyarados_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaGyarados
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (MegaBlaziken ? "Checked" : "") " vMegaBlaziken_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaBlaziken
@@ -603,7 +607,8 @@ return
 
 ApplyPackSelection:
     Gui, PackSelect:Submit, NoHide
-    
+
+    CrimsonBlaze := CrimsonBlaze_Popup
     MegaGyarados := MegaGyarados_Popup
     MegaBlaziken := MegaBlaziken_Popup
     MegaAltaria := MegaAltaria_Popup
@@ -935,12 +940,8 @@ ShowSystemSettings:
     Gui, SystemSettingsSelect:Add, DropDownList, x15 y%yPos% w125 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     
     Gui, SystemSettingsSelect:Add, Text, x155 y%yPos% %sectionColor%, % currentDictionary.Txt_Scale
-    if (defaultLanguage = "Scale125") {
-        defaultLang := 1
-    } else if (defaultLanguage = "Scale100") {
-        defaultLang := 2
-    }
-    Gui, SystemSettingsSelect:Add, DropDownList, x155 y%yPos% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125|Scale100
+    defaultLang := 1
+    Gui, SystemSettingsSelect:Add, DropDownList, x155 y%yPos% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125
     yPos += 35
     
     Gui, SystemSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, % currentDictionary.Txt_RowGap
@@ -1227,12 +1228,8 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, DropDownList, x%col2X% y%yPos2% w100 vSelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     
     Gui, ToolsAndSystemSelect:Add, Text, x325 y15 %sectionColor%, % currentDictionary.Txt_Scale
-    if (defaultLanguage = "Scale125") {
-        defaultLang := 1
-    } else if (defaultLanguage = "Scale100") {
-        defaultLang := 2
-    }
-    Gui, ToolsAndSystemSelect:Add, DropDownList, x325 y%yPos2% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125|Scale100
+    defaultLang := 1
+    Gui, ToolsAndSystemSelect:Add, DropDownList, x325 y%yPos2% w75 vdefaultLanguage_Popup choose%defaultLang% Background2A2A2A cWhite, Scale125
     yPos2 += 25
     
     rowGapY := yPos2 + 2
@@ -1444,12 +1441,14 @@ Save:
   confirmMsg .= "`n"
   
   confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
+  if (CrimsonBlaze)
+    confirmMsg .= "• " . currentDictionary.Txt_CrimsonBlaze . "`n"
   if (MegaGyarados)
     confirmMsg .= "• " . currentDictionary.Txt_MegaGyarados . "`n"
   if (MegaBlaziken)
     confirmMsg .= "• " . currentDictionary.Txt_MegaBlaziken . "`n"
   if (MegaAltaria)
-    confirmMsg .= "• " . currentDictionary.Txt_MegaAltaria . "`n"  
+    confirmMsg .= "• " . currentDictionary.Txt_MegaAltaria . "`n"
   if (Deluxe)
     confirmMsg .= "• " . currentDictionary.Txt_Deluxe . "`n"
   if (Springs)
@@ -1628,9 +1627,7 @@ ArrangeWindows:
 	} else {
          scaleParam := 277
      }
-    } else if (defaultLanguage = "Scale100") {
-       scaleParam := 287
-    }
+   }
 
     windowsPositioned := 0
 
@@ -1910,6 +1907,7 @@ LoadSettingsFromIni() {
       
       IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
       IniRead, defaultLanguage, Settings.ini, UserSettings, defaultLanguage, Scale125
+      if (defaultLanguage = "Scale100") defaultLanguage := "Scale125"
       IniRead, rowGap, Settings.ini, UserSettings, rowGap, 90
       IniRead, folderPath, Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
       IniRead, ocrLanguage, Settings.ini, UserSettings, ocrLanguage, en
@@ -1938,6 +1936,9 @@ LoadSettingsFromIni() {
       IniRead, injectSortMethod, Settings.ini, UserSettings, injectSortMethod, PacksDesc
       IniRead, godPack, Settings.ini, UserSettings, godPack, Continue
       IniRead, claimSpecialMissions, Settings.ini, UserSettings, claimSpecialMissions, 0
+      ; Force claimSpecialMissions to always be 0
+      claimSpecialMissions := 0
+      IniWrite, %claimSpecialMissions%, Settings.ini, UserSettings, claimSpecialMissions
       IniRead, claimDailyMission, Settings.ini, UserSettings, claimDailyMission, 0
       IniRead, wonderpickForEventMissions, Settings.ini, UserSettings, wonderpickForEventMissions, 0
       ; wonderpickForEventMissions := 0 ; forced turned off during Sneak Peek for now...
@@ -1959,7 +1960,8 @@ LoadSettingsFromIni() {
       IniRead, Lugia, Settings.ini, UserSettings, Lugia, 0
       IniRead, Springs, Settings.ini, UserSettings, Springs, 0
       IniRead, Deluxe, Settings.ini, UserSettings, Deluxe, 0
-      IniRead, MegaGyarados, Settings.ini, UserSettings, MegaGyarados, 1
+      IniRead, CrimsonBlaze, Settings.ini, UserSettings, CrimsonBlaze, 1
+      IniRead, MegaGyarados, Settings.ini, UserSettings, MegaGyarados, 0
       IniRead, MegaBlaziken, Settings.ini, UserSettings, MegaBlaziken, 0
       IniRead, MegaAltaria, Settings.ini, UserSettings, MegaAltaria, 0
       
@@ -2028,6 +2030,7 @@ LoadSettingsFromIni() {
       IniRead, minStarsA4Lugia, Settings.ini, UserSettings, minStarsA4Lugia, 0
       IniRead, minStarsA4Springs, Settings.ini, UserSettings, minStarsA4Springs, 0
       IniRead, minStarsA4Deluxe, Settings.ini, UserSettings, minStarsA4Deluxe, 0
+      IniRead, minStarsCrimsonBlaze, Settings.ini, UserSettings, minStarsCrimsonBlaze, 0
       IniRead, minStarsMegaGyarados, Settings.ini, UserSettings, minStarsMegaGyarados, 0
       IniRead, minStarsMegaBlaziken, Settings.ini, UserSettings, minStarsMegaBlaziken, 0
       IniRead, minStarsMegaAltaria, Settings.ini, UserSettings, minStarsMegaAltaria, 0
@@ -2141,7 +2144,7 @@ SaveAllSettings() {
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
    global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
-   global MegaGyarados, MegaBlaziken, MegaAltaria, slowMotion, ocrLanguage, clientLanguage
+   global MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, slowMotion, ocrLanguage, clientLanguage
    global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, isDarkTheme
    global useBackgroundImage, tesseractPath, debugMode, useTesseract, statusMessage
    global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards
@@ -2153,7 +2156,7 @@ SaveAllSettings() {
    global minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b
    global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA3b
    global minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe
-   global minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
+   global minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
    global menuExpanded
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
    global checkWPthanks
@@ -2216,6 +2219,7 @@ SaveAllSettings() {
    iniContent .= "MegaGyarados=" MegaGyarados "`n"
    iniContent .= "MegaBlaziken=" MegaBlaziken "`n"
    iniContent .= "MegaAltaria=" MegaAltaria "`n"
+   iniContent .= "CrimsonBlaze=" CrimsonBlaze "`n"
    iniContent .= "CheckShinyPackOnly=" CheckShinyPackOnly "`n"
    iniContent .= "TrainerCheck=" TrainerCheck "`n"
    iniContent .= "FullArtCheck=" FullArtCheck "`n"
@@ -2245,7 +2249,8 @@ SaveAllSettings() {
    iniContent .= "heartBeat=" heartBeat "`n"
    iniContent .= "menuExpanded=" menuExpanded "`n"
    iniContent .= "groupRerollEnabled=" groupRerollEnabled "`n"
-   iniContent .= "claimSpecialMissions=" claimSpecialMissions "`n"
+   ; Force claimSpecialMissions to always be 0
+   iniContent .= "claimSpecialMissions=0`n"
    iniContent .= "claimDailyMission=" claimDailyMission "`n"
    iniContent .= "wonderpickForEventMissions=" wonderpickForEventMissions "`n"
    iniContent .= "checkWPthanks=" checkWPthanks "`n"
@@ -2337,6 +2342,7 @@ SaveAllSettings() {
    iniContent_Second .= "minStarsMegaGyarados=" minStarsMegaGyarados "`n"
    iniContent_Second .= "minStarsMegaBlaziken=" minStarsMegaBlaziken "`n"
    iniContent_Second .= "minStarsMegaMegaAltaria=" minStarsMegaAltaria "`n"
+   iniContent_Second .= "minStarsCrimsonBlaze=" minStarsCrimsonBlaze "`n"
    iniContent_Second .= "s4tWPMinCards=" s4tWPMinCards "`n"
    iniContent_Second .= "s4tDiscordUserId=" s4tDiscordUserId "`n"
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"
@@ -2378,7 +2384,7 @@ StartBot() {
    global heartBeat, heartBeatName, heartBeatWebhookURL, heartBeatDelay, debugMode
    global Shining, Arceus, Palkia, Dialga, Mew, Pikachu, Charizard, Mewtwo
    global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
-   global MegaBlaziken, MegaGyarados, MegaAltaria, packMethod, nukeAccount
+   global MegaBlaziken, MegaGyarados, MegaAltaria, CrimsonBlaze, packMethod, nukeAccount
    global SelectedMonitorIndex, localVersion, githubUser, rerollTime, PackGuiBuild
    global ClaimGiftsPacks
    
@@ -2418,8 +2424,6 @@ StartBot() {
    
    if (defaultLanguage = "Scale125") {
       scaleParam := 277
-   } else if (defaultLanguage = "Scale100") {
-      scaleParam := 287
    }
    
    if (runMain) {
@@ -2542,6 +2546,8 @@ StartBot() {
       Selected.Push("MegaBlaziken")
    if(MegaAltaria)
       Selected.Push("MegaAltaria")
+  if(CrimsonBlaze)
+      Selected.Push("CrimsonBlaze")
 
    for index, value in Selected {
       if(index = Selected.MaxIndex())

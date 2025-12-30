@@ -60,16 +60,14 @@ FindBorders(prefix) {
     global currentPackIs6Card, currentPackIs4Card, scaleParam, winTitle, defaultLanguage
     count := 0
     searchVariation := 40 ;
-    if (prefix = "normal") {
-        searchVariation := 75 ; Increasing for megas patch...
-    }
+
     searchVariation6Card := 60 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
     searchVariation4Card := 60 ;
 
     if (prefix = "shiny2star") { ; some aren't being detected at lower variations
-        searchVariation := 75
-        searchVariation6Card := 75
-        searchVariation4Card := 75
+        searchVariation := 40
+        searchVariation6Card := 40
+        searchVariation4Card := 60
     }
 
     is6CardPack := currentPackIs6Card
@@ -86,7 +84,7 @@ FindBorders(prefix) {
             ,[222, 284, 249, 286] ; Top row card 3
             ,[56, 399, 83, 401]   ; Bottom row card 1
             ,[139, 399, 166, 401] ; Bottom row card 2
-            ,[222, 399, 249, 401]] ; Bottom row card 3
+            ,[256, 386, 260, 402]] ; Bottom row card 3
     } else {
         ; 5-card pack
         borderCoords := [[56, 284, 83, 286] ; Card 1
@@ -94,6 +92,29 @@ FindBorders(prefix) {
             ,[222, 284, 249, 286] ; Card 3
             ,[96, 399, 123, 401] ; Card 4
             ,[181, 399, 208, 401]] ; Card 5
+    }
+
+    ; custom smaller borders for Megas splash art compatiblity; currently removing 6 pixels in x from the right side.
+    if (prefix = "fullArt") { 
+        if (is4CardPack) {
+            borderCoords := [[96, 284, 117, 286]  ; Card 1
+                ,[181, 284, 202, 286] ; Card 2
+                ,[96, 399, 117, 401] ; Card 3
+                ,[181, 399, 202, 401]] ; Card 4
+        } else if (is6CardPack) {
+            borderCoords := [[58, 284, 77, 286]   ; Top row card 1
+                ,[141, 284, 160, 286] ; Top row card 2
+                ,[224, 284, 243, 286] ; Top row card 3
+                ,[58, 399, 77, 401]   ; Bottom row card 1
+                ,[141, 399, 160, 401] ; Bottom row card 2
+                ,[258, 386, 254, 402]] ; Bottom row card 3
+        } else {
+            borderCoords := [[58, 284, 77, 286] ; Card 1
+                ,[141, 284, 160, 286] ; Card 2
+                ,[224, 284, 243, 286] ; Card 3
+                ,[98, 399, 117, 401] ; Card 4
+                ,[183, 399, 202, 401]] ; Card 5
+        }
     }
 
     ; Changed Shiny 2star needles to improve detection after hours of testing previous needles.
@@ -109,7 +130,7 @@ FindBorders(prefix) {
                 ,[237, 175, 262, 187]
                 ,[74, 293, 97, 305]
                 ,[153, 293, 180, 305]
-                ,[237, 293, 262, 305]]
+                ,[254, 386, 258, 401]]
         } else {
             borderCoords := [[74, 175, 97, 187]
                 ,[153, 175, 180, 187]
@@ -126,7 +147,7 @@ FindBorders(prefix) {
                 ,[255, 261, 258, 283]
                 ,[90, 376, 93, 398]
                 ,[173, 376, 176, 398]
-                ,[255, 376, 258, 398]]
+                ,[255, 385, 257, 399]]
         } else {
             borderCoords := [[90, 261, 93, 283]
                 ,[173, 261, 176, 283]
@@ -178,9 +199,21 @@ FindBorders(prefix) {
         currentSearchVariation := searchVariation
 
         if (is6CardPack && A_Index >= 4) {
-            ; Bottom row of 6-card pack (positions 4, 5, 6), re-use top row images
-            imageIndex := A_Index - 3  ; Card 4 -> uses Card 1 needle, 5->2, 6->3
+            ; Bottom row of 6-card pack (positions 4, 5, 6)
+            if (A_Index = 6 && prefix = "shiny1star" || prefix = "shiny2star") {
+                ; Use dedicated shiny1star6 needle for 6th card position
+                imageName := prefix . "6card6"
+            } else if (A_index = 4 && prefix = "normal" || prefix = "3diamond") {
+                ; Use dedicated normal4 needle for 4th card position
+                imageName := prefix . "6card4"
+            } else if (A_Index = 5 && prefix = "normal" || prefix = "3diamond") {
+                ; Use dedicated normal5 needle for 5th card position
+                imageName := prefix . "6card5"
+            } else {
+                ; Re-use top row images for positions 4 and 5
+                imageIndex := A_Index - 3  ; Card 4 -> uses Card 1 needle, 5->2
             imageName := prefix . imageIndex
+            }
             currentSearchVariation := searchVariation6Card
         } else if (is4CardPack) {
             ; 4-card pack (Deluxe) - special needle logic
@@ -262,7 +295,7 @@ FindCard(prefix) {
 ; FindGodPack - Detect if current pack is a god pack
 ;-------------------------------------------------------------------------------
 FindGodPack(invalidPack := false) {
-    global keepAccount, openPack, minStars, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
+    global keepAccount, openPack, minStars, minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
     global minStarsA4Deluxe, minStarsA4Springs, minStarsA4HoOh, minStarsA4Lugia, minStarsA3b, minStarsA3a
     global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA2b, minStarsA2a, minStarsA2Dialga, minStarsA2Palkia
     global minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsShiny, shinyPacks
@@ -282,7 +315,9 @@ FindGodPack(invalidPack := false) {
     requiredStars := minStars ; Default to general minStars
 
     ; Check specific selections first, then default to shiny
-        if (openPack == "MegaGyarados") {
+        if (openPack == "CrimsonBlaze") {
+            requiredStars := minStarsCrimsonBlaze
+        } else if (openPack == "MegaGyarados") {
             requiredStars := minStarsMegaGyarados
         } else if (openPack == "MegaBlaziken") {
             requiredStars := minStarsMegaBlaziken

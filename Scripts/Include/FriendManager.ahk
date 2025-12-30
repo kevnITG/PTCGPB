@@ -19,9 +19,15 @@
 ;-------------------------------------------------------------------------------
 AddFriends(renew := false, getFC := false) {
     global FriendID, friendIds, waitTime, friendCode, scriptName, friended, packsThisRun
-    global scaleParam
+    global scaleParam, deleteMethod
 
-    friendIDs := ReadFile("ids")
+    IniRead, groupRerollEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, groupRerollEnabled, 1
+
+    if (deleteMethod != "Inject 13P+" && deleteMethod != "Inject Wonderpick 96P+" || groupRerollEnabled) {
+        friendIDs := ReadFile("ids")
+    } else {
+        friendIDs := false
+    }
     friended := true
 	if(!getFC && !friendIDs && friendID = "")
 		return false
@@ -61,14 +67,17 @@ AddFriends(renew := false, getFC := false) {
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
     }
-    IniRead, showcaseNumber, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
-    IniRead, showcaseEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseEnabled
-    if (showcaseNumber > 0 && showcaseEnabled = 1 && packsThisRun = 0) {
-        showcaseNumber -= 1
-        IniWrite, %showcaseNumber%, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
-        showcaseLikes()
-        FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
-    }
+    
+    ; ======== Showcase Likes - Moved out of AddFriends() and into regular EndOfRun 1.ahk to support Inject 13P+ =========
+    
+    ; IniRead, showcaseNumber, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
+    ; IniRead, showcaseEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseEnabled
+    ; if (showcaseNumber > 0 && showcaseEnabled = 1 && packsThisRun = 0) {
+    ;     showcaseNumber -= 1
+    ;     IniWrite, %showcaseNumber%, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
+    ;     showcaseLikes()
+    ;     FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+    ; }
 
     FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
     FindImageAndClick(205, 430, 255, 475, , "Search", 240, 120, 1500)
@@ -107,6 +116,7 @@ AddFriends(renew := false, getFC := false) {
         failSafe := A_TickCount
         failSafeTime := 0
         Loop {
+            Delay(1)
             adbInput(value)
             Delay(1)
             if(FindOrLoseImage(205, 430, 255, 475, , "Search2", 0, failSafeTime)) {
@@ -292,25 +302,49 @@ RemoveFriends() {
 }
 
 ;-------------------------------------------------------------------------------
-; showcaseLikes - Like community showcases from ID list
+; showcaseLikes
 ;-------------------------------------------------------------------------------
 showcaseLikes() {
-	; Liking showcase script
     FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 152, 335, 200)
-	Loop, Read, %A_ScriptDir%\..\showcase_ids.txt
+        failSafe := A_TickCount
+        failSafeTime := 0
+
+    ; Read the entire file to avoid concurrent access issues
+    FileRead, content, %A_ScriptDir%\..\showcase_ids.txt
+    ; Remove BOM if present
+    if (SubStr(content, 1, 1) = Chr(0xFEFF))
+        content := SubStr(content, 2)
+    ; Split into lines
+    showcaseIDs := StrSplit(content, "`n", "`r")
+    ; Trim and filter non-empty
+    filteredIDs := []
+    for index, line in showcaseIDs {
+        trimmed := Trim(line)
+        if (trimmed != "")
+            filteredIDs.Push(trimmed)
+    }
+
+	Loop % filteredIDs.Length()
 		{
-			showcaseID := Trim(A_LoopReadLine)
+			showcaseID := filteredIDs[A_Index]
+            ; Log for debugging
+            LogToFile("Processing showcase ID: " . showcaseID, "ShowcaseLog.txt")
+            Delay(2)
+            TradeTutorialForShowcase()
             Delay(2)
 			FindImageAndClick(215, 252, 240, 277, , "FriendIDSearch", 224, 472, 200)
             Delay(2)
 			FindImageAndClick(157, 498, 225, 522, , "ShowcaseInput", 143, 273, 200)
-			Delay(3)
+			Delay(2)
 			adbInput(showcaseID)					; Pasting ID
-			Delay(1)
+			Delay(2)
 			adbClick(212, 384)						; Pressing OK
+            Delay(1)
 			FindImageAndClick(98, 187, 125, 214, ,"ShowcaseLiked", 175, 200, 200)
-            Delay(2)
+            Delay(4)
 			FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 140, 495, 200)
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            CreateStatusMessage("Waiting for Showcase Likes for `n(" . failSafeTime . "/90 seconds)")
 		}
 }
 
@@ -339,6 +373,8 @@ EraseInput(num := 0, total := 0) {
 ;-------------------------------------------------------------------------------
 TradeTutorial() {
     if(FindOrLoseImage(100, 120, 175, 145, , "Trade", 0)) {
+        failSafe := A_TickCount
+        failSafeTime := 0
         Loop{
             adbClick_wbb(167, 447)
             Delay(1)
@@ -350,9 +386,52 @@ TradeTutorial() {
                 break
             adbClick_wbb(38, 460)
             Delay(1)
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            CreateStatusMessage("Waiting for Trade Tutorial for `n(" . failSafeTime . "/90 seconds)")
         }
 
         FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500,,2)
+    }
+    Delay(1)
+}
+
+;-------------------------------------------------------------------------------
+; TradeTutorialForShowcase - Handle trade tutorial popup for showcase likes
+;-------------------------------------------------------------------------------
+TradeTutorialForShowcase() {
+    if(FindOrLoseImage(100, 120, 175, 145, , "Trade", 0)) {
+        failSafe := A_TickCount
+        failSafeTime := 0
+        Loop{
+            if(FindOrLoseImage(226, 100, 270, 135, ,"Add", 0))
+                break
+            adbClick_wbb(167, 447)
+            Delay(0.3)
+            adbClick_wbb(167, 447)
+            Delay(0.3)
+            adbClick_wbb(167, 447)
+            Delay(0.3)
+            adbClick_wbb(167, 447)
+            Delay(0.3)
+            adbClick_wbb(167, 447)
+            Delay(1)
+            adbClick_wbb(38, 460)
+            Delay(6) ; Add more delay to check for the load & Add2 or Add to appear.
+            if(FindOrLoseImage(226, 100, 270, 135, ,"Add", 0))
+                break
+            Delay(2)
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            CreateStatusMessage("Waiting for Trade Tutorial for `n(" . failSafeTime . "/90 seconds)")
+        }
+        Delay(6)
+        if(FindOrLoseImage(226, 100, 270, 135, ,"Add", 0)) {
+            adbClick(140, 508)
+            Delay(6)
+        }
+        if(FindOrLoseImage(15, 455, 40, 475, ,"Add2", 0)) {
+            FindImageAndClick(174, 464, 189, 479, , "CommunityShowcase", 152, 335, 200)
+            Delay(2)
+        }
     }
     Delay(1)
 }

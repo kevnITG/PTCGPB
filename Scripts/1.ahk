@@ -28,8 +28,8 @@ DllCall("AllocConsole")
 WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
-global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria, UnknownGiftPack
-global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
+global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria, UnknownGiftPack, CrimsonBlaze
+global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
 global DeadCheck
 global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards, s4tDiscordWebhookURL, s4tDiscordUserId, s4tSendAccountXml
 global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star
@@ -132,9 +132,10 @@ IniRead, PseudoGodPack, %A_ScriptDir%\..\Settings.ini, UserSettings, PseudoGodPa
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsShiny, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsShiny, 0
 
-IniRead, MegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaGyarados, 1
-IniRead, MegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaBlaziken, 1
-IniRead, MegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaAltaria, 1
+IniRead, CrimsonBlaze, %A_ScriptDir%\..\Settings.ini, UserSettings, CrimsonBlaze, 1
+IniRead, MegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaGyarados, 0
+IniRead, MegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaBlaziken, 0
+IniRead, MegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaAltaria, 0
 IniRead, Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, Deluxe, 0
 IniRead, Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, Springs, 0
 IniRead, HoOh, %A_ScriptDir%\..\Settings.ini, UserSettings, HoOh, 0
@@ -168,6 +169,7 @@ IniRead, minStarsA4HoOh, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4
 IniRead, minStarsA4Lugia, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Lugia, 0
 IniRead, minStarsA4Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Springs, 0
 IniRead, minStarsA4Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA4Deluxe, 0
+IniRead, minStarsCrimsonBlaze, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsCrimsonBlaze, 0
 IniRead, minStarsMegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaGyarados, 0
 IniRead, minStarsMegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaBlaziken, 0
 IniRead, minStarsMegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaAltaria, 0
@@ -220,8 +222,8 @@ if(s4tEnabled){
     maxAccountPackNum := 9999
 }
 
-pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria"]
-shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1, "MegaGyarados": 1, "MegaBlaziken": 1, "MegaAltaria": 1}
+pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria", "CrimsonBlaze"]
+shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1, "MegaGyarados": 1, "MegaBlaziken": 1, "MegaAltaria": 1, "CrimsonBlaze": 1}
 
 packArray := []  ; Initialize an empty array
 
@@ -720,6 +722,17 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
         if (injectMethod && friended && !keepAccount) {
             RemoveFriends()
         }
+        
+        ; Showcase likes
+        IniRead, showcaseNumber, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
+        IniRead, showcaseEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseEnabled
+        if (showcaseNumber > 0 && showcaseEnabled = 1) {
+            showcaseNumber -= 1
+            IniWrite, %showcaseNumber%, %A_ScriptDir%\..\Settings.ini, UserSettings, showcaseLikes
+            FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+            showcaseLikes()
+            ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+        }
 
         ; BallCity 2025.02.21 - Track monitor
         now := A_NowUTC
@@ -981,7 +994,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     static lastStatusTime := 0
 
     if(slowMotion) {
-        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three")
+        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three" || imageName = "speedmodMenu2" || imageName = "One2" || imageName = "Two2" || imageName = "Three2")
             return true
     }
     if(searchVariation = "")
@@ -1042,6 +1055,46 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         if (vRet = 1) {
             adbClick_wbb(145, 451)
         }
+    }
+
+        ; Search for new privacy and TOS clearing popup; can be removed later patch
+    if (imageName = "Points" || imageName = "Social" || imageName = "Country") {
+        Path = %imagePath%newPrivacyTOSpopup.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 221, 394, 236, 407, searchVariation)
+        if (vRet = 1) {
+            CreateStatusMessage("Accepting Privacy and TOS popup.",,,, false)
+            Sleep, 3000
+            adbClick_wbb(142, 372)
+            adbClick_wbb(142, 372)
+            Sleep, 2000
+            adbClick_wbb(140, 336) ; Privacy Notice
+            adbClick_wbb(140, 336) ; Privacy Notice
+            Sleep, 2000
+            adbClick_wbb(138, 487) ; Close Privacy Notice
+            adbClick_wbb(138, 487) ; Close Privacy Notice
+            Sleep, 1000
+            adbClick_wbb(47, 371) ; Agree to Privacy Notice
+            Sleep, 200
+            adbClick_wbb(143, 488) ; OK
+            Sleep, 500
+            adbClick_wbb(141, 371) ; OK
+            adbClick_wbb(141, 371) ; OK
+            Sleep, 2000
+            adbClick_wbb(140, 336) ; Terms of Use
+            adbClick_wbb(140, 336) ; Terms of Use
+            Sleep, 2000
+            adbClick_wbb(138, 487) ; Close Terms of Use
+            adbClick_wbb(138, 487) ; Close Terms of Use
+            Sleep, 1000
+            adbClick_wbb(47, 371) ; Agree to Privacy Notice
+            Sleep, 200
+            adbClick_wbb(143, 488) ; OK
+            Sleep, 500
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+
     }
 
     ; Handle 7/2025 trade news update popup, remove later patch
@@ -1182,10 +1235,12 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
 
-    if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
+    if(imageName = "Social" || imageName = "Shop" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests") {
         TradeTutorial()
     }
-
+    if(imageName = "CommunityShowcase") {
+        TradeTutorialForShowcase()
+    }
     Path = %imagePath%NoResponse.png
     pNeedle := GetNeedle(Path)
     ; ImageSearch within the region
@@ -1248,7 +1303,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
     global winTitle, failSafe, confirmed, slowMotion
 
     if(slowMotion) {
-        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three")
+        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three" || imageName = "speedmodMenu2" || imageName = "One2" || imageName = "Two2" || imageName = "Three2")
             return true
     }
     if(searchVariation = "")
@@ -1438,6 +1493,46 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             }
         }
 
+        ; Search for new privacy and TOS clearing popup; can be removed later patch
+        if (imageName = "Points" || imageName = "Social" || imageName = "Country") {
+            Path = %imagePath%newPrivacyTOSpopup.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 221, 394, 236, 407, searchVariation)
+            if (vRet = 1) {
+                CreateStatusMessage("Accepting Privacy and TOS popup.",,,, false)
+                Sleep, 1000
+                adbClick_wbb(142, 372)
+                adbClick_wbb(142, 372)
+                Sleep, 2000
+                adbClick_wbb(140, 336) ; Privacy Notice
+                adbClick_wbb(140, 336) ; Privacy Notice
+                Sleep, 2000
+                adbClick_wbb(138, 487) ; Close Privacy Notice
+                adbClick_wbb(138, 487) ; Close Privacy Notice
+                Sleep, 1000
+                adbClick_wbb(47, 371) ; Agree to Privacy Notice
+                Sleep, 200
+                adbClick_wbb(143, 488) ; OK
+                Sleep, 500
+                adbClick_wbb(141, 371) ; OK
+                adbClick_wbb(141, 371) ; OK
+                Sleep, 1500
+                adbClick_wbb(140, 336) ; Terms of Use
+                adbClick_wbb(140, 336) ; Terms of Use
+                Sleep, 2000
+                adbClick_wbb(138, 487) ; Close Terms of Use
+                adbClick_wbb(138, 487) ; Close Terms of Use
+                Sleep, 1000
+                adbClick_wbb(47, 371) ; Agree to Privacy Notice
+                Sleep, 200
+                adbClick_wbb(143, 488) ; OK
+                Sleep, 500
+                Gdip_DisposeImage(pBitmap)
+                return confirmed
+            }
+
+        }
+
         ; Search for 7/2025 trade news update popup; can be removed later patch
         if(imageName = "Points" || imageName = "Social" || imageName = "Shop" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll" || imageName = "inHamburgerMenu" || imageName = "Trade") {
             Path = %imagePath%Privacy.png
@@ -1567,8 +1662,11 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         if(imageName = "Points" || imageName = "Home") { ;look for level up ok "button"
             LevelUp()
         }
-        if(imageName = "Social" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
+        if(imageName = "Social" || imageName = "Shop" || imageName = "Home" || imageName = "Add" || imageName = "Add2" || imageName = "requests" || imageName = "insideTrade" || imageName = "Trade") {
             TradeTutorial()
+        }
+        if(imageName = "CommunityShowcase") {
+            TradeTutorialForShowcase()
         }
         if(skip) {
             ElapsedTime := (A_TickCount - StartSkipTime) // 1000
@@ -2851,11 +2949,11 @@ DoTutorial() {
         if(FindOrLoseImage(120, 70, 150, 95, , "SwipeUp", 0, failSafeTime)){
             if(setSpeed > 1) {
                 if(setSpeed = 3)
-                    FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
+                    FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) 
                 else
-                    FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
+                    FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) 
             }
-            adbClick_wbb(41, 339)
+            adbClick_wbb(51, 297)
             break
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
@@ -3028,27 +3126,27 @@ SelectPack(HG := false) {
     inselectexpansionscreen := 0
 
     packy := HomeScreenAllPackY
-    if (openPack == "MegaAltaria") {
+    if (openPack == "MegaBlaziken") {
         packx := RightPackX
-    } else if (openPack == "MegaGyarados") {
+    } else if (openPack == "Springs") {
         packx := LeftPackX
-    } else {
+    } else { ; do not set this to a specific if openPack == "something" as all packs need to reference MiddlePackX as pack position.
         packx := MiddlePackX
     }
 
-    if(openPack == "MegaBlaziken" || openPack == "MegaGyarados" || openPack == "MegaAltaria") {
+    if(openPack == "CrimsonBlaze" || openPack == "MegaBlaziken" || openPack == "Springs") {
         PackIsInHomeScreen := 1
     } else {
         PackIsInHomeScreen := 0
     }
 
-    if(openPack == "MegaBlaziken") {
+    if(openPack == "CrimsonBlaze") {
         PackIsLatest := 1
     } else {
         PackIsLatest := 0
     }
 
-    if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") {
+    if (openPack == "CrimsonBlaze" || openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") {
         packInTopRowsOfSelectExpansion := 1
     } else {
         packInTopRowsOfSelectExpansion := 0
@@ -3127,8 +3225,7 @@ SelectPack(HG := false) {
         ; packs that can be opened after clicking A series
         if (openPack = "Springs" || openPack = "HoOh" || openPack = "Lugia" || openPack = "Eevee") {
             Delay(4)
-            adbClick(156, 455) ; click A series. need more robust system later
-            Delay(4)
+
             if (openPack == "Springs") {
                 packx := SelectExpansionRightColumnMiddleX
                 packy := 298
@@ -3146,19 +3243,17 @@ SelectPack(HG := false) {
 
         ; packs that can be opened after swiping once
         if (openPack = "Buzzwole" || openPack = "Solgaleo" || openPack = "Lunala") {
-
-            Delay(4)
-            adbClick(156, 455) ; click A series. need more robust system later
-            Delay(4)
+            Delay(3)
 
             X := 266
             Y1 := 430
             Y2 := 50
 
             Loop, 1 {
-                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
-                Sleep, 300 ;
+                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . swipeSpeed)
+                Sleep, 600 ;
             }
+
             if (openPack = "Buzzwole") {
                 packx := SelectExpansionLeftColumnMiddleX
                 packy := 444
@@ -3173,26 +3268,23 @@ SelectPack(HG := false) {
 
         ; packs that can be opened after fully swiping down
         if (openPack = "Dialga" || openPack = "Palkia" || openPack = "Mew" || openPack = "Charizard" || openPack = "Mewtwo" || openPack = "Pikachu" || openPack = "Shining" || openPack = "Arceus") {
-
-            Delay(4)
-            adbClick(156, 455) ; click A series. need more robust system later
-            Delay(4)
-
+            Delay(3)
+            
             X := 266
             Y1 := 430
             Y2 := 50
 
-            Loop, 5 {
-                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 250)
-                Sleep, 300 ;
+            Loop, 8 {
+                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . swipeSpeed)
+                Sleep, 100 ;
             }
 
             if (openPack = "Shining") {
                 packx := SelectExpansionLeftColumnMiddleX
-                packy := 113
+                packy := 114
             } else if (openPack = "Arceus") {
                 packx := SelectExpansionRightColumnMiddleX
-                packy := 113
+                packy := 114
             } else if (openPack = "Dialga") {
                 packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
                 packy := 209
@@ -3215,20 +3307,25 @@ SelectPack(HG := false) {
             }
         }
 
-        if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
+        if (openPack == "CrimsonBlaze" || openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
             Delay(4)
             adbClick(52, 455) ; click B series. need more robust system later
             Delay(4)
-            if (openPack == "MegaGyarados") {
-                packy := SelectExpansionFirstRowY
-                ; packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
-                packx := 18 ; custom location to avoid accidentally rotating through pack wheel on following screen
-            } else if (openPack == "MegaBlaziken") {
+            if (openPack == "CrimsonBlaze") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionLeftColumnMiddleX
+            } else if (openPack == "MegaGyarados") {
+                packy := SelectExpansionFirstRowY
+                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionLeft
+                ; packx := 18 ; custom location to avoid accidentally rotating through pack wheel on following screen
+            } else if (openPack == "MegaBlaziken") {
+                packy := SelectExpansionFirstRowY
+                packx := SelectExpansionRightColumnMiddleX
             } else if (openPack == "MegaAltaria") {
                 packy := SelectExpansionFirstRowY
-                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
+                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionRight
+                packx := 258 ; custom locations to avoid accidentally rotating through pack wheel on following screen
+                packy := 309 ; custom locations to avoid accidentally rotating through pack wheel on following screen
             }
         }
 
@@ -3423,7 +3520,7 @@ PackOpening() {
     }
 
     FindImageAndClick(170, 98, 270, 125, 5, "Opening", 239, 497, 100) ;skip through cards until results opening screen
-
+    Delay(4) ; trying to avoid loading icons 2025.12.23 kevinnnn
     CheckPack()
 
     if(!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum)
@@ -3823,7 +3920,7 @@ GetEventRewards(frommain := true){
     ; adbClick_wbb(120, 465) ; used to click the middle mission button
     ; adbClick_wbb(25, 465) ;used to click the left-most mission button
 
-    ;====== Water Mission / Wonder Pick Event 11.27.2025 ======
+    ;====== Water Mission / Wonder Pick Event 12.7.2025 ======
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
@@ -4233,23 +4330,30 @@ GoToMain(fromSocial := false) {
 
 SpeedmodEnableUnified() {
 	if(setSpeed > 1){
-        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
+         FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) ; click mod settings
+        ;FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; old 9mod
 		if(setSpeed = 3)
-			FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; click mod settings
+      FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) ; click 3x
+			;FindImageAndClick(182, 170, 194, 190, , "Three", 187, 180) ; old 9mod
 		else
-			FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; click mod settings
+      FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) ; click 2x
+			;FindImageAndClick(100, 170, 113, 190, , "Two", 107, 180) ; old 9mod
 		;Delay(1)
-		adbClick_wbb(41, 339)
+    adbClick_wbb(51, 297)
+		;adbClick_wbb(41, 339) ; old 9mod
 		Delay(1)
     }
 }
 
 SpeedmodDisableUnified() {
 	if(setSpeed > 1){ ;often redundant in code - can remove for each call of SpeedmodDisableUnified()
-        FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; click mod settings
-        FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; click mod settings
+        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) ; click mod settings
+        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180)  ; click mod settings
+        ;FindImageAndClick(25, 145, 70, 170, , "speedmodMenu", 18, 109, 2000) ; old 9mod
+        ;FindImageAndClick(9, 170, 25, 190, , "One", 26, 180) ; old 9mod
         ;Delay(1)
-        adbClick_wbb(41, 339)
+        adbClick_wbb(51, 297)
+        ;adbClick_wbb(41, 339) ; old 9mod
         Delay(1)
     }
 }
