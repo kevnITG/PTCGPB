@@ -100,7 +100,7 @@ Gui, Add, Button, x20 y610 w280 h20 gRefreshStatus Background%monokaiButton% c%m
 ; Utility Section
 Gui, Add, GroupBox, x320 y10 w200 h240 c%monokaiGroupTitle% Background%monokaiGroup%, Utilities
 Gui, Add, Button, x330 y30 w180 h30 gOpenProjectFolder Background%monokaiButton% c%monokaiText%, Open Project Folder
-Gui, Add, Button, x330 y65 w180 h30 gOpenLogsFolder Background%monokaiButton% c%monokaiText%, Open Logs Folder
+Gui, Add, Button, x330 y65 w180 h30 gArrangeWindows Background%monokaiButton% c%monokaiText%, Arrange Windows
 Gui, Add, Button, x330 y100 w180 h30 gToggleMonitor vToggleMonitor Background%monokaiButton% c%monokaiText%, Toggle Monitor.ahk
 baseButtonText["ToggleMonitor"] := "Toggle Monitor.ahk"
 Gui, Add, Button, x330 y135 w180 h30 gTogglePTCGPB vTogglePTCGPB Background%monokaiButton% c%monokaiText%, Toggle PTCGPB.ahk
@@ -323,9 +323,101 @@ OpenProjectFolder:
     Run, explorer.exe %A_ScriptDir%
 return
 
-OpenLogsFolder:
-    Run, explorer.exe %A_ScriptDir%\Logs
-return
+ArrangeWindows:
+    ; MuMuv5 := isMuMuv5()
+    MuMuv5 := 0
+
+    if (defaultLanguage = "Scale125") {
+       if (MuMuv5) {
+         scaleParam := 283
+	} else {
+         scaleParam := 277
+     }
+   }
+
+    windowsPositioned := 0
+
+    ; Initialize titleHeight based on MuMuv5
+    if (MuMuv5) {
+        titleHeight := 50
+    } else {
+        titleHeight := 45
+    }
+
+    if (runMain && Mains > 0) {
+       Loop %Mains% {
+          mainInstanceName := "Main" . (A_Index > 1 ? A_Index : "")
+          SetTitleMatchMode, 3
+          if (WinExist(mainInstanceName)) {
+             WinActivate, %mainInstanceName%
+             WinGetPos, curX, curY, curW, curH, %mainInstanceName%
+
+             SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+             SysGet, Monitor, Monitor, %SelectedMonitorIndex%
+
+             instanceIndex := A_Index
+             borderWidth := 4 - 1
+             rowHeight := titleHeight + 489 + 4
+             currentRow := Floor((instanceIndex - 1) / Columns)
+             y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
+             ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+ 			if (MuMuv5) {
+ 			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+ 			} else {
+ 			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+ 			}
+
+             WinMove, %mainInstanceName%,, %x%, %y%, %scaleParam%, %rowHeight%
+             WinSet, Redraw, , %mainInstanceName%
+
+             windowsPositioned++
+             sleep, 100
+          }
+       }
+    }
+
+    if (Instances > 0) {
+       Loop %Instances% {
+          SetTitleMatchMode, 3
+          windowTitle := A_Index
+
+          if (WinExist(windowTitle)) {
+             WinActivate, %windowTitle%
+             WinGetPos, curX, curY, curW, curH, %windowTitle%
+
+             SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+             SysGet, Monitor, Monitor, %SelectedMonitorIndex%
+
+             if (runMain) {
+                instanceIndex := (Mains - 1) + A_Index + 1
+             } else {
+                instanceIndex := A_Index
+             }
+
+             borderWidth := 4 - 1
+             rowHeight := titleHeight + 489 + 4
+             currentRow := Floor((instanceIndex - 1) / Columns)
+             y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
+             ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+ 			if (MuMuv5) {
+ 			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+ 			} else {
+ 			x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+ 			}
+
+             WinMove, %windowTitle%,, %x%, %y%, %scaleParam%, %rowHeight%
+             WinSet, Redraw, , %windowTitle%
+
+             windowsPositioned++
+             sleep, 100
+          }
+       }
+    }
+
+    if (debugMode && windowsPositioned == 0) {
+       MsgBox, 0x40000,, No windows found to arrange
+    }
+ return
 
 ToggleMonitor:
     
