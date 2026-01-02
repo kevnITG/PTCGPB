@@ -2971,7 +2971,8 @@ CheckForUpdate() {
       
       updateAvailable := "Update Available: "
       latestDownloaad := "Download Latest Version?"
-      MsgBox, 262148, %updateAvailable% %latestVersion%, %releaseNotes%`n`nDo you want to download the latest version?
+      warnMessages := "(You're using a forked version, so this may break things. I advise checking the forked github repo.)"
+      MsgBox, 262148, %updateAvailable% %latestVersion%, %releaseNotes%`n`nDo you want to download the latest version? %warnMessages%
       
       IfMsgBox, Yes
       {
