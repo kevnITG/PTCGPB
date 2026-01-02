@@ -325,6 +325,7 @@ return
 
 ArrangeWindows:
     ; MuMuv5 := isMuMuv5()
+    LoadSettingsFromIni()
     MuMuv5 := 0
 
     if (defaultLanguage = "Scale125") {
@@ -959,4 +960,205 @@ killFreezeMuMuBackgroundService() {
             }
         }
     }
+}
+
+LoadSettingsFromIni() {
+   global
+   if (FileExist("Settings.ini")) {
+      IniRead, useAdbManager, Settings.ini, UserSettings, useAdbManager, 0
+      IniRead, IsLanguageSet, Settings.ini, UserSettings, IsLanguageSet, 1
+      IniRead, defaultBotLanguage, Settings.ini, UserSettings, defaultBotLanguage, 1
+      IniRead, BotLanguage, Settings.ini, UserSettings, BotLanguage, English
+      
+      IniRead, shownLicense, Settings.ini, UserSettings, shownLicense, 0
+      IniRead, currentfont, Settings.ini, UserSettings, currentfont, segoe UI
+      IniRead, FontColor, Settings.ini, UserSettings, FontColor, FDFDFD
+      IniRead, CurrentTheme, Settings.ini, UserSettings, CurrentTheme, Dark
+      
+      IniRead, FriendID, Settings.ini, UserSettings, FriendID, ""
+      IniRead, Instances, Settings.ini, UserSettings, Instances, 1
+      IniRead, instanceStartDelay, Settings.ini, UserSettings, instanceStartDelay, 10
+      IniRead, Columns, Settings.ini, UserSettings, Columns, 5
+      IniRead, runMain, Settings.ini, UserSettings, runMain, 1
+      IniRead, Mains, Settings.ini, UserSettings, Mains, 1
+      IniRead, AccountName, Settings.ini, UserSettings, AccountName, ""
+      IniRead, autoLaunchMonitor, Settings.ini, UserSettings, autoLaunchMonitor, 1
+      IniRead, TestTime, Settings.ini, UserSettings, TestTime, 3600
+      IniRead, Delay, Settings.ini, UserSettings, Delay, 250
+      IniRead, waitTime, Settings.ini, UserSettings, waitTime, 5
+      IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 500
+      IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 1 ; default is now OFF for no-mod-menu support
+      
+      IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
+      IniRead, SelectedMonitorDeviceName, Settings.ini, UserSettings, SelectedMonitorDeviceName, "\\.\DISPLAY1"
+      IniRead, defaultLanguage, Settings.ini, UserSettings, defaultLanguage, Scale125
+      if (defaultLanguage = "Scale100") defaultLanguage := "Scale125"
+      IniRead, rowGap, Settings.ini, UserSettings, rowGap, 90
+      IniRead, folderPath, Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
+      IniRead, ocrLanguage, Settings.ini, UserSettings, ocrLanguage, en
+      IniRead, clientLanguage, Settings.ini, UserSettings, clientLanguage, en
+      IniRead, instanceLaunchDelay, Settings.ini, UserSettings, instanceLaunchDelay, 2
+      
+      IniRead, tesseractPath, Settings.ini, UserSettings, tesseractPath, C:\Program Files\Tesseract-OCR\tesseract.exe
+      IniRead, debugMode, Settings.ini, UserSettings, debugMode, 0
+      IniRead, useTesseract, Settings.ini, UserSettings, tesseractOption, 0
+      IniRead, statusMessage, Settings.ini, UserSettings, statusMessage, 1
+      
+      IniRead, minStars, Settings.ini, UserSettings, minStars, 0
+      IniRead, minStarsShiny, Settings.ini, UserSettings, minStarsShiny, 0
+      IniRead, minStarsEnabled, Settings.ini, UserSettings, minStarsEnabled, 0
+
+      IniRead, packMethod, Settings.ini, UserSettings, packMethod, 0
+      IniRead, nukeAccount, Settings.ini, UserSettings, nukeAccount, 0
+      nukeAccount := 0 ; forced to always be disabled
+      IniRead, spendHourGlass, Settings.ini, UserSettings, spendHourGlass, 0
+      IniRead, openExtraPack, Settings.ini, UserSettings, openExtraPack, 0
+      IniRead, injectSortMethod, Settings.ini, UserSettings, injectSortMethod, PacksDesc
+      IniRead, godPack, Settings.ini, UserSettings, godPack, Continue
+      IniRead, claimSpecialMissions, Settings.ini, UserSettings, claimSpecialMissions, 0
+      ; Force claimSpecialMissions to always be 0
+      claimSpecialMissions := 0
+      IniWrite, %claimSpecialMissions%, Settings.ini, UserSettings, claimSpecialMissions
+      IniRead, claimDailyMission, Settings.ini, UserSettings, claimDailyMission, 0
+      IniRead, wonderpickForEventMissions, Settings.ini, UserSettings, wonderpickForEventMissions, 0
+      ; wonderpickForEventMissions := 0 ; forced turned off during Sneak Peek for now...
+      IniRead, checkWPthanks, Settings.ini, UserSettings, checkWPthanks, 0
+      
+      IniRead, Palkia, Settings.ini, UserSettings, Palkia, 0
+      IniRead, Dialga, Settings.ini, UserSettings, Dialga, 0
+      IniRead, Arceus, Settings.ini, UserSettings, Arceus, 0
+      IniRead, Shining, Settings.ini, UserSettings, Shining, 0
+      IniRead, Mew, Settings.ini, UserSettings, Mew, 0
+      IniRead, Pikachu, Settings.ini, UserSettings, Pikachu, 0
+      IniRead, Charizard, Settings.ini, UserSettings, Charizard, 0
+      IniRead, Mewtwo, Settings.ini, UserSettings, Mewtwo, 0
+      IniRead, Solgaleo, Settings.ini, UserSettings, Solgaleo, 0
+      IniRead, Lunala, Settings.ini, UserSettings, Lunala, 0
+      IniRead, Buzzwole, Settings.ini, UserSettings, Buzzwole, 0
+      IniRead, Eevee, Settings.ini, UserSettings, Eevee, 0
+      IniRead, HoOh, Settings.ini, UserSettings, HoOh, 0
+      IniRead, Lugia, Settings.ini, UserSettings, Lugia, 0
+      IniRead, Springs, Settings.ini, UserSettings, Springs, 0
+      IniRead, Deluxe, Settings.ini, UserSettings, Deluxe, 0
+      IniRead, CrimsonBlaze, Settings.ini, UserSettings, CrimsonBlaze, 1
+      IniRead, MegaGyarados, Settings.ini, UserSettings, MegaGyarados, 0
+      IniRead, MegaBlaziken, Settings.ini, UserSettings, MegaBlaziken, 0
+      IniRead, MegaAltaria, Settings.ini, UserSettings, MegaAltaria, 0
+      
+      IniRead, CheckShinyPackOnly, Settings.ini, UserSettings, CheckShinyPackOnly, 0
+      IniRead, TrainerCheck, Settings.ini, UserSettings, TrainerCheck, 0
+      IniRead, FullArtCheck, Settings.ini, UserSettings, FullArtCheck, 0
+      IniRead, RainbowCheck, Settings.ini, UserSettings, RainbowCheck, 0
+      IniRead, ShinyCheck, Settings.ini, UserSettings, ShinyCheck, 0
+      IniRead, CrownCheck, Settings.ini, UserSettings, CrownCheck, 0
+      IniRead, ImmersiveCheck, Settings.ini, UserSettings, ImmersiveCheck, 0
+      IniRead, InvalidCheck, Settings.ini, UserSettings, InvalidCheck, 0
+      IniRead, PseudoGodPack, Settings.ini, UserSettings, PseudoGodPack, 0
+      
+      ; Start users with s4t enabled so they don't have to know to manually check it. Also pre-enabling all 2star and up cards.
+      IniRead, s4tEnabled, Settings.ini, UserSettings, s4tEnabled, 1
+      IniRead, s4tSilent, Settings.ini, UserSettings, s4tSilent, 0
+        s4tSilent := 0 ; always disable, removing feature for now. -Kevin
+      IniRead, s4t3Dmnd, Settings.ini, UserSettings, s4t3Dmnd, 0
+      IniRead, s4t4Dmnd, Settings.ini, UserSettings, s4t4Dmnd, 0
+      IniRead, s4t1Star, Settings.ini, UserSettings, s4t1Star, 0
+      IniRead, s4tGholdengo, Settings.ini, UserSettings, s4tGholdengo, 0
+      IniRead, s4tTrainer, Settings.ini, UserSettings, s4tTrainer, 1
+      IniRead, s4tRainbow, Settings.ini, UserSettings, s4tRainbow, 1
+      IniRead, s4tFullArt, Settings.ini, UserSettings, s4tFullArt, 1
+      IniRead, s4tCrown, Settings.ini, UserSettings, s4tCrown, 1
+      IniRead, s4tImmersive, Settings.ini, UserSettings, s4tImmersive, 1
+      IniRead, s4tShiny1Star, Settings.ini, UserSettings, s4tShiny1Star, 0
+      IniRead, s4tShiny2Star, Settings.ini, UserSettings, s4tShiny2Star, 1
+      IniRead, s4tWP, Settings.ini, UserSettings, s4tWP, 0
+      IniRead, s4tWPMinCards, Settings.ini, UserSettings, s4tWPMinCards, 1
+      IniRead, s4tDiscordWebhookURL, Settings.ini, UserSettings, s4tDiscordWebhookURL, ""
+      IniRead, s4tDiscordUserId, Settings.ini, UserSettings, s4tDiscordUserId, ""
+      IniRead, s4tSendAccountXml, Settings.ini, UserSettings, s4tSendAccountXml, 0
+      IniRead, ocrShinedust, Settings.ini, UserSettings, ocrShinedust, 0
+      
+      IniRead, DiscordWebhookURL, Settings.ini, UserSettings, DiscordWebhookURL, ""
+      IniRead, DiscordUserId, Settings.ini, UserSettings, DiscordUserId, ""
+      IniRead, heartBeat, Settings.ini, UserSettings, heartBeat, 0
+      IniRead, heartBeatWebhookURL, Settings.ini, UserSettings, heartBeatWebhookURL, ""
+      IniRead, heartBeatName, Settings.ini, UserSettings, heartBeatName, ""
+      IniRead, heartBeatDelay, Settings.ini, UserSettings, heartBeatDelay, 30
+      IniRead, sendAccountXml, Settings.ini, UserSettings, sendAccountXml, 0
+      
+      IniRead, groupRerollEnabled, Settings.ini, UserSettings, groupRerollEnabled, 0
+      IniRead, mainIdsURL, Settings.ini, UserSettings, mainIdsURL, ""
+      IniRead, vipIdsURL, Settings.ini, UserSettings, vipIdsURL, ""
+      IniRead, showcaseEnabled, Settings.ini, UserSettings, showcaseEnabled, 0
+      IniRead, showcaseLikes, Settings.ini, UserSettings, showcaseLikes, 5
+      IniRead, autoUseGPTest, Settings.ini, UserSettings, autoUseGPTest, 0
+      IniRead, applyRoleFilters, Settings.ini, UserSettings, applyRoleFilters, 0
+	  
+	  IniRead, ClaimGiftsPacks, Settings.ini, UserSettings, ClaimGiftsPacks, 0
+
+      IniRead, minStarsA1Charizard, Settings.ini, UserSettings, minStarsA1Charizard, 0
+      IniRead, minStarsA1Mewtwo, Settings.ini, UserSettings, minStarsA1Mewtwo, 0
+      IniRead, minStarsA1Pikachu, Settings.ini, UserSettings, minStarsA1Pikachu, 0
+      IniRead, minStarsA1a, Settings.ini, UserSettings, minStarsA1a, 0
+      IniRead, minStarsA2Dialga, Settings.ini, UserSettings, minStarsA2Dialga, 0
+      IniRead, minStarsA2Palkia, Settings.ini, UserSettings, minStarsA2Palkia, 0
+      IniRead, minStarsA2a, Settings.ini, UserSettings, minStarsA2a, 0
+      IniRead, minStarsA3Solgaleo, Settings.ini, UserSettings, minStarsA3Solgaleo, 0
+      IniRead, minStarsA3Lunala, Settings.ini, UserSettings, minStarsA3Lunala, 0
+      IniRead, minStarsA3a, Settings.ini, UserSettings, minStarsA3a, 0
+      IniRead, minStarsA3b, Settings.ini, UserSettings, minStarsA3b, 0
+      IniRead, minStarsA4HoOh, Settings.ini, UserSettings, minStarsA4HoOh, 0
+      IniRead, minStarsA4Lugia, Settings.ini, UserSettings, minStarsA4Lugia, 0
+      IniRead, minStarsA4Springs, Settings.ini, UserSettings, minStarsA4Springs, 0
+      IniRead, minStarsA4Deluxe, Settings.ini, UserSettings, minStarsA4Deluxe, 0
+      IniRead, minStarsCrimsonBlaze, Settings.ini, UserSettings, minStarsCrimsonBlaze, 0
+      IniRead, minStarsMegaGyarados, Settings.ini, UserSettings, minStarsMegaGyarados, 0
+      IniRead, minStarsMegaBlaziken, Settings.ini, UserSettings, minStarsMegaBlaziken, 0
+      IniRead, minStarsMegaAltaria, Settings.ini, UserSettings, minStarsMegaAltaria, 0
+      
+      IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
+      IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
+      IniRead, menuExpanded, Settings.ini, UserSettings, menuExpanded, True
+      
+      if (!IsNumeric(Instances))
+         Instances := 1
+      if (!IsNumeric(Columns) || Columns < 1)
+         Columns := 5
+      if (!IsNumeric(waitTime))
+         waitTime := 5
+      if (!IsNumeric(Delay) || Delay < 10)
+         Delay := 250
+      if (s4tWPMinCards < 1 || s4tWPMinCards > 2)
+         s4tWPMinCards := 1
+         
+      validMethods := "Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+"
+      if (!InStr(validMethods, deleteMethod)) {
+         deleteMethod := "Create Bots (13P)"
+         IniWrite, %deleteMethod%, Settings.ini, UserSettings, deleteMethod
+      }
+
+      ; clear card detection when not wonderpicking
+      if (deleteMethod != "Inject Wonderpick 96P+") {
+         FullArtCheck := 0
+         TrainerCheck := 0
+         RainbowCheck := 0
+         PseudoGodPack := 0
+         CheckShinyPackOnly := 0
+         InvalidCheck := 0
+         CrownCheck := 0
+         ShinyCheck := 0
+         ImmersiveCheck := 0
+         minStars := 0
+         minStarsShiny := 0
+      }
+
+      return true
+   } else {
+      return false
+   }
+}
+
+IsNumeric(var) {
+   if var is number
+      return true
+   return false
 }
