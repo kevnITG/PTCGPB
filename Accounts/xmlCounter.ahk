@@ -66,7 +66,7 @@ AnalyzeDirectory(DirectoryPath) {
         SplitPath, FilePath, FileName
         
         ; Parse filename using regex pattern: (\d+)P(_\d+)+(\([A-Za-z]+\))*(.*\.xml)
-        if RegExMatch(FileName, "^(\d+)P(_\d+)+(\([A-Za-z]+\))*(.*\.xml)$", Match) {
+        if RegExMatch(FileName, "^(\d+)P.*\.xml$", Match) {
             PackNumber := Match1 + 0  ; Convert to number
             
             if (PackNumber >= 96) {
