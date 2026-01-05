@@ -20,7 +20,9 @@ Accounts/Saved/**/*.xml
 Accounts/Trades/*.csv
 Accounts/Trades/*.json
 Accounts/*.xml
-Accounts/*.XML
+Accounts/*/*.xml
+Scripts/temp/*.png
+Scripts/*.png
 
 # macOS metadata files
 ._*
@@ -35,3 +37,4 @@ Accounts/*.XML
 .vscode/settings.json
 /Accounts/Saved/tmp
 /DebugScripts
+
