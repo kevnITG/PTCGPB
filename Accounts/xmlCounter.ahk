@@ -66,7 +66,7 @@ AnalyzeDirectory(DirectoryPath) {
         SplitPath, FilePath, FileName
         
         ; Parse filename using regex pattern: (\d+)P(_\d+)+(\([A-Za-z]+\))*(.*\.xml)
-        if RegExMatch(FileName, "^(\d+)P.*\.xml$", Match) {
+        if RegExMatch(FileName, "i)^(\d+)P.*\.xml$", Match) {
             PackNumber := Match1 + 0  ; Convert to number
             
             if (PackNumber >= 96) {
@@ -113,7 +113,7 @@ FindXMLFiles(Directory, ByRef FileArray) {
 }
 
 ShowSummary(Result) {
-    Gui, Summary:New
+    Gui, Summary:New, +LastFound
     Gui, Font, s10, Consolas
 
     Message := "=== XML Account Summary ===`n`n"
@@ -188,6 +188,9 @@ ShowSummary(Result) {
 
     Gui, Add, Edit, w600 h500 ReadOnly, %Message%
     Gui, Show, , Account Summary
+    return
+    SummaryGuiClose:
+    ExitApp
 }
 
 SortRanges(a, b) {
