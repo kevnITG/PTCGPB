@@ -99,44 +99,11 @@ if (InStr(defaultLanguage, "100")) {
 }
 
 resetWindows()
-MaxRetries := 10
-RetryCount := 0
-Loop {
-    try {
-        WinGetPos, x, y, Width, Height, %winTitle%
-        sleep, 2000
-        ;Winset, Alwaysontop, On, %winTitle%
-        OwnerWND := WinExist(winTitle)
-        x4 := x + 4
-        y4 := y + Height - 4 + 2
-        buttonWidth := 45
+global ButtonGUICreated := false
+global ButtonGUIName
 
-        Gui, ToolBar:New, +Owner%OwnerWND% -AlwaysOnTop +ToolWindow -Caption +LastFound -DPIScale 
-        Gui, ToolBar:Default
-        Gui, ToolBar:Margin, 4, 4  ; Set margin for the GUI
-        Gui, ToolBar:Font, s5 cGray Norm Bold, Segoe UI  ; Normal font for input labels
-        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 0) . " y0 w" . buttonWidth . " h25 gReloadScript", Reload  (Shift+F5)
-        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 1) . " y0 w" . buttonWidth . " h25 gPauseScript", Pause (Shift+F6)
-        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 2) . " y0 w" . buttonWidth . " h25 gResumeScript", Resume (Shift+F6)
-        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 3) . " y0 w" . buttonWidth . " h25 gStopScript", Stop (Shift+F7)
-        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 4) . " y0 w" . buttonWidth . " h25 gShowStatusMessages", Status (Shift+F8)
-        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 5) . " y0 w" . buttonWidth . " h25 gTestScript", GP Test (Shift+F9)
-        DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1  ; HWND_BOTTOM
-                , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
-        Gui, ToolBar:Show, NoActivate x%x4% y%y4%  w275 h30
-        break
-    }
-    catch {
-        RetryCount++
-        if (RetryCount >= MaxRetries) {
-            CreateStatusMessage("Failed to create button GUI.",,,, false)
-            break
-        }
-        Sleep, 1000
-    }
-    Sleep, %Delay%
-    CreateStatusMessage("Creating button GUI...",,,, false)
-}
+CreateButtonGUI()
+SetTimer, UpdateButtonGUIPosition, 2000
 
 rerollTime := A_TickCount
 autotest := A_TickCount
@@ -1394,4 +1361,73 @@ Gdip_ImageSearch_wbb(pBitmapHaystack,pNeedle,ByRef OutputList=""
     if(dbg_bbox)
         bboxAndPause_immage(OuterX1, OuterY1+yBias, OuterX2, OuterY2+yBias, pNeedle, vret, dbg_bboxNpause)
     return vret
+}
+
+CreateButtonGUI() {
+    global ButtonGUICreated, winTitle, ButtonGUIName
+
+    if (ButtonGUICreated)
+        return
+
+    ButtonGUIName := "ToolBar"
+
+    RetryCount := 0
+    MaxRetries := 10
+
+    Loop {
+        try {
+            WinGetPos, x, y, Width, Height, %winTitle%
+            OwnerWND := WinExist(winTitle)
+
+            x4 := x + 4
+            y4 := y + Height - 4 + 2
+
+            buttonWidth := 45
+
+            Gui, %ButtonGUIName%:Destroy                     ; safety in case of recreate
+            Gui, %ButtonGUIName%:New, +Owner%OwnerWND% -AlwaysOnTop +ToolWindow -Caption +LastFound -DPIScale
+            Gui, %ButtonGUIName%:Default
+            Gui, Margin, 4, 4
+            Gui, Font, s5 cGray Norm Bold, Segoe UI
+
+            Gui, Add, Button, % "x" . (buttonWidth * 0) . " y0 w" . buttonWidth . " h25 gReloadScript",      Reload  (Shift+F5)
+            Gui, Add, Button, % "x" . (buttonWidth * 1) . " y0 w" . buttonWidth . " h25 gPauseScript",       Pause (Shift+F6)
+            Gui, Add, Button, % "x" . (buttonWidth * 2) . " y0 w" . buttonWidth . " h25 gResumeScript",      Resume (Shift+F6)
+            Gui, Add, Button, % "x" . (buttonWidth * 3) . " y0 w" . buttonWidth . " h25 gStopScript",        Stop (Shift+F7)
+            Gui, Add, Button, % "x" . (buttonWidth * 4) . " y0 w" . buttonWidth . " h25 gShowStatusMessages",Status (Shift+F8)
+            Gui, Add, Button, % "x" . (buttonWidth * 5) . " y0 w" . buttonWidth . " h25 gTestScript",        GP Test (Shift+F9)
+
+            hwnd := WinExist()  ; from +LastFound
+            DllCall("SetWindowPos", "Ptr", hwnd, "Ptr", 1, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)
+
+            Gui, %ButtonGUIName%:Show, NoActivate x%x4% y%y4% w275 h30
+
+            ButtonGUICreated := true
+            CreateStatusMessage("Button GUI created.")
+            return
+        }
+        catch {
+            RetryCount++
+            if (RetryCount >= MaxRetries) {
+                CreateStatusMessage("Failed to create button GUI.",,,, false)
+                return
+            }
+            Sleep, 1000
+        }
+        Sleep, 1000
+    }
+}
+
+UpdateButtonGUIPosition() {
+    global ButtonGUICreated, ButtonGUIName, winTitle
+
+    if (!ButtonGUICreated || !WinExist(winTitle))
+        return
+
+    WinGetPos, x, y, Width, Height, %winTitle%
+
+    newX := x + 4
+    newY := y + Height - 4 + 2
+
+    Gui, %ButtonGUIName%:Show, NoActivate x%newX% y%newY% w275 h30
 }
