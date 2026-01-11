@@ -3992,16 +3992,19 @@ GetEventRewards(frommain := true){
     adbClick(139,465) ;Important - clicks the center-most mission first.
     Delay(2)
 
-    ;====== Click through missions menus ======
+    ;====== Generic mission clicks, if only 1 mission is going on ======
     ; pick ONE of these click locations based upon which events are currently going on.
     ; adbClick_wbb(120, 465) ; used to click the middle mission button
     ; adbClick_wbb(25, 465) ;used to click the left-most mission button
 
-    ;====== Water Mission / Wonder Pick Event 12.7.2025 ======
+    ;====== Special Event CLaim ======
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
-        if (FindOrLoseImage(199, 203, 212, 211, , "MissionWater", 0, failSafeTime)){
+        ;if (FindOrLoseImage(199, 203, 212, 211, , "MissionWater", 0, failSafeTime)){
+        ;    break
+        ;}
+        if (FindOrLoseImage(199, 203, 212, 211, , "MissionOliveGreen", 0, failSafeTime)){
             break
         }
         adbClick_wbb(6, 465) ; used to scroll to other missions further left.
@@ -4043,138 +4046,6 @@ GetEventRewards(frommain := true){
             return
         }
     }
-
-    ;====== First Anniversary Celebration SpecialMissions pt2 ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        if (FindOrLoseImage(223, 179, 231, 187, , "FirstAnniversaryCelebration", 0, failSafeTime)){
-            break
-        }
-        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-        Sleep, 750
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-    ; ====== Collect all rewards ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        adbClick_wbb(172, 427) ;clicks complete all and ok
-        Sleep, 1500
-        adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
-        Sleep, 1500
-        if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
-            break
-        }
-        if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
-            break
-        }
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-        ;====== First Anniversary Celebration SpecialMissions pt1 ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-        Sleep, 750
-        if (FindOrLoseImage(223, 179, 231, 187, , "FirstAnniversaryCelebration", 0, failSafeTime)){
-            break
-        }
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-    ; ====== Collect all rewards ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        adbClick_wbb(172, 427) ;clicks complete all and ok
-        Sleep, 1500
-        adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
-        Sleep, 1500
-        if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
-            break
-        }
-        if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
-            break
-        }
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-    /*     ;====== Click through missions menus ======
-        ; pick ONE of these click locations based upon which events are currently going on.
-        ; adbClick_wbb(120, 465) ; used to click the middle mission button
-        ; adbClick_wbb(25, 465) ;used to click the left-most mission button
-
-        ; This entire section is specific to "Bonus Week" missions
-        failSafe := A_TickCount
-        failSafeTime := 0
-        Loop{
-            adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-            Sleep, 1500
-            if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
-                break
-            }
-            else if (failSafeTime > 10){
-                break
-            }
-            failSafeTime := (A_TickCount - failSafe) // 1000
-        }
-
-        ; ====== Collect all rewards ======
-        failSafe := A_TickCount
-        failSafeTime := 0
-        Loop{
-            adbClick_wbb(172, 427) ;clicks complete all and ok
-            Sleep, 1500
-            adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
-            Sleep, 1500
-            if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
-                break
-            }
-            else if (failSafeTime > 15){
-                GotRewards := false
-                break
-            }
-            failSafeTime := (A_TickCount - failSafe) // 1000
-        }
     */
 
     GoToMain()
