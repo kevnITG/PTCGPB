@@ -3177,15 +3177,15 @@ SelectPack(HG := false) {
     inselectexpansionscreen := 0
 
     packy := HomeScreenAllPackY
-    if (openPack == "MegaBlaziken") {
-        packx := RightPackX
-    } else if (openPack == "Springs") {
+    if (openPack == "Deluxe") {
         packx := LeftPackX
+    } else if (openPack == "MegaBlaziken") {
+        packx := RightPackX
     } else { ; do not set this to a specific if openPack == "something" as all packs need to reference MiddlePackX as pack position.
         packx := MiddlePackX
     }
 
-    if(openPack == "CrimsonBlaze" || openPack == "MegaBlaziken" || openPack == "Springs") {
+    if(openPack == "CrimsonBlaze" || openPack == "MegaBlaziken" || openPack == "Deluxe") {
         PackIsInHomeScreen := 1
     } else {
         PackIsInHomeScreen := 0
@@ -3274,11 +3274,14 @@ SelectPack(HG := false) {
 
     if(inselectexpansionscreen) {
         ; packs that can be opened after clicking A series
-        if (openPack = "Springs" || openPack = "HoOh" || openPack = "Lugia" || openPack = "Eevee") {
+        if (openPack = "Springs" || openPack == "Deluxe" || openPack = "HoOh" || openPack = "Lugia" || openPack = "Eevee") {
             Delay(4)
 
             if (openPack == "Springs") {
                 packx := SelectExpansionRightColumnMiddleX
+                packy := 298
+            } else if (openPack == "Deluxe") {
+                packx := SelectExpansionLeftColumnMiddleX
                 packy := 298
             } else if (openPack == "HoOh") {
                 packx := SelectExpansionLeftColumnMiddleX + 2PackExpansionLeft
