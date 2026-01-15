@@ -565,8 +565,8 @@ ShowPackSelection:
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (MegaAltaria ? "Checked" : "") " vMegaAltaria_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaAltaria
     yPos += 25
-    ; Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Deluxe
-    ; yPos += 25    
+    Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Deluxe
+    yPos += 25    
     Gui, PackSelect:Add, Checkbox, % (Springs ? "Checked" : "") " vSprings_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Springs
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (HoOh ? "Checked" : "") " vHoOh_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_HoOh
@@ -1415,7 +1415,7 @@ Save:
    s4tWPMinCards := 1
   }
 
-  Deluxe := 0 ; Turn off Deluxe for all users now that pack is removed
+  ; Deluxe := 0 ; Turn off Deluxe for all users once that pack is removed
   
   SaveAllSettings()
   
@@ -1924,12 +1924,12 @@ LoadSettingsFromIni() {
       IniRead, injectSortMethod, Settings.ini, UserSettings, injectSortMethod, PacksDesc
       IniRead, godPack, Settings.ini, UserSettings, godPack, Continue
       IniRead, claimSpecialMissions, Settings.ini, UserSettings, claimSpecialMissions, 0
-      ; Force claimSpecialMissions to always be 0 when event is not active.
+      ; Force claimSpecialMissions to always be 0
       ; claimSpecialMissions := 0
       IniWrite, %claimSpecialMissions%, Settings.ini, UserSettings, claimSpecialMissions
       IniRead, claimDailyMission, Settings.ini, UserSettings, claimDailyMission, 0
       IniRead, wonderpickForEventMissions, Settings.ini, UserSettings, wonderpickForEventMissions, 0
-      ; wonderpickForEventMissions := 0 ; forced to be 0 if Sneak Peek event is breaking things.
+      ; wonderpickForEventMissions := 0 ; forced turned off during Sneak Peek for now...
       IniRead, checkWPthanks, Settings.ini, UserSettings, checkWPthanks, 0
       
       IniRead, Palkia, Settings.ini, UserSettings, Palkia, 0
@@ -1947,8 +1947,8 @@ LoadSettingsFromIni() {
       IniRead, HoOh, Settings.ini, UserSettings, HoOh, 0
       IniRead, Lugia, Settings.ini, UserSettings, Lugia, 0
       IniRead, Springs, Settings.ini, UserSettings, Springs, 0
-      IniRead, Deluxe, Settings.ini, UserSettings, Deluxe, 0
-      IniRead, CrimsonBlaze, Settings.ini, UserSettings, CrimsonBlaze, 1
+      IniRead, Deluxe, Settings.ini, UserSettings, Deluxe, 1
+      IniRead, CrimsonBlaze, Settings.ini, UserSettings, CrimsonBlaze, 0
       IniRead, MegaGyarados, Settings.ini, UserSettings, MegaGyarados, 0
       IniRead, MegaBlaziken, Settings.ini, UserSettings, MegaBlaziken, 0
       IniRead, MegaAltaria, Settings.ini, UserSettings, MegaAltaria, 0
@@ -2233,9 +2233,8 @@ SaveAllSettings() {
    iniContent .= "heartBeat=" heartBeat "`n"
    iniContent .= "menuExpanded=" menuExpanded "`n"
    iniContent .= "groupRerollEnabled=" groupRerollEnabled "`n"
-   iniContent .= "claimSpecialMissions=" claimSpecialMissions "`n"
-   ; Force claimSpecialMissions to always be 0 when no event is active.
-   ; iniContent .= "claimSpecialMissions=0`n"
+   ; Force claimSpecialMissions to always be 0
+   iniContent .= "claimSpecialMissions=0`n"
    iniContent .= "claimDailyMission=" claimDailyMission "`n"
    iniContent .= "wonderpickForEventMissions=" wonderpickForEventMissions "`n"
    iniContent .= "checkWPthanks=" checkWPthanks "`n"
