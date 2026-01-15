@@ -2020,7 +2020,7 @@ CheckPack() {
     if (!currentPackIs4Card) {
         currentPackIs6Card := DetectSixCardPack()
     }
-    
+
     ; Wait for cards to render before checking.
     Loop {
         if (FindBorders("lag") = 0)
