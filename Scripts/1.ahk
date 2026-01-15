@@ -3175,10 +3175,10 @@ SelectPack(HG := false) {
     inselectexpansionscreen := 0
 
     packy := HomeScreenAllPackY
-    if (openPack == "CrimsonBlaze") {
-        packx := RightPackX
-    } else if (openPack == "MegaBlaziken") {
+    if (openPack == "Deluxe") {
         packx := LeftPackX
+    } else if (openPack == "MegaBlaziken") {
+        packx := RightPackX
     } else { ; do not set this to a specific if openPack == "something" as all packs need to reference MiddlePackX as pack position.
         packx := MiddlePackX
     }
@@ -3189,7 +3189,7 @@ SelectPack(HG := false) {
         PackIsInHomeScreen := 0
     }
 
-    if(openPack == "Deluxe") {
+    if(openPack == "CrimsonBlaze") {
         PackIsLatest := 1
     } else {
         PackIsLatest := 0
@@ -3272,7 +3272,7 @@ SelectPack(HG := false) {
 
     if(inselectexpansionscreen) {
         ; packs that can be opened after clicking A series
-        if (openPack = "Springs" || openPack == "Deluxe" openPack = "HoOh" || openPack = "Lugia" || openPack = "Eevee") {
+        if (openPack = "Springs" || openPack == "Deluxe" || openPack = "HoOh" || openPack = "Lugia" || openPack = "Eevee") {
             Delay(4)
 
             if (openPack == "Springs") {
@@ -3941,244 +3941,6 @@ SpendAllHourglass() {
         if(cantOpenMorePacks || (!friendIDs && friendID = "" && accountOpenPacks >= maxAccountPackNum))
             break
     }
-}
-
-; For Special Missions 2025
-GetEventRewards(frommain := true){
-    swipeSpeed := 300
-    adbSwipeX3 := Round(211 / 277 * 535)
-    adbSwipeX4 := Round(11 / 277 * 535)
-    adbSwipeY2 := Round((453 - 44) / 489 * 960)
-    adbSwipeParams2 := adbSwipeX3 . " " . adbSwipeY2 . " " . adbSwipeX4 . " " . adbSwipeY2 . " " . swipeSpeed
-    if (frommain){
-        failSafe := A_TickCount
-        failSafeTime := 0
-        Loop {
-            adbClick(261, 478)
-            Sleep, 1000
-            if FindOrLoseImage(15, 456, 18, 473, , "Missions", 0, failSafeTime)
-                break
-            if FindOrLoseImage(18, 215, 30, 227, , "DexMissions", 0, failSafeTime)
-                break
-            if FindOrLoseImage(204, 195, 223, 202, , "DailyMissions", 0, failSafeTime)
-                break
-            failSafeTime := (A_TickCount - failSafe) // 1000
-            if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-                HandleMissionDeckFailsafe()
-                return
-            }
-        }
-    }
-    Delay(4)
-
-    LevelUp()
-
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        adbSwipe(adbSwipeParams2)
-        Sleep, 200
-        if (FindOrLoseImage(225, 444, 272, 470, , "Premium", 0, failSafeTime)){
-            break
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        CreateStatusMessage("Waiting for PremiumMissions`n(" . failSafeTime . "/45 seconds)")
-        Delay(1)
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-    adbClick(139,465) ;Important - clicks the center-most mission first.
-    Delay(2)
-
-    ;====== Click through missions menus ======
-    ; pick ONE of these click locations based upon which events are currently going on.
-    ; adbClick_wbb(120, 465) ; used to click the middle mission button
-    ; adbClick_wbb(25, 465) ;used to click the left-most mission button
-
-    ;====== Water Mission / Wonder Pick Event 12.7.2025 ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        if (FindOrLoseImage(199, 203, 212, 211, , "MissionWater", 0, failSafeTime)){
-            break
-        }
-        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-        Delay(4)
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-    ; ====== Collect all rewards ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        adbClick_wbb(172, 427) ;clicks complete all and ok
-        Sleep, 1500
-        adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
-        Sleep, 1500
-        if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
-            break
-        }
-        if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
-            break
-        }
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-    ;====== First Anniversary Celebration SpecialMissions pt2 ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        if (FindOrLoseImage(223, 179, 231, 187, , "FirstAnniversaryCelebration", 0, failSafeTime)){
-            break
-        }
-        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-        Sleep, 750
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-    ; ====== Collect all rewards ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        adbClick_wbb(172, 427) ;clicks complete all and ok
-        Sleep, 1500
-        adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
-        Sleep, 1500
-        if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
-            break
-        }
-        if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
-            break
-        }
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-        ;====== First Anniversary Celebration SpecialMissions pt1 ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-        Sleep, 750
-        if (FindOrLoseImage(223, 179, 231, 187, , "FirstAnniversaryCelebration", 0, failSafeTime)){
-            break
-        }
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-    ; ====== Collect all rewards ======
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop{
-        adbClick_wbb(172, 427) ;clicks complete all and ok
-        Sleep, 1500
-        adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
-        Sleep, 1500
-        if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
-            break
-        }
-        if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
-            break
-        }
-        if (failSafeTime > 10){
-            adbInput("111")
-            Sleep, 1000
-            return
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
-            HandleMissionDeckFailsafe()
-            return
-        }
-    }
-
-    /*     ;====== Click through missions menus ======
-        ; pick ONE of these click locations based upon which events are currently going on.
-        ; adbClick_wbb(120, 465) ; used to click the middle mission button
-        ; adbClick_wbb(25, 465) ;used to click the left-most mission button
-
-        ; This entire section is specific to "Bonus Week" missions
-        failSafe := A_TickCount
-        failSafeTime := 0
-        Loop{
-            adbClick_wbb(6, 465) ; used to scroll to other missions further left.
-            Sleep, 1500
-            if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
-                break
-            }
-            else if (failSafeTime > 10){
-                break
-            }
-            failSafeTime := (A_TickCount - failSafe) // 1000
-        }
-
-        ; ====== Collect all rewards ======
-        failSafe := A_TickCount
-        failSafeTime := 0
-        Loop{
-            adbClick_wbb(172, 427) ;clicks complete all and ok
-            Sleep, 1500
-            adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
-            Sleep, 1500
-            if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
-                break
-            }
-            else if (failSafeTime > 15){
-                GotRewards := false
-                break
-            }
-            failSafeTime := (A_TickCount - failSafe) // 1000
-        }
-    */
-
-    GoToMain()
 }
 
 GetAllRewards(tomain := true, dailies := false) {
