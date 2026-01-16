@@ -40,6 +40,9 @@ global deviceAccountXmlMap := {} ; prevents Create Bots + s4t making duplicate .
 global ocrShinedust
 global titleHeight, MuMuv5
 
+global currentPackInfo := {"isVerified": false, "CardSlot": [], "TypeCount": {}}
+global cardBorderList := ["normal", "3diamond", "1star", "trainer", "rainbow", "fullart", "immersive", "crown", "gimmighoul", "ShinyEx", "shiny1star"]
+
 global avgtotalSeconds
 global verboseLogging
 global showcaseEnabled
@@ -2023,7 +2026,7 @@ CheckPack() {
 
     ; Wait for cards to render before checking.
     Loop {
-        if (FindBorders("lag") = 0)
+        if (CheckCardLoading() = 0)
             break
         Delay(1)
     }

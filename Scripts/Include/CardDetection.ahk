@@ -53,199 +53,43 @@ DetectFourCardPack() {
     return false
 }
 
-;-------------------------------------------------------------------------------
-; FindBorders - Find card borders of specific type in pack
-;-------------------------------------------------------------------------------
-FindBorders(prefix) {
+CheckCardLoading(){
     global currentPackIs6Card, currentPackIs4Card, scaleParam, winTitle, defaultLanguage
+
     count := 0
-    searchVariation := 40 ;
-
-    searchVariation6Card := 60 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
-    searchVariation4Card := 60 ;
-
-    if (prefix = "shiny2star") { ; some aren't being detected at lower variations
-        searchVariation := 40
-        searchVariation6Card := 40
-        searchVariation4Card := 60
-    }
-
     is6CardPack := currentPackIs6Card
     is4CardPack := currentPackIs4Card
 
     if (is4CardPack) {
-        borderCoords := [[96, 284, 123, 286]  ; Card 1
-            ,[181, 284, 208, 286] ; Card 2
-            ,[96, 399, 123, 401] ; Card 3
-            ,[181, 399, 208, 401]] ; Card 4
+        borderCoords := [[96, 284, 116, 286]  ; Card 1
+            ,[181, 284, 201, 286] ; Card 2
+            ,[96, 399, 116, 401] ; Card 3
+            ,[181, 399, 201, 401]] ; Card 4
     } else if (is6CardPack) {
-        borderCoords := [[56, 284, 83, 286]   ; Top row card 1
-            ,[139, 284, 166, 286] ; Top row card 2
-            ,[222, 284, 249, 286] ; Top row card 3
-            ,[56, 399, 83, 401]   ; Bottom row card 1
-            ,[139, 399, 166, 401] ; Bottom row card 2
-            ,[256, 386, 260, 402]] ; Bottom row card 3
+        borderCoords := [[56, 284, 76, 286]   ; Top row card 1
+            ,[139, 284, 159, 286] ; Top row card 2
+            ,[222, 284, 242, 286] ; Top row card 3
+            ,[56, 399, 76, 401]   ; Bottom row card 1
+            ,[139, 399, 159, 401] ; Bottom row card 2
+            ,[222, 399, 242, 401]] ; Bottom row card 3
     } else {
         ; 5-card pack
-        borderCoords := [[56, 284, 83, 286] ; Card 1
-            ,[139, 284, 166, 286] ; Card 2
-            ,[222, 284, 249, 286] ; Card 3
-            ,[96, 399, 123, 401] ; Card 4
-            ,[181, 399, 208, 401]] ; Card 5
-    }
-
-    ; custom smaller borders for Megas splash art compatiblity; currently removing 6 pixels in x from the right side.
-    if (prefix = "fullArt") { 
-        if (is4CardPack) {
-            borderCoords := [[96, 284, 117, 286]  ; Card 1
-                ,[181, 284, 202, 286] ; Card 2
-                ,[96, 399, 117, 401] ; Card 3
-                ,[181, 399, 202, 401]] ; Card 4
-        } else if (is6CardPack) {
-            borderCoords := [[58, 284, 77, 286]   ; Top row card 1
-                ,[141, 284, 160, 286] ; Top row card 2
-                ,[224, 284, 243, 286] ; Top row card 3
-                ,[58, 399, 77, 401]   ; Bottom row card 1
-                ,[141, 399, 160, 401] ; Bottom row card 2
-                ,[258, 386, 254, 402]] ; Bottom row card 3
-        } else {
-            borderCoords := [[58, 284, 77, 286] ; Card 1
-                ,[141, 284, 160, 286] ; Card 2
-                ,[224, 284, 243, 286] ; Card 3
-                ,[98, 399, 117, 401] ; Card 4
-                ,[183, 399, 202, 401]] ; Card 5
-        }
-    }
-
-    ; Changed Shiny 2star needles to improve detection after hours of testing previous needles.
-    if (prefix = "shiny2star") {
-        if (is4CardPack) {
-            borderCoords := [[110, 175, 140, 187]    ; Top row card 1
-                ,[192, 175, 223, 187]                ; Top row card 2
-                ,[110, 293, 140, 305]                ; Bottom row card 1
-                ,[192, 293, 223, 305]]               ; Bottom row card 2
-        } else if (is6CardPack) {
-            borderCoords := [[74, 175, 97, 187]
-                ,[153, 175, 180, 187]
-                ,[237, 175, 262, 187]
-                ,[74, 293, 97, 305]
-                ,[153, 293, 180, 305]
-                ,[254, 386, 258, 401]]
-        } else {
-            borderCoords := [[74, 175, 97, 187]
-                ,[153, 175, 180, 187]
-                ,[237, 175, 262, 187]
-                ,[110, 293, 140, 305]
-                ,[192, 293, 223, 305]]
-        }
-    }
-
-    if (prefix = "shiny1star") {
-        if (is6CardPack) {
-            borderCoords := [[90, 261, 93, 283]
-                ,[173, 261, 176, 283]
-                ,[255, 261, 258, 283]
-                ,[90, 376, 93, 398]
-                ,[173, 376, 176, 398]
-                ,[255, 385, 257, 399]]
-        } else {
-            borderCoords := [[90, 261, 93, 283]
-                ,[173, 261, 176, 283]
-                ,[255, 261, 258, 283]
-                ,[130, 376, 133, 398]
-                ,[215, 376, 218, 398]]
-        }
-    }
-
-    ; 100% scale adjustments
-    if (scaleParam = 287) {
-        if (prefix = "shiny1star" || prefix = "shiny2star") {
-            if (is6CardPack) {
-                borderCoords := [[91, 253, 95, 278]
-                    ,[175, 253, 179, 278]
-                    ,[259, 253, 263, 278]
-                    ,[91, 370, 95, 395]
-                    ,[175, 371, 179, 394]
-                    ,[259, 371, 263, 394]]
-            } else {
-                borderCoords := [[91, 253, 95, 278]
-                    ,[175, 253, 179, 278]
-                    ,[259, 253, 263, 278]
-                    ,[132, 370, 136, 395]
-                    ,[218, 371, 222, 394]]
-            }
-        } else {
-            if (is6CardPack) {
-                borderCoords := [[55, 278, 84, 280]     ; Card 1
-                    ,[139, 278, 168, 280]                ; Card 2
-                    ,[223, 278, 252, 280]                ; Card 3
-                    ,[55, 395, 84, 397]                  ; Card 4
-                    ,[139, 395, 168, 397]                ; Card 5
-                    ,[223, 395, 252, 397]]               ; Card 6
-            } else {
-                borderCoords := [[55, 278, 84, 280]     ; Card 1
-                    ,[139, 278, 168, 280]                ; Card 2
-                    ,[223, 278, 252, 280]                ; Card 3
-                    ,[96, 395, 125, 397]                 ; Card 4
-                    ,[182, 395, 211, 397]]               ; Card 5
-            }
-        }
+        borderCoords := [[56, 284, 76, 286] ; Card 1
+            ,[139, 284, 159, 286] ; Card 2
+            ,[222, 284, 242, 286] ; Card 3
+            ,[96, 399, 116, 401] ; Card 4
+            ,[181, 399, 201, 401]] ; Card 5
     }
 
     pBitmap := from_window(WinExist(winTitle))
     for index, value in borderCoords {
         coords := borderCoords[A_Index]
-        imageName := "" ; prevents accidentally reusing previously loaded imageName if imageName is undefined in custom one-off needles
-        currentSearchVariation := searchVariation
-
-        if (is6CardPack && A_Index >= 4) {
-            ; Bottom row of 6-card pack (positions 4, 5, 6)
-            if (A_Index = 6 && prefix = "shiny1star" || prefix = "shiny2star") {
-                ; Use dedicated shiny1star6 needle for 6th card position
-                imageName := prefix . "6card6"
-            } else if (A_index = 4 && prefix = "normal" || prefix = "3diamond") {
-                ; Use dedicated normal4 needle for 4th card position
-                imageName := prefix . "6card4"
-            } else if (A_Index = 5 && prefix = "normal" || prefix = "3diamond") {
-                ; Use dedicated normal5 needle for 5th card position
-                imageName := prefix . "6card5"
-            } else {
-                ; Re-use top row images for positions 4 and 5
-                imageIndex := A_Index - 3  ; Card 4 -> uses Card 1 needle, 5->2
-            imageName := prefix . imageIndex
-            }
-            currentSearchVariation := searchVariation6Card
-        } else if (is4CardPack) {
-            ; 4-card pack (Deluxe) - special needle logic
-            if (A_Index <= 2) {
-                ; Slots 1 and 2 - try deluxe-specific needle first, fall back to regular
-                deluxeImageName := "deluxe" . prefix . A_Index
-                regularImageName := prefix . A_Index
-
-                ; Check if deluxe-specific needle exists
-                deluxePath := A_ScriptDir . "\" . defaultLanguage . "\" . deluxeImageName . ".png"
-                if (FileExist(deluxePath)) {
-                    imageName := deluxeImageName
-                } else {
-                    imageName := regularImageName
-                }
-            } else {
-                ; Slots 3 and 4 - reuse needles from regular 5-card pack slots 4 and 5
-                ; Deluxe slot 3 (A_Index=3) uses regular slot 4 needle
-                ; Deluxe slot 4 (A_Index=4) uses regular slot 5 needle
-                imageName := prefix . (A_Index + 1)
-            }
-            currentSearchVariation := searchVariation4Card
-        } else {
-            ; Top row of 6-card pack, or any position in 5-card pack, use the 'real' needles
-            imageName := prefix . A_Index
-            currentSearchVariation := searchVariation
-        }
+        imageName := "lag" . A_Index
 
         Path := A_ScriptDir . "\" . defaultLanguage . "\" . imageName . ".png"
         if (FileExist(Path)) {
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], 40)
             if (vRet = 1) {
                 count += 1
             }
@@ -253,6 +97,121 @@ FindBorders(prefix) {
     }
     Gdip_DisposeImage(pBitmap)
     return count
+}
+
+;-------------------------------------------------------------------------------
+; FindBorders - Find card borders of specific type in pack
+;-------------------------------------------------------------------------------
+FindBorders(prefix) {
+    global currentPackIs6Card, currentPackIs4Card, scaleParam, winTitle, defaultLanguage, currentShinyExPackPos, currentPackInfo, isDevelopment, cardBorderList
+
+    if(currentPackInfo["isVerified"]){
+        retValue := currentPackInfo["TypeCount"][prefix] ? currentPackInfo["TypeCount"][prefix] : 0
+        if(isDevelopment)
+            LogToFile("[Dev] The previously investigated information has been retrieved. Instance: " . winTitle . ", Prefix: " . prefix . ", Value: " . retValue,"Development.txt")
+
+        return retValue
+    }
+
+    count := 0
+    loopNum := 5
+    searchVariation := 40
+    shinyBorderCoords := ""
+
+    is6CardPack := currentPackIs6Card
+    is4CardPack := currentPackIs4Card
+
+    if (is4CardPack) {
+        borderCoords := [[96, 284, 116, 286]  ; Card 1
+            ,[181, 284, 201, 286] ; Card 2
+            ,[96, 399, 116, 401] ; Card 3
+            ,[181, 399, 201, 401]] ; Card 4
+
+        shinyExBorderCoords := [[100, 277, 110, 279], [185, 277, 195, 279], [100, 392, 110, 394], [185, 392, 195, 394]]
+    } else if (is6CardPack) {
+        borderCoords := [[56, 284, 76, 286]   ; Top row card 1
+            ,[139, 284, 159, 286] ; Top row card 2
+            ,[222, 284, 242, 286] ; Top row card 3
+            ,[56, 399, 76, 401]   ; Bottom row card 1
+            ,[139, 399, 159, 401] ; Bottom row card 2
+            ,[222, 399, 242, 401]] ; Bottom row card 3
+
+        shinyExBorderCoords := [[60, 277, 70, 279], [143, 277, 153, 279], [225, 277, 235, 279], [60, 392, 70, 394], [143, 392, 153, 394], [225, 392, 235, 394]]
+    } else {
+        ; 5-card pack
+        borderCoords := [[56, 284, 76, 286] ; Card 1
+            ,[139, 284, 159, 286] ; Card 2
+            ,[222, 284, 242, 286] ; Card 3
+            ,[96, 399, 116, 401] ; Card 4
+            ,[181, 399, 201, 401]] ; Card 5
+
+        shinyExBorderCoords := [[60, 277, 70, 279], [143, 277, 153, 279], [225, 277, 235, 279], [100, 392, 110, 394], [185, 392, 195, 394]]
+    }
+
+    pBitmap := from_window(WinExist(winTitle))
+    for borderIdx, borderType in cardBorderList{
+        count := 0
+        for index, value in borderCoords {
+            coords := borderCoords[index]
+            innerLoopIdx := 1
+            Loop, {
+                borderTypeValue := borderType
+                imageName := borderType . innerLoopIdx
+                
+                if(borderType = "ShinyEx")
+                    imageName := "shiny1star" . innerLoopIdx
+
+                Path := A_ScriptDir . "\" . defaultLanguage . "\" . imageName . ".png"
+                if (FileExist(Path)) {
+                    pNeedle := GetNeedle(Path)
+                    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], searchVariation)
+                    if (vRet = 1) {
+                        if(borderType = "ShinyEx"){
+                            Path := A_ScriptDir . "\" . defaultLanguage . "\ShinyEx.png"
+                            coords2 := shinyExBorderCoords[index]
+                            pNeedle2 := GetNeedle(Path)
+                            vRet2 := Gdip_ImageSearch_wbb(pBitmap, pNeedle2, vPosXY, coords2[1], coords2[2], coords2[3], coords2[4], searchVariation)
+
+                            if(vRet2 = 1){
+                                currentShinyExPackPos[index] := vRet2
+                                count += 1
+                            }
+                        }
+                        else
+                            count += 1
+                        
+                        if(isDevelopment)
+                            LogToFile("[Dev] Match! Instance: " . winTitle . ", BorderType: " . borderType . ", Card Position: " . index . ", ImageIdx: " . innerLoopIdx, "Development.txt")
+
+                        if(borderType = "shiny1star" && currentShinyExPackPos[index] = 1 && vRet = 1){
+                            if(isDevelopment)
+                                LogToFile("[Dev] This is ShinyEx! Instance: " . winTitle . ", Card Position: " . index, "Development.txt")
+
+                            borderTypeValue := "ShinyEx"
+                            count -= 1
+                        }
+                        
+                        innerLoopIdx += 1
+                        currentPackInfo["CardSlot"][index] := borderTypeValue
+                        currentPackInfo["TypeCount"][borderType] := count
+                        break
+                    }
+                    innerLoopIdx += 1
+                }
+                else
+                    break
+            }
+        }
+    }
+
+    Gdip_DisposeImage(pBitmap)
+    if(isDevelopment){
+        cardSlotResult := SerializeArray(currentPackInfo["CardSlot"])
+        typeCountResult := SerializeArray(currentPackInfo["TypeCount"])
+        LogToFile("[Dev] All investigations have been completed. Instance: " . winTitle . ", CardSlot: " . cardSlotResult . ", TypeCount: " . typeCountResult, "Development.txt")
+    }
+    currentPackInfo["isVerified"] := true
+    return currentPackInfo["TypeCount"][prefix] ? currentPackInfo["TypeCount"][prefix] : 0
 }
 
 ;-------------------------------------------------------------------------------
