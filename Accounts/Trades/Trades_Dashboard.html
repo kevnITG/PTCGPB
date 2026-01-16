@@ -1469,7 +1469,7 @@
         }
 
         function populatePackFilter() {
-            const packTypes = new Set(allData.map(row => row.packType));
+            const packTypes = new Set(allData.map(row => row.packType).filter(pack => pack && pack.trim() !== ''));
             const container = document.getElementById('packFilterContainer');
             const previousSelection = new Set(getCheckedValues('packFilterContainer'));
             const firstRender = !container.dataset.initialized;
