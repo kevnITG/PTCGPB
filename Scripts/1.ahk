@@ -2016,16 +2016,16 @@ CheckPack() {
     if(skipCardDetection && !friendIDs && friendID = "" && !s4tEnabled)
         return false
 
+    currentPackIs4Card := DetectFourCardPack()
+    if (!currentPackIs4Card) {
+        currentPackIs6Card := DetectSixCardPack()
+    }
+
     ; Wait for cards to render before checking.
     Loop {
         if (FindBorders("lag") = 0)
             break
         Delay(1)
-    }
-
-    currentPackIs4Card := DetectFourCardPack()
-    if (!currentPackIs4Card) {
-        currentPackIs6Card := DetectSixCardPack()
     }
 
     ; Determine total cards in pack for 4-diamond s4t calculations
