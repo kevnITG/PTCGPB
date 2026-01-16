@@ -326,3 +326,143 @@ CompareIndicesByPacksDesc(packs, a, b) {
     packsB := packs[b]
     return packsB < packsA ? -1 : (packsB > packsA ? 1 : 0)
 }
+
+getMumuInstanceNumFromPlayerName(scriptName := "") {
+    IniRead, folderPath, %A_ScriptDir%\..\Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
+    mumuFolder = %folderPath%\MuMuPlayerGlobal-12.0
+    if !FileExist(mumuFolder)
+        mumuFolder = %folderPath%\MuMu Player 12
+    if !FileExist(mumuFolder){
+        MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
+        ExitApp
+    }
+
+    if(scriptName == "") {
+        return ""
+    }
+    
+    ; Loop through all directories in the base folder
+    Loop, Files, %mumuFolder%\vms\*, D ; D flag to include directories only
+    {
+        folder := A_LoopFileFullPath
+        configFolder := folder "\configs" ; The config folder inside each directory
+        
+        ; Check if config folder exists
+        IfExist, %configFolder%
+        {
+            ; Define paths to vm_config.json and extra_config.json
+            extraConfigFile := configFolder "\extra_config.json"
+            
+            ; Check if extra_config.json exists and read playerName
+            IfExist, %extraConfigFile%
+            {
+                FileRead, extraConfigContent, %extraConfigFile%
+                ; Parse the JSON for playerName
+                RegExMatch(extraConfigContent, """playerName"":\s*""(.*?)""", playerName)
+                if(playerName1 == scriptName) {
+                    RegExMatch(A_LoopFileFullPath, "[^-]+$", mumuNum)
+                    return mumuNum
+                }
+            }
+        }
+    }
+}
+
+Run_(target, args:="", workdir:="") {
+    try
+    ShellRun(target, args, workdir)
+    catch e
+        Run % args="" ? target : target " " args, % workdir
+}
+ShellRun(prms*)
+{
+    shellWindows := ComObjCreate("Shell.Application").Windows
+    VarSetCapacity(_hwnd, 4, 0)
+    desktop := shellWindows.FindWindowSW(0, "", 8, ComObj(0x4003, &_hwnd), 1)
+    
+    ; Retrieve top-level browser object.
+    if ptlb := ComObjQuery(desktop
+        , "{4C96BE40-915C-11CF-99D3-00AA004AE837}" ; SID_STopLevelBrowser
+        , "{000214E2-0000-0000-C000-000000000046}") ; IID_IShellBrowser
+    {
+        ; IShellBrowser.QueryActiveShellView -> IShellView
+        if DllCall(NumGet(NumGet(ptlb+0)+15*A_PtrSize), "ptr", ptlb, "ptr*", psv:=0) = 0
+        {
+            ; Define IID_IDispatch.
+            VarSetCapacity(IID_IDispatch, 16)
+            NumPut(0x46000000000000C0, NumPut(0x20400, IID_IDispatch, "int64"), "int64")
+            
+            ; IShellView.GetItemObject -> IDispatch (object which implements IShellFolderViewDual)
+            DllCall(NumGet(NumGet(psv+0)+15*A_PtrSize), "ptr", psv
+                , "uint", 0, "ptr", &IID_IDispatch, "ptr*", pdisp:=0)
+            
+            ; Get Shell object.
+            shell := ComObj(9,pdisp,1).Application
+            
+            ; IShellDispatch2.ShellExecute
+            shell.ShellExecute(prms*)
+            
+            ObjRelease(psv)
+        }
+        ObjRelease(ptlb)
+    }
+}
+
+setADBStatus(ByRef flags, index, state) {
+    if (state = "WAIT")
+        flags |= (1 << (index - 1))
+    else
+        flags &= ~(1 << (index - 1))
+}
+
+checkAllADBStatus(flags, total) {
+    fullMask := (1 << total) - 1
+    
+    if (flags == 0)
+        return "NONE"
+    else if (flags == fullMask)
+        return "ALL"
+    else
+        return "PARTIAL"
+}
+
+sendNotifyADBStatus(wParam, lParam, targetAHK := "")
+{
+    global NOTIFY_ADB_SERVER_HANG
+
+    DetectHiddenWindows, On
+    WinGet, itemList, List, ahk_class AutoHotkey
+    
+    Loop, %itemList%
+    {
+        isSend := false
+        this_id := itemList%A_Index%
+
+        WinGetTitle, this_title, ahk_id %this_id%
+        
+        RegExMatch(this_title, "O)([^\\]+\.ahk)", match)
+        fileName := match.Value(1)
+        
+        if(targetAHK != "" && fileName != targetAHK)
+            continue
+
+        if(targetAHK != "" && fileName = targetAHK)
+            isSend := true
+
+        if (targetAHK = "" && RegExMatch(fileName, "^\d+\.ahk"))
+            isSend := true
+
+        if(isSend)
+            PostMessage, %NOTIFY_ADB_SERVER_HANG%, %wParam%, %lParam%,, ahk_id %this_id%
+        
+        if(targetAHK != "" && fileName = targetAHK)
+            break
+    }
+}
+
+KillADBProcesses() {
+    ; Use AHK's Process command to close adb.exe
+    Process, Close, adb.exe
+    ; Fallback to taskkill for robustness
+    RunWait, %ComSpec% /c taskkill /IM adb.exe /F /T,, Hide
+}

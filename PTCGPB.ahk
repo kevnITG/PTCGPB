@@ -2474,6 +2474,11 @@ StartBot() {
          Run, %monitorFile%
       }
    }
+
+   adbManagerFile := A_ScriptDir . "\Scripts\Include\ADBManager.ahk"
+   if(FileExist(adbManagerFile)) {
+      Run, %adbManagerFile%
+   }
    
    SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
    SysGet, Monitor, Monitor, %SelectedMonitorIndex%
