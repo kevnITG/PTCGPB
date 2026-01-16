@@ -180,13 +180,7 @@ FindBorders(prefix) {
                         else
                             count += 1
                         
-                        if(isDevelopment)
-                            LogToFile("[Dev] Match! Instance: " . winTitle . ", BorderType: " . borderType . ", Card Position: " . index . ", ImageIdx: " . innerLoopIdx, "Development.txt")
-
                         if(borderType = "shiny1star" && currentShinyExPackPos[index] = 1 && vRet = 1){
-                            if(isDevelopment)
-                                LogToFile("[Dev] This is ShinyEx! Instance: " . winTitle . ", Card Position: " . index, "Development.txt")
-
                             borderTypeValue := "ShinyEx"
                             count -= 1
                         }
@@ -205,11 +199,6 @@ FindBorders(prefix) {
     }
 
     Gdip_DisposeImage(pBitmap)
-    if(isDevelopment){
-        cardSlotResult := SerializeArray(currentPackInfo["CardSlot"])
-        typeCountResult := SerializeArray(currentPackInfo["TypeCount"])
-        LogToFile("[Dev] All investigations have been completed. Instance: " . winTitle . ", CardSlot: " . cardSlotResult . ", TypeCount: " . typeCountResult, "Development.txt")
-    }
     currentPackInfo["isVerified"] := true
     return currentPackInfo["TypeCount"][prefix] ? currentPackInfo["TypeCount"][prefix] : 0
 }

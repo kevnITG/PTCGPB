@@ -2000,7 +2000,10 @@ menuDeleteStart() {
 }
 
 CheckPack() {
-
+    global currentShinyExPackPos, currentPackInfo
+    
+    currentShinyExPackPos := []
+    currentPackInfo := {"isVerified": false, "CardSlot": [], "TypeCount": {}}
     currentPackIs6Card := false ; reset before each pack check
 
     ; Update pack count.
