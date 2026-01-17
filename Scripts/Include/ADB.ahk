@@ -1,34 +1,11 @@
 global adbPort, adbShell, adbPath
 #Include *i %A_LineFile%\..\Gdip_All.ahk
 
-global NOTIFY_ADB_SERVER_HANG := 0x9000
-global isADBHang := false
-global currentInstanceNo := 0
-RegExMatch(A_ScriptName, "\d+", currentInstanceNo)
-
-OnMessage(NOTIFY_ADB_SERVER_HANG, "procADBClient")
-
-procADBClient(wParam, lParam){
-    if(wParam = 20) {
-        isADBHang := true
-    }
-    else if (wParam = 40) {
-        Sleep, 250
-
-        CreateStatusMessage("Resume operations.")
-        
-        ConnectAdb()
-        initializeAdbShell()
-        
-        isADBHang := false
-        LogToFile("[" . A_ScriptName . "] Resume operations.", "ADB.txt")
-
-        Sleep, 1500
-    }
-    else if(wParam = 51){
-        if(lParam = 0)
-            sendNotifyADBStatus(40, currentInstanceNo, A_ScriptName)
-    }
+KillADBProcesses() {
+    ; Use AHK's Process command to close adb.exe
+    Process, Close, adb.exe
+    ; Fallback to taskkill for robustness
+    RunWait, %ComSpec% /c taskkill /IM adb.exe /F /T,, Hide
 }
 
 findAdbPorts(baseFolder := "C:\Program Files\Netease") {
@@ -40,7 +17,7 @@ findAdbPorts(baseFolder := "C:\Program Files\Netease") {
         mumuFolder = %baseFolder%\MuMu Player 12\vms\*
 
     if !FileExist(mumuFolder){
-        MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease`nFolder Path:%mumuFolder%
+        MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
         ExitApp
     }
     ; Loop through all directories in the base folder
@@ -80,8 +57,8 @@ findAdbPorts(baseFolder := "C:\Program Files\Netease") {
 }
 
 ConnectAdb(folderPath := "C:\Program Files\Netease") {
-    IniRead, folderPath, %A_ScriptDir%\..\Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
     adbPort := findAdbPorts(folderPath)
+
     adbPath := folderPath . "\MuMuPlayerGlobal-12.0\shell\adb.exe"
 
     if !FileExist(adbPath) ;if international mumu file path isn't found look for chinese domestic path
@@ -100,7 +77,7 @@ ConnectAdb(folderPath := "C:\Program Files\Netease") {
     }
 
     MaxRetries := 5
-    RetryCount := 1
+    RetryCount := 0
     connected := false
     ip := "127.0.0.1:" . adbPort ; Specify the connection IP:port
 
@@ -120,26 +97,14 @@ ConnectAdb(folderPath := "C:\Program Files\Netease") {
             CreateStatusMessage("ADB connection failed.`nRetrying (" . RetryCount . "/" . MaxRetries . ")...",,,, false)
             Sleep, 2000
         }
+    }
 
-        if !connected {
-            adbPort := findAdbPorts(folderPath)
-            disconnectionResult := CmdRet(adbPath . " disconnect 127.0.0.1:" . adbPort)
-
-            adbPort := findAdbPorts(folderPath)
-            connectionResult := CmdRet(adbPath . " connect 127.0.0.1:" . adbPort)
-            LogToFile("ADB connection failed in ConnectAdb. Bot is reconnecting to ADB.(" . RetryCount . "/" . MaxRetries . ") Connection result: " . connectionResult, "ADB.txt")
-
-            if (RetryCount > MaxRetries) {
-                if(!isADBHang){
-                    LogToFile("Found hang Instance: " . currentInstanceNo, "ADB.txt")
-                    sendNotifyADBStatus(10, currentInstanceNo, "ADBManager.ahk")
-                    isADBHang := true
-                    break
-                }
-                else
-                    isADBHang()
-            }
-        }
+    if !connected {
+        if (Debug)
+            CreateStatusMessage("Failed to connect to ADB after multiple retries. Please check your emulator and port settings.")
+        else
+            CreateStatusMessage("Failed to connect to ADB.",,,, false)
+        Reload
     }
 }
 
@@ -151,14 +116,14 @@ DisableBackgroundServices() {
 
     deviceAddress := "127.0.0.1:" . adbPort
     commands := []
-    commands.Push("pm disable-user --user 0 ""com.google.android.gms/.chimera.PersistentIntentOperationService"" 2> /dev/null")
-    commands.Push("pm disable-user --user 0 ""com.google.android.gms/com.google.android.location.reporting.service.ReportingAndroidService"" 2> /dev/null")
-    commands.Push("pm disable-user --user 0 com.mumu.store 2> /dev/null")
+    commands.Push("pm disable-user --user 0 ""com.google.android.gms/.chimera.PersistentIntentOperationService""")
+    commands.Push("pm disable-user --user 0 ""com.google.android.gms/com.google.android.location.reporting.service.ReportingAndroidService""")
+    commands.Push("pm disable-user --user 0 com.mumu.store")
 
     for index, command in commands {
         fullCommand := """" . adbPath . """ -s " . deviceAddress . " shell " . command
         result := CmdRet(fullCommand)
-        ;LogToFile("DisableService result (" . command . "): " . result, "ADB.txt")
+        LogToFile("DisableService result (" . command . "): " . result, "ADB.txt")
     }
 }
 
@@ -199,9 +164,8 @@ CmdRet(sCmd, callBackFuncObj := "", encoding := "") {
 
 initializeAdbShell() {
     global adbShell, adbPath, adbPort, Debug
-    IniRead, folderPath, %A_ScriptDir%\..\Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
-    RetryCount := 1
-    MaxRetries := 5
+    RetryCount := 0
+    MaxRetries := 10
     BackoffTime := 1000  ; Initial backoff time in milliseconds
     MaxBackoff := 5000   ; Prevent excessive waiting
 
@@ -224,28 +188,13 @@ initializeAdbShell() {
                 ; Ensure adbShell is running before sending 'su'
                 Sleep, 500
                 if (adbShell.Status != 0) {
-                    adbPort := findAdbPorts(folderPath)
-                    disconnectionResult := CmdRet(adbPath . " disconnect 127.0.0.1:" . adbPort)
-
-                    adbPort := findAdbPorts(folderPath)
-                    connectionResult := CmdRet(adbPath . " connect 127.0.0.1:" . adbPort)
-                    LogToFile("ADB connection failed in initializeAdbShell. Bot is reconnecting to ADB.(" . RetryCount . "/" . MaxRetries . ") Connection result: " . connectionResult, "ADB.txt")
-
-                    RetryCount++
-                    if (RetryCount > MaxRetries) {
-                        throw Exception("Failed to start ADB shell.")
-                    }
-                    else
-                        continue
+                    throw Exception("Failed to start ADB shell.")
                 }
 
                 try {
                     adbShell.StdIn.WriteLine("su")
                 } catch e2 {
-                    RetryCount++
-                    if (RetryCount > MaxRetries) {
-                        throw Exception("Failed to elevate shell: " . (IsObject(e2) ? e2.Message : e2))
-                    }
+                    throw Exception("Failed to elevate shell: " . (IsObject(e2) ? e2.Message : e2))
                 }
             }
 
@@ -254,59 +203,21 @@ initializeAdbShell() {
                 break
             }
         } catch e {
-            if(!isADBHang){
-                LogToFile("Found hang Instance: " . currentInstanceNo, "ADB.txt")
-                sendNotifyADBStatus(10, currentInstanceNo, "ADBManager.ahk")
-                isADBHang := true
-                break
+            errorMessage := IsObject(e) ? e.Message : e
+            RetryCount++
+            LogToFile("ADB Shell Error: " . errorMessage, "ADB.txt")
+
+            if (RetryCount >= MaxRetries) {
+                if (Debug)
+                    CreateStatusMessage("Failed to connect to shell after multiple attempts: " . errorMessage)
+                else
+                    CreateStatusMessage("Failed to connect to shell. Pausing.",,,, false)
+                Pause
             }
-            else
-                isADBHang()
         }
 
         Sleep, BackoffTime
         BackoffTime := Min(BackoffTime + 1000, MaxBackoff)  ; Limit backoff time
-    }
-}
-
-isADBHang() {
-    global isADBHang, currentInstanceNo
-    
-    currentRetryTime := 0
-    maxRetryTime := 10
-    nextFailTime := failTime
-
-    Loop, {
-        if(isADBHang) {
-            CreateStatusMessage("Waiting for ADB server to recover...",,,, false)
-            sendNotifyADBStatus(21, currentInstanceNo, "ADBManager.ahk")
-
-            StartSkipTime := A_TickCount ;reset stuck timers
-            failSafe := A_TickCount
-
-            Sleep, 1000
-        }
-        else
-            break
-
-        if(failTime)
-        {
-            failSafeTime := (A_TickCount - nextFailTime) // 1000
-
-            if(failSafeTime > 120){
-                LogToFile("[" . A_ScriptName . "] The time this bot was waiting to be restored has expired. message will be resent. ", "ADB.txt")
-                hangInstanceNo := currentInstanceNo
-                sendNotifyADBStatus(21, currentInstanceNo, "ADBManager.ahk")
-                sendNotifyADBStatus(50, currentInstanceNo, "ADBManager.ahk")
-                nextFailTime := A_TickCount
-                currentRetryTime += 1
-            }
-
-            if(currentRetryTime >= maxRetryTime){
-                LogToFile("[" . A_ScriptName . "] Maximum wait time exceeded. Reloading bot.", "ADB.txt")
-                Reload
-            }
-        }
     }
 }
 
@@ -316,13 +227,10 @@ adbEnsureShell() {
         adbShell := ""
         initializeAdbShell()
     }
-    
-    isADBHang()
 }
 
 adbWriteRaw(command) {
     global adbShell
-
     retries := 0
     MaxRetries := 3
 
@@ -345,7 +253,6 @@ adbWriteRaw(command) {
 
 waitadb() {
     global adbShell
-
     retries := 0
     MaxRetries := 3
 
@@ -424,8 +331,6 @@ adbGesture(params) {
 
 ; Takes a screenshot of an Android device using ADB and saves it to a file.
 adbTakeScreenshot(outputFile) {
-    isADBHang()
-
     ; Percroy Optimization
     global winTitle, adbPort, adbPath
     
