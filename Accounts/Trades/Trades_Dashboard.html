@@ -1898,7 +1898,7 @@
                         document.getElementById('xmlFileInput').click();
                     } else {
                         // Download the specific XML file for this row
-                        const deviceAccount = this.getAttribute("data-account");
+                        const deviceAccount = this.getAttribute('data-account');
                         const info = this.getAttribute('data-info');
                         const filenames = info.split(',');
                         let matchingFile = null;
@@ -1918,15 +1918,13 @@
                         }
                         if (matchingFile) {
                             const url = URL.createObjectURL(matchingFile);
-                            const a = document.createElement("a");
+                            const a = document.createElement('a');
                             a.href = url;
                             a.download = matchingFile.name;
                             a.click();
                             URL.revokeObjectURL(url);
                         } else {
-                            alert(
-                                "Matching XML file not found in uploaded files."
-                            );
+                            alert('Matching XML file not found in uploaded files.');
                         }
                     }
                 });
