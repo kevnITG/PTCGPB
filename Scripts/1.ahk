@@ -965,7 +965,7 @@ HomeAndMission(homeonly := 0, completeSecondMisson=false) {
 }
 
 clearMissionCache() {
-    adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs")
+    adbWriteRaw("rm -f /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs")
     waitadb()
     Sleep, 500
     ;TODO delete all user preferences?
