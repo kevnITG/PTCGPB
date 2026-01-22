@@ -192,7 +192,25 @@ FindBorders(prefix) {
         }
     }
 
-    pBitmap := from_window(WinExist(winTitle))
+    loadingBorderCoords := [[121, 274, 154, 277], [121, 302, 154, 305]]
+
+    pBitmap := 0
+    Loop, {
+        pBitmap := from_window(WinExist(winTitle . " ahk_class Qt5156QWindowIcon"))
+        Path := A_ScriptDir . "\" . defaultLanguage . "\LoadingBox.png"
+        if (FileExist(Path)) {
+            pNeedle := GetNeedle(Path)
+            vRet1 := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, loadingBorderCoords[1][1], loadingBorderCoords[1][2], loadingBorderCoords[1][3], loadingBorderCoords[1][4], 20)
+            vRet2 := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, loadingBorderCoords[2][1], loadingBorderCoords[2][2], loadingBorderCoords[2][3], loadingBorderCoords[2][4], 20)
+            isExistLoadingBox := vRet1 | vRet2
+
+            if(isExistLoadingBox = 0){
+                break
+            }
+            Sleep, 100
+        }
+    }
+
     for index, value in borderCoords {
         coords := borderCoords[A_Index]
         imageName := "" ; prevents accidentally reusing previously loaded imageName if imageName is undefined in custom one-off needles
