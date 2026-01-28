@@ -491,7 +491,11 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             }
         }
 
-        Sleep, 4000 ; avoiding spam clicks at startup
+        ; ######### TEMPORARY 20S WAIT FOR FANTASTICAL PARADE STABILITY ISSUES 2026.01.28 ###########
+        Sleep, 20000
+        ; ###########################################################################################
+
+        Sleep, 4000 ; avoiding spam clicks at startup which can cause stability issues
         FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
         if(setSpeed = 3)
             FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172)
@@ -517,7 +521,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             accountOpenPacks := 0 ;tutorial packs don't count
         }
 
-        if(deleteMethod = "5 Pack" || deleteMethod = "5 Pack (Fast)" || deleteMethod = "Create Bots (13P)")
+        if(deleteMethod = "Create Bots (13P)")
             wonderPicked := DoWonderPick()
 
         friendsAdded := AddFriends()
