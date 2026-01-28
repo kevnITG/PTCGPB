@@ -491,8 +491,8 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             }
         }
 
-        ; ######### TEMPORARY 20S WAIT FOR FANTASTICAL PARADE STABILITY ISSUES 2026.01.28 ###########
-        Sleep, 20000
+        ; ######### TEMPORARY 40S WAIT FOR FANTASTICAL PARADE STABILITY ISSUES 2026.01.28 ###########
+        Sleep, 40000
         ; ###########################################################################################
 
         Sleep, 4000 ; avoiding spam clicks at startup which can cause stability issues
