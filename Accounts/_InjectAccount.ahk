@@ -59,7 +59,7 @@ Gui, Add, Text, x10 y+15 w450 h1 0x10 c3F3F3F ; Darker separator
 ; Submit button with better styling - making it more prominent
 ; Submit and Run Instance buttons centered with adjusted spacing
 Gui, Add, Button, x130 y+30 w100 h40 gSaveSettings cBlue, Submit
-; Gui, Add, Button, x+10 yp w100 h40 gRunInstance cGreen, Run Instance
+Gui, Add, Button, x+10 yp w100 h40 gRunInstance cGreen, Run Instance
 
 ; Show the GUI with a proper size
 Gui, Show, w470 h400, Arturo's Account Injection Tool ;'
@@ -339,8 +339,6 @@ RunInstance:
     Gui, Submit, NoHide
     ; Find the MuMu folder
     mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMu Player 12"
     if !FileExist(mumuFolder) ;if international mumu file path isn't found look for chinese domestic path
         mumuFolder := folderPath . "\MuMu Player 12"
     if !FileExist(mumuFolder) ;MuMu Player 12 v5 
@@ -369,12 +367,22 @@ RunInstance:
     }
     if (instanceNum != "") {
         mumuExe := mumuFolder . "\shell\MuMuPlayer.exe"
+        if !FileExist(mumuExe) {
+            mumuExe := folderPath . "\MuMuPlayerGlobal-12.0\nx_main\MuMuNxMain.exe"
+        }
+        if !FileExist(mumuExe) {
+            mumuExe := folderPath . "\MuMu Player 12\nx_main\MuMuNxMain.exe"
+        }
+        if !FileExist(mumuExe) {
+            mumuExe := folderPath . "\MuMuPlayer\nx_main\MuMuNxMain.exe"
+        }
         if FileExist(mumuExe) {
             Run, "%mumuExe%" -v "%instanceNum%"
         } else {
             MsgBox, 16, Error, Could not find MuMuPlayer.exe at %mumuExe%
         }
-    } else {
-        MsgBox, 16, Error, Could not find instance number for %winTitle%
     }
+    else {
+        MsgBox, 16, Error, Could not find instance number for %winTitle%
+        }
     return
