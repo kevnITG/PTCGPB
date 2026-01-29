@@ -1949,6 +1949,12 @@ CheckPack() {
     ;        break
     ;    Delay(1)
     ; }
+    Loop {
+        if (CheckCardLoading() = 0)
+            break
+        Delay(1)
+    }
+    Delay(1)
 
     ; Determine total cards in pack for 4-diamond s4t calculations
     totalCardsInPack := currentPackIs6Card ? 6 : (currentPackIs4Card ? 4 : 5)
