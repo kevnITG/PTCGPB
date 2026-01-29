@@ -20,7 +20,14 @@ IniRead, Instances, %settingsPath%, UserSettings, Instances, 1
 IniRead, folderPath, %settingsPath%, UserSettings, folderPath, C:\Program Files\Netease
 mumuFolder = %folderPath%\MuMuPlayerGlobal-12.0
 if !FileExist(mumuFolder)
-    mumuFolder = %folderPath%\MuMu Player 12
+mumuFolder = %folderPath%\MuMu Player 12
+if !FileExist(adbPath) ;MuMu Player 12 v5 supported
+    adbPath := folderPath . "\MuMuPlayerGlobal-12.0\nx_main\adb.exe"
+if !FileExist(adbPath) ;MuMu Player 12 v5 supported
+    adbPath := folderPath . "\MuMu Player 12\nx_main\adb.exe"
+if !FileExist(adbPath) ;MuMu Player 12 v5 supported
+    adbPath := folderPath . "\MuMuPlayer\nx_main\adb.exe"
+
 if !FileExist(mumuFolder){
     MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
     ExitApp
