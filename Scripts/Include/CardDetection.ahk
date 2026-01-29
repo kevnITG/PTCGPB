@@ -53,6 +53,56 @@ DetectFourCardPack() {
     return false
 }
 
+CheckCardLoading(){
+    global currentPackIs6Card, currentPackIs4Card, scaleParam, winTitle, defaultLanguage
+
+    count := 0
+    is6CardPack := currentPackIs6Card
+    is4CardPack := currentPackIs4Card
+    totalCardsInPack := 5
+
+    if (is4CardPack) {
+        totalCardsInPack := 4
+        borderCoords := [[96, 284, 116, 286]  ; Card 1
+            ,[181, 284, 201, 286] ; Card 2
+            ,[96, 399, 116, 401] ; Card 3
+            ,[181, 399, 201, 401]] ; Card 4
+    } else if (is6CardPack) {
+        totalCardsInPack := 6
+        borderCoords := [[56, 284, 76, 286]   ; Top row card 1
+            ,[139, 284, 159, 286] ; Top row card 2
+            ,[222, 284, 242, 286] ; Top row card 3
+            ,[56, 399, 76, 401]   ; Bottom row card 1
+            ,[139, 399, 159, 401] ; Bottom row card 2
+            ,[222, 399, 242, 401]] ; Bottom row card 3
+    } else {
+        ; 5-card pack
+        borderCoords := [[56, 284, 76, 286] ; Card 1
+            ,[139, 284, 159, 286] ; Card 2
+            ,[222, 284, 242, 286] ; Card 3
+            ,[96, 399, 116, 401] ; Card 4
+            ,[181, 399, 201, 401]] ; Card 5
+    }
+
+    pBitmap := from_window(WinExist(winTitle))
+    for index, value in borderCoords {
+        coords := borderCoords[A_Index]
+        imageName := "lag" . A_Index
+
+        Path := A_ScriptDir . "\" . defaultLanguage . "\" . imageName . ".png"
+        if (FileExist(Path)) {
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], 40)
+            if (vRet = 1) {
+                count += 1
+            }
+        }
+    }
+
+    Gdip_DisposeImage(pBitmap)
+    return count
+}
+
 ;-------------------------------------------------------------------------------
 ; FindBorders - Find card borders of specific type in pack
 ;-------------------------------------------------------------------------------
@@ -196,7 +246,7 @@ FindBorders(prefix) {
 
     pBitmap := 0
     Loop, {
-        pBitmap := from_window(WinExist(winTitle . " ahk_class Qt5156QWindowIcon"))
+        pBitmap := from_window(WinExist(winTitle))
         Path := A_ScriptDir . "\" . defaultLanguage . "\LoadingBox.png"
         if (FileExist(Path)) {
             pNeedle := GetNeedle(Path)
