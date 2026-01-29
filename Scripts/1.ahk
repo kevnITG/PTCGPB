@@ -2903,7 +2903,7 @@ DoTutorial() {
     Loop {
         adbSwipe_wbb("266 770 266 355 60")
         Sleep, 100
-        if(FindOrLoseImage(120, 70, 150, 95, , "SwipeUp", 0, failSafeTime)){
+        if(FindOrLoseImage(133, 77, 141, 83, , "SwipeUp", 0, failSafeTime)){
             if(setSpeed > 1) {
                 if(setSpeed = 3)
                     FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172)
