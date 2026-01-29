@@ -22,20 +22,16 @@ mumuFolder = %folderPath%\MuMuPlayerGlobal-12.0
 if !FileExist(mumuFolder)
 mumuFolder = %folderPath%\MuMu Player 12
 if !FileExist(mumuFolder) ;MuMu Player 12 v5 supported
-    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0\nx_main"
+    mumuFolder := %folderPath%\MuMuPlayerGlobal-12.0\nx_main
 if !FileExist(mumuFolder) ;MuMu Player 12 v5 supported
-    mumuFolder := folderPath . "\MuMu Player 12\nx_main"
+    mumuFolder := %folderPath%\MuMu Player 12\nx_main
 if !FileExist(mumuFolder) ;MuMu Player 12 v5 supported
-    mumuFolder := folderPath . "\MuMuPlayer\nx_main"
+    mumuFolder := %folderPath%\MuMuPlayer\nx_main
 if !FileExist(mumuFolder){
     MsgBox, 16, , Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
     ExitApp
 }
 
-if !FileExist(mumuFolder){
-    MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
-    ExitApp
-}
 Loop {
     ; Loop through each instance, check if it's started, and start it if it's not
     launched := 0
