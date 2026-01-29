@@ -489,10 +489,6 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             }
         }
 
-        ; ######### TEMPORARY 40S WAIT FOR FANTASTICAL PARADE STABILITY ISSUES 2026.01.28 ###########
-        Sleep, 40000
-        ; ###########################################################################################
-
         Sleep, 4000 ; avoiding spam clicks at startup which can cause stability issues
         FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
         if(setSpeed = 3)
