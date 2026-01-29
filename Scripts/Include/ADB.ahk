@@ -15,6 +15,8 @@ findAdbPorts(baseFolder := "C:\Program Files\Netease") {
     mumuFolder = %baseFolder%\MuMuPlayerGlobal-12.0\vms\*
     if !FileExist(mumuFolder)
         mumuFolder = %baseFolder%\MuMu Player 12\vms\*
+    if !FileExist(mumuFolder)
+        mumuFolder = %baseFolder%\MuMuPlayer\vms\*
 
     if !FileExist(mumuFolder){
         MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
@@ -67,6 +69,8 @@ ConnectAdb(folderPath := "C:\Program Files\Netease") {
         adbPath := folderPath . "\MuMuPlayerGlobal-12.0\nx_main\adb.exe"
     if !FileExist(adbPath) ;MuMu Player 12 v5 supported
         adbPath := folderPath . "\MuMu Player 12\nx_main\adb.exe"
+    if !FileExist(adbPath) ;MuMu Player 12 v5 supported
+        adbPath := folderPath . "\MuMuPlayer\nx_main\adb.exe"
 
     if !FileExist(adbPath)
         MsgBox Check folder path! It must contain the MuMuPlayer12 folder! `nDefault is C:\Program Files\Netease

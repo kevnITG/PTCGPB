@@ -106,11 +106,11 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.2.9"
+   ,localVersion := "v9.3.2"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
-   ,intro := "Crimson Blaze"
+   ,intro := "Fantastical Parade"
 
 global GUI_WIDTH := 790
 global GUI_HEIGHT := 370
@@ -365,7 +365,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.2.9 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.3.2 kevinnnn"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -470,11 +470,13 @@ SortByDropdownHandler:
 return
 
 UpdatePackSelectionButtonText() {
-    global CrimsonBlaze, MegaGyarados, MegaBlaziken, MegaAltaria, Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole, Solgaleo, Lunala, Shining, Arceus
-    global Palkia, Dialga, Pikachu, Charizard, Mewtwo, Mew, currentDictionary
+    global Parade, CrimsonBlaze, MegaGyarados, MegaBlaziken, MegaAltaria, Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole
+    global Solgaleo, Lunala, Shining, Arceus, Palkia, Dialga, Pikachu, Charizard, Mewtwo, Mew, currentDictionary
 
     selectedPacks := []
 
+    if (Parade)
+        selectedPacks.Push(currentDictionary.Txt_Parade)
     if (CrimsonBlaze)
         selectedPacks.Push(currentDictionary.Txt_CrimsonBlaze)
     if (MegaGyarados)
@@ -557,6 +559,8 @@ ShowPackSelection:
     Gui, PackSelect:Font, s10 cWhite, Segoe UI
 
     yPos := 10
+    Gui, PackSelect:Add, Checkbox, % (Parade ? "Checked" : "") " vParade_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Parade
+    yPos += 25
     Gui, PackSelect:Add, Checkbox, % (CrimsonBlaze ? "Checked" : "") " vCrimsonBlaze_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_CrimsonBlaze
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (MegaGyarados ? "Checked" : "") " vMegaGyarados_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaGyarados
@@ -565,8 +569,9 @@ ShowPackSelection:
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (MegaAltaria ? "Checked" : "") " vMegaAltaria_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaAltaria
     yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Deluxe
-    yPos += 25    
+    ; Disabling Deluxe since it's not available
+    ; Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Deluxe
+    ; yPos += 25    
     Gui, PackSelect:Add, Checkbox, % (Springs ? "Checked" : "") " vSprings_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Springs
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (HoOh ? "Checked" : "") " vHoOh_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_HoOh
@@ -608,6 +613,7 @@ return
 ApplyPackSelection:
     Gui, PackSelect:Submit, NoHide
 
+    Parade := Parade_Popup
     CrimsonBlaze := CrimsonBlaze_Popup
     MegaGyarados := MegaGyarados_Popup
     MegaBlaziken := MegaBlaziken_Popup
@@ -1415,7 +1421,7 @@ Save:
    s4tWPMinCards := 1
   }
 
-  ; Deluxe := 0 ; Turn off Deluxe for all users once that pack is removed
+  Deluxe := 0 ; Turn off Deluxe for all users once that pack is removed
   
   SaveAllSettings()
   
@@ -1433,6 +1439,8 @@ Save:
   confirmMsg .= "`n"
   
   confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
+  if (Parade)
+    confirmMsg .= "• " . currentDictionary.Txt_Parade . "`n"
   if (CrimsonBlaze)
     confirmMsg .= "• " . currentDictionary.Txt_CrimsonBlaze . "`n"
   if (MegaGyarados)
@@ -1947,11 +1955,12 @@ LoadSettingsFromIni() {
       IniRead, HoOh, Settings.ini, UserSettings, HoOh, 0
       IniRead, Lugia, Settings.ini, UserSettings, Lugia, 0
       IniRead, Springs, Settings.ini, UserSettings, Springs, 0
-      IniRead, Deluxe, Settings.ini, UserSettings, Deluxe, 1
+      IniRead, Deluxe, Settings.ini, UserSettings, Deluxe, 0
       IniRead, CrimsonBlaze, Settings.ini, UserSettings, CrimsonBlaze, 0
       IniRead, MegaGyarados, Settings.ini, UserSettings, MegaGyarados, 0
       IniRead, MegaBlaziken, Settings.ini, UserSettings, MegaBlaziken, 0
       IniRead, MegaAltaria, Settings.ini, UserSettings, MegaAltaria, 0
+      IniRead, Parade, Settings.ini, UserSettings, Parade, 1
       
       IniRead, CheckShinyPackOnly, Settings.ini, UserSettings, CheckShinyPackOnly, 0
       IniRead, TrainerCheck, Settings.ini, UserSettings, TrainerCheck, 0
@@ -2020,6 +2029,7 @@ LoadSettingsFromIni() {
       IniRead, minStarsMegaGyarados, Settings.ini, UserSettings, minStarsMegaGyarados, 0
       IniRead, minStarsMegaBlaziken, Settings.ini, UserSettings, minStarsMegaBlaziken, 0
       IniRead, minStarsMegaAltaria, Settings.ini, UserSettings, minStarsMegaAltaria, 0
+      IniRead, minStarsParade, Settings.ini, UserSettings, minStarsParade, 0
       
       IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
@@ -2129,7 +2139,8 @@ SaveAllSettings() {
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
    global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
-   global MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, slowMotion, ocrLanguage, clientLanguage
+   global MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, Parade
+   global slowMotion, ocrLanguage, clientLanguage
    global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, isDarkTheme
    global useBackgroundImage, tesseractPath, debugMode, useTesseract, statusMessage
    global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards
@@ -2141,7 +2152,7 @@ SaveAllSettings() {
    global minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b
    global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA3b
    global minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe
-   global minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
+   global minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria, minStarsParade
    global menuExpanded
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
    global checkWPthanks
@@ -2204,6 +2215,7 @@ SaveAllSettings() {
    iniContent .= "MegaBlaziken=" MegaBlaziken "`n"
    iniContent .= "MegaAltaria=" MegaAltaria "`n"
    iniContent .= "CrimsonBlaze=" CrimsonBlaze "`n"
+   iniContent .= "Parade=" Parade "`n"
    iniContent .= "CheckShinyPackOnly=" CheckShinyPackOnly "`n"
    iniContent .= "TrainerCheck=" TrainerCheck "`n"
    iniContent .= "FullArtCheck=" FullArtCheck "`n"
@@ -2326,6 +2338,7 @@ SaveAllSettings() {
    iniContent_Second .= "minStarsMegaBlaziken=" minStarsMegaBlaziken "`n"
    iniContent_Second .= "minStarsMegaMegaAltaria=" minStarsMegaAltaria "`n"
    iniContent_Second .= "minStarsCrimsonBlaze=" minStarsCrimsonBlaze "`n"
+   iniContent_Second .= "minStarsParade=" minStarsParade "`n"
    iniContent_Second .= "s4tWPMinCards=" s4tWPMinCards "`n"
    iniContent_Second .= "s4tDiscordUserId=" s4tDiscordUserId "`n"
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"
@@ -2367,7 +2380,7 @@ StartBot() {
    global heartBeat, heartBeatName, heartBeatWebhookURL, heartBeatDelay, debugMode
    global Shining, Arceus, Palkia, Dialga, Mew, Pikachu, Charizard, Mewtwo
    global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
-   global MegaBlaziken, MegaGyarados, MegaAltaria, CrimsonBlaze, packMethod, nukeAccount
+   global MegaBlaziken, MegaGyarados, MegaAltaria, CrimsonBlaze, Parade, packMethod, nukeAccount
    global SelectedMonitorIndex, localVersion, githubUser, rerollTime, PackGuiBuild
    
    PackGuiBuild := 0
@@ -2530,6 +2543,8 @@ StartBot() {
       Selected.Push("MegaAltaria")
   if(CrimsonBlaze)
       Selected.Push("CrimsonBlaze")
+   if(Parade)
+      Selected.Push("Parade")
 
    for index, value in Selected {
       if(index = Selected.MaxIndex())

@@ -28,8 +28,8 @@ DllCall("AllocConsole")
 WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
-global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze
-global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
+global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, Parade
+global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsParade, minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
 global DeadCheck
 global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards, s4tDiscordWebhookURL, s4tDiscordUserId, s4tSendAccountXml
 global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star
@@ -113,8 +113,8 @@ if (deleteMethod != originalDeleteMethod) {
 ; Write deleteMethod to instance-specific ini for Monitor.ahk to read
 IniWrite, %deleteMethod%, %A_ScriptDir%\%scriptName%.ini, UserSettings, deleteMethod
 
-IniRead, runMain, %A_ScriptDir%\..\Settings.ini, UserSettings, runMain, 1
-IniRead, Mains, %A_ScriptDir%\..\Settings.ini, UserSettings, Mains, 1
+IniRead, runMain, %A_ScriptDir%\..\Settings.ini, UserSettings, runMain, 0
+IniRead, Mains, %A_ScriptDir%\..\Settings.ini, UserSettings, Mains, 0
 IniRead, AccountName, %A_ScriptDir%\..\Settings.ini, UserSettings, AccountName, ""
 IniRead, nukeAccount, %A_ScriptDir%\..\Settings.ini, UserSettings, nukeAccount, 0
 IniRead, packMethod, %A_ScriptDir%\..\Settings.ini, UserSettings, packMethod, 0
@@ -130,11 +130,13 @@ IniRead, PseudoGodPack, %A_ScriptDir%\..\Settings.ini, UserSettings, PseudoGodPa
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsShiny, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsShiny, 0
 
-IniRead, CrimsonBlaze, %A_ScriptDir%\..\Settings.ini, UserSettings, CrimsonBlaze, 1
+IniRead, Parade, %A_ScriptDir%\..\Settings.ini, UserSettings, Parade, 1
+IniRead, CrimsonBlaze, %A_ScriptDir%\..\Settings.ini, UserSettings, CrimsonBlaze, 0
 IniRead, MegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaGyarados, 0
 IniRead, MegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaBlaziken, 0
 IniRead, MegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaAltaria, 0
 IniRead, Deluxe, %A_ScriptDir%\..\Settings.ini, UserSettings, Deluxe, 0
+Deluxe := 0 ; Disable Deluxe packs now that it's disabled
 IniRead, Springs, %A_ScriptDir%\..\Settings.ini, UserSettings, Springs, 0
 IniRead, HoOh, %A_ScriptDir%\..\Settings.ini, UserSettings, HoOh, 0
 IniRead, Lugia, %A_ScriptDir%\..\Settings.ini, UserSettings, Lugia, 0
@@ -171,6 +173,7 @@ IniRead, minStarsCrimsonBlaze, %A_ScriptDir%\..\Settings.ini, UserSettings, minS
 IniRead, minStarsMegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaGyarados, 0
 IniRead, minStarsMegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaBlaziken, 0
 IniRead, minStarsMegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaAltaria, 0
+IniRead, minStarsParade, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsParade, 0
 
 IniRead, slowMotion, %A_ScriptDir%\..\Settings.ini, UserSettings, slowMotion, 0
 IniRead, DeadCheck, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck, 0
@@ -180,6 +183,7 @@ IniRead, waitForEligibleAccounts, %A_ScriptDir%\..\Settings.ini, UserSettings, w
 IniRead, maxWaitHours, %A_ScriptDir%\..\Settings.ini, UserSettings, maxWaitHours, 24
 IniRead, skipMissionsInjectMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, skipMissionsInjectMissions, 0
 IniRead, claimSpecialMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, claimSpecialMissions, 0
+claimSpecialMissions := 0 ; Disable special missions now that no event missions are ongoing
 IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
 IniRead, openExtraPack, %A_ScriptDir%\..\Settings.ini, UserSettings, openExtraPack, 0
 IniRead, verboseLogging, %A_ScriptDir%\..\Settings.ini, UserSettings, debugMode, 0
@@ -218,8 +222,8 @@ if(s4tEnabled){
     maxAccountPackNum := 9999
 }
 
-pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria", "CrimsonBlaze"]
-shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1, "MegaGyarados": 1, "MegaBlaziken": 1, "MegaAltaria": 1, "CrimsonBlaze": 1}
+pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria", "CrimsonBlaze", "Parade"]
+shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1}
 
 packArray := []  ; Initialize an empty array
 
@@ -359,11 +363,11 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
     CreateStatusMessage("Account is stuck! Restarting and unfriending...")
     friended := true
     CreateStatusMessage("Stuck account still has friends. Unfriending accounts...")
-    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
+    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
     if(setSpeed = 3)
-        FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) 
+        FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172)
     else
-        FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) 
+        FindImageAndClick(102, 170, 107, 174, , "Two", 106, 173) 
     adbClick_wbb(51, 297)
     Delay(1)
     RemoveFriends()
@@ -487,12 +491,16 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             }
         }
 
-        Sleep, 4000 ; avoiding spam clicks at startup
-        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
+        ; ######### TEMPORARY 40S WAIT FOR FANTASTICAL PARADE STABILITY ISSUES 2026.01.28 ###########
+        Sleep, 40000
+        ; ###########################################################################################
+
+        Sleep, 4000 ; avoiding spam clicks at startup which can cause stability issues
+        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
         if(setSpeed = 3)
-            FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) 
+            FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172)
         else
-            FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) 
+            FindImageAndClick(102, 170, 107, 174, , "Two", 106, 173) 
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -513,7 +521,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             accountOpenPacks := 0 ;tutorial packs don't count
         }
 
-        if(deleteMethod = "5 Pack" || deleteMethod = "5 Pack (Fast)" || deleteMethod = "Create Bots (13P)")
+        if(deleteMethod = "Create Bots (13P)")
             wonderPicked := DoWonderPick()
 
         friendsAdded := AddFriends()
@@ -999,7 +1007,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     static lastStatusTime := 0
 
     if(slowMotion) {
-        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three" || imageName = "speedmodMenu2" || imageName = "One2" || imageName = "Two2" || imageName = "Three2")
+        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three")
             return true
     }
     if(searchVariation = "")
@@ -1015,31 +1023,6 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     pBitmap := from_window(WinExist(winTitle))
     Path = %imagePath%%imageName%.png
     pNeedle := GetNeedle(Path)
-
-    ; 100% scale changes
-    if (scaleParam = 287) {
-        Y1 -= 8 ; offset, should be 44-36 i think?
-        Y2 -= 8
-        if (Y1 < 0) {
-            Y1 := 0
-        }
-        if (imageName = "Bulba") { ; too much to the left? idk how that happens
-            X1 := 200
-            Y1 := 220
-            X2 := 230
-            Y2 := 260
-        } else if (imageName = "Erika") { ; 100% fix for Erika avatar
-            X1 := 149
-            Y1 := 153
-            X2 := 159
-            Y2 := 162
-        } else if (imageName = "DeleteAll") { ; 100% for Deleteall offset
-            X1 := 200
-            Y1 := 340
-            X2 := 265
-            Y2 := 530
-        }
-    }
 
     ; ImageSearch within the region
     vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, X1, Y1, X2, Y2, searchVariation)
@@ -1308,7 +1291,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
     global winTitle, failSafe, confirmed, slowMotion
 
     if(slowMotion) {
-        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three" || imageName = "speedmodMenu2" || imageName = "One2" || imageName = "Two2" || imageName = "Three2")
+        if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three")
             return true
     }
     if(searchVariation = "")
@@ -1326,67 +1309,6 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
     StartSkipTime := A_TickCount
 
     confirmed := false
-
-    ; 100% scale changes
-    if (scaleParam = 287) {
-        Y1 -= 8 ; offset, should be 44-36 i think?
-        Y2 -= 8
-        if (Y1 < 0) {
-            Y1 := 0
-        }
-
-        clicky += 2 ; clicky offset
-        if (imageName = "speedmodMenu") { ; can't do text so purple box
-            X1 := 141
-            Y1 := 189
-            X2 := 208
-            Y2 := 224
-        } else if (imageName = "Opening") { ; Opening click (to skip cards) can't click on the immersive skip with 239, 497
-            X1 := 10
-            Y1 := 80
-            X2 := 50
-            Y2 := 115
-            clickx := 250
-            clicky := 505
-        } else if (imageName = "SelectExpansion") { ; SelectExpansion
-            X1 := 120
-            Y1 := 135
-            X2 := 161
-            Y2 := 145
-        } else if (imageName = "CountrySelect2") { ; SelectExpansion
-            X1 := 120
-            Y1 := 130
-            X2 := 174
-            Y2 := 155
-        } else if (imageName = "Profile") { ; ChangeTag GP found
-            X1 := 213
-            Y1 := 273
-            X2 := 226
-            Y2 := 286
-        } else if (imageName = "ChosenTag") { ; ChangeTag GP found
-            X1 := 218
-            Y1 := 307
-            X2 := 231
-            Y2 := 312
-        } else if (imageName = "Badge") { ; ChangeTag GP found
-            X1 := 48
-            Y1 := 204
-            X2 := 72
-            Y2 := 230
-        } else if (imageName = "ChooseErika") { ; ChangeTag GP found
-            X1 := 150
-            Y1 := 286
-            X2 := 155
-            Y2 := 291
-        } else if (imageName = "ChooseEevee") { ; Change Eevee Avatar
-            X1 := 157
-            Y1 := 195
-            X2 := 162
-            Y2 := 200
-            clickx := 147
-            clicky := 207
-        }
-    }
 
     if(click) {
         adbClick_wbb(clickx, clicky)
@@ -1930,11 +1852,11 @@ menuDeleteStart() {
         return keepAccount
     }
     if(friended) {
-        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
+        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
         if(setSpeed = 3)
-            FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) 
+            FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172)
         else
-            FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) 
+            FindImageAndClick(102, 170, 107, 174, , "Two", 106, 173) 
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -2022,11 +1944,11 @@ CheckPack() {
     }
 
     ; Wait for cards to render before checking.
-    Loop {
-        if (FindBorders("lag") = 0)
-            break
-        Delay(1)
-    }
+    ; Loop {
+    ;     if (FindBorders("lag")  0)
+    ;        break
+    ;    Delay(1)
+    ; }
 
     ; Determine total cards in pack for 4-diamond s4t calculations
     totalCardsInPack := currentPackIs6Card ? 6 : (currentPackIs4Card ? 4 : 5)
@@ -2864,8 +2786,8 @@ DoTutorial() {
     }
 
     if(setSpeed = 3){
-        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
-        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) 
+        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
+        FindImageAndClick(20, 170, 24, 174, , "One", 21, 172) 
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -2874,8 +2796,8 @@ DoTutorial() {
     FindImageAndClick(110, 230, 182, 257, , "Welcome", 253, 506, 110) ;click through cutscene until welcome page
 
     if(setSpeed = 3){
-        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
-        FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) 
+        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
+        FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172)
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -2943,8 +2865,8 @@ DoTutorial() {
 
     FindImageAndClick(225, 273, 235, 290, , "Pack", 140, 424) ;wait for pack to be ready  to trace
     if(setSpeed > 1) {
-        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
-        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) 
+        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
+        FindImageAndClick(20, 170, 24, 174, , "One", 21, 172) 
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -2957,11 +2879,8 @@ DoTutorial() {
         if(FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
             if(setSpeed > 1) {
                 if(setSpeed = 3) {
-                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                    FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) ; click 3x
-                } else {
-                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                    FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) ; click 2x
+                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000)
+                    FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172) ; click 3x
                 }
             }
             adbClick_wbb(51, 297)
@@ -2973,8 +2892,8 @@ DoTutorial() {
 
     FindImageAndClick(34, 99, 74, 131, , "Swipe", 140, 375) ;click through cards until needing to swipe up
     if(setSpeed > 1) {
-        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
-        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) 
+        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
+        FindImageAndClick(20, 170, 24, 174, , "One", 21, 172) 
         Delay(1)
     }
     failSafe := A_TickCount
@@ -2985,9 +2904,9 @@ DoTutorial() {
         if(FindOrLoseImage(120, 70, 150, 95, , "SwipeUp", 0, failSafeTime)){
             if(setSpeed > 1) {
                 if(setSpeed = 3)
-                    FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) 
+                    FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172)
                 else
-                    FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) 
+                    FindImageAndClick(102, 170, 107, 174, , "Two", 106, 173) 
             }
             adbClick_wbb(51, 297)
             break
@@ -3042,8 +2961,8 @@ DoTutorial() {
 
     FindImageAndClick(225, 273, 235, 290, , "Pack", 239, 497) ;wait for pack to be ready  to Trace
     if(setSpeed > 1) {
-        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
-        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) 
+        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
+        FindImageAndClick(20, 170, 24, 174, , "One", 21, 172) 
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -3056,11 +2975,8 @@ DoTutorial() {
         if(FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
             if(setSpeed > 1) {
                 if(setSpeed = 3) {
-                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                    FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) 
-                } else {
-                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                    FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) 
+                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000)
+                    FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172)
                 }
             }
             adbClick_wbb(51, 297)
@@ -3175,7 +3091,7 @@ SelectPack(HG := false) {
     inselectexpansionscreen := 0
 
     packy := HomeScreenAllPackY
-    if (openPack == "Deluxe") {
+    if (openPack == "CrimsonBlaze") {
         packx := LeftPackX
     } else if (openPack == "MegaBlaziken") {
         packx := RightPackX
@@ -3183,19 +3099,19 @@ SelectPack(HG := false) {
         packx := MiddlePackX
     }
 
-    if(openPack == "CrimsonBlaze" || openPack == "MegaBlaziken" || openPack == "Deluxe") {
+    if(openPack == "CrimsonBlaze" || openPack == "MegaBlaziken" || openPack == "Parade") {
         PackIsInHomeScreen := 1
     } else {
         PackIsInHomeScreen := 0
     }
 
-    if(openPack == "CrimsonBlaze") {
+    if(openPack == "Parade") {
         PackIsLatest := 1
     } else {
         PackIsLatest := 0
     }
 
-    if (openPack == "CrimsonBlaze" || openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") {
+    if (openPack == "CrimsonBlaze" || openPack == "Parade") {
         packInTopRowsOfSelectExpansion := 1
     } else {
         packInTopRowsOfSelectExpansion := 0
@@ -3359,25 +3275,28 @@ SelectPack(HG := false) {
             }
         }
 
-        if (openPack == "CrimsonBlaze" || openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
+        if (openPack == "Parade" || openPack == "CrimsonBlaze" || openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
             Delay(4)
             adbClick(52, 455) ; click B series. need more robust system later
             Delay(4)
-            if (openPack == "CrimsonBlaze") {
+            if (openPack == "Parade") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionLeftColumnMiddleX
-            } else if (openPack == "MegaGyarados") {
-                packy := SelectExpansionFirstRowY
-                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionLeft
-                ; packx := 18 ; custom location to avoid accidentally rotating through pack wheel on following screen
-            } else if (openPack == "MegaBlaziken") {
+            } else if (openPack == "CrimsonBlaze") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionRightColumnMiddleX
+            } else if (openPack == "MegaGyarados") {
+                packy := 442
+                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
+                ; packx := 18 ; custom location to avoid accidentally rotating through pack wheel on following screen
+            } else if (openPack == "MegaBlaziken") {
+                packy := 442
+                packx := SelectExpansionLeftColumnMiddleX
             } else if (openPack == "MegaAltaria") {
-                packy := SelectExpansionFirstRowY
-                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionRight
-                packx := 258 ; custom locations to avoid accidentally rotating through pack wheel on following screen
-                packy := 309 ; custom locations to avoid accidentally rotating through pack wheel on following screen
+                packy := 442
+                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
+                ; packx := 258 ; custom locations to avoid accidentally rotating through pack wheel on following screen
+                ; packy := 309 ; custom locations to avoid accidentally rotating through pack wheel on following screen
             }
         }
 
@@ -3555,8 +3474,8 @@ PackOpening() {
     }
 
     if(setSpeed > 1) {
-        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
-        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) 
+        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
+        FindImageAndClick(20, 170, 24, 174, , "One", 21, 172) 
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -3569,11 +3488,8 @@ PackOpening() {
         if (FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
             if(setSpeed > 1) {
                 if(setSpeed = 3) {
-                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                    FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) 
-                } else {
-                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                    FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) 
+                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000)
+                    FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172)
                 }
             }
             adbClick_wbb(51, 297)
@@ -3724,8 +3640,8 @@ HourglassOpening(HG := false, NEIRestart := true) {
     }
 
     if(setSpeed > 1) {
-        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000) 
-        FindImageAndClick(18, 177, 23, 181, , "One2", 26, 180) 
+        FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
+        FindImageAndClick(20, 170, 24, 174, , "One", 21, 172) 
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -3738,11 +3654,8 @@ HourglassOpening(HG := false, NEIRestart := true) {
         if (FindOrLoseImage(225, 273, 235, 290, , "Pack", 1, failSafeTime)){
             if(setSpeed > 1) {
                 if(setSpeed = 3) {
-                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                    FindImageAndClick(185, 177, 189, 182, , "Three2", 187, 180) 
-                } else {
-                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu2", 18, 109, 2000)
-                    FindImageAndClick(103, 177, 106, 181, , "Two2", 107, 180) 
+                    FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000)
+                    FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172)
                 }
             }
             adbClick_wbb(51, 297)

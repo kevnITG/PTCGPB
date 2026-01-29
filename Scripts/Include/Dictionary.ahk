@@ -98,6 +98,7 @@
         Lang["Txt_claimSpecialMissions"] := "Claim Special Missions"
         Lang["SortByText"] := "Sort By:"
 
+        Lang["Txt_Parade"] := "Parade"
         Lang["Txt_CrimsonBlaze"] := "Crimson Blaze"
         Lang["Txt_MegaGyarados"] := "Mega Gyarados"
         Lang["Txt_MegaBlaziken"] := "Mega Blaziken"
@@ -243,6 +244,7 @@
         Lang["Txt_claimSpecialMissions"] := "領取特殊任務"
         Lang["SortByText"] := "注入排序："
 
+        Lang["Txt_Parade"] := "Parade"
         Lang["Txt_CrimsonBlaze"] := "紅蓮烈焰"
         Lang["Txt_MegaGyarados"] := "超級暴鯉龍"
         Lang["Txt_MegaBlaziken"] := "超級火焰雞"
@@ -388,6 +390,7 @@
         Lang["Txt_claimSpecialMissions"] := "イベント"
         Lang["SortByText"] := "注入序列："
 
+        Lang["Txt_Parade"] := "Parade"
         Lang["Txt_CrimsonBlaze"] := "紅蓮ブレイズ"
         Lang["Txt_MegaGyarados"] := "メガギャラドス"
         Lang["Txt_MegaBlaziken"] := "メガバシャーモ"
@@ -535,6 +538,7 @@
         Lang["Txt_claimSpecialMissions"] := "Spezialmissionen"
         Lang["SortByText"] := "Sortieren nach:"
 
+        Lang["Txt_Parade"] := "Parade"
         Lang["Txt_CrimsonBlaze"] := "Feuerrote Flammen"
         Lang["Txt_MegaGyarados"] := "Mega-Garados"
         Lang["Txt_MegaBlaziken"] := "Mega-Lohgock"
