@@ -11,6 +11,7 @@ if not A_IsAdmin
     ExitApp
 }
 
+lastReduceMemory := 0
 settingsPath := A_ScriptDir "\..\..\Settings.ini"
 
 IniRead, instanceLaunchDelay, %settingsPath%, UserSettings, instanceLaunchDelay, 5
@@ -20,8 +21,6 @@ IniRead, folderPath, %settingsPath%, UserSettings, folderPath, C:\Program Files\
 mumuFolder = %folderPath%\MuMuPlayerGlobal-12.0
 if !FileExist(mumuFolder)
     mumuFolder = %folderPath%\MuMu Player 12
-if !FileExist(mumuFolder)
-    mumuFolder = %folderPath%\MuMuPlayer
 if !FileExist(mumuFolder){
     MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
     ExitApp
@@ -34,6 +33,13 @@ Loop {
     EnvSub, nowEpoch, 1970, seconds
     
     Loop %Instances% {
+        if(A_TickCount - lastReduceMemory > 120000) {
+            LogToFile("Memory reduction process start.", "Monitor.txt")
+            ReduceVMMemory()
+            LogToFile("Memory reduction process complete.", "Monitor.txt")
+            lastReduceMemory := A_TickCount
+        }
+
         instanceNum := Format("{:u}", A_Index)
         
         IniRead, LastEndEpoch, %A_ScriptDir%\..\%instanceNum%.ini, Metrics, LastEndEpoch, 0
@@ -77,6 +83,45 @@ Loop {
     
     ; Check for dead instances every 30 seconds
     Sleep, 30000
+}
+
+ReduceVMMemory(){
+    TargetProcess := "MuMuVMMHeadless.exe"
+    CleanedCount := 0
+
+    for process in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process Where Name = '" TargetProcess "'")
+    {
+        PID := process.ProcessId
+        
+        hProcess := DllCall("OpenProcess", "UInt", 0x0400 | 0x0100 | 0x0010, "Int", false, "UInt", PID)
+        
+        if (hProcess)
+        {
+            MemBefore := GetProcessMemory(hProcess)
+            Success := DllCall("psapi.dll\EmptyWorkingSet", "Ptr", hProcess)
+            MemAfter := GetProcessMemory(hProcess)
+            
+            DllCall("CloseHandle", "Ptr", hProcess)
+            
+            if (Success) {
+                ;ResultLine := "PID: " . PID . " | Before: " . Round(MemBefore, 1) . "KB | After: " . Round(MemAfter, 1) . "KB | Reduced size: " . Round(MemBefore-MemAfter, 1) . "KB`n"
+                LogToFile(ResultLine, "Development.txt")
+                CleanedCount++
+            }
+        }
+    }
+    LogToFile("Total reduce memory count: " . CleanedCount, "Monitor.txt")
+    return CleanedCount
+}
+
+GetProcessMemory(hProcess) {
+    VarSetCapacity(PMC, 72, 0)
+    if (DllCall("psapi.dll\GetProcessMemoryInfo", "Ptr", hProcess, "Ptr", &PMC, "UInt", 72)) {
+        addrOffset := (A_PtrSize = 8) ? 16 : 12
+        bytes := NumGet(PMC, addrOffset, "UPtr")
+        return bytes / 1024 
+    }
+    return 0
 }
 
 killAHK(scriptName := "")
