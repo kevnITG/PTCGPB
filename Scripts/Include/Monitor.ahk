@@ -47,6 +47,8 @@ if (InStr(defaultLanguage, "100")) {
 mumuFolder = %folderPath%\MuMuPlayerGlobal-12.0
 if !FileExist(mumuFolder)
     mumuFolder = %folderPath%\MuMu Player 12
+if !FileExist(mumuFolder)
+    mumuFolder = %folderPath%\MuMuPlayer
 
 ; Set MuMuManager.exe location
 mumuManagerPath := mumuFolder "\shell\MuMuManager.exe"
