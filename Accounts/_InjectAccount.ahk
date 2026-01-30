@@ -7,7 +7,7 @@ SetDefaultMouseSpeed, 0
 SetBatchLines, -1
 SetTitleMatchMode, 3
 
-global adbShell, adbPath, adbPorts, winTitle, folderPath, selectedFilePath
+global adbShell, adbPath, adbPorts, winTitle, folderPath, selectedFilePath, mumuFolder
 
 IniRead, winTitle, InjectAccount.ini, UserSettings, winTitle, 1
 IniRead, fileName, InjectAccount.ini, UserSettings, fileName, name
@@ -89,8 +89,12 @@ SaveSettings:
     IniWrite, %folderPath%, InjectAccount.ini, UserSettings, folderPath
     IniWrite, %selectedFilePath%, InjectAccount.ini, UserSettings, selectedFilePath
 
-adbPath := folderPath . "\MuMuPlayerGlobal-12.0\shell\adb.exe"
-findAdbPorts(folderPath)
+mumuFolder := getMumuFolder(folderPath)
+
+adbPath := mumuFolder . "\shell\adb.exe"
+if !FileExist(adbPath)
+    adbPath := mumuFolder . "\nx_main\adb.exe"
+findAdbPorts(mumuFolder)
 
 if(!WinExist(winTitle)) {
     Msgbox, 16, , Can't find instance: %winTitle%. Make sure that instance is running.;'
@@ -162,21 +166,33 @@ MaxRetries := 10
     }
 return
 
+getMumuFolder(folderPath) {
+mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
+if !FileExist(mumuFolder)
+    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
+if !FileExist(mumuFolder)
+    mumuFolder := folderPath . "\MuMu Player 12"
+if !FileExist(mumuFolder)
+    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
+if !FileExist(mumuFolder)
+    mumuFolder := folderPath . "\MuMu Player 12"
+if !FileExist(mumuFolder)
+    mumuFolder := folderPath . "\MuMuPlayer"
+return mumuFolder
+}
 
-findAdbPorts(baseFolder := "C:\Program Files\Netease") {
+
+findAdbPorts(mumuFolderParam) {
     global adbPorts, winTitle
     ; Initialize variables
     adbPorts := 0  ; Create an empty associative array for adbPorts
-    mumuFolder = %baseFolder%\MuMuPlayerGlobal-12.0\vms\*
-    if !FileExist(mumuFolder)
-        mumuFolder = %baseFolder%\MuMu Player 12\vms\*
-
-    if !FileExist(mumuFolder){
+    mumuFolderPath = %mumuFolderParam%\vms\*
+    if !FileExist(mumuFolderPath){
         MsgBox, 16, , Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
         ExitApp
     }
     ; Loop through all directories in the base folder
-    Loop, Files, %mumuFolder%, D  ; D flag to include directories only
+    Loop, Files, %mumuFolderPath%, D  ; D flag to include directories only
     {
         folder := A_LoopFileFullPath
         configFolder := folder "\configs"  ; The config folder inside each directory
@@ -301,9 +317,7 @@ loadAccount() {
 ; New function to get instance list
 GetInstanceList(baseFolder) {
     instanceList := ""
-    mumuFolder := baseFolder . "\MuMuPlayerGlobal-12.0"
-    if !FileExist(mumuFolder)
-        mumuFolder := baseFolder . "\MuMu Player 12"
+    mumuFolder := getMumuFolder(baseFolder)
 
     ; Loop through all VM directories
     Loop, Files, %mumuFolder%\vms\*, D
@@ -337,16 +351,7 @@ RefreshInstances:
 
 RunInstance:
     Gui, Submit, NoHide
-    ; Find the MuMu folder
-    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
-    if !FileExist(mumuFolder) ;if international mumu file path isn't found look for chinese domestic path
-        mumuFolder := folderPath . "\MuMu Player 12"
-    if !FileExist(mumuFolder) ;MuMu Player 12 v5 
-        mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0\nx_main"
-    if !FileExist(mumuFolder) ;MuMu Player 12 v5
-        mumuFolder := folderPath . "\MuMu Player 12\nx_main"
-    if !FileExist(mumuFolder) ;MuMu Player 12 v5
-        mumuFolder := folderPath . "\MuMuPlayer\nx_main"
+    mumuFolder := getMumuFolder(folderPath)
     ; Find the instance number matching the selected name
     instanceNum := ""
     Loop, Files, %mumuFolder%\vms\*, D
@@ -367,15 +372,8 @@ RunInstance:
     }
     if (instanceNum != "") {
         mumuExe := mumuFolder . "\shell\MuMuPlayer.exe"
-        if !FileExist(mumuExe) {
-            mumuExe := folderPath . "\MuMuPlayerGlobal-12.0\nx_main\MuMuNxMain.exe"
-        }
-        if !FileExist(mumuExe) {
-            mumuExe := folderPath . "\MuMu Player 12\nx_main\MuMuNxMain.exe"
-        }
-        if !FileExist(mumuExe) {
-            mumuExe := folderPath . "\MuMuPlayer\nx_main\MuMuNxMain.exe"
-        }
+        if !FileExist(mumuExe)
+            mumuExe := mumuFolder . "\nx_main\MuMuNxMain.exe"
         if FileExist(mumuExe) {
             Run, "%mumuExe%" -v "%instanceNum%"
         } else {

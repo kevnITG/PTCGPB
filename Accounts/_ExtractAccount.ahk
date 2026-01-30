@@ -7,11 +7,13 @@ SetDefaultMouseSpeed, 0
 SetBatchLines, -1
 SetTitleMatchMode, 3
 
-global adbShell, adbPath, adbPorts, winTitle, folderPath
+global adbShell, adbPath, adbPorts, winTitle, folderPath, mumuFolder
 
 IniRead, winTitle, ExtractAccount.ini, UserSettings, winTitle, 1
 IniRead, fileName, ExtractAccount.ini, UserSettings, fileName, name
 IniRead, folderPath, ExtractAccount.ini, UserSettings, folderPath, C:\Program Files\Netease
+
+mumuFolder := getMumuFolder(folderPath)
 
 Gui, Add, Text,, This tool is to EXTRACT the account from the instance.`nMake sure the file name does not match any current account!`nIt will OVERWRITE any file named the same!
 Gui, Add, Text,, Instance Name:
@@ -33,22 +35,15 @@ SaveSettings:
 
     MsgBox, Settings submitted! Extracting Account. `nIt takes a few seconds. You'll get another message box telling you it's ready.
 
-    adbPath := folderPath . "\MuMuPlayerGlobal-12.0\shell\adb.exe"
-    findAdbPorts(folderPath)
+    adbPath := mumuFolder . "\shell\adb.exe"
+    if !FileExist(adbPath)
+        adbPath := mumuFolder . "\nx_main\adb.exe"
+    findAdbPorts(mumuFolder)
 
     if(!WinExist(winTitle)) {
         Msgbox, 16, , Can't find instance: %winTitle%. Make sure that instance is running.;'
         ExitApp
     }
-
-    if !FileExist(adbPath) ;if international mumu file path isn't found look for chinese domestic path
-        adbPath := folderPath . "\MuMu Player 12\shell\adb.exe"
-    if !FileExist(adbPath) ;MuMu Player 12 v5 
-    adbPath := folderPath . "\MuMuPlayerGlobal-12.0\nx_main\adb.exe"
-    if !FileExist(adbPath) ;MuMu Player 12 v5
-        adbPath := folderPath . "\MuMu Player 12\nx_main\adb.exe"
-    if !FileExist(adbPath) ;MuMu Player 12 v5
-        adbPath := folderPath . "\MuMuPlayer\nx_main\adb.exe"
 
     if !FileExist(adbPath) {
         MsgBox, 16, , Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
@@ -102,20 +97,17 @@ SaveSettings:
 ExitApp
 return
 
-findAdbPorts(baseFolder := "C:\Program Files\Netease") {
+findAdbPorts(mumuFolderParam) {
     global adbPorts, winTitle
     ; Initialize variables
     adbPorts := 0  ; Create an empty associative array for adbPorts
-    mumuFolder = %baseFolder%\MuMuPlayerGlobal-12.0\vms\*
-    if !FileExist(mumuFolder)
-        mumuFolder = %baseFolder%\MuMu Player 12\vms\*
-
-    if !FileExist(mumuFolder){
+    mumuFolderPath = %mumuFolderParam%\vms\*
+    if !FileExist(mumuFolderPath){
         MsgBox, 16, , Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
         ExitApp
     }
     ; Loop through all directories in the base folder
-    Loop, Files, %mumuFolder%, D  ; D flag to include directories only
+    Loop, Files, %mumuFolderPath%, D  ; D flag to include directories only
     {
         folder := A_LoopFileFullPath
         configFolder := folder "\configs"  ; The config folder inside each directory
