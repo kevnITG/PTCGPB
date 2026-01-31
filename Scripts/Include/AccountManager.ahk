@@ -115,7 +115,22 @@ loadAccount() {
         return false
     }
 
+    adbWriteRaw("input keyevent 3")
+    waitadb()
+
+    adbWriteRaw("am stop-app jp.pokemon.pokemontcgp")
+    Sleep, 500
+    adbWriteRaw("cmd activity stop-app jp.pokemon.pokemontcgp")
+    Sleep, 500
+
+    adbWriteRaw("am kill jp.pokemon.pokemontcgp")
+    Sleep, 500
     adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
+    Sleep, 500
+
+    adbWriteRaw("sync")
+    Sleep, 3000
+
     waitadb()
     RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " push " . loadFile . " /sdcard/deviceAccount.xml",, Hide
     waitadb()
@@ -124,9 +139,9 @@ loadAccount() {
     adbWriteRaw("rm /sdcard/deviceAccount.xml")
     waitadb()
     ; Reliably restart the app: Wait for launch, and start in a clean, new task without animation.
-    adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
+    adbWriteRaw("monkey -p jp.pokemon.pokemontcgp -c android.intent.category.LAUNCHER 1")
     waitadb()
-    Sleep, 500   ; Reduced from 1000
+    Sleep, 6000   ; Reduced from 1000
     ; Parse account filename for pack info (unchanged)
     if (InStr(accountFileName, "P")) {
         accountFileNameParts := StrSplit(accountFileName, "P")

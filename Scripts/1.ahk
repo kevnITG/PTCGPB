@@ -1667,7 +1667,7 @@ DirectlyPositionWindow() {
     y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
     ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
     if (MuMuv5) {
-        x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+        x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) ; - borderWidth
     } else {
         x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
     }
@@ -1704,17 +1704,34 @@ restartGameInstance(reason, RL := true) {
             loadedAccount := false
         }
 
-        ; Restart without deadcheck
+        ; Restart without deadcheck (CLEAN way)
         waitadb()
+
+        adbWriteRaw("input keyevent 3")
+        waitadb()
+
+        adbWriteRaw("am stop-app jp.pokemon.pokemontcgp")
+        Sleep, 500
+        adbWriteRaw("cmd activity stop-app jp.pokemon.pokemontcgp")
+        Sleep, 500
+
+        adbWriteRaw("am kill jp.pokemon.pokemontcgp")
+        Sleep, 500
         adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
-        waitadb()
-        Sleep, 2000
+        Sleep, 500
+
+        adbWriteRaw("sync")
+        Sleep, 3000
+
         clearMissionCache()
-        adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
+
+        waitadb()
+
+        adbWriteRaw("monkey -p jp.pokemon.pokemontcgp -c android.intent.category.LAUNCHER 1")
         waitadb()
         Sleep, 5000
 
-        return  ; Exit early to continue with next account
+        return ; Exit early to continue with next account
     }
 
     ; Original restartGameInstance logic for non-WP checks
@@ -1737,19 +1754,37 @@ restartGameInstance(reason, RL := true) {
 
         Reload
     } else {
-        waitadb()
-        adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
-        waitadb()
-        Sleep, 2000
-        clearMissionCache()
-        if (!RL && DeadCheck = 0) {
-            adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data
-        }
-        waitadb()
-        Sleep, 500
-        adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
-        waitadb()
-        Sleep, 5000
+        waitadb() ; Properly detach Unity from foreground 
+        adbWriteRaw("input keyevent 3") ; HOME 
+        Sleep, 500 
+        
+        ; Tell ActivityTaskManager to destroy the task + surface 
+        adbWriteRaw("am stop-app jp.pokemon.pokemontcgp") 
+        Sleep, 500 
+        adbWriteRaw("cmd activity stop-app jp.pokemon.pokemontcgp") 
+        Sleep, 500 
+        
+        ; Kill remaining native parts 
+        adbWriteRaw("am kill jp.pokemon.pokemontcgp") 
+        Sleep, 500 
+        adbWriteRaw("am force-stop jp.pokemon.pokemontcgp") 
+        Sleep, 500 
+        
+        ; Force MuMu/Android to flush surface & binder state 
+        adbWriteRaw("sync") 
+        Sleep, 3000 
+        
+        clearMissionCache() 
+        if (!RL && DeadCheck = 0) { 
+            adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data 
+        } 
+        
+        waitadb() 
+        
+        ; Launch like a real user tap (NEW task, NEW surface) 
+        adbWriteRaw("monkey -p jp.pokemon.pokemontcgp -c android.intent.category.LAUNCHER 1") 
+        waitadb() 
+        Sleep, 6000
 
         if (RL) {
             AppendToJsonFile(packsThisRun)
