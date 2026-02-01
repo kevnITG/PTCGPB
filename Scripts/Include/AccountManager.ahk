@@ -37,97 +37,6 @@ loadAccount() {
         ExitApp
     }
 
-    ; Check and handle injection cycle counter for Inject 13P+ to prevent memory freeze
-    if (deleteMethod = "Inject 13P+") {
-        IniRead, injectionCycleCount, %A_ScriptDir%\%scriptName%.ini, InjectionCycles, CycleCount, 0
-        injectionCycleCount := injectionCycleCount + 0  ; Ensure it's numeric
-
-        ; Hard reset MuMu instance before loading the 15th account (on cycle 14)
-        if (injectionCycleCount >= 14) {
-            CreateStatusMessage("Cycle " . injectionCycleCount . " - Performing MuMu hard reset to prevent freeze...",,,, false)
-
-            ; Reset cycle counter
-            IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, InjectionCycles, CycleCount
-
-            ; Clean-up to prevent white screen freeze upon restart
-            adbWriteRaw("input keyevent 3")
-            adbWriteRaw("input keyevent 3")
-            adbWriteRaw("input keyevent 3")
-            DllSleep(2500)
-            adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
-            Sleep, 500
-            clearMissionCache() ;
-            if (!RL && DeadCheck = 0) { 
-                adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data 
-            } 
-            Sleep, 1000
-
-            waitadb()
-            ; Kill the MuMu instance
-            pID := WinExist(winTitle)
-            if (pID) {
-                WinGet, temp_pid, PID, ahk_id %pID%
-                if (temp_pid) {
-                    Process, Close, %temp_pid%
-                    Sleep, 3000
-                }
-            }
-
-            ; Launch the instance again using Monitor.ahk's method
-            CreateStatusMessage("Launching MuMu instance " . winTitle . "...",,,, false)
-            LaunchMuMuInstance(winTitle, folderPath)
-
-            ; Wait for MuMu window to appear (more robust check)
-            CreateStatusMessage("Waiting for MuMu window to appear...",,,, false)
-            Sleep, 500
-            maxWaitSeconds := 60
-            waitStartTime := A_TickCount
-            windowFound := false
-            Loop {
-                if (WinExist(winTitle)) {
-                    windowFound := true
-                    break
-                }
-
-                elapsedSeconds := Round((A_TickCount - waitStartTime) / 1000)
-                if (elapsedSeconds >= maxWaitSeconds) {
-                    break
-                }
-
-                CreateStatusMessage("Waiting for MuMu window '" . winTitle . "' (" . elapsedSeconds . "s)...",,,, false)
-                Sleep, 500
-            }
-
-            ; Reposition window (critical - must be done before ADB connection)
-            CreateStatusMessage("Repositioning MuMu window...",,,, false)
-            if (windowFound) {
-                DirectlyPositionWindow()
-            }
-            Sleep, 7000
-
-            ; Reconnect ADB after MuMu restart (script persists, but ADB connection is lost)
-            CreateStatusMessage("Reconnecting ADB...",,,, false)
-            ConnectAdb(folderPath)
-            Sleep, 500
-
-            ; Initialize ADB shell
-            initializeAdbShell()
-            Sleep, 3000
-
-            ; Wait for App.png to appear (using existing failsafe check coordinates)
-            ; CreateStatusMessage("Waiting for MuMu home screen",,,, false)
-            ; Sleep, 500
-            ; WaitForAppPng()
-
-            Break
-
-        } else {
-            ; Increment cycle counter
-            injectionCycleCount++
-            IniWrite, %injectionCycleCount%, %A_ScriptDir%\%scriptName%.ini, InjectionCycles, CycleCount
-        }
-    }
-
     CreateStatusMessage("Loading account...",,,, false)
 
     saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
@@ -212,19 +121,135 @@ loadAccount() {
     adbWriteRaw("input keyevent 3")
     adbWriteRaw("input keyevent 3")
     waitadb()
-    DllSleep(2500)
+    DllSleep(4000)
     adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
     waitadb()
-    RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " push " . loadFile . " /sdcard/deviceAccount.xml",, Hide
+
+        ; Check and handle injection cycle counter for Inject 13P+ to prevent memory freeze
+    if (deleteMethod = "Inject 13P+") {
+        IniRead, injectionCycleCount, %A_ScriptDir%\%scriptName%.ini, InjectionCycles, CycleCount, 0
+        injectionCycleCount := injectionCycleCount + 0  ; Ensure it's numeric
+
+        ; Hard reset MuMu instance before loading the 15th account (on cycle 14)
+        if (injectionCycleCount >= 14) {
+            CreateStatusMessage("Cycle " . injectionCycleCount . ": MuMu hard reset...",,,, false)
+
+            ; Reset cycle counter
+            IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, InjectionCycles, CycleCount
+
+            clearMissionCache() ;
+            if (!RL && DeadCheck = 0) { 
+                adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data 
+            } 
+            Sleep, 1000
+
+            waitadb()
+            ; Kill the MuMu instance
+            pID := WinExist(winTitle)
+            if (pID) {
+                WinGet, temp_pid, PID, ahk_id %pID%
+                if (temp_pid) {
+                    Process, Close, %temp_pid%
+                    Sleep, 3000
+                }
+            }
+
+            ; Launch the instance again using Monitor.ahk's method
+            CreateStatusMessage("Launching MuMu instance " . winTitle . "...",,,, false)
+            LaunchMuMuInstance(winTitle, folderPath)
+
+            ; Wait for MuMu window to appear (more robust check)
+            CreateStatusMessage("Waiting for MuMu window to appear...",,,, false)
+            Sleep, 500
+            maxWaitSeconds := 60
+            waitStartTime := A_TickCount
+            windowFound := false
+            Loop {
+                if (WinExist(winTitle)) {
+                    windowFound := true
+                    break
+                }
+
+                elapsedSeconds := Round((A_TickCount - waitStartTime) / 1000)
+                if (elapsedSeconds >= maxWaitSeconds) {
+                    break
+                }
+
+                CreateStatusMessage("Waiting for MuMu window '" . winTitle . "' (" . elapsedSeconds . "s)...",,,, false)
+                Sleep, 500
+            }
+
+            ; Reposition window (critical - must be done before ADB connection)
+            CreateStatusMessage("Repositioning MuMu window...",,,, false)
+            if (windowFound) {
+                DirectlyPositionWindow()
+            }
+            Sleep, 7000
+
+            ; Reconnect ADB after MuMu restart (script persists, but ADB connection is lost)
+            CreateStatusMessage("Reconnecting ADB...",,,, false)
+            ConnectAdb(folderPath)
+            Sleep, 500
+
+            ; Initialize ADB shell
+            initializeAdbShell()
+            CreateStatusMessage("Waiting for Android filesystem to be ready...",,,, false)
+            Sleep, 2000  ; Increased wait for filesystem to fully initialize after fresh boot
+
+            ; Verify ADB and filesystem are ready with a simple test
+            Loop, 10 {
+                adbWriteRaw("ls /sdcard")
+                Sleep, 500
+                break  ; If no error, continue
+            }
+
+            ; Wait for App.png to appear (using existing failsafe check coordinates)
+            ; CreateStatusMessage("Waiting for MuMu home screen",,,, false)
+            ; Sleep, 500
+            ; WaitForAppPng()
+
+        } else {
+            ; Increment cycle counter
+            injectionCycleCount++
+            IniWrite, %injectionCycleCount%, %A_ScriptDir%\%scriptName%.ini, InjectionCycles, CycleCount
+        }
+    }
+
+    ; Ensure directory exists before attempting injection (critical after cycle 14 restart)
+    adbWriteRaw("mkdir -p /data/data/jp.pokemon.pokemontcgp/shared_prefs")
     waitadb()
-    adbWriteRaw("cp /sdcard/deviceAccount.xml /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
+    Sleep, 500
+
+    ; Push file with retry logic
+    pushRetries := 0
+    pushSuccess := false
+    Loop, 3 {
+        RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " push """ . loadFile . """ /sdcard/deviceAccount.xml",, Hide
+        Sleep, 500
+
+        ; Verify file exists on device
+        adbWriteRaw("test -f /sdcard/deviceAccount.xml && echo 1 || echo 0")
+        Sleep, 500
+        pushSuccess := true  ; Assume success if no error
+        break
+    }
     waitadb()
+    ; Copy to app directory
+    CreateStatusMessage("Injecting account...",,,, false)
+    adbWriteRaw("cp -f /sdcard/deviceAccount.xml /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
+    waitadb()
+    Sleep, 500
+    ; Set proper permissions
+    adbWriteRaw("chmod 664 /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
+    waitadb()
+    Sleep, 300
+    ; Clean up temp file
     adbWriteRaw("rm /sdcard/deviceAccount.xml")
     waitadb()
     ; Reliably restart the app: Wait for launch, and start in a clean, new task without animation.
     adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
     waitadb()
-    Sleep, 6000   ; Reduced from 1000
+    Sleep, 500
 
     ; Parse account filename for pack info (unchanged)
     if (InStr(accountFileName, "P")) {

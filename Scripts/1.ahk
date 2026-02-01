@@ -1758,7 +1758,7 @@ restartGameInstance(reason, RL := true) {
         adbWriteRaw("input keyevent 3")
         adbWriteRaw("input keyevent 3")
         adbWriteRaw("input keyevent 3")
-        DllSleep(2500)
+        DllSleep(4000)
         adbWriteRaw("am force-stop jp.pokemon.pokemontcgp") 
         Sleep, 500 
         
@@ -1784,7 +1784,7 @@ restartGameInstance(reason, RL := true) {
                 CreateStatusMessage("Stopping...",,,, false)
                 ExitApp
             }
-
+            Sleep, 2000
             Reload
         }
 
