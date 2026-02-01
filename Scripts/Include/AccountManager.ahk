@@ -23,6 +23,7 @@ loadAccount() {
     global accountHasPackInTesting, resetSpecialMissionsDone, stopToggle, winTitle, loadDir
     global accountFileName, accountOpenPacks, accountFileNameTmp, accountFileNameOrig, accountHasPackInfo
     global currentLoadedAccountIndex, adbShell, adbPath, adbPort
+    global deleteMethod, folderPath
 
     beginnerMissionsDone := 0
     soloBattleMissionDone := 0
@@ -130,6 +131,66 @@ loadAccount() {
 
     adbWriteRaw("sync")
     Sleep, 3000
+
+    ; Injection cycle restart logic for "Inject 13P+" to temporarily mitigate MuMu memory leak / PTCGP incompatibility issues.
+    if (deleteMethod = "Inject 13P+") {
+        IniRead, InjectionCycleCount, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount, 0
+        InjectionCycleCount := InjectionCycleCount + 1
+        IniWrite, %InjectionCycleCount%, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount
+
+        if (InjectionCycleCount >= 13) {
+            InjectionCycleCount := 0
+            IniWrite, %InjectionCycleCount%, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount
+
+            CreateStatusMessage("Restarting MuMu instance (13th cycle)",,,, false)
+            LogToFile("Restarting MuMu instance after 13 injection cycles")
+
+            ; Kill the MuMu instance
+            killedInstance := killInstance(winTitle)
+            Sleep, 3000
+
+            ; Launch new instance
+            launchInstance(winTitle)
+            Sleep, 10000
+
+            ; Wait for window to exist
+            WinWait, %winTitle%, , 30
+            if ErrorLevel {
+                LogToFile("Warning: MuMu instance window did not appear within 30 seconds")
+                CreateStatusMessage("MuMu restart timeout - continuing...",,,, false)
+            } else {
+                CreateStatusMessage("MuMu window detected, reconnecting ADB...",,,, false)
+                LogToFile("MuMu window detected, reconnecting ADB")
+            }
+
+            ; Reset the ADB shell connection (it's now pointing to dead instance)
+            adbShell := ""
+            Sleep, 3000  ; Wait for ADB daemon to start on new instance
+
+            ; Disconnect from old ADB connection and reconnect
+            CreateStatusMessage("Disconnecting old ADB connection...",,,, false)
+            RunWait, % adbPath . " disconnect 127.0.0.1:" . adbPort,, Hide
+            Sleep, 1000
+
+            ; Kill and restart ADB server to clear any stale connections
+            CreateStatusMessage("Restarting ADB server...",,,, false)
+            RunWait, % adbPath . " kill-server",, Hide
+            Sleep, 2000
+            RunWait, % adbPath . " start-server",, Hide
+            Sleep, 2000
+
+            ; Reconnect to the instance
+            CreateStatusMessage("Reconnecting to MuMu instance...",,,, false)
+            LogToFile("Reconnecting to ADB on port " . adbPort)
+            ConnectAdb(folderPath)
+
+            ; Initialize new ADB shell connection
+            CreateStatusMessage("Initializing ADB shell...",,,, false)
+            initializeAdbShell()
+            CreateStatusMessage("ADB reconnected successfully",,,, false)
+            LogToFile("ADB shell reinitialized successfully")
+        }
+    }
 
     waitadb()
     RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " push " . loadFile . " /sdcard/deviceAccount.xml",, Hide
@@ -558,6 +619,137 @@ HasFlagInMetadata(fileName, flag) {
 ClearDeviceAccountXmlMap() {
     global deviceAccountXmlMap
     deviceAccountXmlMap := {}
+}
+
+;-------------------------------------------------------------------------------
+; killInstance - Kill MuMu instance by instance number
+;-------------------------------------------------------------------------------
+killInstance(instanceNum := "") {
+    killed := 0
+
+    pID := checkInstance(instanceNum)
+    if pID {
+        Process, Close, %pID%
+        killed := killed + 1
+    }
+
+    return killed
+}
+
+;-------------------------------------------------------------------------------
+; checkInstance - Check if MuMu instance exists and get its process ID
+;-------------------------------------------------------------------------------
+checkInstance(instanceNum := "") {
+    ret := WinExist(instanceNum)
+    if(ret) {
+        WinGet, temp_pid, PID, ahk_id %ret%
+        return temp_pid
+    }
+
+    return ""
+}
+
+;-------------------------------------------------------------------------------
+; launchInstance - Launch MuMu instance by instance number
+;-------------------------------------------------------------------------------
+launchInstance(instanceNum := "") {
+    global folderPath
+
+    ; Determine MuMu folder path
+    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMu Player 12"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer"
+
+    if(instanceNum != "") {
+        mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
+        if(mumuNum != "") {
+            mumuExe := mumuFolder . "\shell\MuMuPlayer.exe"
+            if !FileExist(mumuExe)
+                mumuExe := mumuFolder . "\nx_main\MuMuNxMain.exe"
+            Run_(mumuExe, "-v " . mumuNum)
+        }
+    }
+}
+
+;-------------------------------------------------------------------------------
+; getMumuInstanceNumFromPlayerName - Get MuMu instance number from player name
+;-------------------------------------------------------------------------------
+getMumuInstanceNumFromPlayerName(scriptName := "") {
+    global folderPath
+
+    if(scriptName == "") {
+        return ""
+    }
+
+    ; Determine MuMu folder path
+    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMu Player 12"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer"
+
+    ; Loop through all directories in the base folder
+    Loop, Files, %mumuFolder%\vms\*, D
+    {
+        folder := A_LoopFileFullPath
+        configFolder := folder "\configs"
+
+        IfExist, %configFolder%
+        {
+            extraConfigFile := configFolder "\extra_config.json"
+
+            IfExist, %extraConfigFile%
+            {
+                FileRead, extraConfigContent, %extraConfigFile%
+                RegExMatch(extraConfigContent, """playerName"":\s*""(.*?)""", playerName)
+                if(playerName1 == scriptName) {
+                    RegExMatch(A_LoopFileFullPath, "[^-]+$", mumuNum)
+                    return mumuNum
+                }
+            }
+        }
+    }
+}
+
+;-------------------------------------------------------------------------------
+; Run_ - Run as non-administrator (MuMu has issues running as admin)
+;-------------------------------------------------------------------------------
+Run_(target, args:="", workdir:="") {
+    try
+        ShellRun(target, args, workdir)
+    catch e
+        Run % args="" ? target : target " " args, % workdir
+}
+
+;-------------------------------------------------------------------------------
+; ShellRun - Helper function for Run_ to execute as non-admin
+;-------------------------------------------------------------------------------
+ShellRun(prms*) {
+    shellWindows := ComObjCreate("Shell.Application").Windows
+    VarSetCapacity(_hwnd, 4, 0)
+    desktop := shellWindows.FindWindowSW(0, "", 8, ComObj(0x4003, &_hwnd), 1)
+
+    if ptlb := ComObjQuery(desktop
+        , "{4C96BE40-915C-11CF-99D3-00AA004AE837}"
+        , "{000214E2-0000-0000-C000-000000000046}")
+    {
+        if DllCall(NumGet(NumGet(ptlb+0)+15*A_PtrSize), "ptr", ptlb, "ptr*", psv:=0) = 0
+        {
+            VarSetCapacity(IID_IDispatch, 16)
+            NumPut(0x46000000000000C0, NumPut(0x20400, IID_IDispatch, "int64"), "int64")
+
+            DllCall(NumGet(NumGet(psv+0)+15*A_PtrSize), "ptr", psv
+                , "uint", 0, "ptr", &IID_IDispatch, "ptr*", pdisp:=0)
+
+            shell := ComObj(9,pdisp,1).Application
+            shell.ShellExecute(prms*)
+
+            ObjRelease(psv)
+        }
+        ObjRelease(ptlb)
+    }
 }
 
 ;-------------------------------------------------------------------------------
