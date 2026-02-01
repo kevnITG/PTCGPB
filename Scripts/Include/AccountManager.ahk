@@ -151,7 +151,7 @@ loadAccount() {
 
             ; Launch new instance
             launchInstance(winTitle)
-            Sleep, 10000
+            Sleep, 15000
 
             ; Wait for window to exist
             WinWait, %winTitle%, , 30
@@ -165,7 +165,7 @@ loadAccount() {
 
             ; Reset the ADB shell connection (it's now pointing to dead instance)
             adbShell := ""
-            Sleep, 3000  ; Wait for ADB daemon to start on new instance
+            Sleep, 5000  ; Wait for ADB daemon to start on new instance
 
             ; Disconnect from old ADB connection and reconnect
             CreateStatusMessage("Disconnecting old ADB connection...",,,, false)
