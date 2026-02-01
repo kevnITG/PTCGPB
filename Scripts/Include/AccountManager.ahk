@@ -167,19 +167,12 @@ loadAccount() {
             adbShell := ""
             Sleep, 5000  ; Wait for ADB daemon to start on new instance
 
-            ; Disconnect from old ADB connection and reconnect
-            CreateStatusMessage("Disconnecting old ADB connection...",,,, false)
+            ; Disconnect this instance's ADB connection only (do NOT kill-server as that affects ALL instances)
+            CreateStatusMessage("Disconnecting ADB for instance " . winTitle . "...",,,, false)
             RunWait, % adbPath . " disconnect 127.0.0.1:" . adbPort,, Hide
-            Sleep, 1000
-
-            ; Kill and restart ADB server to clear any stale connections
-            CreateStatusMessage("Restarting ADB server...",,,, false)
-            RunWait, % adbPath . " kill-server",, Hide
-            Sleep, 2000
-            RunWait, % adbPath . " start-server",, Hide
             Sleep, 2000
 
-            ; Reconnect to the instance
+            ; Reconnect to this specific instance only
             CreateStatusMessage("Reconnecting to MuMu instance...",,,, false)
             LogToFile("Reconnecting to ADB on port " . adbPort)
             ConnectAdb(folderPath)
