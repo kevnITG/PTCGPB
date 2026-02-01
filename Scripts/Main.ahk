@@ -489,7 +489,7 @@ resetWindows(){
             y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
             ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
             if (MuMuv5) {
-                x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) - borderWidth
+                x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) ; - borderWidth
             } else {
                 x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
             }
