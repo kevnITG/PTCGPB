@@ -23,6 +23,7 @@ loadAccount() {
     global accountHasPackInTesting, resetSpecialMissionsDone, stopToggle, winTitle, loadDir
     global accountFileName, accountOpenPacks, accountFileNameTmp, accountFileNameOrig, accountHasPackInfo
     global currentLoadedAccountIndex, adbShell, adbPath, adbPort
+    global scriptName, deleteMethod, folderPath, MuMuv5
 
     beginnerMissionsDone := 0
     soloBattleMissionDone := 0
@@ -34,6 +35,95 @@ loadAccount() {
     if (stopToggle) {
         CreateStatusMessage("Stopping...",,,, false)
         ExitApp
+    }
+
+    ; Check and handle injection cycle counter for Inject 13P+ to prevent memory freeze
+    if (deleteMethod = "Inject 13P+") {
+        IniRead, injectionCycleCount, %A_ScriptDir%\%scriptName%.ini, InjectionCycles, CycleCount, 0
+        injectionCycleCount := injectionCycleCount + 0  ; Ensure it's numeric
+
+        ; Hard reset MuMu instance before loading the 15th account (on cycle 14)
+        if (injectionCycleCount >= 14) {
+            CreateStatusMessage("Cycle " . injectionCycleCount . " - Performing MuMu hard reset to prevent freeze...",,,, false)
+
+            ; Reset cycle counter
+            IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, InjectionCycles, CycleCount
+
+            ; Clean-up to prevent white screen freeze upon restart
+            adbWriteRaw("input keyevent 3")
+            adbWriteRaw("input keyevent 3")
+            adbWriteRaw("input keyevent 3")
+            DllSleep(2500)
+            adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
+            Sleep, 500
+            clearMissionCache() ;
+            if (!RL && DeadCheck = 0) { 
+                adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data 
+            } 
+            Sleep, 1000
+
+            waitadb()
+            ; Kill the MuMu instance
+            pID := WinExist(winTitle)
+            if (pID) {
+                WinGet, temp_pid, PID, ahk_id %pID%
+                if (temp_pid) {
+                    Process, Close, %temp_pid%
+                    Sleep, 3000
+                }
+            }
+
+            ; Launch the instance again using Monitor.ahk's method
+            CreateStatusMessage("Launching MuMu instance " . winTitle . "...",,,, false)
+            LaunchMuMuInstance(winTitle, folderPath)
+
+            ; Wait for MuMu window to appear (more robust check)
+            CreateStatusMessage("Waiting for MuMu window to appear...",,,, false)
+            Sleep, 500
+            maxWaitSeconds := 60
+            waitStartTime := A_TickCount
+            windowFound := false
+            Loop {
+                if (WinExist(winTitle)) {
+                    windowFound := true
+                    break
+                }
+
+                elapsedSeconds := Round((A_TickCount - waitStartTime) / 1000)
+                if (elapsedSeconds >= maxWaitSeconds) {
+                    break
+                }
+
+                CreateStatusMessage("Waiting for MuMu window '" . winTitle . "' (" . elapsedSeconds . "s)...",,,, false)
+                Sleep, 500
+            }
+
+            ; Reposition window (critical - must be done before ADB connection)
+            CreateStatusMessage("Repositioning MuMu window...",,,, false)
+            if (windowFound) {
+                DirectlyPositionWindow()
+            }
+            Sleep, 1500
+
+            ; Reconnect ADB after MuMu restart (script persists, but ADB connection is lost)
+            CreateStatusMessage("Reconnecting ADB...",,,, false)
+            ConnectAdb(folderPath)
+            Sleep, 500
+
+            ; Initialize ADB shell
+            initializeAdbShell()
+            Sleep, 500
+
+            ; Wait for App.png to appear (using existing failsafe check coordinates)
+            CreateStatusMessage("Waiting for MuMu home screen",,,, false)
+            Sleep, 500
+            WaitForAppPng()
+
+        } else {
+            ; Increment cycle counter
+            injectionCycleCount++
+            IniWrite, %injectionCycleCount%, %A_ScriptDir%\%scriptName%.ini, InjectionCycles, CycleCount
+        }
     }
 
     CreateStatusMessage("Loading account...",,,, false)
@@ -91,7 +181,7 @@ loadAccount() {
 						accountFileName := fileLines[1]
 						break
 					}
-				}
+                }
 
                 if (foundValidAccount)
                     break
@@ -117,13 +207,13 @@ loadAccount() {
 
     adbWriteRaw("input keyevent 3")
     waitadb()
-
-    adbWriteRaw("am stop-app jp.pokemon.pokemontcgp")
-    Sleep, 500
-    adbWriteRaw("cmd activity stop-app jp.pokemon.pokemontcgp")
-    Sleep, 500
-
-    adbWriteRaw("am kill jp.pokemon.pokemontcgp")
+    if (deleteMethod = "Inject 13P+") {
+        adbWriteRaw("input keyevent 3")
+        waitadb()
+        adbWriteRaw("input keyevent 3")
+        waitadb()
+        DllSleep(2500)
+    }
     Sleep, 500
     adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
     Sleep, 500
@@ -558,6 +648,48 @@ HasFlagInMetadata(fileName, flag) {
 ClearDeviceAccountXmlMap() {
     global deviceAccountXmlMap
     deviceAccountXmlMap := {}
+}
+
+;-------------------------------------------------------------------------------
+; WaitForAppPng - Wait for App.png to appear on screen (MuMu home screen)
+;-------------------------------------------------------------------------------
+WaitForAppPng() {
+    global defaultLanguage, winTitle
+
+    imagePath := A_ScriptDir . "\" . defaultLanguage . "\"
+    searchVariation := 20
+    maxWaitTime := 60000  ; 60 seconds max wait
+    startTime := A_TickCount
+
+    Loop {
+        ; Capture window
+        pBitmapW := from_window(WinExist(winTitle))
+        if (!pBitmapW) {
+            Sleep, 2000
+            CreateStatusMessage("Waiting for MuMu window... (" . Round((A_TickCount - startTime) / 1000) . "s)",,,, false)
+            continue
+        }
+
+        ; Search for App.png in the specified region (48, 174, 54, 183)
+        Path := imagePath . "App.png"
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmapW, pNeedle, vPosXY, 48, 174, 54, 183, searchVariation)
+
+        Gdip_DisposeImage(pBitmapW)
+
+        if (vRet = 1) {
+            CreateStatusMessage("MuMu home screen detected (App.png found)",,,, false)
+            return true
+        }
+
+        if (A_TickCount - startTime > maxWaitTime) {
+            LogToFile("Warning: App.png not detected within 60 seconds - proceeding anyway")
+            return false
+        }
+
+        Sleep, 2000
+        CreateStatusMessage("Waiting for MuMu home screen... (" . Round((A_TickCount - startTime) / 1000) . "s)",,,, false)
+    }
 }
 
 ;-------------------------------------------------------------------------------

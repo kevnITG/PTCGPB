@@ -491,7 +491,7 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             }
         }
 
-        Sleep, 4000 ; avoiding spam clicks at startup which can cause stability issues
+        Sleep, 500 ; avoiding spam clicks at startup which can cause stability issues
         FindImageAndClick(158, 252, 177, 259, , "speedmodMenu", 18, 109, 2000) 
         if(setSpeed = 3)
             FindImageAndClick(187, 168, 191, 174, , "Three", 187, 172)
@@ -1755,24 +1755,12 @@ restartGameInstance(reason, RL := true) {
         Reload
     } else {
         waitadb() ; Properly detach Unity from foreground 
-        adbWriteRaw("input keyevent 3") ; HOME 
-        Sleep, 500 
-        
-        ; Tell ActivityTaskManager to destroy the task + surface 
-        adbWriteRaw("am stop-app jp.pokemon.pokemontcgp") 
-        Sleep, 500 
-        adbWriteRaw("cmd activity stop-app jp.pokemon.pokemontcgp") 
-        Sleep, 500 
-        
-        ; Kill remaining native parts 
-        adbWriteRaw("am kill jp.pokemon.pokemontcgp") 
-        Sleep, 500 
+        adbWriteRaw("input keyevent 3")
+        adbWriteRaw("input keyevent 3")
+        adbWriteRaw("input keyevent 3")
+        DllSleep(2500)
         adbWriteRaw("am force-stop jp.pokemon.pokemontcgp") 
         Sleep, 500 
-        
-        ; Force MuMu/Android to flush surface & binder state 
-        adbWriteRaw("sync") 
-        Sleep, 3000 
         
         clearMissionCache() 
         if (!RL && DeadCheck = 0) { 
@@ -1781,11 +1769,6 @@ restartGameInstance(reason, RL := true) {
         
         waitadb() 
         
-        ; Launch like a real user tap (NEW task, NEW surface) 
-        adbWriteRaw("monkey -p jp.pokemon.pokemontcgp -c android.intent.category.LAUNCHER 1") 
-        waitadb() 
-        Sleep, 6000
-
         if (RL) {
             AppendToJsonFile(packsThisRun)
             if(!injectMethod) {
