@@ -1220,7 +1220,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     Path = %imagePath%App.png
     pNeedle := GetNeedle(Path)
     ; ImageSearch within the region
-    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 48, 174, 54, 183, searchVariation)
+    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 45, 174, 55, 185, searchVariation)
     if (vRet = 1) {
         restartGameInstance("Stuck at " . imageName . "...")
     }
@@ -1544,7 +1544,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
         Path = %imagePath%App.png
         pNeedle := GetNeedle(Path)
         ; ImageSearch within the region
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 48, 174, 54, 183, searchVariation)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 45, 174, 55, 185, searchVariation)
         if (vRet = 1) {
             restartGameInstance("Stuck at " . imageName . "...")
         }
