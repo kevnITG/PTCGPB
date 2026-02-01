@@ -657,8 +657,8 @@ WaitForAppPng() {
     global defaultLanguage, winTitle
 
     imagePath := A_ScriptDir . "\" . defaultLanguage . "\"
-    searchVariation := 20
-    maxWaitTime := 60000  ; 60 seconds max wait
+    searchVariation := 60
+    maxWaitTime := 10000  ; 10 seconds max wait
     startTime := A_TickCount
 
     Loop {
@@ -683,7 +683,6 @@ WaitForAppPng() {
         }
 
         if (A_TickCount - startTime > maxWaitTime) {
-            LogToFile("Warning: App.png not detected within 60 seconds - proceeding anyway")
             return false
         }
 
