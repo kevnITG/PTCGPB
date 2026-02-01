@@ -1781,6 +1781,10 @@ restartGameInstance(reason, RL := true) {
     else
         CreateStatusMessage("Restarting game...",,,, false)
 
+    ; Always log stuck reasons for debugging
+    if (InStr(reason, "Stuck"))
+        LogToFile("STUCK DETECTED in " . scriptName . " - Reason: " . reason . " | loadedAccount: " . (loadedAccount ? "true" : "false") . " | injectMethod: " . (injectMethod ? "true" : "false") . " | accountFileName: " . accountFileName, "StuckLog.txt")
+
     if (RL = "GodPack") {
         LogToFile("Restarted game for instance " . scriptName . ". Reason: " reason, "Restart.txt")
         IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
@@ -2257,10 +2261,11 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
     try {
         OwnerWND := WinExist(winTitle)
         buttonWidth := 40
+        guiHeight := 489 + titleHeight  ; 489 game area + title bar (45 for v4, 50 for v5)
 
         Gui, DevMode_ss%winTitle%:New, +LastFound -DPIScale
-        Gui, DevMode_ss%winTitle%:Add, Picture, x0 y0 w275 h534, %filePath%
-        Gui, DevMode_ss%winTitle%:Show, w275 h534, Screensho %winTitle%
+        Gui, DevMode_ss%winTitle%:Add, Picture, x0 y0 w275 h%guiHeight%, %filePath%
+        Gui, DevMode_ss%winTitle%:Show, w275 h%guiHeight%, Screensho %winTitle%
 
         sleep 100
         msgbox click on top-left corner and bottom-right corners
@@ -2296,9 +2301,9 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
         Y3 -= 31
 
         ; Convert window coordinates to device/OCR coordinates
-        ; Device resolution: 540x960, Window resolution: 277 x 489, Y offset: 49
+        ; Device resolution: 540x960, Window resolution: 277 x 489, Y offset: titleHeight - 1
         OCR_X1 := Round(X1 * 540 / 277)
-        OCR_Y1 := Round((Y1 - 49) * 960 / 489)
+        OCR_Y1 := Round((Y1 - (titleHeight - 1)) * 960 / 489)
         OCR_W := Round(W * 540 / 277)
         OCR_H := Round(H * 960 / 489)
         OCR_X2 := OCR_X1 + OCR_W
