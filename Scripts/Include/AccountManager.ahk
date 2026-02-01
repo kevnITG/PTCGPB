@@ -103,7 +103,7 @@ loadAccount() {
             if (windowFound) {
                 DirectlyPositionWindow()
             }
-            Sleep, 1500
+            Sleep, 7000
 
             ; Reconnect ADB after MuMu restart (script persists, but ADB connection is lost)
             CreateStatusMessage("Reconnecting ADB...",,,, false)
@@ -112,12 +112,14 @@ loadAccount() {
 
             ; Initialize ADB shell
             initializeAdbShell()
-            Sleep, 500
+            Sleep, 3000
 
             ; Wait for App.png to appear (using existing failsafe check coordinates)
-            CreateStatusMessage("Waiting for MuMu home screen",,,, false)
-            Sleep, 500
-            WaitForAppPng()
+            ; CreateStatusMessage("Waiting for MuMu home screen",,,, false)
+            ; Sleep, 500
+            ; WaitForAppPng()
+
+            Break
 
         } else {
             ; Increment cycle counter
@@ -205,22 +207,13 @@ loadAccount() {
         return false
     }
 
+    ; Kill app, inject new account.
+    adbWriteRaw("input keyevent 3")
+    adbWriteRaw("input keyevent 3")
     adbWriteRaw("input keyevent 3")
     waitadb()
-    if (deleteMethod = "Inject 13P+") {
-        adbWriteRaw("input keyevent 3")
-        waitadb()
-        adbWriteRaw("input keyevent 3")
-        waitadb()
-        DllSleep(2500)
-    }
-    Sleep, 500
+    DllSleep(2500)
     adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
-    Sleep, 500
-
-    adbWriteRaw("sync")
-    Sleep, 3000
-
     waitadb()
     RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " push " . loadFile . " /sdcard/deviceAccount.xml",, Hide
     waitadb()
@@ -229,9 +222,10 @@ loadAccount() {
     adbWriteRaw("rm /sdcard/deviceAccount.xml")
     waitadb()
     ; Reliably restart the app: Wait for launch, and start in a clean, new task without animation.
-    adbWriteRaw("monkey -p jp.pokemon.pokemontcgp -c android.intent.category.LAUNCHER 1")
+    adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
     waitadb()
     Sleep, 6000   ; Reduced from 1000
+
     ; Parse account filename for pack info (unchanged)
     if (InStr(accountFileName, "P")) {
         accountFileNameParts := StrSplit(accountFileName, "P")
