@@ -338,6 +338,7 @@ createAccountList(scriptName)
 
 rerolls_local := 0
 rerollStartTime_local := A_TickCount
+failSafe := A_TickCount  ; Initialize failSafe timer at script startup
 
 if(injectMethod && DeadCheck != 1) {
     loadedAccount := loadAccount()
@@ -346,7 +347,7 @@ if(injectMethod && DeadCheck != 1) {
 
 clearMissionCache()
 
-if(!injectMethod || !loadedAccount)
+if(!injectMethod || (!loadedAccount && DeadCheck != 1))
     restartGameInstance("Initializing bot...", false)
 
 pToken := Gdip_Startup()
@@ -1276,7 +1277,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
                 FileDelete, %loadedAccount%
                 IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
             }
-            LogToFile("Restarted game for instance " . scriptName . ". Reason: No save data found", "Restart.txt")
+            LogToFile("Restarted game. Reason: No save data found")
             Reload
         }
     }
@@ -1566,7 +1567,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                     FileDelete, %loadedAccount%
                     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
                 }
-                LogToFile("Restarted game for instance " . scriptName . ". Reason: No save data found", "Restart.txt")
+                LogToFile("Restarted game. Reason: No save data found")
                 Reload
             }
         }
@@ -1770,19 +1771,21 @@ restartGameInstance(reason, RL := true) {
     }
 
     ; Original restartGameInstance logic for non-WP checks
+    isStuck := InStr(reason, "Stuck")
+
     if (Debug)
         CreateStatusMessage("Restarting game reason:`n" . reason)
-    else if (InStr(reason, "Stuck"))
-        CreateStatusMessage("Stuck! Restarting game...",,,, false)
+    else if (isStuck)
+        CreateStatusMessage("Stuck! Restarting MuMu...",,,, false)
     else
         CreateStatusMessage("Restarting game...",,,, false)
 
-    ; Always log stuck reasons for debugging
-    if (InStr(reason, "Stuck"))
-        LogToFile("STUCK DETECTED in " . scriptName . " - Reason: " . reason . " | loadedAccount: " . (loadedAccount ? "true" : "false") . " | injectMethod: " . (injectMethod ? "true" : "false") . " | accountFileName: " . accountFileName, "StuckLog.txt")
+    ; Log to instance-specific log file
+    if (isStuck)
+        LogToFile("STUCK DETECTED - Reason: " . reason . " | loadedAccount: " . (loadedAccount ? "true" : "false") . " | injectMethod: " . (injectMethod ? "true" : "false") . " | accountFileName: " . accountFileName)
 
     if (RL = "GodPack") {
-        LogToFile("Restarted game for instance " . scriptName . ". Reason: " reason, "Restart.txt")
+        LogToFile("Restarted game. Reason: " reason)
         IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
         AppendToJsonFile(packsThisRun)
 
@@ -1792,25 +1795,35 @@ restartGameInstance(reason, RL := true) {
         }
 
         Reload
+    } else if (isStuck) {
+        ; Only restart MuMu when stuck - this is the nuclear option
+        clearMissionCache()
+
+        ; Kill the entire MuMu instance
+        CreateStatusMessage("Restarting MuMu instance...",,,, false)
+        LogToFile("Killing MuMu instance " . winTitle . " due to: " . reason)
+        killInstance(winTitle)
+        Sleep, 2000
+
+        ; Reset injection cycle count since we're doing a full MuMu restart
+        IniWrite, 0, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount
+
+        ; Launch new MuMu instance
+        launchInstance(winTitle)
+        Sleep, 5000  ; Give MuMu a head start before script reload
+
+        AppendToJsonFile(packsThisRun)
+        LogToFile("Restarted MuMu instance. Reason: " reason)
+
+        if (stopToggle) {
+            CreateStatusMessage("Stopping...",,,, false)
+            ExitApp
+        }
+
+        Reload  ; Clean restart handles ADB reconnection automatically
     } else {
-        waitadb() ; Properly detach Unity from foreground
-        adbWriteRaw("input keyevent 3") ; HOME
-        Sleep, 500
-
-        ; Tell ActivityTaskManager to destroy the task + surface
-        adbWriteRaw("am stop-app jp.pokemon.pokemontcgp")
-        Sleep, 500
-        adbWriteRaw("cmd activity stop-app jp.pokemon.pokemontcgp")
-        Sleep, 500
-
-        ; Kill remaining native parts
-        adbWriteRaw("am kill jp.pokemon.pokemontcgp")
-        Sleep, 500
+        ; Non-stuck restart: just restart the Pokemon app, not the whole MuMu instance
         adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
-        Sleep, 500
-
-        ; Force MuMu/Android to flush surface & binder state
-        adbWriteRaw("sync")
         Sleep, 3000
 
         clearMissionCache()
@@ -1818,22 +1831,11 @@ restartGameInstance(reason, RL := true) {
             adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data
         }
 
-        ; Kill the entire MuMu instance
-        CreateStatusMessage("Restarting MuMu instance...",,,, false)
-        LogToFile("Killing MuMu instance " . winTitle . " due to: " . reason)
-        killInstance(winTitle)
+        adbWriteRaw("am start -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity")
         Sleep, 3000
 
-        ; Reset injection cycle count since we're doing a full MuMu restart
-        IniWrite, 0, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount
-
-        ; Launch new MuMu instance
-        launchInstance(winTitle)
-        Sleep, 15000
-
         if (RL) {
-            AppendToJsonFile(packsThisRun)
-            LogToFile("Restarted MuMu instance " . scriptName . ". Reason: " reason, "Restart.txt")
+            LogToFile("Restarted game. Reason: " reason)
 
             if (stopToggle) {
                 CreateStatusMessage("Stopping...",,,, false)
@@ -3544,7 +3546,9 @@ PackOpening() {
         CreateStatusMessage("Waiting for Pack`n(" . failSafeTime . "/45 seconds)")
         if(failSafeTime > 45){
             RemoveFriends()
-            IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+            if(injectMethod && loadedAccount && friended) {
+                IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+            }
             restartGameInstance("Stuck at Pack")
         }
     }

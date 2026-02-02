@@ -526,7 +526,7 @@ restartGameInstance(reason, RL := true){
 
     Sleep, 3000
     if(RL) {
-        LogToFile("Restarted game for instance " . scriptName . ". Reason: " reason, "Restart.txt")
+        LogToFile("Restarted game. Reason: " reason)
         Reload
     }
 }
