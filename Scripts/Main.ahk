@@ -1393,3 +1393,48 @@ Gdip_ImageSearch_wbb(pBitmapHaystack,pNeedle,ByRef OutputList=""
         bboxAndPause_immage(OuterX1, OuterY1+yBias, OuterX2, OuterY2+yBias, pNeedle, vret, dbg_bboxNpause)
     return vret
 }
+
+DirectlyPositionWindow() {
+    global Columns, winTitle, SelectedMonitorIndex, scaleParam, rowGap, titleHeight, MuMuv5
+
+    ; Make sure rowGap is defined
+    if (!rowGap)
+        rowGap := 100
+
+    ; Get monitor information
+    SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+    SysGet, Monitor, Monitor, %SelectedMonitorIndex%
+
+    ; Calculate position based on instance number
+    Title := winTitle
+
+    instanceIndex := StrReplace(Title, "Main", "")
+    if (instanceIndex = "")
+        instanceIndex := 1
+
+    if (MuMuv5) {
+        titleHeight := 50
+    } else {
+        titleHeight := 45
+    }
+
+    borderWidth := 4 - 1
+    rowHeight := titleHeight + 489 + 4
+    currentRow := Floor((instanceIndex - 1) / Columns)
+
+    y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
+    if (MuMuv5) {
+        x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2))
+    } else {
+        x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
+    }
+
+    WinSet, Style, -0xC00000, %Title%
+    WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
+    WinSet, Style, +0xC00000, %Title%
+    WinSet, Redraw, , %Title%
+
+    CreateStatusMessage("Positioned window at x:" . x . " y:" . y,,,, false)
+
+    return true
+}
