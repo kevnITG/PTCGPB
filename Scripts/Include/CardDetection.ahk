@@ -453,8 +453,8 @@ FindGodPack(invalidPack := false) {
 ; FoundStars - Process found star/special cards
 ;-------------------------------------------------------------------------------
 FoundStars(star) {
-    global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack, deleteMethod, checkWPthanks
-    global wpThanksSavedUsername, wpThanksSavedFriendCode, username, friendCode, loadedAccount
+    global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack, deleteMethod
+    global username, friendCode, loadedAccount
     global accountFileName, sendAccountXml, winTitle, packsInPool
 
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
@@ -463,19 +463,7 @@ FoundStars(star) {
     screenShot := Screenshot(star)
     accountFullPath := ""
 
-    ; Determine if this should get (W) flag
-    shouldAddWFlag := false
-    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 96P+" && injectMethod && loadedAccount) {
-        if (star = "Double two star" || star = "Trainer" || star = "Rainbow" || star = "Full Art") {
-            shouldAddWFlag := true
-        }
-    }
-
-    accountFile := saveAccount(star, accountFullPath, "", shouldAddWFlag)
-
-    if (shouldAddWFlag) {
-        AddWFlag()
-    }
+    accountFile := saveAccount(star, accountFullPath, "", false)
 
     friendCode := getFriendCode()
 
@@ -541,8 +529,8 @@ FoundStars(star) {
 ; GodPackFound - Process found god pack
 ;-------------------------------------------------------------------------------
 GodPackFound(validity) {
-    global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack, deleteMethod, checkWPthanks
-    global wpThanksSavedUsername, wpThanksSavedFriendCode, username, friendCode, loadedAccount
+    global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack, deleteMethod
+    global username, friendCode, loadedAccount
     global accountFileName, sendAccountXml, InvalidCheck, winTitle, packsInPool, starCount
 
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
@@ -563,16 +551,7 @@ GodPackFound(validity) {
     screenShot := Screenshot(validity)
     accountFullPath := ""
 
-    shouldAddWFlag := false
-    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 96P+" && validity = "Valid" && injectMethod && loadedAccount) {
-        shouldAddWFlag := true
-    }
-
-    accountFile := saveAccount(validity, accountFullPath, "", shouldAddWFlag)
-
-    if (shouldAddWFlag) {
-        AddWflag()
-    }
+    accountFile := saveAccount(validity, accountFullPath, "", false)
 
     friendCode := getFriendCode()
 

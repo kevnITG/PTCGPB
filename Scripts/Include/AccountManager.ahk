@@ -132,18 +132,22 @@ loadAccount() {
     adbWriteRaw("sync")
     Sleep, 3000
 
-    ; Injection cycle restart logic for "Inject 13P+" to temporarily mitigate MuMu memory leak / PTCGP incompatibility issues.
-    if (deleteMethod = "Inject 13P+") {
+    ; Injection cycle restart logic for "Inject 13P+" and "Inject Wonderpick 96P+" to mitigate MuMu memory leak / PTCGP incompatibility issues.
+    ; Read auto-restart settings from PTCGPB settings
+    IniRead, autoRestartMumu, %A_ScriptDir%\..\Settings.ini, UserSettings, autoRestartMumu, 1
+    IniRead, runsBeforeRestart, %A_ScriptDir%\..\Settings.ini, UserSettings, runsBeforeRestart, 13
+
+    if (autoRestartMumu = 1 && runsBeforeRestart > 0 && (deleteMethod = "Inject 13P+" || deleteMethod = "Inject Wonderpick 96P+")) {
         IniRead, InjectionCycleCount, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount, 0
         InjectionCycleCount := InjectionCycleCount + 1
         IniWrite, %InjectionCycleCount%, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount
 
-        if (InjectionCycleCount >= 13) {
+        if (InjectionCycleCount >= runsBeforeRestart) {
             InjectionCycleCount := 0
             IniWrite, %InjectionCycleCount%, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount
 
-            CreateStatusMessage("Restarting MuMu instance (13th cycle)",,,, false)
-            LogToFile("Restarting MuMu instance after 13 injection cycles - full script reload")
+            CreateStatusMessage("Restarting MuMu instance (" . runsBeforeRestart . " cycle)",,,, false)
+            LogToFile("Restarting MuMu instance after " . runsBeforeRestart . " injection cycles - full script reload")
 
             killInstance(winTitle)
             Sleep, 2000
@@ -750,7 +754,7 @@ UpdateSavedXml(xmlPath) {
 ; Note: This is a large function (300+ lines) included in full for completeness
 ;-------------------------------------------------------------------------------
 CreateAccountList(instance) {
-    global injectSortMethod, deleteMethod, winTitle, verboseLogging, checkWPthanks
+    global injectSortMethod, deleteMethod, winTitle, verboseLogging
 
     ; Clean up stale used accounts first
     CleanupUsedAccounts()
@@ -874,46 +878,10 @@ CreateAccountList(instance) {
     fileNames := []
     fileTimes := []
     packCounts := []
-    wFlagFiles := []  ; Separate array for W flag files
 
-    ; First pass: gather W flag files that are ready for checking
-    if (checkWPthanks = 1 && deleteMethod = "Inject Wonderpick 96P+") {
-        Loop, %saveDir%\*.xml {
-            if (InStr(A_LoopFileName, "W")) {
-                xml := saveDir . "\" . A_LoopFileName
-
-                ; Get file modification time
-                modTime := ""
-                FileGetTime, modTime, %xml%, M
-
-                ; Calculate minutes difference
-                minutesDiff := A_Now
-                timeVar := modTime
-                EnvSub, minutesDiff, %timeVar%, Minutes
-
-                if (InStr(A_LoopFileName, "W2")) {
-                    ; Second check - wait 12 hours (720 minutes)
-                    if (minutesDiff >= 720) {
-                        wFlagFiles.Push(A_LoopFileName)
-                    }
-                } else {
-                    ; First check - wait 30 minutes
-                    if (minutesDiff >= 30) {
-                        wFlagFiles.Push(A_LoopFileName)
-                    }
-                }
-            }
-        }
-    }
-
-    ; Second pass: gather all other eligible files with their timestamps
+    ; Gather all eligible files with their timestamps
     Loop, %saveDir%\*.xml {
         xml := saveDir . "\" . A_LoopFileName
-
-        ; Skip W flag files as they're handled separately
-        if (InStr(A_LoopFileName, "W")) {
-            continue
-        }
 
         ; Skip if this account was recently used (unless we just cleared the log)
         if (usedAccounts.HasKey(A_LoopFileName)) {
@@ -977,12 +945,11 @@ CreateAccountList(instance) {
 
     ; Log counts
     totalEligible := (fileNames.MaxIndex() ? fileNames.MaxIndex() : 0)
-    totalWFlags := (wFlagFiles.MaxIndex() ? wFlagFiles.MaxIndex() : 0)
 
     if (forceRegeneration) {
-        LogToFile("FORCED REGENERATION: Found " . totalEligible . " eligible files + " . totalWFlags . " W flag files (cleared used accounts, maintained strict age requirements)")
+        LogToFile("FORCED REGENERATION: Found " . totalEligible . " eligible files (cleared used accounts, maintained strict age requirements)")
     } else {
-        LogToFile("Found " . totalEligible . " eligible files + " . totalWFlags . " W flag files (>= 24 hours old, not recently used, packs: " . minPacks . "-" . maxPacks . ")")
+        LogToFile("Found " . totalEligible . " eligible files (>= 24 hours old, not recently used, packs: " . minPacks . "-" . maxPacks . ")")
     }
 
     ; Sort regular files based on selected method
@@ -1006,12 +973,7 @@ CreateAccountList(instance) {
     ; Write sorted files to list.txt and list_current.txt
     listContent := ""
 
-    ; Add W flag files at the beginning for priority processing
-    Loop, % wFlagFiles.MaxIndex() {
-        listContent .= wFlagFiles[A_Index] . "`r`n"
-    }
-
-    ; Add regular files
+    ; Add files to list
     Loop, % fileNames.MaxIndex() {
         listContent .= fileNames[A_Index] . "`r`n"
     }

@@ -205,16 +205,15 @@ CleanupWPMetadata() {
 ; CheckWonderPickThanks - Check if account received Wonder Pick thanks
 ;-------------------------------------------------------------------------------
 CheckWonderPickThanks() {
-    global accountFileName, checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode
+    ; NOTE: This function is deprecated and no longer called
+    ; WonderPick thanks checking feature has been removed
+    global accountFileName, wpThanksSavedUsername, wpThanksSavedFriendCode
     global discordWebhookURL, discordUserId, scriptName, packsInPool, openPack, scaleParam
-    global username, friendCode, isCurrentlyDoingWPCheck
+    global username, friendCode
 
     if (!HasFlagInMetadata(accountFileName, "W")) {
         return false  ; Not a W flag account
     }
-
-    ; Set flag to indicate we're actively doing a WP check
-    isCurrentlyDoingWPCheck := true
 
     isSecondCheck := HasFlagInMetadata(accountFileName, "W2")
     checkStage := isSecondCheck ? "FINAL" : "FIRST"
@@ -243,7 +242,6 @@ CheckWonderPickThanks() {
         LogToFile("WP Thanks check failed during navigation for: " . accountFileName . " - " . e.message)
         RemoveWFlagFromAccount()
         SendWPStuckWarning("Navigation Error")
-        isCurrentlyDoingWPCheck := false  ; Clear flag before returning
         return true
     }
 
@@ -288,9 +286,6 @@ CheckWonderPickThanks() {
 
     ; Send Discord notification
     SendWPThanksReport(thanksFound, checkStage, screenshotPath)
-
-    ; Clear flag before returning
-    isCurrentlyDoingWPCheck := false
 
     return true
 }

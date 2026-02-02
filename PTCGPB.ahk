@@ -1194,8 +1194,13 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (claimDailyMission ? "Checked" : "") " vclaimDailyMission_Popup x" . col1X . " y" . yPos . " cWhite", Claim Daily 4 Hourglasses
     yPos += 20
     
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (checkWPthanks ? "Checked" : "") " vcheckWPthanks_Popup x" . col1X . " y" . yPos . " cWhite", Check for Wonderpick Thanks
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (autoRestartMumu ? "Checked" : "") " vautoRestartMumu_Popup x" . col1X . " y" . yPos . " cWhite", Auto-Restart MuMu
     yPos += 20
+
+    runsBeforeRestartY := yPos + 2
+    Gui, ToolsAndSystemSelect:Add, Text, x%col1X% y%runsBeforeRestartY% cWhite, Runs before restart:
+    Gui, ToolsAndSystemSelect:Add, Edit, vrunsBeforeRestart_Popup w30 x140 y%yPos% h20 Number Limit2 -E0x200 Background2A2A2A cWhite Center, %runsBeforeRestart%
+    yPos += 25
     
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (slowMotion ? "Checked" : "") " vslowMotion_Popup x" . col1X . " y" . yPos . " cWhite", No Speedmod Menu Clicks
     yPos += 35
@@ -1326,20 +1331,30 @@ ApplyToolsAndSystemSettings:
     clientLanguage := clientLanguage_Popup
     instanceLaunchDelay := instanceLaunchDelay_Popup
     autoLaunchMonitor := autoLaunchMonitor_Popup
-    checkWPthanks := checkWPthanks_Popup
-    
+    autoRestartMumu := autoRestartMumu_Popup
+    runsBeforeRestart := runsBeforeRestart_Popup
+    ; Validate runsBeforeRestart (0-99)
+    if (runsBeforeRestart < 0 || runsBeforeRestart = "")
+        runsBeforeRestart := 13
+    if (runsBeforeRestart > 99)
+        runsBeforeRestart := 99
+
     Gui, ToolsAndSystemSelect:Destroy
-    
+
     Gui, 1:Default
-    
+
     GuiControl,, debugMode, %debugMode%
     GuiControl,, statusMessage, %statusMessage%
     GuiControl,, showcaseEnabled, %showcaseEnabled%
-    GuiControl,, claimDailyMission, %claimDailyMission% 
+    GuiControl,, claimDailyMission, %claimDailyMission%
     GuiControl,, slowMotion, %slowMotion%
     GuiControl,, claimSpecialMissions, %claimSpecialMissions%
     GuiControl,, wonderpickForEventMissions, %wonderpickForEventMissions%
-    GuiControl,, checkWPthanks, %checkWPthanks%
+    GuiControl,, autoRestartMumu, %autoRestartMumu%
+    GuiControl,, runsBeforeRestart, %runsBeforeRestart%
+
+    ; Immediately save settings when changed
+    SaveAllSettings()
 return
 
 CancelToolsAndSystemSettings:
@@ -1938,7 +1953,8 @@ LoadSettingsFromIni() {
       IniRead, claimDailyMission, Settings.ini, UserSettings, claimDailyMission, 0
       IniRead, wonderpickForEventMissions, Settings.ini, UserSettings, wonderpickForEventMissions, 0
       ; wonderpickForEventMissions := 0 ; forced turned off during Sneak Peek for now...
-      IniRead, checkWPthanks, Settings.ini, UserSettings, checkWPthanks, 0
+      IniRead, autoRestartMumu, Settings.ini, UserSettings, autoRestartMumu, 1
+      IniRead, runsBeforeRestart, Settings.ini, UserSettings, runsBeforeRestart, 13
       
       IniRead, Palkia, Settings.ini, UserSettings, Palkia, 0
       IniRead, Dialga, Settings.ini, UserSettings, Dialga, 0
@@ -2120,7 +2136,8 @@ CreateDefaultSettingsFile() {
       iniContent .= "maxWaitHours=24`n"
       iniContent .= "menuExpanded=True`n"
       iniContent .= "groupRerollEnabled=0`n"
-      iniContent .= "checkWPthanks=0`n"
+      iniContent .= "autoRestartMumu=1`n"
+      iniContent .= "runsBeforeRestart=13`n"
       
       FileAppend, %iniContent%, Settings.ini, UTF-16
       return true
@@ -2155,7 +2172,7 @@ SaveAllSettings() {
    global minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria, minStarsParade
    global menuExpanded
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
-   global checkWPthanks
+   global autoRestartMumu, runsBeforeRestart
 
    if (deleteMethod != "Inject Wonderpick 96P+") {
        packMethod := false
@@ -2249,7 +2266,8 @@ SaveAllSettings() {
    iniContent .= "claimSpecialMissions=0`n"
    iniContent .= "claimDailyMission=" claimDailyMission "`n"
    iniContent .= "wonderpickForEventMissions=" wonderpickForEventMissions "`n"
-   iniContent .= "checkWPthanks=" checkWPthanks "`n"
+   iniContent .= "autoRestartMumu=" autoRestartMumu "`n"
+   iniContent .= "runsBeforeRestart=" runsBeforeRestart "`n"
 
    originalDeleteMethod := deleteMethod
    deleteMethod := MigrateDeleteMethod(deleteMethod)

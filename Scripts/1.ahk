@@ -34,7 +34,6 @@ global DeadCheck
 global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards, s4tDiscordWebhookURL, s4tDiscordUserId, s4tSendAccountXml
 global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star
 global claimDailyMission, wonderpickForEventMissions
-global checkWPthanks, wpThanksSavedUsername, wpThanksSavedFriendCode, isCurrentlyDoingWPCheck := false
 global s4tPendingTradeables := []
 global deviceAccountXmlMap := {} ; prevents Create Bots + s4t making duplicate .xmls within a single run
 global ocrShinedust
@@ -189,9 +188,6 @@ IniRead, openExtraPack, %A_ScriptDir%\..\Settings.ini, UserSettings, openExtraPa
 IniRead, verboseLogging, %A_ScriptDir%\..\Settings.ini, UserSettings, debugMode, 0
 IniRead, claimDailyMission, %A_ScriptDir%\..\Settings.ini, UserSettings, claimDailyMission, 0
 IniRead, wonderpickForEventMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, wonderpickForEventMissions, 0
-IniRead, checkWPthanks, %A_ScriptDir%\..\Settings.ini, UserSettings, checkWPthanks, 0
-wpThanksSavedUsername := ""
-wpThanksSavedFriendCode := ""
 
 IniRead, s4tEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tEnabled, 0
 IniRead, s4tSilent, %A_ScriptDir%\..\Settings.ini, UserSettings, s4tSilent, 1
@@ -475,16 +471,6 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
             ; If we reach here, we have a valid loaded account for injection
             LogToFile("Successfully loaded account for injection: " . accountFileName)
-        }
-
-        ; Check if the account loaded is to check for wonderpick thanks (godpack testing)
-        if(injectMethod && loadedAccount) {
-            if(CheckWonderPickThanks()) {
-                ; WP thanks check was performed, mark account as used and continue to next iteration
-                MarkAccountAsUsed()
-                loadedAccount := false
-                continue  ; Skip to next iteration of main loop
-            }
         }
 
         ; Download friend IDs for injection methods when group reroll is enabled
@@ -1726,57 +1712,7 @@ DirectlyPositionWindow() {
 
 restartGameInstance(reason, RL := true) {
     global friended, scriptName, packsThisRun, injectMethod, loadedAccount, DeadCheck, starCount, packsInPool, openPack, invalid, accountFile, username, stopToggle, accountFileName
-    global isCurrentlyDoingWPCheck, winTitle
-
-    ; Check if we're currently doing a WP thanks check (use the proper flag)
-    if (isCurrentlyDoingWPCheck) {
-        CreateStatusMessage("WP Thanks check encountered issue: " . reason . ". Removing W flag and continuing...",,,, false)
-        LogToFile("WP Thanks check encountered issue (" . reason . ") for account: " . accountFileName . ". Removing W flag.")
-
-        ; Remove W flag and send warning
-        RemoveWFlagFromAccount()
-        SendWPStuckWarning(reason)
-
-        ; Clear the flag since we're exiting the WP check
-        isCurrentlyDoingWPCheck := false
-
-        ; Don't deadcheck (which would remove friends of potential godpacks) - just mark account as used and continue
-        if (injectMethod && loadedAccount) {
-            MarkAccountAsUsed()
-            loadedAccount := false
-        }
-
-        ; Restart without deadcheck (CLEAN way)
-        waitadb()
-
-        adbWriteRaw("input keyevent 3")
-        waitadb()
-
-        adbWriteRaw("am stop-app jp.pokemon.pokemontcgp")
-        Sleep, 500
-        adbWriteRaw("cmd activity stop-app jp.pokemon.pokemontcgp")
-        Sleep, 500
-
-        adbWriteRaw("am kill jp.pokemon.pokemontcgp")
-        Sleep, 500
-        adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
-        Sleep, 500
-
-        adbWriteRaw("sync")
-        Sleep, 3000
-
-        clearMissionCache()
-
-        waitadb()
-
-        adbWriteRaw("monkey -p jp.pokemon.pokemontcgp -c android.intent.category.LAUNCHER 1")
-        waitadb()
-        Sleep, 5000
-
-        return ; Exit early to continue with next account
-    }
-
-    ; Original restartGameInstance logic for non-WP checks
+    global winTitle
     isStuck := InStr(reason, "Stuck")
 
     if (Debug)
