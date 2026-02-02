@@ -75,16 +75,8 @@ IniRead, autoUseGPTest, %A_ScriptDir%\..\Settings.ini, UserSettings, autoUseGPTe
 IniRead, TestTime, %A_ScriptDir%\..\Settings.ini, UserSettings, TestTime, 3600
 global MuMuv5
 MuMuv5 := isMuMuv5()
-; connect adb
 instanceSleep := scriptName * 1000
 Sleep, %instanceSleep%
-
-; Attempt to connect to ADB
-ConnectAdb(folderPath)
-Sleep, 2000
-CreateStatusMessage("Disabling background services...")
-DisableBackgroundServices()
-Sleep, 5000
 
 if (InStr(defaultLanguage, "100")) {
     scaleParam := 287
@@ -95,6 +87,15 @@ if (InStr(defaultLanguage, "100")) {
 			scaleParam := 277
 		}
 }
+
+DirectlyPositionWindow()
+Sleep, 1000
+
+ConnectAdb(folderPath)
+Sleep, 2000
+CreateStatusMessage("Disabling background services...")
+DisableBackgroundServices()
+Sleep, 5000
 
 resetWindows()
 MaxRetries := 10
