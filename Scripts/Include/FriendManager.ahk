@@ -28,9 +28,10 @@ AddFriends(renew := false, getFC := false) {
     } else {
         friendIDs := false
     }
-    friended := true
 	if(!getFC && !friendIDs && friendID = "")
 		return false
+
+    friended := true
 
     failSafe := A_TickCount
     failSafeTime := 0

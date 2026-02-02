@@ -197,3 +197,12 @@ saveAccount() {
 
     MsgBox, Success! Extracted account '%fileName%.xml' to the Accounts folder, closed the game, and deleted the local save from the instance.
 }
+
+getMumuFolder(folderPath) {
+    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMu Player 12"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer"
+    return mumuFolder
+}

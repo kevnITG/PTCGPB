@@ -343,6 +343,12 @@ failSafe := A_TickCount  ; Initialize failSafe timer at script startup
 if(injectMethod && DeadCheck != 1) {
     loadedAccount := loadAccount()
     nukeAccount := false
+} else if(injectMethod && DeadCheck = 1) {
+    ; DeadCheck = 1: Start the Pokemon app for the stuck account (don't inject new account)
+    waitadb()
+    adbWriteRaw("monkey -p jp.pokemon.pokemontcgp -c android.intent.category.LAUNCHER 1")
+    waitadb()
+    Sleep, 5000
 }
 
 clearMissionCache()
