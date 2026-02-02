@@ -166,7 +166,7 @@ loadAccount() {
     adbWriteRaw("rm /sdcard/deviceAccount.xml")
     waitadb()
     ; Reliably restart the app: Wait for launch, and start in a clean, new task without animation.
-    adbWriteRaw("monkey -p jp.pokemon.pokemontcgp -c android.intent.category.LAUNCHER 1")
+    adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
     waitadb()
     Sleep, 6000   ; Reduced from 1000
     ; Parse account filename for pack info (unchanged)

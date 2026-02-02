@@ -342,7 +342,7 @@ if(injectMethod && DeadCheck != 1) {
 } else if(injectMethod && DeadCheck = 1) {
     ; DeadCheck = 1: Start the Pokemon app for the stuck account (don't inject new account)
     waitadb()
-    adbWriteRaw("monkey -p jp.pokemon.pokemontcgp -c android.intent.category.LAUNCHER 1")
+    adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
     waitadb()
     Sleep, 5000
 }
