@@ -78,10 +78,6 @@ dbg_bbox_click :=0
 
 scriptName := StrReplace(A_ScriptName, ".ahk")
 winTitle := scriptName
-
-; Reset injection cycle count on script start
-IniWrite, 0, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount
-
 foundGP := false
 injectMethod := false
 pauseToggle := false

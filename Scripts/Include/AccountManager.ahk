@@ -161,6 +161,9 @@ loadAccount() {
             } else {
                 CreateStatusMessage("MuMu window detected, reconnecting ADB...",,,, false)
                 LogToFile("MuMu window detected, reconnecting ADB")
+
+                ; Reposition the MuMu window to its correct location
+                DirectlyPositionWindow()
             }
 
             ; Reset the ADB shell connection (it's now pointing to dead instance)
