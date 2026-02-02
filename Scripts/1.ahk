@@ -1719,7 +1719,7 @@ DirectlyPositionWindow() {
 
 restartGameInstance(reason, RL := true) {
     global friended, scriptName, packsThisRun, injectMethod, loadedAccount, DeadCheck, starCount, packsInPool, openPack, invalid, accountFile, username, stopToggle, accountFileName
-    global isCurrentlyDoingWPCheck
+    global isCurrentlyDoingWPCheck, winTitle
 
     ; Check if we're currently doing a WP thanks check (use the proper flag)
     if (isCurrentlyDoingWPCheck) {
@@ -1793,48 +1793,47 @@ restartGameInstance(reason, RL := true) {
 
         Reload
     } else {
-        waitadb() ; Properly detach Unity from foreground 
-        adbWriteRaw("input keyevent 3") ; HOME 
-        Sleep, 500 
-        
-        ; Tell ActivityTaskManager to destroy the task + surface 
-        adbWriteRaw("am stop-app jp.pokemon.pokemontcgp") 
-        Sleep, 500 
-        adbWriteRaw("cmd activity stop-app jp.pokemon.pokemontcgp") 
-        Sleep, 500 
-        
-        ; Kill remaining native parts 
-        adbWriteRaw("am kill jp.pokemon.pokemontcgp") 
-        Sleep, 500 
-        adbWriteRaw("am force-stop jp.pokemon.pokemontcgp") 
-        Sleep, 500 
-        
-        ; Force MuMu/Android to flush surface & binder state 
-        adbWriteRaw("sync") 
-        Sleep, 3000 
-        
-        clearMissionCache() 
-        if (!RL && DeadCheck = 0) { 
-            adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data 
-        } 
-        
-        waitadb() 
-        
-        ; Launch like a real user tap (NEW task, NEW surface) 
-        adbWriteRaw("monkey -p jp.pokemon.pokemontcgp -c android.intent.category.LAUNCHER 1") 
-        waitadb() 
-        Sleep, 6000
+        waitadb() ; Properly detach Unity from foreground
+        adbWriteRaw("input keyevent 3") ; HOME
+        Sleep, 500
+
+        ; Tell ActivityTaskManager to destroy the task + surface
+        adbWriteRaw("am stop-app jp.pokemon.pokemontcgp")
+        Sleep, 500
+        adbWriteRaw("cmd activity stop-app jp.pokemon.pokemontcgp")
+        Sleep, 500
+
+        ; Kill remaining native parts
+        adbWriteRaw("am kill jp.pokemon.pokemontcgp")
+        Sleep, 500
+        adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
+        Sleep, 500
+
+        ; Force MuMu/Android to flush surface & binder state
+        adbWriteRaw("sync")
+        Sleep, 3000
+
+        clearMissionCache()
+        if (!RL && DeadCheck = 0) {
+            adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data
+        }
+
+        ; Kill the entire MuMu instance
+        CreateStatusMessage("Restarting MuMu instance...",,,, false)
+        LogToFile("Killing MuMu instance " . winTitle . " due to: " . reason)
+        killInstance(winTitle)
+        Sleep, 3000
+
+        ; Reset injection cycle count since we're doing a full MuMu restart
+        IniWrite, 0, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount
+
+        ; Launch new MuMu instance
+        launchInstance(winTitle)
+        Sleep, 15000
 
         if (RL) {
             AppendToJsonFile(packsThisRun)
-            if(!injectMethod) {
-                if (menuDeleteStart()) {
-                    IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
-                    logMessage := "\n" . username . "\n[" . (starCount ? starCount : "0") . "/5][" . (packsInPool ? packsInPool : 0) . "P][" . openPack . "] " . (invalid ? invalid . " God Pack" : "Some sort of pack") . " found in instance: " . scriptName . "\nFile name: " . accountFile . "\nGot stuck doing something. Check Log_" . scriptName . ".txt."
-                    LogToFile(Trim(StrReplace(logMessage, "\n", " ")))
-                }
-            }
-            LogToFile("Restarted game for instance " . scriptName . ". Reason: " reason, "Restart.txt")
+            LogToFile("Restarted MuMu instance " . scriptName . ". Reason: " reason, "Restart.txt")
 
             if (stopToggle) {
                 CreateStatusMessage("Stopping...",,,, false)
