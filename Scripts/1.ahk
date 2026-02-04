@@ -14,6 +14,7 @@
 #Include %A_ScriptDir%\Include\WonderPickManager.ahk
 #Include %A_ScriptDir%\Include\AccountManager.ahk
 #Include %A_ScriptDir%\Include\FriendManager.ahk
+#Include %A_ScriptDir%\Include\Dictionary.ahk
 
 #SingleInstance on
 SetMouseDelay, -1
@@ -82,6 +83,7 @@ injectMethod := false
 pauseToggle := false
 showStatus := true
 friended := false
+stopToggle := false
 dateChange := false
 jsonFileName := A_ScriptDir . "\..\json\Packs.json"
 IniRead, FriendID, %A_ScriptDir%\..\Settings.ini, UserSettings, FriendID
@@ -93,6 +95,8 @@ IniRead, Columns, %A_ScriptDir%\..\Settings.ini, UserSettings, Columns, 5
 IniRead, godPack, %A_ScriptDir%\..\Settings.ini, UserSettings, godPack, Continue
 IniRead, Instances, %A_ScriptDir%\..\Settings.ini, UserSettings, Instances, 1
 IniRead, defaultLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, defaultLanguage, Scale125
+IniRead, defaultBotLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, defaultBotLanguage, 1
+global stopDictionary := CreateGUITextByLanguage(defaultBotLanguage, "")
 IniRead, rowGap, %A_ScriptDir%\..\Settings.ini, UserSettings, rowGap, 100
 IniRead, SelectedMonitorIndex, %A_ScriptDir%\..\Settings.ini, UserSettings, SelectedMonitorIndex, 1
 IniRead, swipeSpeed, %A_ScriptDir%\..\Settings.ini, UserSettings, swipeSpeed, 300
@@ -2349,13 +2353,102 @@ TestScript:
     ToggleTestScript()
 return
 
+; ToggleStop - For GUI button clicks (stops only THIS instance)
 ToggleStop() {
+    global stopToggle, friended, stopDictionary, winTitle
+
+    ; Get localized strings
+    title := stopDictionary["stop_confirm_title"]
+    btnImmediate := stopDictionary["stop_immediately"]
+    btnWaitEnd := stopDictionary["stop_wait_end"]
+
+    ; Create confirmation GUI
+    Gui, StopConfirm:New, +AlwaysOnTop +Owner
+    Gui, StopConfirm:Add, Text, x20 y20 w260 Center, % title
+    Gui, StopConfirm:Add, Button, x20 y50 w130 h30 gStopImmediatelySingle, % btnImmediate
+    Gui, StopConfirm:Add, Button, x160 y50 w130 h30 gStopWaitEndSingle, % btnWaitEnd
+    Gui, StopConfirm:Show, w310 h100, % title
+    return
+}
+
+; ToggleStopAll - For Ctrl+F7 hotkey (stops ALL instances, only called from instance 1)
+ToggleStopAll() {
+    global stopDictionary
+
+    ; Get localized strings
+    title := stopDictionary["stop_confirm_title"]
+    btnImmediate := stopDictionary["stop_immediately"]
+    btnWaitEnd := stopDictionary["stop_wait_end"]
+
+    ; Create confirmation GUI
+    Gui, StopConfirmAll:New, +AlwaysOnTop +Owner
+    Gui, StopConfirmAll:Add, Text, x20 y20 w260 Center, % title
+    Gui, StopConfirmAll:Add, Button, x20 y50 w130 h30 gStopImmediatelyAll, % btnImmediate
+    Gui, StopConfirmAll:Add, Button, x160 y50 w130 h30 gStopWaitEndAll, % btnWaitEnd
+    Gui, StopConfirmAll:Show, w310 h100, % title
+    return
+}
+
+; === Single instance stop handlers (GUI button) ===
+StopImmediatelySingle:
+    Gui, StopConfirm:Destroy
+    ExitApp
+return
+
+StopWaitEndSingle:
     global stopToggle, friended
+    Gui, StopConfirm:Destroy
     stopToggle := true
     if (!friended)
         ExitApp
     else
         CreateStatusMessage("Stopping script at the end of the run...",,,, false)
+return
+
+StopConfirmGuiClose:
+StopConfirmGuiEscape:
+    Gui, StopConfirm:Destroy
+return
+
+; === All instances stop handlers (Ctrl+F7 from instance 1) ===
+StopImmediatelyAll:
+    Gui, StopConfirmAll:Destroy
+    StopAllInstances()
+return
+
+StopWaitEndAll:
+    global stopToggle
+    Gui, StopConfirmAll:Destroy
+    ; Other instances already set their stopToggle when they received Ctrl+F7
+    ; Just set ours now - existing checkpoint logic will handle the exit
+    stopToggle := true
+    CreateStatusMessage("Stopping script at the end of the run...",,,, false)
+return
+
+StopConfirmAllGuiClose:
+StopConfirmAllGuiEscape:
+    Gui, StopConfirmAll:Destroy
+return
+
+; Kill all script instances immediately
+StopAllInstances() {
+    global Instances
+
+    DetectHiddenWindows, On
+    SetTitleMatchMode, 2  ; Match if title CONTAINS the string (needed for full paths)
+
+    ; Close Main.ahk first
+    WinClose, Main.ahk ahk_class AutoHotkey
+
+    ; Close all numbered instances (2 through Instances, skip 1 which is us)
+    Loop, %Instances% {
+        if (A_Index != 1) {
+            WinClose, % A_Index ".ahk ahk_class AutoHotkey"
+        }
+    }
+
+    ; Finally exit this instance
+    ExitApp
 }
 
 ToggleTestScript() {
@@ -2429,7 +2522,17 @@ Return
 ; ===== HOTKEYS =====
 ~+F5::Reload
 ~+F6::Pause
-~+F7::ToggleStop()
+~+F7::
+    ; Only instance 1 shows the popup for Ctrl+F7
+    ; Other instances (2, 3, etc.) set stopToggle and wait for end of run
+    ; They will be force-killed only if user selects "Stop immediately" in 1.ahk's popup
+    if (scriptName = "1") {
+        ToggleStopAll()
+    } else {
+        stopToggle := true
+        CreateStatusMessage("Stopping script at the end of the run...",,,, false)
+    }
+return
 ~+F8::ToggleDevMode()
 ;~+F8::ToggleStatusMessages()
 ;~F9::restartGameInstance("F9")

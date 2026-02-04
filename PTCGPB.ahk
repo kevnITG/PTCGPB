@@ -106,7 +106,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.4.8"
+   ,localVersion := "v9.4.9"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -199,6 +199,15 @@ NextStep:
       if (ErrorLevel)
          MsgBox, 0x40000,, Failed to create %backupFile%. Ensure permissions and paths are correct.
    }
+
+   ; Reset InjectionCycleCount in all Scripts/*.ini files on startup
+   Loop, Files, %A_ScriptDir%\Scripts\*.ini
+   {
+      IniRead, cycleCount, %A_LoopFileFullPath%, Metrics, InjectionCycleCount, ERROR
+      if (cycleCount != "ERROR" && cycleCount != 0)
+         IniWrite, 0, %A_LoopFileFullPath%, Metrics, InjectionCycleCount
+   }
+
    InitializeJsonFile()
 
    Gui,+HWNDSGUI +Resize
@@ -365,7 +374,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.4.8 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.4.9 kevinnnn"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 

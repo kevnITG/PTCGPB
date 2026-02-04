@@ -13,6 +13,7 @@
 #Include %A_ScriptDir%\Include\WonderPickManager.ahk
 #Include %A_ScriptDir%\Include\AccountManager.ahk
 #Include %A_ScriptDir%\Include\FriendManager.ahk
+#Include %A_ScriptDir%\Include\Dictionary.ahk
 
 #SingleInstance on
 ;SetKeyDelay, -1, -1
@@ -28,7 +29,7 @@ CoordMode, Pixel, Screen
 DllCall("AllocConsole")
 WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
-global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, skipInvalidGP, deleteXML, packs, FriendID, AddFriend, Instances, showStatus
+global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, skipInvalidGP, deleteXML, packs, FriendID, AddFriend, Instances, showStatus, stopToggle
 global triggerTestNeeded, testStartTime, firstRun, minStars, minStarsA2b, vipIdsURL
 global autoUseGPTest, autotest, autotest_time, A_gptest, TestTime
 global MuMuv5, titleHeight
@@ -45,6 +46,7 @@ deleteAccount := false
 scriptName := StrReplace(A_ScriptName, ".ahk")
 winTitle := scriptName
 pauseToggle := false
+stopToggle := false
 showStatus := true
 jsonFileName := A_ScriptDir . "\..\json\Packs.json"
 IniRead, FriendID, %A_ScriptDir%\..\Settings.ini, UserSettings, FriendID
@@ -56,6 +58,8 @@ IniRead, Columns, %A_ScriptDir%\..\Settings.ini, UserSettings, Columns, 5
 IniRead, openPack, %A_ScriptDir%\..\Settings.ini, UserSettings, openPack, 1
 IniRead, setSpeed, %A_ScriptDir%\..\Settings.ini, UserSettings, setSpeed, 2x
 IniRead, defaultLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, defaultLanguage, Scale125
+IniRead, defaultBotLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, defaultBotLanguage, 1
+global stopDictionary := CreateGUITextByLanguage(defaultBotLanguage, "")
 IniRead, SelectedMonitorIndex, %A_ScriptDir%\..\Settings.ini, UserSettings, SelectedMonitorIndex, 1:
 IniRead, swipeSpeed, %A_ScriptDir%\..\Settings.ini, UserSettings, swipeSpeed, 350
 IniRead, skipInvalidGP, %A_ScriptDir%\..\Settings.ini, UserSettings, skipInvalidGP, No
@@ -384,6 +388,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
 
     Loop { ; Main loop
         Sleep, 100
+
         if(click) {
             ElapsedClickTime := A_TickCount - clickTime
             if(ElapsedClickTime > sleepTime) {
@@ -609,10 +614,10 @@ ResumeScript:
     failSafe := A_TickCount
 return
 
-; Stop Script
+; Stop Script - Main.ahk always exits immediately (no "end of run" concept)
 StopScript:
     CreateStatusMessage("Stopping script...",,,, false)
-ExitApp
+    ExitApp
 return
 
 ShowStatusMessages:
@@ -748,7 +753,7 @@ from_window(ByRef image) {
 
 ~+F5::Reload
 ~+F6::Pause
-~+F7::ExitApp
+~+F7::ExitApp  ; Main.ahk always exits immediately - no "end of run" concept
 ~+F8::ToggleStatusMessages()
 ~+F9::ToggleTestScript() ; hoytdj Add
 
