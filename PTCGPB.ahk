@@ -2434,10 +2434,6 @@ StartBot() {
       Reload
    }
    
-   if (mainIdsURL != "") {
-      DownloadFile(mainIdsURL, "ids.txt")
-   }
-   
    if (showcaseEnabled) {
       if (!FileExist("showcase_ids.txt")) {
          MsgBox, 48, Showcase Warning, Showcase is enabled but showcase_ids.txt does not exist.`nPlease create this file in the same directory as the script.
@@ -2660,15 +2656,6 @@ StartBot() {
          LogToDiscord(discMessage,, false,,, heartBeatWebhookURL)
          
          IniDelete, HeartBeat.ini, TestMode, Main
-      }
-      
-      if(Mod(A_Index, 10) = 0) {
-         if(mainIdsURL != "") {
-            DownloadFile(mainIdsURL, "ids.txt")
-         } else {
-            if(FileExist("ids.txt"))
-               FileDelete, ids.txt
-         }
       }
       
       total := SumVariablesInJsonFile()
