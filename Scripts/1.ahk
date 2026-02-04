@@ -1038,6 +1038,15 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
 
+    if (imageName = "Social") {
+        Path = %imagePath%MuMuFolder.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 29, 145, 35, 151, searchVariation)
+        if (vRet = 1) {
+            restartGameInstance("Stuck at MuMuFolder...")
+        }
+    }
+
         ; Search for new privacy and TOS clearing popup; can be removed later patch
     if (imageName = "Points" || imageName = "Social" || imageName = "Country") {
         Path = %imagePath%newPrivacyTOSpopup.png
@@ -1166,53 +1175,6 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
 
-    Path = %imagePath%Error.png ; Search for communication error
-    pNeedle := GetNeedle(Path)
-    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 120, 187, 155, 210, searchVariation)
-    if (vRet = 1) {
-        CreateStatusMessage("Error message in " . scriptName . ". Clicking retry...",,,, false)
-        Sleep, 3000
-        Gdip_DisposeImage(pBitmap)
-        pBitmap := from_window(WinExist(winTitle))
-
-        Gdip_SaveBitmapToFile(pBitmap, A_ScriptDir . "\debug_startup_error.png")
-
-        Path = %imagePath%StartupErrorX.png
-        CreateStatusMessage("Searching for: " . Path,,,, false)
-
-        if (FileExist(Path)) {
-            CreateStatusMessage("File exists, searching...",,,, false)
-        } else {
-            CreateStatusMessage("FILE NOT FOUND: " . Path,,,, false)
-        }
-
-        pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 124, 423, 155, 455, searchVariation)
-        CreateStatusMessage("Search result: " . vRet . " at coords: " . vPosXY,,,, false)
-
-        if (vRet != 1) {
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 50, 350, 250, 500, 80)
-            CreateStatusMessage("Wide search result: " . vRet . " at coords: " . vPosXY,,,, false)
-        }
-
-        if (vRet = 1) {
-            CreateStatusMessage("Start-up error; initiating slow reload...",,,, false)
-            Sleep, 2000
-            adbClick_wbb(19,125) ; platin, must remove speedmod for reload app
-            Sleep, 500
-            adbClick_wbb(26, 180) ; 1x
-            Sleep, 2000
-            adbClick_wbb(139, 440) ; click "X"
-            Sleep, 10000
-            Reload
-        } else {
-            ; assume it's communication error instead; click the "Retry" blue button
-            adbClick_wbb(82, 389)
-            Delay(5)
-            adbClick_wbb(139, 386)
-        }
-        Sleep, 5000 ; longer sleep time to allow reloading, previously 1000ms
-    }
 
     Path = %imagePath%App.png
     pNeedle := GetNeedle(Path)
@@ -1373,53 +1335,6 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             }
         }
 
-        Path = %imagePath%Error.png ; Search for communication error
-        pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 120, 187, 155, 210, searchVariation)
-        if (vRet = 1) {
-            CreateStatusMessage("Error message in " . scriptName . ". Clicking retry...",,,, false)
-            Sleep, 3000
-            Gdip_DisposeImage(pBitmap)
-            pBitmap := from_window(WinExist(winTitle))
-
-            Gdip_SaveBitmapToFile(pBitmap, A_ScriptDir . "\debug_startup_error.png")
-
-            Path = %imagePath%StartupErrorX.png
-            CreateStatusMessage("Searching for: " . Path,,,, false)
-
-            if (FileExist(Path)) {
-                CreateStatusMessage("File exists, searching...",,,, false)
-            } else {
-                CreateStatusMessage("FILE NOT FOUND: " . Path,,,, false)
-            }
-
-            pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 124, 423, 155, 455, searchVariation)
-            CreateStatusMessage("Search result: " . vRet . " at coords: " . vPosXY,,,, false)
-
-            if (vRet != 1) {
-                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 50, 350, 250, 500, 80)
-                CreateStatusMessage("Wide search result: " . vRet . " at coords: " . vPosXY,,,, false)
-            }
-
-            if (vRet = 1) {
-                CreateStatusMessage("Start-up error; initiating slow reload...",,,, false)
-                Sleep, 2000
-                adbClick_wbb(19,125) ; platin, must remove speedmod for reload app
-                Sleep, 500
-                adbClick_wbb(26, 180) ; 1x
-                Sleep, 2000
-                adbClick_wbb(139, 440) ; click the "X" button
-                Sleep, 10000
-                Reload ; reload the script to reset the instance
-            } else {
-                ; assume it's communication error instead; click the "Retry" blue button
-                adbClick_wbb(82, 389)
-                Delay(5)
-                adbClick_wbb(139, 386)
-            }
-            Sleep, 5000 ; longer sleep time to allow reloading, previously 1000ms
-        }
 
         if (imageName = "Social" || imageName = "CommunityShowcase" || imageName = "Add" || imageName = "Search") {
             Path = %imagePath%Tutorial.png
@@ -1427,6 +1342,15 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 111, 115, 167, 121, searchVariation)
             if (vRet = 1) {
                 adbClick_wbb(145, 451)
+            }
+        }
+
+        if (imageName = "Social") {
+            Path = %imagePath%MuMuFolder.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 29, 145, 35, 151, searchVariation)
+            if (vRet = 1) {
+                restartGameInstance("Stuck at MuMuFolder...")
             }
         }
 
