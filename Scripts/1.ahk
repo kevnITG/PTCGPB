@@ -28,6 +28,13 @@ CoordMode, Pixel, Screen
 DllCall("AllocConsole")
 WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
+; Register OnExit handler to clean up ADB shell properly when script exits
+OnExit("CleanupOnExit")
+
+; Register message handler to receive "stop after run" signal from instance 1
+; WM_USER (0x400) + 0x100 = custom message for stop after run
+OnMessage(0x500, "OnStopAfterRunMessage")
+
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
 global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, Parade
 global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsParade, minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
@@ -2303,13 +2310,15 @@ ToggleStopAll() {
     title := stopDictionary["stop_confirm_title"]
     btnImmediate := stopDictionary["stop_immediately"]
     btnWaitEnd := stopDictionary["stop_wait_end"]
+    btnKillMumu := stopDictionary["stop_kill_mumu"]
 
     ; Create confirmation GUI
     Gui, StopConfirmAll:New, +AlwaysOnTop +Owner
-    Gui, StopConfirmAll:Add, Text, x20 y20 w260 Center, % title
+    Gui, StopConfirmAll:Add, Text, x20 y20 w400 Center, % title
     Gui, StopConfirmAll:Add, Button, x20 y50 w130 h30 gStopImmediatelyAll, % btnImmediate
     Gui, StopConfirmAll:Add, Button, x160 y50 w130 h30 gStopWaitEndAll, % btnWaitEnd
-    Gui, StopConfirmAll:Show, w310 h100, % title
+    Gui, StopConfirmAll:Add, Button, x300 y50 w130 h30 gStopAndKillMuMuAll, % btnKillMumu
+    Gui, StopConfirmAll:Show, w450 h100, % title
     return
 }
 
@@ -2343,10 +2352,22 @@ return
 StopWaitEndAll:
     global stopToggle
     Gui, StopConfirmAll:Destroy
-    ; Other instances already set their stopToggle when they received Ctrl+F7
-    ; Just set ours now - existing checkpoint logic will handle the exit
+    ; Signal all other instances to stop after their current run
+    SignalStopAfterRun()
     stopToggle := true
     CreateStatusMessage("Stopping script at the end of the run...",,,, false)
+return
+
+StopAndKillMuMuAll:
+    global Instances
+    Gui, StopConfirmAll:Destroy
+    ; Kill ALL MuMu instances before calling StopAllInstances (which does ExitApp)
+    Loop, %Instances% {
+        killInstance(A_Index)
+        Sleep, 500
+    }
+    Sleep, 1000
+    StopAllInstances()
 return
 
 StopConfirmAllGuiClose:
@@ -2373,6 +2394,51 @@ StopAllInstances() {
 
     ; Finally exit this instance
     ExitApp
+}
+
+; Cleanup function called when script exits - ensures ADB shell is properly closed
+CleanupOnExit(ExitReason, ExitCode) {
+    global adbShell
+
+    ; Close ADB shell if it exists to prevent hanging connections
+    try {
+        if (IsObject(adbShell) && adbShell.Status = 0) {
+            adbShell.StdIn.WriteLine("exit")
+            Sleep, 100
+            adbShell.Terminate()
+        }
+    }
+    adbShell := ""
+
+    return 0  ; Allow exit to proceed
+}
+
+; Message handler for "stop after run" signal from instance 1
+OnStopAfterRunMessage(wParam, lParam, msg, hwnd) {
+    global stopToggle
+    stopToggle := true
+    CreateStatusMessage("Stopping script at the end of the run...",,,, false)
+    return 0
+}
+
+; Send "stop after run" message to all other script instances
+SignalStopAfterRun() {
+    global Instances
+
+    DetectHiddenWindows, On
+    SetTitleMatchMode, 2
+
+    ; Send message to all numbered instances (2 through Instances)
+    Loop, %Instances% {
+        if (A_Index != 1) {
+            ; Find the window for this instance
+            WinGet, targetHwnd, ID, % A_Index ".ahk ahk_class AutoHotkey"
+            if (targetHwnd) {
+                ; Send custom message (0x500) to signal "stop after run"
+                PostMessage, 0x500, 0, 0,, ahk_id %targetHwnd%
+            }
+        }
+    }
 }
 
 ToggleTestScript() {
@@ -2447,14 +2513,10 @@ Return
 ~+F5::Reload
 ~+F6::Pause
 ~+F7::
-    ; Only instance 1 shows the popup for Ctrl+F7
-    ; Other instances (2, 3, etc.) set stopToggle and wait for end of run
-    ; They will be force-killed only if user selects "Stop immediately" in 1.ahk's popup
+    ; Only instance 1 handles Shift+F7 - shows popup and controls all instances
+    ; Other instances do nothing here; they receive commands via PostMessage from instance 1
     if (scriptName = "1") {
         ToggleStopAll()
-    } else {
-        stopToggle := true
-        CreateStatusMessage("Stopping script at the end of the run...",,,, false)
     }
 return
 ~+F8::ToggleDevMode()
