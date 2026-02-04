@@ -1054,6 +1054,22 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
 
+    ; Data Download popup
+    if (imageName = "Points" || imageName = "Social" || imageName = "Country") {
+        Path = %imagePath%DataDownload.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 41, 388, 92, 403, searchVariation)
+        if (vRet = 1) {
+            CreateStatusMessage("Downloading data",,,, false)
+            Sleep, 1000
+            adbClick_wbb(198, 375)
+            adbClick_wbb(198, 375)
+            Sleep, 10000
+            Gdip_DisposeImage(pBitmap)
+            return confirmed
+        }
+    }
+
         ; Search for new privacy and TOS clearing popup; can be removed later patch
     if (imageName = "Points" || imageName = "Social" || imageName = "Country") {
         Path = %imagePath%newPrivacyTOSpopup.png
@@ -1358,6 +1374,22 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 29, 145, 35, 151, searchVariation)
             if (vRet = 1) {
                 restartGameInstance("Stuck at MuMuFolder...")
+            }
+        }
+
+        ; Data Download popup
+        if (imageName = "Points" || imageName = "Social" || imageName = "Country") {
+            Path = %imagePath%DataDownload.png
+            pNeedle := GetNeedle(Path)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 41, 388, 92, 403, searchVariation)
+            if (vRet = 1) {
+                CreateStatusMessage("Downloading data",,,, false)
+                Sleep, 1000
+                adbClick_wbb(198, 375)
+                adbClick_wbb(198, 375)
+                Sleep, 10000
+                Gdip_DisposeImage(pBitmap)
+                return confirmed
             }
         }
 
