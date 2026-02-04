@@ -1080,6 +1080,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             Sleep, 3000
             adbClick_wbb(142, 372)
             adbClick_wbb(142, 372)
+            adbClick_wbb(198, 375) ; Failsafe if this is actually Data Download
             Sleep, 2000
             adbClick_wbb(140, 336) ; Privacy Notice
             adbClick_wbb(140, 336) ; Privacy Notice
@@ -1403,6 +1404,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 Sleep, 1000
                 adbClick_wbb(142, 372)
                 adbClick_wbb(142, 372)
+                adbClick_wbb(198, 375) ; Failsafe if this is actually Data Download
                 Sleep, 2000
                 adbClick_wbb(140, 336) ; Privacy Notice
                 adbClick_wbb(140, 336) ; Privacy Notice
