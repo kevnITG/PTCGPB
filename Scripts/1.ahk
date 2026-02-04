@@ -3214,9 +3214,9 @@ SelectPack(HG := false) {
     inselectexpansionscreen := 0
 
     packy := HomeScreenAllPackY
-    if (openPack == "CrimsonBlaze") {
+    if (openPack == "MegaBlaziken") {
         packx := LeftPackX
-    } else if (openPack == "MegaBlaziken") {
+    } else if (openPack == "CrimsonBlaze") {
         packx := RightPackX
     } else { ; do not set this to a specific if openPack == "something" as all packs need to reference MiddlePackX as pack position.
         packx := MiddlePackX
