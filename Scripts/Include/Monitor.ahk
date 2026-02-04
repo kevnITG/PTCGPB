@@ -20,15 +20,13 @@ IniRead, Instances, %settingsPath%, UserSettings, Instances, 1
 IniRead, folderPath, %settingsPath%, UserSettings, folderPath, C:\Program Files\Netease
 mumuFolder = %folderPath%\MuMuPlayerGlobal-12.0
 if !FileExist(mumuFolder)
-mumuFolder := folderPath "\MuMuPlayerGlobal-12.0"
-if !FileExist(mumuFolder)
-    mumuFolder := folderPath "\MuMu Player 12"
-if !FileExist(mumuFolder)
-    mumuFolder := folderPath "\MuMuPlayerGlobal-12.0"
-if !FileExist(mumuFolder)
     mumuFolder := folderPath "\MuMu Player 12"
 if !FileExist(mumuFolder)
     mumuFolder := folderPath "\MuMuPlayer"
+if !FileExist(mumuFolder)
+    mumuFolder := folderPath "\MuMuPlayer-12"
+if !FileExist(mumuFolder)
+    mumuFolder := folderPath "\MuMuPlayer12"
 
 if !FileExist(mumuFolder){
     MsgBox, 16, , Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
@@ -316,6 +314,12 @@ isMuMuv5(){
     mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
     if !FileExist(mumuFolder)
         mumuFolder := folderPath . "\MuMu Player 12"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer-12"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer12"
     if FileExist(mumuFolder . "\nx_main")
         return true
     return false

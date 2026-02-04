@@ -177,6 +177,10 @@ isMuMuv5(){
         mumuFolder := folderPath . "\MuMu Player 12"
     if !FileExist(mumuFolder)
         mumuFolder := folderPath . "\MuMuPlayer"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer-12"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer12"
     if FileExist(mumuFolder . "\nx_main")
         return true
     return false

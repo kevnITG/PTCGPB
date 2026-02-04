@@ -627,6 +627,10 @@ launchInstance(instanceNum := "") {
         mumuFolder := folderPath . "\MuMu Player 12"
     if !FileExist(mumuFolder)
         mumuFolder := folderPath . "\MuMuPlayer"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer-12"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer12"
 
     if(instanceNum != "") {
         mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
@@ -655,6 +659,10 @@ getMumuInstanceNumFromPlayerName(scriptName := "") {
         mumuFolder := folderPath . "\MuMu Player 12"
     if !FileExist(mumuFolder)
         mumuFolder := folderPath . "\MuMuPlayer"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer-12"
+    if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer12"
 
     ; Loop through all directories in the base folder
     Loop, Files, %mumuFolder%\vms\*, D
