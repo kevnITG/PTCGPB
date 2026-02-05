@@ -1055,19 +1055,17 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
         }
     }
 
-    ; Data Download popup
-    if (imageName = "Points" || imageName = "Social" || imageName = "Country") {
-        Path = %imagePath%DataDownload.png
+    if (imageName = "Pack") {
+        Path = %imagePath%PokeGoldPack2.png
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 41, 388, 92, 403, searchVariation)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 75, 458, 83, 466, searchVariation)
         if (vRet = 1) {
-            CreateStatusMessage("Downloading data",,,, false)
+            cantOpenMorePacks := 1
+            MarkAccountAsUsed()
+            loadedAccount := false
+            CreateStatusMessage("No more packs can be opened on this account. Restarting...")
             Sleep, 1000
-            adbClick_wbb(198, 375)
-            adbClick_wbb(198, 375)
-            Sleep, 10000
-            Gdip_DisposeImage(pBitmap)
-            return confirmed
+            Reload
         }
     }
 
@@ -1379,19 +1377,17 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             }
         }
 
-        ; Data Download popup
-        if (imageName = "Points" || imageName = "Social" || imageName = "Country") {
-            Path = %imagePath%DataDownload.png
+        if (imageName = "Pack") {
+            Path = %imagePath%PokeGoldPack2.png
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 41, 388, 92, 403, searchVariation)
+            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 75, 458, 83, 466, searchVariation)
             if (vRet = 1) {
-                CreateStatusMessage("Downloading data",,,, false)
+                cantOpenMorePacks := 1
+                MarkAccountAsUsed()
+                loadedAccount := false
+                CreateStatusMessage("No more packs can be opened on this account. Restarting...")
                 Sleep, 1000
-                adbClick_wbb(198, 375)
-                adbClick_wbb(198, 375)
-                Sleep, 10000
-                Gdip_DisposeImage(pBitmap)
-                return confirmed
+                Reload
             }
         }
 
