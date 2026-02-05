@@ -152,6 +152,7 @@
         Lang["stop_immediately"] := "Stop immediately"
         Lang["stop_wait_end"] := "Wait for end of this run"
         Lang["stop_kill_mumu"] := "Stop and Kill MuMu"
+        Lang["stop_remember_preference"] := "Remember my preference and don't ask me again"
     } else if (Language = 2) {
         ;; 中文 Chinese GUI Text
         Lang["fail_fetch"] := "無法取得發行資訊。" ; checkForUpdate
@@ -303,6 +304,7 @@
         Lang["stop_immediately"] := "立即停止"
         Lang["stop_wait_end"] := "等待此次運行結束"
         Lang["stop_kill_mumu"] := "立即停止並關閉 MuMu"
+        Lang["stop_remember_preference"] := "記住我的選擇，下次不再詢問"
     } else if (Language = 3) {
         ;; 日本語 Japanese GUI Text
         Lang["fail_fetch"] := "新しいリリース情報が見つかりませんでした。" ; checkForUpdate
@@ -454,6 +456,7 @@
         Lang["stop_immediately"] := "今すぐ停止"
         Lang["stop_wait_end"] := "この実行の終了を待つ"
         Lang["stop_kill_mumu"] := "停止 MuMu を終了"
+        Lang["stop_remember_preference"] := "次回から確認せずにこの選択を記憶する"
     } else if (Language = 4) {
         ;; Deutsch German GUI Text
         Lang["fail_fetch"] := "Abrufen der Versionsinformationen fehlgeschlagen." ; checkForUpdate
@@ -607,6 +610,7 @@
         Lang["stop_immediately"] := "Sofort stoppen"
         Lang["stop_wait_end"] := "Ende dieses Laufs abwarten"
         Lang["stop_kill_mumu"] := "Stoppen & MuMu beenden"
+        Lang["stop_remember_preference"] := "Auswahl merken und nicht erneut fragen"
     }
     return Lang
 }

@@ -2315,50 +2315,108 @@ return
 
 ; ToggleStop - For GUI button clicks (stops only THIS instance)
 ToggleStop() {
-    global stopToggle, friended, stopDictionary, winTitle
+    global stopToggle, friended, stopDictionary, winTitle, A_ScriptDir
+
+    ; Check if user has a saved preference for single instance stop
+    settingsPath := A_ScriptDir . "\..\Settings.ini"
+    IniRead, savedStopPreferenceSingle, %settingsPath%, UserSettings, stopPreferenceSingle, none
+
+    if (savedStopPreferenceSingle != "none" && savedStopPreferenceSingle != "ERROR") {
+        ; Execute the saved preference directly without showing popup
+        if (savedStopPreferenceSingle = "immediate") {
+            ExitApp
+        } else if (savedStopPreferenceSingle = "wait_end") {
+            stopToggle := true
+            if (!friended)
+                ExitApp
+            else
+                CreateStatusMessage("Stopping script at the end of the run...",,,, false)
+        }
+        return
+    }
 
     ; Get localized strings
     title := stopDictionary["stop_confirm_title"]
     btnImmediate := stopDictionary["stop_immediately"]
     btnWaitEnd := stopDictionary["stop_wait_end"]
+    chkRemember := stopDictionary["stop_remember_preference"]
 
-    ; Create confirmation GUI
+    ; Create confirmation GUI with checkbox
     Gui, StopConfirm:New, +AlwaysOnTop +Owner
-    Gui, StopConfirm:Add, Text, x20 y20 w260 Center, % title
-    Gui, StopConfirm:Add, Button, x20 y50 w130 h30 gStopImmediatelySingle, % btnImmediate
-    Gui, StopConfirm:Add, Button, x160 y50 w130 h30 gStopWaitEndSingle, % btnWaitEnd
-    Gui, StopConfirm:Show, w310 h100, % title
+    Gui, StopConfirm:Add, Text, x20 y15 w260 Center, % title
+    Gui, StopConfirm:Add, Button, x20 y45 w130 h30 gStopImmediatelySingle, % btnImmediate
+    Gui, StopConfirm:Add, Button, x160 y45 w130 h30 gStopWaitEndSingle, % btnWaitEnd
+    Gui, StopConfirm:Add, Checkbox, x20 y85 w260 vRememberStopPreferenceSingle, % chkRemember
+    Gui, StopConfirm:Show, w310 h115, % title
     return
 }
 
-; ToggleStopAll - For Ctrl+F7 hotkey (stops ALL instances, only called from instance 1)
+; ToggleStopAll - For Shift+F7 hotkey (stops ALL instances, only called from instance 1)
 ToggleStopAll() {
-    global stopDictionary
+    global stopDictionary, A_ScriptDir
+
+    ; Check if user has a saved preference
+    settingsPath := A_ScriptDir . "\..\Settings.ini"
+    IniRead, savedStopPreference, %settingsPath%, UserSettings, stopPreference, none
+
+    if (savedStopPreference != "none" && savedStopPreference != "ERROR") {
+        ; Execute the saved preference directly without showing popup
+        if (savedStopPreference = "immediate") {
+            StopAllInstances()
+        } else if (savedStopPreference = "wait_end") {
+            global stopToggle
+            SignalStopAfterRun()
+            stopToggle := true
+            CreateStatusMessage("Stopping script at the end of the run...",,,, false)
+        } else if (savedStopPreference = "kill_mumu") {
+            global Instances
+            Loop, %Instances% {
+                killInstance(A_Index)
+                Sleep, 500
+            }
+            Sleep, 1000
+            StopAllInstances()
+        }
+        return
+    }
 
     ; Get localized strings
     title := stopDictionary["stop_confirm_title"]
     btnImmediate := stopDictionary["stop_immediately"]
     btnWaitEnd := stopDictionary["stop_wait_end"]
     btnKillMumu := stopDictionary["stop_kill_mumu"]
+    chkRemember := stopDictionary["stop_remember_preference"]
 
-    ; Create confirmation GUI
+    ; Create confirmation GUI with checkbox
     Gui, StopConfirmAll:New, +AlwaysOnTop +Owner
-    Gui, StopConfirmAll:Add, Text, x20 y20 w400 Center, % title
-    Gui, StopConfirmAll:Add, Button, x20 y50 w130 h30 gStopImmediatelyAll, % btnImmediate
-    Gui, StopConfirmAll:Add, Button, x160 y50 w130 h30 gStopWaitEndAll, % btnWaitEnd
-    Gui, StopConfirmAll:Add, Button, x300 y50 w130 h30 gStopAndKillMuMuAll, % btnKillMumu
-    Gui, StopConfirmAll:Show, w450 h100, % title
+    Gui, StopConfirmAll:Add, Text, x20 y15 w400 Center, % title
+    Gui, StopConfirmAll:Add, Button, x20 y45 w130 h30 gStopImmediatelyAll, % btnImmediate
+    Gui, StopConfirmAll:Add, Button, x160 y45 w130 h30 gStopWaitEndAll, % btnWaitEnd
+    Gui, StopConfirmAll:Add, Button, x300 y45 w130 h30 gStopAndKillMuMuAll, % btnKillMumu
+    Gui, StopConfirmAll:Add, Checkbox, x20 y85 w400 vRememberStopPreference, % chkRemember
+    Gui, StopConfirmAll:Show, w450 h115, % title
     return
 }
 
 ; === Single instance stop handlers (GUI button) ===
 StopImmediatelySingle:
+    global A_ScriptDir
+    Gui, StopConfirm:Submit, NoHide
+    if (RememberStopPreferenceSingle) {
+        settingsPath := A_ScriptDir . "\..\Settings.ini"
+        IniWrite, immediate, %settingsPath%, UserSettings, stopPreferenceSingle
+    }
     Gui, StopConfirm:Destroy
     ExitApp
 return
 
 StopWaitEndSingle:
-    global stopToggle, friended
+    global stopToggle, friended, A_ScriptDir
+    Gui, StopConfirm:Submit, NoHide
+    if (RememberStopPreferenceSingle) {
+        settingsPath := A_ScriptDir . "\..\Settings.ini"
+        IniWrite, wait_end, %settingsPath%, UserSettings, stopPreferenceSingle
+    }
     Gui, StopConfirm:Destroy
     stopToggle := true
     if (!friended)
@@ -2372,14 +2430,25 @@ StopConfirmGuiEscape:
     Gui, StopConfirm:Destroy
 return
 
-; === All instances stop handlers (Ctrl+F7 from instance 1) ===
+; === All instances stop handlers (Shift+F7 from instance 1) ===
 StopImmediatelyAll:
+    global A_ScriptDir
+    Gui, StopConfirmAll:Submit, NoHide
+    if (RememberStopPreference) {
+        settingsPath := A_ScriptDir . "\..\Settings.ini"
+        IniWrite, immediate, %settingsPath%, UserSettings, stopPreference
+    }
     Gui, StopConfirmAll:Destroy
     StopAllInstances()
 return
 
 StopWaitEndAll:
-    global stopToggle
+    global stopToggle, A_ScriptDir
+    Gui, StopConfirmAll:Submit, NoHide
+    if (RememberStopPreference) {
+        settingsPath := A_ScriptDir . "\..\Settings.ini"
+        IniWrite, wait_end, %settingsPath%, UserSettings, stopPreference
+    }
     Gui, StopConfirmAll:Destroy
     ; Signal all other instances to stop after their current run
     SignalStopAfterRun()
@@ -2388,7 +2457,12 @@ StopWaitEndAll:
 return
 
 StopAndKillMuMuAll:
-    global Instances
+    global Instances, A_ScriptDir
+    Gui, StopConfirmAll:Submit, NoHide
+    if (RememberStopPreference) {
+        settingsPath := A_ScriptDir . "\..\Settings.ini"
+        IniWrite, kill_mumu, %settingsPath%, UserSettings, stopPreference
+    }
     Gui, StopConfirmAll:Destroy
     ; Kill ALL MuMu instances before calling StopAllInstances (which does ExitApp)
     Loop, %Instances% {
