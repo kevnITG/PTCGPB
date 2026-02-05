@@ -899,7 +899,7 @@ CreateAccountList(instance) {
         }
 
         ; Check if account has "T" flag and needs more time (always 5 days)
-        if(InStr(A_LoopFileName, "(") && InStr(A_LoopFileName, "T")) {
+        if(HasFlagInMetadata(A_LoopFileName, "T")) {
             if(hoursDiff < 5*24) {  ; Always 5 days for T-flagged accounts
                 ; if (verboseLogging)
                     ; LogToFile("Skipping account with T flag (testing): " . A_LoopFileName . " (age: " . hoursDiff . " hours, needs 5 days)")
