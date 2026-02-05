@@ -2436,10 +2436,31 @@ CleanupOnExit(ExitReason, ExitCode) {
 
     ; Close ADB shell if it exists to prevent hanging connections
     try {
-        if (IsObject(adbShell) && adbShell.Status = 0) {
-            adbShell.StdIn.WriteLine("exit")
-            Sleep, 100
-            adbShell.Terminate()
+        if (IsObject(adbShell)) {
+            ; Get the process ID before attempting cleanup
+            pid := 0
+            try {
+                pid := adbShell.ProcessID
+            }
+
+            ; Try graceful exit first if shell is running
+            if (adbShell.Status = 0) {
+                try {
+                    adbShell.StdIn.WriteLine("exit")
+                }
+                Sleep, 100
+            }
+            try {
+                adbShell.Terminate()
+            }
+
+            ; If we have a PID and process still exists, force kill it
+            if (pid > 0) {
+                Process, Exist, %pid%
+                if (ErrorLevel) {
+                    Process, Close, %pid%
+                }
+            }
         }
     }
     adbShell := ""
