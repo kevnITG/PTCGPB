@@ -2315,7 +2315,7 @@ return
 
 ; ToggleStop - For GUI button clicks (stops only THIS instance)
 ToggleStop() {
-    global stopToggle, friended, stopDictionary, winTitle, A_ScriptDir
+    global stopToggle, friended, stopDictionary, winTitle
 
     ; Check if user has a saved preference for single instance stop
     settingsPath := A_ScriptDir . "\..\Settings.ini"
@@ -2353,7 +2353,7 @@ ToggleStop() {
 
 ; ToggleStopAll - For Shift+F7 hotkey (stops ALL instances, only called from instance 1)
 ToggleStopAll() {
-    global stopDictionary, A_ScriptDir
+    global stopDictionary
 
     ; Check if user has a saved preference
     settingsPath := A_ScriptDir . "\..\Settings.ini"
@@ -2400,7 +2400,6 @@ ToggleStopAll() {
 
 ; === Single instance stop handlers (GUI button) ===
 StopImmediatelySingle:
-    global A_ScriptDir
     Gui, StopConfirm:Submit, NoHide
     if (RememberStopPreferenceSingle) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
@@ -2411,7 +2410,7 @@ StopImmediatelySingle:
 return
 
 StopWaitEndSingle:
-    global stopToggle, friended, A_ScriptDir
+    global stopToggle, friended
     Gui, StopConfirm:Submit, NoHide
     if (RememberStopPreferenceSingle) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
@@ -2432,7 +2431,6 @@ return
 
 ; === All instances stop handlers (Shift+F7 from instance 1) ===
 StopImmediatelyAll:
-    global A_ScriptDir
     Gui, StopConfirmAll:Submit, NoHide
     if (RememberStopPreference) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
@@ -2443,7 +2441,7 @@ StopImmediatelyAll:
 return
 
 StopWaitEndAll:
-    global stopToggle, A_ScriptDir
+    global stopToggle
     Gui, StopConfirmAll:Submit, NoHide
     if (RememberStopPreference) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
@@ -2457,7 +2455,7 @@ StopWaitEndAll:
 return
 
 StopAndKillMuMuAll:
-    global Instances, A_ScriptDir
+    global Instances
     Gui, StopConfirmAll:Submit, NoHide
     if (RememberStopPreference) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"

@@ -545,7 +545,7 @@ GodPackFound(validity) {
     screenShot := Screenshot(validity)
     accountFullPath := ""
 
-    accountFile := saveAccount(validity, accountFullPath, "", false)
+    accountFile := saveAccount(validity, accountFullPath, "")
 
     friendCode := getFriendCode()
 
