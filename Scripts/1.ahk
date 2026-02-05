@@ -3265,16 +3265,6 @@ SelectPack(HG := false) {
         ; when First and injection, if there are free packs, we don't land/start in home screen,
         ; and we have also to search for closed during pack, hourglass, etc.
 
-        Loop {
-            if(FindOrLoseImage(92, 304, 190, 328, , "Pocket", 1)) {
-                CreateStatusMessage("In Pocket Screen`n")
-                Sleep, 10000
-                break
-            }
-            CreateStatusMessage("Waiting for Pocket Screen`n")
-            Delay(3)
-        }
-
         failSafe := A_TickCount
         failSafeTime := 0
         Loop {
