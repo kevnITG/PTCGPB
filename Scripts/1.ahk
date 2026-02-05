@@ -2169,11 +2169,10 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
     try {
         OwnerWND := WinExist(winTitle)
         buttonWidth := 40
-        guiHeight := 489 + titleHeight  ; 489 game area + title bar (45 for v4, 50 for v5)
 
         Gui, DevMode_ss%winTitle%:New, +LastFound -DPIScale
-        Gui, DevMode_ss%winTitle%:Add, Picture, x0 y0 w275 h%guiHeight%, %filePath%
-        Gui, DevMode_ss%winTitle%:Show, w275 h%guiHeight%, Screensho %winTitle%
+        Gui, DevMode_ss%winTitle%:Add, Picture, x0 y0 w275 h534, %filePath%
+        Gui, DevMode_ss%winTitle%:Show, w275 h534, Screensho %winTitle%
 
         sleep 100
         msgbox click on top-left corner and bottom-right corners
@@ -2209,9 +2208,9 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
         Y3 -= 31
 
         ; Convert window coordinates to device/OCR coordinates
-        ; Device resolution: 540x960, Window resolution: 277 x 489, Y offset: titleHeight - 1
+        ; Device resolution: 540x960, Window resolution: 277x489, Y offset: 44
         OCR_X1 := Round(X1 * 540 / 277)
-        OCR_Y1 := Round((Y1 - (titleHeight - 1)) * 960 / 489)
+        OCR_Y1 := Round((Y1 - 44) * 960 / 489)
         OCR_W := Round(W * 540 / 277)
         OCR_H := Round(H * 960 / 489)
         OCR_X2 := OCR_X1 + OCR_W
@@ -2225,8 +2224,8 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
         (LTrim
             ctrl+C to copy:
             FindOrLoseImage(%X1%, %Y1%, %X2%, %Y2%, , "%fileName%", 0, failSafeTime)
-            FindImageAndClick(%X1%, %Y1%, %X2%, %Y2%, , "%fileName%", %X3%, %Y3%, sleepTime)
-            adbClick_wbb(%X3%, %Y3%)
+            FindImageAndClick(%X1%, %Y1%, %X2%, %Y2%, , "%fileName%", %X3%, %outY3%, sleepTime)
+            adbClick_wbb(%X3%, %outY3%)
             OCR coordinates: %OCR_X3%, %OCR_Y3%, %OCR_W%, %OCR_H%
         )
     }
@@ -2436,31 +2435,10 @@ CleanupOnExit(ExitReason, ExitCode) {
 
     ; Close ADB shell if it exists to prevent hanging connections
     try {
-        if (IsObject(adbShell)) {
-            ; Get the process ID before attempting cleanup
-            pid := 0
-            try {
-                pid := adbShell.ProcessID
-            }
-
-            ; Try graceful exit first if shell is running
-            if (adbShell.Status = 0) {
-                try {
-                    adbShell.StdIn.WriteLine("exit")
-                }
-                Sleep, 100
-            }
-            try {
-                adbShell.Terminate()
-            }
-
-            ; If we have a PID and process still exists, force kill it
-            if (pid > 0) {
-                Process, Exist, %pid%
-                if (ErrorLevel) {
-                    Process, Close, %pid%
-                }
-            }
+        if (IsObject(adbShell) && adbShell.Status = 0) {
+            adbShell.StdIn.WriteLine("exit")
+            Sleep, 100
+            adbShell.Terminate()
         }
     }
     adbShell := ""
@@ -3284,6 +3262,16 @@ SelectPack(HG := false) {
     if(HG = "First" && injectMethod && loadedAccount ){
         ; when First and injection, if there are free packs, we don't land/start in home screen,
         ; and we have also to search for closed during pack, hourglass, etc.
+
+        Loop {
+            if(FindOrLoseImage(92, 304, 190, 328, , "Pocket", 1)) {
+                CreateStatusMessage("In Pocket Screen`n")
+                Sleep, 10000
+                break
+            }
+            CreateStatusMessage("Waiting for Pocket Screen`n")
+            Delay(3)
+        }
 
         failSafe := A_TickCount
         failSafeTime := 0
