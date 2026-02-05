@@ -2321,7 +2321,7 @@ ToggleStop() {
     settingsPath := A_ScriptDir . "\..\Settings.ini"
     IniRead, savedStopPreferenceSingle, %settingsPath%, UserSettings, stopPreferenceSingle, none
 
-    if (savedStopPreferenceSingle != "none" && savedStopPreferenceSingle != "ERROR") {
+    if (savedStopPreferenceSingle != "none" && savedStopPreferenceSingle != "ERROR" && savedStopPreferenceSingle != "") {
         ; Execute the saved preference directly without showing popup
         if (savedStopPreferenceSingle = "immediate") {
             ExitApp
@@ -2359,7 +2359,7 @@ ToggleStopAll() {
     settingsPath := A_ScriptDir . "\..\Settings.ini"
     IniRead, savedStopPreference, %settingsPath%, UserSettings, stopPreference, none
 
-    if (savedStopPreference != "none" && savedStopPreference != "ERROR") {
+    if (savedStopPreference != "none" && savedStopPreference != "ERROR" && savedStopPreference != "") {
         ; Execute the saved preference directly without showing popup
         if (savedStopPreference = "immediate") {
             StopAllInstances()
