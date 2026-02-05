@@ -2431,6 +2431,7 @@ return
 
 ; === All instances stop handlers (Shift+F7 from instance 1) ===
 StopImmediatelyAll:
+    global RememberStopPreference
     Gui, StopConfirmAll:Submit, NoHide
     if (RememberStopPreference) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
@@ -2441,7 +2442,7 @@ StopImmediatelyAll:
 return
 
 StopWaitEndAll:
-    global stopToggle
+    global stopToggle, RememberStopPreference
     Gui, StopConfirmAll:Submit, NoHide
     if (RememberStopPreference) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
@@ -2455,7 +2456,7 @@ StopWaitEndAll:
 return
 
 StopAndKillMuMuAll:
-    global Instances
+    global Instances, RememberStopPreference
     Gui, StopConfirmAll:Submit, NoHide
     if (RememberStopPreference) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
