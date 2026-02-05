@@ -29,7 +29,8 @@ DllCall("AllocConsole")
 WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
 ; Register OnExit handler to clean up ADB shell properly when script exits
-OnExit("CleanupOnExit")
+; DISABLED - was causing Reload delays due to blocking ADB shell communication
+; OnExit("CleanupOnExit")
 
 ; Register message handler to receive "stop after run" signal from instance 1
 ; WM_USER (0x400) + 0x100 = custom message for stop after run
@@ -2430,21 +2431,22 @@ StopAllInstances() {
 }
 
 ; Cleanup function called when script exits - ensures ADB shell is properly closed
-CleanupOnExit(ExitReason, ExitCode) {
-    global adbShell
-
-    ; Close ADB shell if it exists to prevent hanging connections
-    try {
-        if (IsObject(adbShell) && adbShell.Status = 0) {
-            adbShell.StdIn.WriteLine("exit")
-            Sleep, 100
-            adbShell.Terminate()
-        }
-    }
-    adbShell := ""
-
-    return 0  ; Allow exit to proceed
-}
+; DISABLED - was causing Reload delays due to blocking ADB shell communication
+; CleanupOnExit(ExitReason, ExitCode) {
+;     global adbShell
+;
+;     ; Close ADB shell if it exists to prevent hanging connections
+;     try {
+;         if (IsObject(adbShell) && adbShell.Status = 0) {
+;             adbShell.StdIn.WriteLine("exit")
+;             Sleep, 100
+;             adbShell.Terminate()
+;         }
+;     }
+;     adbShell := ""
+;
+;     return 0  ; Allow exit to proceed
+; }
 
 ; Message handler for "stop after run" signal from instance 1
 OnStopAfterRunMessage(wParam, lParam, msg, hwnd) {
