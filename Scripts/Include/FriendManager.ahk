@@ -21,9 +21,13 @@ AddFriends(renew := false, getFC := false) {
     global FriendID, friendIds, waitTime, friendCode, scriptName, friended, packsThisRun
     global scaleParam, deleteMethod
 
+    ; Only allow AddFriends in Inject Wonderpick 96P+ mode
+    if (deleteMethod != "Inject Wonderpick 96P+")
+        return false
+
     IniRead, groupRerollEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, groupRerollEnabled, 1
 
-    if (deleteMethod != "Inject 13P+" && deleteMethod != "Inject Wonderpick 96P+" || groupRerollEnabled) {
+    if (groupRerollEnabled) {
         friendIDs := ReadFile("ids")
     } else {
         friendIDs := false
@@ -176,7 +180,14 @@ AddFriends(renew := false, getFC := false) {
 ; RemoveFriends - Remove all friends from account
 ;-------------------------------------------------------------------------------
 RemoveFriends() {
-    global friendIDs, friended, friendID, packsInPool, scriptName, stopToggle, scaleParam
+    global friendIDs, friended, friendID, packsInPool, scriptName, stopToggle, scaleParam, deleteMethod
+
+    ; Only allow RemoveFriends in Inject Wonderpick 96P+ mode
+    if (deleteMethod != "Inject Wonderpick 96P+") {
+        friended := false
+        return false
+    }
+
 	friendIDs := ReadFile("ids")
 
     if(!friendIDs && friendID = "") {
