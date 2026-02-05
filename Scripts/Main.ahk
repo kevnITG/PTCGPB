@@ -10,7 +10,6 @@
 #Include %A_ScriptDir%\Include\Utils.ahk
 #Include %A_ScriptDir%\Include\Database.ahk
 #Include %A_ScriptDir%\Include\CardDetection.ahk
-#Include %A_ScriptDir%\Include\WonderPickManager.ahk
 #Include %A_ScriptDir%\Include\AccountManager.ahk
 #Include %A_ScriptDir%\Include\FriendManager.ahk
 #Include %A_ScriptDir%\Include\Dictionary.ahk

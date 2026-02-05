@@ -223,7 +223,7 @@ MarkAccountAsUsed() {
 ;-------------------------------------------------------------------------------
 ; saveAccount - Save current account from game to XML file
 ;-------------------------------------------------------------------------------
-saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag := false) {
+saveAccount(file := "Valid", ByRef filePath := "", packDetails := "") {
     global accountOpenPacks, beginnerMissionsDone, soloBattleMissionDone, intermediateMissionsDone
     global specialMissionsDone, accountHasPackInTesting, winTitle, packsInPool, scriptName
     global adbShell, adbPath, adbPort, Debug
@@ -243,8 +243,6 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag :
             metadata .= "X"
         if(accountHasPackInTesting)
             metadata .= "T"
-        if(addWFlag)
-            metadata .= "W"
 
         saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
 
@@ -254,15 +252,8 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag :
         filePath := saveDir . "\" . xmlFile
 
     } else if (file = "Valid" || file = "Invalid") {
-        metadata := ""
-        if(addWFlag)
-            metadata .= "W"
-
         saveDir := A_ScriptDir "\..\Accounts\GodPacks\"
-        xmlFile := A_Now . "_" . winTitle . "_" . file . "_" . packsInPool . "_packs"
-        if(metadata != "")
-            xmlFile .= "(" . metadata . ")"
-        xmlFile .= ".xml"
+        xmlFile := A_Now . "_" . winTitle . "_" . file . "_" . packsInPool . "_packs.xml"
         filePath := saveDir . xmlFile
 
     } else if (file = "Tradeable") {
@@ -272,15 +263,8 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag :
         filePath := saveDir . xmlFile
 
     } else {
-        metadata := ""
-        if(addWFlag)
-            metadata .= "W"
-
         saveDir := A_ScriptDir "\..\Accounts\SpecificCards\"
-        xmlFile := A_Now . "_" . winTitle . "_" . file . "_" . packsInPool . "_packs"
-        if(metadata != "")
-            xmlFile .= "(" . metadata . ")"
-        xmlFile .= ".xml"
+        xmlFile := A_Now . "_" . winTitle . "_" . file . "_" . packsInPool . "_packs.xml"
         filePath := saveDir . xmlFile
     }
 
@@ -915,8 +899,7 @@ CreateAccountList(instance) {
         }
 
         ; Check if account has "T" flag and needs more time (always 5 days)
-        ; BUT skip this check if account also has "W" flag (W takes precedence)
-        if(InStr(A_LoopFileName, "(") && InStr(A_LoopFileName, "T") && !InStr(A_LoopFileName, "W")) {
+        if(InStr(A_LoopFileName, "(") && InStr(A_LoopFileName, "T")) {
             if(hoursDiff < 5*24) {  ; Always 5 days for T-flagged accounts
                 ; if (verboseLogging)
                     ; LogToFile("Skipping account with T flag (testing): " . A_LoopFileName . " (age: " . hoursDiff . " hours, needs 5 days)")
@@ -996,7 +979,4 @@ CreateAccountList(instance) {
     currentTime := A_Now
     FileDelete, %lastGeneratedFile%
     FileAppend, %currentTime%, %lastGeneratedFile%
-
-    ; Clean up WP metadata
-    CleanupWPMetadata()
 }

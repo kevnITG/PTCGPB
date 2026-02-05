@@ -8,9 +8,8 @@
 ;   - God pack detection and validation
 ;   - Star/special card detection
 ;   - Tradeable card processing and logging
-;   - W flag management for Wonder Pick tracking
 ;
-; Dependencies: GDIP, Database.ahk, WonderPickManager.ahk, AccountManager.ahk
+; Dependencies: GDIP, Database.ahk, AccountManager.ahk
 ; Used by: Pack opening and evaluation flow in main bot
 ;===============================================================================
 
@@ -463,7 +462,7 @@ FoundStars(star) {
     screenShot := Screenshot(star)
     accountFullPath := ""
 
-    accountFile := saveAccount(star, accountFullPath, "", false)
+    accountFile := saveAccount(star, accountFullPath, "")
 
     friendCode := getFriendCode()
 
@@ -506,11 +505,6 @@ FoundStars(star) {
         username := "Unknown"
     if (friendCode = "" || !friendCode)
         friendCode := "Unknown"
-
-    ; Save metadata
-    if (shouldAddWFlag) {
-        success := SaveWPMetadata(accountFileName, username, friendCode)
-    }
 
     CreateStatusMessage(star . " found!",,,, false)
 
@@ -590,10 +584,6 @@ GodPackFound(validity) {
     if (friendCode = "" || !friendCode)
         friendCode := "Unknown"
 
-    if (shouldAddWFlag) {
-        success := SaveWPMetadata(accountFileName, username, friendCode)
-    }
-
     CreateStatusMessage(Interjection . (invalid ? " " . invalid : "") . " God Pack found!",,,, false)
 
     logMessage := Interjection . "\n"
@@ -609,63 +599,6 @@ GodPackFound(validity) {
         LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""), fcScreenshot)
     } else if (!InvalidCheck) {
         LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""))
-    }
-}
-
-;-------------------------------------------------------------------------------
-; AddWflag - Add W flag to current account filename
-;-------------------------------------------------------------------------------
-AddWflag() {
-    global accountFileName, winTitle
-
-    if (!accountFileName) {
-        LogToFile("AddWflag: No accountFileName available")
-        return
-    }
-
-    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
-    oldFilePath := saveDir . "\" . accountFileName
-
-    ; Check if file exists
-    if (!FileExist(oldFilePath)) {
-        LogToFile("AddWflag: File not found: " . oldFilePath)
-        return
-    }
-
-    ; Skip if already has W flag
-    if (HasFlagInMetadata(accountFileName, "W")) {
-        LogToFile("AddWflag: File already has W flag: " . accountFileName)
-        return
-    }
-
-    ; Add W to the metadata
-    newFileName := accountFileName
-    if (InStr(accountFileName, "(")) {
-        ; File has existing metadata - add W to it
-        parts1 := StrSplit(accountFileName, "(")
-        leftPart := parts1[1]
-
-        if (InStr(parts1[2], ")")) {
-            parts2 := StrSplit(parts1[2], ")")
-            metadata := parts2[1]
-            rightPart := parts2[2]
-
-            ; Add W to existing metadata
-            newMetadata := metadata . "W"
-            newFileName := leftPart . "(" . newMetadata . ")" . rightPart
-        }
-    } else {
-        ; File has no metadata - add (W)
-        nameAndExtension := StrSplit(accountFileName, ".")
-        newFileName := nameAndExtension[1] . "(W).xml"
-    }
-
-    ; Rename the file
-    if (newFileName != accountFileName) {
-        newFilePath := saveDir . "\" . newFileName
-        FileMove, %oldFilePath%, %newFilePath%
-        LogToFile("Added W flag to original account: " . accountFileName . " -> " . newFileName)
-        accountFileName := newFileName
     }
 }
 
