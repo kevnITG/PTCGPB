@@ -2253,14 +2253,6 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
         fileName := "packstats_temp.png"
     filePath := fileDir "\" . fileName
 
-    ; Check if Debug Mode is enabled - save fullscreen instead of cropped
-    IniRead, debugMode, %A_ScriptDir%\..\Settings.ini, UserSettings, debugMode, 0
-    if (debugMode) {
-        Gdip_SaveBitmapToFile(pBitmapW, filePath)
-        Gdip_DisposeImage(pBitmapW)
-        return filePath
-    }
-
     global titleHeight
     yBias := titleHeight - 45
     pBitmapW := from_window(WinExist(winTitle))
