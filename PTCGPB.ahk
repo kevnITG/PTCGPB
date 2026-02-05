@@ -2183,6 +2183,10 @@ SaveAllSettings() {
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
    global autoRestartMumu, runsBeforeRestart
 
+   ; Preserve stop preferences before rewriting Settings.ini
+   IniRead, stopPreference, Settings.ini, UserSettings, stopPreference, %A_Space%
+   IniRead, stopPreferenceSingle, Settings.ini, UserSettings, stopPreferenceSingle, %A_Space%
+
    if (deleteMethod != "Inject Wonderpick 96P+") {
        packMethod := false
        ; Clear card detection settings
@@ -2371,7 +2375,9 @@ SaveAllSettings() {
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"
    iniContent_Second .= "minStarsShiny=" minStarsShiny "`n"
    iniContent_Second .= "tesseractPath=" tesseractPath "`n"
-   
+   iniContent_Second .= "stopPreference=" stopPreference "`n"
+   iniContent_Second .= "stopPreferenceSingle=" stopPreferenceSingle "`n"
+
    iniFull := iniContent . iniContent_Second
    FileDelete, Settings.ini
    FileAppend, %iniFull%, Settings.ini, UTF-16
