@@ -1975,6 +1975,8 @@ CheckPack() {
                 found4Dmnd -= FindBorders("trainer")
                 found4Dmnd -= FindBorders("rainbow")
                 found4Dmnd -= FindBorders("fullart")
+                found4Dmnd -= FindBorders("shiny1star")
+                found4Dmnd -= FindBorders("shiny2star")
             }
         }
         if (s4tGholdengo && openPack = "Shining") {

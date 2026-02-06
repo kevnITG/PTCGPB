@@ -115,7 +115,13 @@ FindBorders(prefix) {
 
     if (prefix = "shiny2star") { ; some aren't being detected at lower variations
         searchVariation := 40
-        searchVariation6Card := 40
+        searchVariation6Card := 80
+        searchVariation4Card := 60
+    }
+
+    if (prefix = "shiny1star") { ; some aren't being detected at lower variations
+        searchVariation := 40
+        searchVariation6Card := 80
         searchVariation4Card := 60
     }
 
@@ -179,7 +185,7 @@ FindBorders(prefix) {
                 ,[237, 175, 262, 187]
                 ,[74, 293, 97, 305]
                 ,[153, 293, 180, 305]
-                ,[254, 386, 258, 401]]
+                ,[253, 385, 259, 402]]
         } else {
             borderCoords := [[74, 175, 97, 187]
                 ,[153, 175, 180, 187]
@@ -196,7 +202,7 @@ FindBorders(prefix) {
                 ,[255, 261, 258, 283]
                 ,[90, 376, 93, 398]
                 ,[173, 376, 176, 398]
-                ,[255, 385, 257, 399]]
+                ,[254, 384, 258, 400]]
         } else {
             borderCoords := [[90, 261, 93, 283]
                 ,[173, 261, 176, 283]
@@ -267,7 +273,7 @@ FindBorders(prefix) {
 
         if (is6CardPack && A_Index >= 4) {
             ; Bottom row of 6-card pack (positions 4, 5, 6)
-            if (A_Index = 6 && prefix = "shiny1star" || prefix = "shiny2star") {
+            if (A_Index = 6 && (prefix = "shiny1star" || prefix = "shiny2star")) {
                 ; Use dedicated shiny1star6 needle for 6th card position
                 imageName := prefix . "6card6"
             } else if (A_index = 4 && prefix = "normal" || prefix = "3diamond") {
