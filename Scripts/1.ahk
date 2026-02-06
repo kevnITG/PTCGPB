@@ -1956,34 +1956,6 @@ CheckPack() {
         if (s4t1Star) {
             found1Star := FindBorders("1star")
         }
-        if (s4t4Dmnd) {
-            ; Detecting a 4-diamond EX card by subtracting other types
-            found4Dmnd := totalCardsInPack - FindBorders("normal")
-            if (found4Dmnd > 0) {
-                if (s4t3Dmnd)
-                    found4Dmnd -= found3Dmnd
-                else
-                    found4Dmnd -= FindBorders("3diamond")
-            }
-            if (found4Dmnd > 0) {
-                if (s4t1Star)
-                    found4Dmnd -= found1Star
-                else
-                    found4Dmnd -= FindBorders("1star")
-            }
-            if (found4Dmnd > 0) {
-                found4Dmnd -= FindBorders("trainer")
-                found4Dmnd -= FindBorders("rainbow")
-                found4Dmnd -= FindBorders("fullart")
-                found4Dmnd -= FindBorders("shiny1star")
-                found4Dmnd -= FindBorders("shiny2star")
-            }
-        }
-        if (s4tGholdengo && openPack = "Shining") {
-            foundGimmighoul := FindCard("gimmighoul")
-        }
-
-        ; NEW: Only check if the specific card type is enabled
         if (s4tCrown) {
             foundCrown := FindBorders("crown")
         }
@@ -2005,6 +1977,32 @@ CheckPack() {
         if (s4tFullArt) {
             foundFullArt := FindBorders("fullart")
         }
+        if (s4t4Dmnd) {
+            ; Detecting a 4-diamond EX card by subtracting other types
+            found4Dmnd := totalCardsInPack - FindBorders("normal")
+            if (found4Dmnd > 0)
+                found4Dmnd -= s4t3Dmnd ? found3Dmnd : FindBorders("3diamond")
+            if (found4Dmnd > 0)
+                found4Dmnd -= s4t1Star ? found1Star : FindBorders("1star")
+            if (found4Dmnd > 0)
+                found4Dmnd -= s4tCrown ? foundCrown : FindBorders("crown")
+            if (found4Dmnd > 0)
+                found4Dmnd -= s4tImmersive ? foundImmersive : FindBorders("immersive")
+            if (found4Dmnd > 0)
+                found4Dmnd -= s4tShiny1Star ? foundShiny1Star : FindBorders("shiny1star")
+            if (found4Dmnd > 0)
+                found4Dmnd -= s4tShiny2Star ? foundShiny2Star : FindBorders("shiny2star")
+            if (found4Dmnd > 0)
+                found4Dmnd -= s4tTrainer ? foundTrainer : FindBorders("trainer")
+            if (found4Dmnd > 0)
+                found4Dmnd -= s4tRainbow ? foundRainbow : FindBorders("rainbow")
+            if (found4Dmnd > 0)
+                found4Dmnd -= s4tFullArt ? foundFullArt : FindBorders("fullart")
+        }
+        if (s4tGholdengo && openPack = "Shining") {
+            foundGimmighoul := FindCard("gimmighoul")
+        }
+
 
         foundTradeable := found3Dmnd + found4Dmnd + found1Star + foundGimmighoul + foundCrown + foundImmersive + foundShiny1Star + foundShiny2Star + foundTrainer + foundRainbow + foundFullArt
 

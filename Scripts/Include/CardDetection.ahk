@@ -113,14 +113,8 @@ FindBorders(prefix) {
     searchVariation6Card := 60 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
     searchVariation4Card := 60 ;
 
-    if (prefix = "shiny2star") { ; some aren't being detected at lower variations
-        searchVariation := 40
-        searchVariation6Card := 80
-        searchVariation4Card := 60
-    }
-
-    if (prefix = "shiny1star") { ; some aren't being detected at lower variations
-        searchVariation := 40
+    if (prefix != "normal") { ; improve card detection of non-normal cards. normals must remain strict to avoid missing godpacks
+        searchVariation := 60
         searchVariation6Card := 80
         searchVariation4Card := 60
     }
@@ -149,7 +143,7 @@ FindBorders(prefix) {
             ,[181, 399, 208, 401]] ; Card 5
     }
 
-    ; custom smaller borders for Megas splash art compatiblity; currently removing 6 pixels in x from the right side.
+    ; custom smaller borders for Megas splash art compatiblity
     if (prefix = "fullArt") { 
         if (is4CardPack) {
             borderCoords := [[96, 284, 117, 286]  ; Card 1
@@ -157,18 +151,18 @@ FindBorders(prefix) {
                 ,[96, 399, 117, 401] ; Card 3
                 ,[181, 399, 202, 401]] ; Card 4
         } else if (is6CardPack) {
-            borderCoords := [[58, 284, 77, 286]   ; Top row card 1
-                ,[141, 284, 160, 286] ; Top row card 2
-                ,[224, 284, 243, 286] ; Top row card 3
-                ,[58, 399, 77, 401]   ; Bottom row card 1
-                ,[141, 399, 160, 401] ; Bottom row card 2
-                ,[258, 386, 254, 402]] ; Bottom row card 3
+            borderCoords := [[71, 284, 77, 286]   ; Top row card 1
+                ,[154, 284, 160, 286] ; Top row card 2
+                ,[237, 284, 243, 286] ; Top row card 3
+                ,[71, 399, 77, 401]   ; Bottom row card 1
+                ,[154, 399, 160, 401] ; Bottom row card 2
+                ,[237, 399, 243, 401]] ; Bottom row card 3
         } else {
-            borderCoords := [[58, 284, 77, 286] ; Card 1
-                ,[141, 284, 160, 286] ; Card 2
-                ,[224, 284, 243, 286] ; Card 3
-                ,[98, 399, 117, 401] ; Card 4
-                ,[183, 399, 202, 401]] ; Card 5
+            borderCoords := [[71, 284, 77, 286] ; Card 1
+                ,[154, 284, 160, 286] ; Card 2
+                ,[237, 284, 243, 286] ; Card 3
+                ,[111, 399, 117, 401] ; Card 4
+                ,[196, 399, 202, 401]] ; Card 5
         }
     }
 
