@@ -106,7 +106,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.5.2"
+   ,localVersion := "v9.5.3"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -374,7 +374,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.5.2 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.5.3 kevinnnn"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -1962,8 +1962,8 @@ LoadSettingsFromIni() {
       IniRead, claimDailyMission, Settings.ini, UserSettings, claimDailyMission, 0
       IniRead, wonderpickForEventMissions, Settings.ini, UserSettings, wonderpickForEventMissions, 0
       ; wonderpickForEventMissions := 0 ; forced turned off during Sneak Peek for now...
-      IniRead, autoRestartMumu, Settings.ini, UserSettings, autoRestartMumu, 1
-      IniRead, runsBeforeRestart, Settings.ini, UserSettings, runsBeforeRestart, 13
+      IniRead, autoRestartMumu, Settings.ini, UserSettings, autoRestartMumu, 0
+      IniRead, runsBeforeRestart, Settings.ini, UserSettings, runsBeforeRestart, 0
       
       IniRead, Palkia, Settings.ini, UserSettings, Palkia, 0
       IniRead, Dialga, Settings.ini, UserSettings, Dialga, 0
@@ -2145,8 +2145,8 @@ CreateDefaultSettingsFile() {
       iniContent .= "maxWaitHours=24`n"
       iniContent .= "menuExpanded=True`n"
       iniContent .= "groupRerollEnabled=0`n"
-      iniContent .= "autoRestartMumu=1`n"
-      iniContent .= "runsBeforeRestart=13`n"
+      iniContent .= "autoRestartMumu=0`n"
+      iniContent .= "runsBeforeRestart=0`n"
       
       FileAppend, %iniContent%, Settings.ini, UTF-16
       return true
@@ -2872,7 +2872,6 @@ CheckForUpdate() {
    latestReleaseBody := FixFormat(ExtractJSONValue(response, "body"))
    latestVersion := ExtractJSONValue(response, "tag_name")
    zipDownloadURL := ExtractJSONValue(response, "zipball_url")
-   Clipboard := latestReleaseBody
    if (zipDownloadURL = "" || !InStr(zipDownloadURL, "http"))
    {
       MsgBox, 0x40000, Check for Update, Failed to get download URL
