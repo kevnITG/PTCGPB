@@ -2981,23 +2981,15 @@ HttpGet(url) {
 }
 
 ExtractJSONValue(json, key1, key2:="", ext:="") {
-   value := ""
-   json := StrReplace(json, """", "")
-   lines := StrSplit(json, ",")
-   
-   Loop, % lines.MaxIndex()
-   {
-      if InStr(lines[A_Index], key1 ":") {
-         value := SubStr(lines[A_Index], InStr(lines[A_Index], ":") + 1)
-         if (key2 != "")
-         {
-            if InStr(lines[A_Index+1], key2 ":") && InStr(lines[A_Index+1], ext)
-               value := SubStr(lines[A_Index+1], InStr(lines[A_Index+1], ":") + 1)
-         }
-         break
-      }
-   }
-   return Trim(value)
+   ; Extract JSON string value using regex (handles commas and braces within values)
+   needle := """" . key1 . """\s*:\s*""((?:[^""\\]|\\.)*)"""
+   if (RegExMatch(json, needle, match))
+      return match1
+   ; Fallback for non-string values (numbers, booleans)
+   needle := """" . key1 . """\s*:\s*([^,}\s]+)"
+   if (RegExMatch(json, needle, match))
+      return Trim(match1)
+   return ""
 }
 
 FixFormat(text) {
