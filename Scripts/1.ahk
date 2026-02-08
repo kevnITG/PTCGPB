@@ -700,12 +700,6 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
 
         EndOfRun:
 
-        if(ocrShinedust && injectMethod && loadedAccount && s4tEnabled) {
-            GoToMain()
-            ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
-            CountShinedust()
-        }
-
         if(wonderpickForEventMissions) {
             GoToMain()
             FindImageAndClick(240, 80, 265, 100, , "WonderPick", 59, 429) ;click until in wonderpick Screen
@@ -723,6 +717,12 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
             cantOpenMorePacks := 0
             if (injectMethod && loadedAccount)
                 setMetaData()
+        }
+
+        if(ocrShinedust && injectMethod && loadedAccount && s4tEnabled) {
+            GoToMain()
+            ; FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+            CountShinedust()
         }
 
         ; Hourglass spending
