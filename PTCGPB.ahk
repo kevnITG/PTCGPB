@@ -324,23 +324,10 @@ NextStep:
    Gui, Add, Text, x270 y335 %sectionColor%, % currentDictionary.Txt_WaitTime
    Gui, Add, Edit, vwaitTime w30 x400 y335 h20 -E0x200 Background2A2A2A cWhite Center, %waitTime%
 
-   sectionColor := "cFF69B4"
-   Gui, Font, s10 cWhite, Segoe UI
-   Gui, Add, GroupBox, x445 y0 w156 h130 %sectionColor%, % currentDictionary.DiscordSettingsHeading
-   if(StrLen(discordUserID) < 3)
-   discordUserID =
-   if(StrLen(discordWebhookURL) < 3)
-   discordWebhookURL =
-   Gui, Add, Text, x455 y20 %sectionColor%, Discord ID:
-   Gui, Add, Edit, vdiscordUserId w136 x455 y40 h20 -E0x200 Background2A2A2A cWhite, %discordUserId%
-   Gui, Add, Text, x455 y60 %sectionColor%, Webhook URL:
-   Gui, Add, Edit, vdiscordWebhookURL w136 x455 y80 h20 -E0x200 Background2A2A2A cWhite, %discordWebhookURL%
-   Gui, Add, Checkbox, % (sendAccountXml ? "Checked" : "") " vsendAccountXml x455 y105 " . sectionColor, Send Account XML
-
    sectionColor := "c00FFFF"
    Gui, Font, s10 cWhite, Segoe UI
-   Gui, Add, GroupBox, x445 y130 w156 h180 %sectionColor%, % currentDictionary.HeartbeatSettingsSubHeading
-   Gui, Add, Checkbox, % (heartBeat ? "Checked" : "") " vheartBeat x455 y155 gdiscordSettings " . sectionColor, % currentDictionary.Txt_heartBeat
+   Gui, Add, GroupBox, x445 y0 w156 h180 %sectionColor%, % currentDictionary.HeartbeatSettingsSubHeading
+   Gui, Add, Checkbox, % (heartBeat ? "Checked" : "") " vheartBeat x455 y25 gdiscordSettings " . sectionColor, % currentDictionary.Txt_heartBeat
 
    if(StrLen(heartBeatName) < 3)
    heartBeatName =
@@ -348,19 +335,19 @@ NextStep:
    heartBeatWebhookURL =
 
    if (heartBeat) {
-   Gui, Add, Text, vhbName x455 y175 %sectionColor%, % currentDictionary.hbName
-   Gui, Add, Edit, vheartBeatName w136 x455 y195 h20 -E0x200 Background2A2A2A cWhite, %heartBeatName%
-   Gui, Add, Text, vhbURL x455 y215 %sectionColor%, Webhook URL:
-   Gui, Add, Edit, vheartBeatWebhookURL w136 x455 y235 h20 -E0x200 Background2A2A2A cWhite, %heartBeatWebhookURL%
-   Gui, Add, Text, vhbDelay x455 y260 %sectionColor%, % currentDictionary.hbDelay
-   Gui, Add, Edit, vheartBeatDelay w50 x455 y280 h20 -E0x200 Background2A2A2A cWhite Center, %heartBeatDelay%
+   Gui, Add, Text, vhbName x455 y45 %sectionColor%, % currentDictionary.hbName
+   Gui, Add, Edit, vheartBeatName w136 x455 y65 h20 -E0x200 Background2A2A2A cWhite, %heartBeatName%
+   Gui, Add, Text, vhbURL x455 y85 %sectionColor%, Webhook URL:
+   Gui, Add, Edit, vheartBeatWebhookURL w136 x455 y105 h20 -E0x200 Background2A2A2A cWhite, %heartBeatWebhookURL%
+   Gui, Add, Text, vhbDelay x455 y130 %sectionColor%, % currentDictionary.hbDelay
+   Gui, Add, Edit, vheartBeatDelay w50 x455 y150 h20 -E0x200 Background2A2A2A cWhite Center, %heartBeatDelay%
    } else {
-   Gui, Add, Text, vhbName x455 y175 Hidden %sectionColor%, % currentDictionary.hbName
-   Gui, Add, Edit, vheartBeatName w136 x455 y195 h20 Hidden -E0x200 Background2A2A2A cWhite, %heartBeatName%
-   Gui, Add, Text, vhbURL x455 y215 Hidden %sectionColor%, Webhook URL:
-   Gui, Add, Edit, vheartBeatWebhookURL w136 x455 y235 h20 Hidden -E0x200 Background2A2A2A cWhite, %heartBeatWebhookURL%
-   Gui, Add, Text, vhbDelay x455 y260 Hidden %sectionColor%, % currentDictionary.hbDelay
-   Gui, Add, Edit, vheartBeatDelay w50 x455 y280 h20 Hidden -E0x200 Background2A2A2A cWhite Center, %heartBeatDelay%
+   Gui, Add, Text, vhbName x455 y45 Hidden %sectionColor%, % currentDictionary.hbName
+   Gui, Add, Edit, vheartBeatName w136 x455 y65 h20 Hidden -E0x200 Background2A2A2A cWhite, %heartBeatName%
+   Gui, Add, Text, vhbURL x455 y85 Hidden %sectionColor%, Webhook URL:
+   Gui, Add, Edit, vheartBeatWebhookURL w136 x455 y105 h20 Hidden -E0x200 Background2A2A2A cWhite, %heartBeatWebhookURL%
+   Gui, Add, Text, vhbDelay x455 y130 Hidden %sectionColor%, % currentDictionary.hbDelay
+   Gui, Add, Edit, vheartBeatDelay w50 x455 y150 h20 Hidden -E0x200 Background2A2A2A cWhite Center, %heartBeatDelay%
    }
 
    Gui, Font, s10 cWhite
@@ -739,21 +726,34 @@ ShowCardDetection:
     yPos += 25
     Gui, CardDetect:Add, Checkbox, % (InvalidCheck ? "Checked" : "") " vInvalidCheck_Popup x15 y" . yPos . " cWhite", Ignore Invalid Packs
     yPos += 35
-    
+
     Gui, CardDetect:Add, Text, x15 y%yPos% w200 h2 +0x10
-    yPos += 15
-    
-    Gui, CardDetect:Add, Checkbox, % (CrownCheck ? "Checked" : "") " vCrownCheck_Popup x15 y" . yPos . " cWhite", Save Crowns
+    yPos += 10
+
+    sectionColor := "cFF69B4"
+    Gui, CardDetect:Add, Text, x15 y%yPos% %sectionColor%, Discord Settings
+    yPos += 20
+
+    if(StrLen(discordUserId) < 3)
+        discordUserId =
+    if(StrLen(discordWebhookURL) < 3)
+        discordWebhookURL =
+
+    Gui, CardDetect:Add, Text, x15 y%yPos% cWhite, Discord ID:
+    yPos += 20
+    Gui, CardDetect:Add, Edit, vdiscordUserId_Popup w200 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, %discordUserId%
     yPos += 25
-    Gui, CardDetect:Add, Checkbox, % (ShinyCheck ? "Checked" : "") " vShinyCheck_Popup x15 y" . yPos . " cWhite", Save Shiny
+    Gui, CardDetect:Add, Text, x15 y%yPos% cWhite, Webhook URL:
+    yPos += 20
+    Gui, CardDetect:Add, Edit, vdiscordWebhookURL_Popup w200 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, %discordWebhookURL%
     yPos += 25
-    Gui, CardDetect:Add, Checkbox, % (ImmersiveCheck ? "Checked" : "") " vImmersiveCheck_Popup x15 y" . yPos . " cWhite", Save Immersives
+    Gui, CardDetect:Add, Checkbox, % (sendAccountXml ? "Checked" : "") " vsendAccountXml_Popup x15 y" . yPos . " cWhite", Send Account XML
     yPos += 40
-    
+
     Gui, CardDetect:Add, Button, x15 y%yPos% w90 h30 gApplyCardDetection, Apply
     Gui, CardDetect:Add, Button, x115 y%yPos% w90 h30 gCancelCardDetection, Cancel
     yPos += 40
-    
+
     Gui, CardDetect:Show, x%popupX% y%popupY% w230 h%yPos%
 return
 
@@ -768,15 +768,17 @@ ApplyCardDetection:
     PseudoGodPack := PseudoGodPack_Popup
     CheckShinyPackOnly := 0  ; Always disabled
     InvalidCheck := InvalidCheck_Popup
-    CrownCheck := CrownCheck_Popup
-    ShinyCheck := ShinyCheck_Popup
-    ImmersiveCheck := ImmersiveCheck_Popup
-    
+    discordUserId := discordUserId_Popup
+    discordWebhookURL := discordWebhookURL_Popup
+    sendAccountXml := sendAccountXml_Popup
+
     Gui, CardDetect:Destroy
     
     Gui, 1:Default
     
     UpdateCardDetectionButtonText()
+
+    SaveAllSettings()
 return
 
 CancelCardDetection:
@@ -1193,10 +1195,6 @@ ShowToolsAndSystemSettings:
     col1W := 190
     yPos := 15
     
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (debugMode ? "Checked" : "") " vdebugMode_Popup x" . col1X . " y" . yPos . " cWhite", Debug Mode
-    yPos += 20
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (statusMessage ? "Checked" : "") " vstatusMessage_Popup x" . col1X . " y" . yPos . " cWhite", Status Messages
-    yPos += 20
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (showcaseEnabled ? "Checked" : "") " vshowcaseEnabled_Popup x" . col1X . " y" . yPos . " cWhite", 5x Showcase Likes
     yPos += 20
     
@@ -1304,10 +1302,10 @@ ShowToolsAndSystemSettings:
     
     Gui, ToolsAndSystemSelect:Font, s8 cWhite, Segoe UI
     xmlSortY := yPos2 - 5
-    Gui, ToolsAndSystemSelect:Add, Button, x%col2X% y%xmlSortY% w170 h20 gRunXMLSortTool BackgroundTrans, XML Sort Tool
+    Gui, ToolsAndSystemSelect:Add, Button, x%col2X% y%xmlSortY% w170 h20 gRunXMLSortTool BackgroundTrans, XML pack counts
     yPos2 += 20
     xmlDupY := yPos2 - 5
-    Gui, ToolsAndSystemSelect:Add, Button, x%col2X% y%xmlDupY% w170 h20 gRunXMLDuplicateTool BackgroundTrans, XML Duplicate Tool
+    Gui, ToolsAndSystemSelect:Add, Button, x%col2X% y%xmlDupY% w170 h20 gRunXMLDuplicateTool BackgroundTrans, XML Duplicate Remover
     yPos2 += 25
     
     Gui, ToolsAndSystemSelect:Font, s10 cWhite, Segoe UI
@@ -1324,8 +1322,6 @@ return
 ApplyToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Submit, NoHide
     
-    debugMode := debugMode_Popup
-    statusMessage := statusMessage_Popup
     showcaseEnabled := showcaseEnabled_Popup
     claimDailyMission := claimDailyMission_Popup
     slowMotion := slowMotion_Popup
@@ -1352,8 +1348,6 @@ ApplyToolsAndSystemSettings:
 
     Gui, 1:Default
 
-    GuiControl,, debugMode, %debugMode%
-    GuiControl,, statusMessage, %statusMessage%
     GuiControl,, showcaseEnabled, %showcaseEnabled%
     GuiControl,, claimDailyMission, %claimDailyMission%
     GuiControl,, slowMotion, %slowMotion%
@@ -1923,7 +1917,7 @@ LoadSettingsFromIni() {
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
       IniRead, waitTime, Settings.ini, UserSettings, waitTime, 5
       IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 500
-      IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 1 ; default is now OFF for no-mod-menu support
+      IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 0
       
       IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
       IniRead, defaultLanguage, Settings.ini, UserSettings, defaultLanguage, Scale125
@@ -1938,7 +1932,8 @@ LoadSettingsFromIni() {
       IniRead, debugMode, Settings.ini, UserSettings, debugMode, 0
       IniRead, useTesseract, Settings.ini, UserSettings, tesseractOption, 0
       IniRead, statusMessage, Settings.ini, UserSettings, statusMessage, 1
-      
+      statusMessage := 1 ; Force always on
+
       IniRead, minStars, Settings.ini, UserSettings, minStars, 0
       IniRead, minStarsShiny, Settings.ini, UserSettings, minStarsShiny, 0
       IniRead, minStarsEnabled, Settings.ini, UserSettings, minStarsEnabled, 0
@@ -2147,7 +2142,8 @@ CreateDefaultSettingsFile() {
       iniContent .= "groupRerollEnabled=0`n"
       iniContent .= "autoRestartMumu=0`n"
       iniContent .= "runsBeforeRestart=0`n"
-      
+      iniContent .= "slowMotion=0`n"
+
       FileAppend, %iniContent%, Settings.ini, UTF-16
       return true
    }
