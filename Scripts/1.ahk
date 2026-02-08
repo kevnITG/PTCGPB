@@ -392,12 +392,12 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
     DeadCheck := 0
     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
     createAccountList(scriptName)
-    Reload
+    SafeReload()
 } else if(DeadCheck = 1 && deleteMethod = "Create Bots (13P)") {
     CreateStatusMessage("New account creation is stuck! Deleting account...")
     Delay(5)
     menuDeleteStart()
-    Reload
+    SafeReload()
 } else {
     ; in injection mode, we dont need to reload
 
@@ -1064,7 +1064,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
             loadedAccount := false
             CreateStatusMessage("No more packs can be opened on this account. Restarting...")
             Sleep, 1000
-            Reload
+            SafeReload()
         }
     }
 
@@ -1257,7 +1257,7 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
                 IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
             }
             LogToFile("Restarted game. Reason: No save data found")
-            Reload
+            SafeReload()
         }
     }
     if(imageName = "Points" || imageName = "Home") { ;look for level up ok "button"
@@ -1385,7 +1385,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                 loadedAccount := false
                 CreateStatusMessage("No more packs can be opened on this account. Restarting...")
                 Sleep, 1000
-                Reload
+                SafeReload()
             }
         }
 
@@ -1522,7 +1522,7 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
                     IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
                 }
                 LogToFile("Restarted game. Reason: No save data found")
-                Reload
+                SafeReload()
             }
         }
 
@@ -1698,7 +1698,7 @@ restartGameInstance(reason, RL := true) {
             ExitApp
         }
 
-        Reload
+        SafeReload()
     } else if (isStuck) {
         ; Only restart MuMu when stuck - this is the nuclear option
         clearMissionCache()
@@ -1724,7 +1724,7 @@ restartGameInstance(reason, RL := true) {
             ExitApp
         }
 
-        Reload  ; Clean restart handles ADB reconnection automatically
+        SafeReload()
     } else {
         ; Non-stuck restart: just restart the Pokemon app, not the whole MuMu instance
         adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
@@ -1746,7 +1746,7 @@ restartGameInstance(reason, RL := true) {
                 ExitApp
             }
 
-            Reload
+            SafeReload()
         }
 
         if (stopToggle) {
@@ -2303,7 +2303,7 @@ ShowStatusMessages:
 return
 
 ReloadScript:
-    Reload
+    SafeReload()
 return
 
 TestScript:
@@ -2324,10 +2324,7 @@ ToggleStop() {
             ExitApp
         } else if (savedStopPreferenceSingle = "wait_end") {
             stopToggle := true
-            if (!friended)
-                ExitApp
-            else
-                CreateStatusMessage("Stopping script at the end of the run...",,,, false)
+            CreateStatusMessage("Stopping script at the end of the run...",,,, false)
         }
         return
     }
@@ -2415,10 +2412,7 @@ StopWaitEndSingle:
     }
     Gui, StopConfirm:Destroy
     stopToggle := true
-    if (!friended)
-        ExitApp
-    else
-        CreateStatusMessage("Stopping script at the end of the run...",,,, false)
+    CreateStatusMessage("Stopping script at the end of the run...",,,, false)
 return
 
 StopConfirmGuiClose:
@@ -2610,7 +2604,7 @@ CleanupUsedAccountsTimer:
 Return
 
 ; ===== HOTKEYS =====
-~+F5::Reload
+~+F5::SafeReload()
 ~+F6::Pause
 ~+F7::
     ; Only instance 1 handles Shift+F7 - shows popup and controls all instances

@@ -231,7 +231,7 @@ Loop {
                     Sleep, 1000
                     adbClick(139, 386) ; Click OK/confirm
                     Sleep, 1000
-                    Reload
+                    SafeReload()
                 } else if(FindOrLoseImage(124, 423, 155, 455, , "StartupErrorX", 0, failSafeTime)) {
                     ; Handle startup error with X button
                     CreateStatusMessage("Start-up error detected. Clearing and reloading...",,,, false)
@@ -239,7 +239,7 @@ Loop {
                     Sleep, 2000
                     adbClick(139, 440)  ; Click X to close error
                     Sleep, 4000
-                    Reload
+                    SafeReload()
                 } else if(clickButton) {
                     StringSplit, pos, clickButton, `,  ; Split at ", "
                     if (scaleParam = 287) {
@@ -532,7 +532,7 @@ restartGameInstance(reason, RL := true){
     Sleep, 3000
     if(RL) {
         LogToFile("Restarted game. Reason: " reason)
-        Reload
+        SafeReload()
     }
 }
 
@@ -624,7 +624,7 @@ ShowStatusMessages:
 return
 
 ReloadScript:
-    Reload
+    SafeReload()
 return
 
 TestScript:
@@ -750,7 +750,7 @@ from_window(ByRef image) {
     return pBitmap
 }
 
-~+F5::Reload
+~+F5::SafeReload()
 ~+F6::Pause
 ~+F7::ExitApp  ; Main.ahk always exits immediately - no "end of run" concept
 ~+F8::ToggleStatusMessages()

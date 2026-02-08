@@ -37,10 +37,11 @@ Loop {
     ; Loop through each instance, check if it's started, and start it if it's not
     launched := 0
     
-    nowEpoch := A_NowUTC
-    EnvSub, nowEpoch, 1970, seconds
-    
     Loop %Instances% {
+        ; Recalculate epoch each iteration so it stays fresh after restart sleeps
+        nowEpoch := A_NowUTC
+        EnvSub, nowEpoch, 1970, seconds
+
         if(A_TickCount - lastReduceMemory > 120000) {
             LogToFile("Memory reduction process start.", "Monitor.txt")
             ReduceVMMemory()
@@ -49,13 +50,24 @@ Loop {
         }
 
         instanceNum := Format("{:u}", A_Index)
-        
+
         IniRead, LastEndEpoch, %A_ScriptDir%\..\%instanceNum%.ini, Metrics, LastEndEpoch, 0
+        IniRead, LastStartEpoch, %A_ScriptDir%\..\%instanceNum%.ini, Metrics, LastStartEpoch, 0
         IniRead, deleteMethod, %A_ScriptDir%\..\%instanceNum%.ini, UserSettings, deleteMethod, Create Bots (13P)
-        secondsSinceLastEnd := nowEpoch - LastEndEpoch
         ; Set threshold: 30 minutes for Create Bots, 11 minutes for others
         threshold := (deleteMethod == "Create Bots (13P)") ? (30 * 60) : (11 * 60)
-        if(LastEndEpoch > 0 && secondsSinceLastEnd > threshold)
+        ; Use LastEndEpoch if available, otherwise fall back to LastStartEpoch for first-run detection
+        if (LastEndEpoch > 0) {
+            secondsSinceLastEnd := nowEpoch - LastEndEpoch
+            isStuck := (secondsSinceLastEnd > threshold)
+        } else if (LastStartEpoch > 0) {
+            secondsSinceLastEnd := nowEpoch - LastStartEpoch
+            isStuck := (secondsSinceLastEnd > threshold)
+        } else {
+            secondsSinceLastEnd := 0
+            isStuck := false
+        }
+        if(isStuck)
         {
             ; msgbox, Killing Instance %instanceNum%! Last Run Completed %secondsSinceLastEnd% Seconds Ago
             msg := "Killing Instance " . instanceNum . "! Last Run Completed " . secondsSinceLastEnd . " Seconds Ago"
@@ -144,9 +156,10 @@ killAHK(scriptName := "")
             ID:=IDList%A_Index%
             WinGetTitle, ATitle, ahk_id %ID%
             if InStr(ATitle, "\" . scriptName) {
-                ; MsgBox, Killing: %ATitle%
-                WinKill, ahk_id %ID% ;kill
-                ; WinClose, %fullScriptPath% ahk_class AutoHotkey
+                ; Use Process Close (TerminateProcess) instead of WinKill (WM_CLOSE)
+                ; to guarantee the process dies even if blocked on ADB/Sleep
+                WinGet, ahkPID, PID, ahk_id %ID%
+                Process, Close, %ahkPID%
                 killed := killed + 1
             }
         }

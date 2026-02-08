@@ -332,3 +332,17 @@ CompareIndicesByPacksDesc(packs, a, b) {
     packsB := packs[b]
     return packsB < packsA ? -1 : (packsB > packsA ? 1 : 0)
 }
+
+;-------------------------------------------------------------------------------
+; SafeReload - Restart the script without race conditions
+;-------------------------------------------------------------------------------
+; Launches a new instance then immediately kills the current process.
+; Unlike Reload (which keeps the old process alive and relies on the NEW
+; instance to close it via WM_CLOSE), this has the OLD process kill itself.
+; ExitApp terminates in microseconds; the new AHK process takes hundreds of
+; milliseconds to load and reach #SingleInstance - so the old process is
+; long dead before any conflict can occur.
+SafeReload() {
+    Run, "%A_AhkPath%" "%A_ScriptFullPath%"
+    ExitApp
+}

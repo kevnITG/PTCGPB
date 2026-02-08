@@ -154,7 +154,7 @@ loadAccount() {
             launchInstance(winTitle)
             Sleep, 5000  ; Give MuMu a head start before script reload
 
-            Reload  ; Clean restart handles ADB reconnection automatically
+            SafeReload()
         }
     }
 
@@ -168,7 +168,7 @@ loadAccount() {
     ; Reliably restart the app: Wait for launch, and start in a clean, new task without animation.
     adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
     waitadb()
-    Sleep, 6000   ; Reduced from 1000
+    Sleep, 1000 
     ; Parse account filename for pack info (unchanged)
     if (InStr(accountFileName, "P")) {
         accountFileNameParts := StrSplit(accountFileName, "P")
