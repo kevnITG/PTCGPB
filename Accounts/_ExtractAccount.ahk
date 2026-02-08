@@ -203,6 +203,8 @@ getMumuFolder(folderPath) {
     if !FileExist(mumuFolder)
         mumuFolder := folderPath . "\MuMu Player 12"
     if !FileExist(mumuFolder)
+        mumuFolder := folderPath . "\MuMuPlayer-12.0"
+    if !FileExist(mumuFolder)
         mumuFolder := folderPath . "\MuMuPlayer"
     if !FileExist(mumuFolder)
         mumuFolder := folderPath . "\MuMuPlayer-12"

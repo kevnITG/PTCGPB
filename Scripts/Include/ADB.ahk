@@ -16,6 +16,8 @@ findAdbPorts(baseFolder := "C:\Program Files\Netease") {
     if !FileExist(mumuFolder)
         mumuFolder = %baseFolder%\MuMu Player 12\vms\*
     if !FileExist(mumuFolder)
+        mumuFolder = %baseFolder%\MuMuPlayer-12.0\vms\*
+    if !FileExist(mumuFolder)
         mumuFolder = %baseFolder%\MuMuPlayer\vms\*
     if !FileExist(mumuFolder)
         mumuFolder = %baseFolder%\MuMuPlayer-12\vms\*
@@ -69,10 +71,14 @@ ConnectAdb(folderPath := "C:\Program Files\Netease") {
 
     if !FileExist(adbPath) ;if international mumu file path isn't found look for chinese domestic path
         adbPath := folderPath . "\MuMu Player 12\shell\adb.exe"
+    if !FileExist(adbPath)
+        adbPath := folderPath . "\MuMuPlayer-12.0\shell\adb.exe"
     if !FileExist(adbPath) ;MuMu Player 12 v5 supported
         adbPath := folderPath . "\MuMuPlayerGlobal-12.0\nx_main\adb.exe"
     if !FileExist(adbPath) ;MuMu Player 12 v5 supported
         adbPath := folderPath . "\MuMu Player 12\nx_main\adb.exe"
+    if !FileExist(adbPath)
+        adbPath := folderPath . "\MuMuPlayer-12.0\nx_main\adb.exe"
     if !FileExist(adbPath) ;MuMu Player 12 v5 supported
         adbPath := folderPath . "\MuMuPlayer\nx_main\adb.exe"
     if !FileExist(adbPath)

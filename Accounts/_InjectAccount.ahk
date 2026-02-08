@@ -103,10 +103,14 @@ if(!WinExist(winTitle)) {
 
 if !FileExist(adbPath) ;if international mumu file path isn't found look for chinese domestic path
     adbPath := folderPath . "\MuMu Player 12\shell\adb.exe"
+if !FileExist(adbPath)
+    adbPath := folderPath . "\MuMuPlayer-12.0\shell\adb.exe"
 if !FileExist(adbPath) ;MuMu Player 12 v5
     adbPath := folderPath . "\MuMuPlayerGlobal-12.0\nx_main\adb.exe"
 if !FileExist(adbPath) ;MuMu Player 12 v5
     adbPath := folderPath . "\MuMu Player 12\nx_main\adb.exe"
+if !FileExist(adbPath)
+    adbPath := folderPath . "\MuMuPlayer-12.0\nx_main\adb.exe"
 if !FileExist(adbPath) ;MuMu Player 12 v5
     adbPath := folderPath . "\MuMuPlayer\nx_main\adb.exe"
 if !FileExist(adbPath)
@@ -178,6 +182,8 @@ getMumuFolder(folderPath) {
 mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
 if !FileExist(mumuFolder)
     mumuFolder := folderPath . "\MuMu Player 12"
+if !FileExist(mumuFolder)
+    mumuFolder := folderPath . "\MuMuPlayer-12.0"
 if !FileExist(mumuFolder)
     mumuFolder := folderPath . "\MuMuPlayer"
 if !FileExist(mumuFolder)
