@@ -1158,7 +1158,7 @@
         let sortDirection = 'desc'; // 'asc' or 'desc'
         let accountShinedustMap = new Map(); // Store latest shinedust for each account
         let filesUploaded = false;
-        let uploadedFiles = [];
+        let uploadedFiles = new Map(); // mapping from deviceAccount -> File
         let allExpanded = false;
 
         function changeLanguage() {
@@ -1269,6 +1269,59 @@
             return `${prefix}-${safeValue || 'option'}`;
         }
 
+        function extractDeviceAccount(xmlText) {
+            if (!xmlText) return "";
+            const match = xmlText.match(
+                /<string\s+name=["']deviceAccount["']>([^<]+)<\/string>/i
+            );
+            return match ? match[1].trim() : "";
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result || "");
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file);
+            });
+        }
+
+        async function handleXmlUpload(fileList) {
+            const xmlFiles = Array.from(fileList || []).filter((file) =>
+                file.name.toLowerCase().endsWith(".xml")
+            );
+
+            uploadedFiles = new Map();
+            filesUploaded = false;
+
+            if (xmlFiles.length === 0) {
+                alert("No XML files selected. Please choose XML files.");
+                return;
+            }
+
+            const tasks = xmlFiles.map(
+                (file) =>
+                    readFileAsText(file)
+                        .then((text) => {
+                            const deviceAccount =
+                                extractDeviceAccount(text);
+                            if (deviceAccount) {
+                                uploadedFiles.set(deviceAccount, file);
+                            }
+                        })
+                        .catch(() => {}) // ignore invalid files
+            );
+
+            await Promise.all(tasks);
+            filesUploaded = uploadedFiles.size > 0;
+
+            const processedCount = uploadedFiles.size;
+            const message = filesUploaded
+                ? `Uploaded ${processedCount} files. You can now download them.`
+                : "No valid files found.";
+            alert(message);
+        }
+
         function getCheckedValues(containerId) {
             return Array.from(document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`))
                 .map(cb => cb.value);
@@ -1355,12 +1408,7 @@
             });
 
             document.getElementById('xmlFileInput').addEventListener('change', function(e) {
-                const files = e.target.files;
-                // Handle uploaded files
-                uploadedFiles = Array.from(files);
-                filesUploaded = true;
-                alert(`Uploaded ${files.length} files. You can now download them.`);
-                // Perhaps process files here
+                handleXmlUpload(e.target.files);
             });
 
             document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -1784,7 +1832,9 @@
                     <td class="col-cards"><div class="summary-stats">${cardsHTML}</div></td>
                     <td class="col-shinedust">${shinedustHTML}</td>
                     <td class="col-screenshot"></td>
-                    <td class="col-xml">${xmlFilenames}&nbsp;&nbsp;&nbsp;<span class="xmlDownloadLink" data-info="${originalFileName}"><i class="fas fa-download"></i></span></td>
+                    <td class="col-xml">${xmlFilenames}&nbsp;&nbsp;&nbsp;<span class="xmlDownloadLink" data-info="${originalFileName}" data-account="${
+                        account.deviceAccount
+                    }"><i class="fas fa-download"></i></span></td>
                     <td class="time-cell">${account.lastSeen.split(' ')[0]}</td>
                     <td class="col-age">${ageDays}</td>
                 `;
@@ -1848,9 +1898,24 @@
                         document.getElementById('xmlFileInput').click();
                     } else {
                         // Download the specific XML file for this row
+                        const deviceAccount = this.getAttribute('data-account');
                         const info = this.getAttribute('data-info');
                         const filenames = info.split(',');
-                        const matchingFile = uploadedFiles.find(file => filenames.some(fn => fn.trim() === file.name));
+                        let matchingFile = null;
+                        if (
+                            deviceAccount &&
+                            uploadedFiles.has(deviceAccount)
+                        ) {
+                            matchingFile = uploadedFiles.get(deviceAccount);
+                        } else {
+                            matchingFile = Array.from(
+                                uploadedFiles.values()
+                            ).find((file) =>
+                                filenames.some(
+                                    (fn) => fn.trim() === file.name
+                                )
+                            );
+                        }
                         if (matchingFile) {
                             const url = URL.createObjectURL(matchingFile);
                             const a = document.createElement('a');
