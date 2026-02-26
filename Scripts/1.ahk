@@ -471,11 +471,13 @@ if(DeadCheck = 1 && deleteMethod != "Create Bots (13P)") {
                 if(waitForEligibleAccounts = 1) {
                     ; Wait for eligible accounts to become available
                     ; Simple approach - just show wait message and sleep
-                    CreateStatusMessage("No eligible accounts available for " . deleteMethod . ". Waiting 5 minutes before checking again...", "", 0, 0, false)
-                    LogToFile("No eligible accounts available for " . deleteMethod . ". Waiting 5 minutes...")
+                    CreateStatusMessage("No eligible accounts available for " . deleteMethod . ". Waiting 1 minute before checking again...", "", 0, 0, false)
+                    LogToFile("No eligible accounts available for " . deleteMethod . ". Waiting 1 minute...")
 
-                    ; Wait 5 minutes before checking again
-                    Sleep, 300000  ; 5 minutes
+                    ; Check stopToggle immediately, then wait 1 minute before checking again
+                    if (stopToggle)
+                        ExitApp
+                    Sleep, 60000  ; 1 minute
                     continue  ; Go back to start of loop to check again
                 } else {
                     ExitApp
