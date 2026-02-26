@@ -41,6 +41,9 @@ AddFriends(renew := false, getFC := false) {
     failSafeTime := 0
     Loop {
         adbClick_wbb(143, 518)
+        if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0)) {
+            adbClick_wbb(139, 371)
+        }
         if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime)) {
             break
         }
