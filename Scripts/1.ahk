@@ -36,8 +36,8 @@ WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 OnMessage(0x500, "OnStopAfterRunMessage")
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, deleteMethod, packs, FriendID, friendIDs, Instances, username, friendCode, stopToggle, friended, runMain, Mains, showStatus, injectMethod, packMethod, loadDir, loadedAccount, nukeAccount, CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, dateChange, foundGP, friendsAdded, PseudoGodPack, packArray, CrownCheck, ImmersiveCheck, InvalidCheck, slowMotion, screenShot, accountFile, invalid, starCount, keepAccount
-global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, Parade
-global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsParade, minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria
+global Mewtwo, Charizard, Pikachu, Mew, Dialga, Palkia, Arceus, Shining, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe, MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, Parade, PaldeanWonders
+global shinyPacks, minStars, minStarsShiny, minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b, minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe, minStarsParade, minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria, minStarsPaldeanWonders
 global DeadCheck
 global s4tEnabled, s4tSilent, s4t3Dmnd, s4t4Dmnd, s4t1Star, s4tGholdengo, s4tWP, s4tWPMinCards, s4tDiscordWebhookURL, s4tDiscordUserId, s4tSendAccountXml
 global s4tTrainer, s4tRainbow, s4tFullArt, s4tCrown, s4tImmersive, s4tShiny1Star, s4tShiny2Star
@@ -140,7 +140,8 @@ IniRead, PseudoGodPack, %A_ScriptDir%\..\Settings.ini, UserSettings, PseudoGodPa
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsShiny, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsShiny, 0
 
-IniRead, Parade, %A_ScriptDir%\..\Settings.ini, UserSettings, Parade, 1
+IniRead, PaldeanWonders, %A_ScriptDir%\..\Settings.ini, UserSettings, PaldeanWonders, 1
+IniRead, Parade, %A_ScriptDir%\..\Settings.ini, UserSettings, Parade, 0
 IniRead, CrimsonBlaze, %A_ScriptDir%\..\Settings.ini, UserSettings, CrimsonBlaze, 0
 IniRead, MegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaGyarados, 0
 IniRead, MegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaBlaziken, 0
@@ -184,6 +185,7 @@ IniRead, minStarsMegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, minS
 IniRead, minStarsMegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaBlaziken, 0
 IniRead, minStarsMegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaAltaria, 0
 IniRead, minStarsParade, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsParade, 0
+IniRead, minStarsPaldeanWonders, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsPaldeanWonders, 0
 
 IniRead, slowMotion, %A_ScriptDir%\..\Settings.ini, UserSettings, slowMotion, 0
 IniRead, DeadCheck, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck, 0
@@ -229,7 +231,7 @@ if(s4tEnabled){
     maxAccountPackNum := 9999
 }
 
-pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria", "CrimsonBlaze", "Parade"]
+pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria", "CrimsonBlaze", "Parade", "PaldeanWonders"]
 shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1}
 
 packArray := []  ; Initialize an empty array
@@ -3294,27 +3296,27 @@ SelectPack(HG := false) {
     inselectexpansionscreen := 0
 
     packy := HomeScreenAllPackY
-    if (openPack == "MegaBlaziken") {
+    if (openPack == "CrimsonBlaze") {
         packx := LeftPackX
-    } else if (openPack == "CrimsonBlaze") {
+    } else if (openPack == "Parade") {
         packx := RightPackX
     } else { ; do not set this to a specific if openPack == "something" as all packs need to reference MiddlePackX as pack position.
         packx := MiddlePackX
     }
 
-    if(openPack == "CrimsonBlaze" || openPack == "MegaBlaziken" || openPack == "Parade") {
+    if(openPack == "CrimsonBlaze" || openPack == "Parade" || openPack == "PaldeanWonders") {
         PackIsInHomeScreen := 1
     } else {
         PackIsInHomeScreen := 0
     }
 
-    if(openPack == "Parade") {
+    if(openPack == "PaldeanWonders") {
         PackIsLatest := 1
     } else {
         PackIsLatest := 0
     }
 
-    if (openPack == "CrimsonBlaze" || openPack == "Parade") {
+    if (openPack == "Parade" || openPack == "PaldeanWonders") {
         packInTopRowsOfSelectExpansion := 1
     } else {
         packInTopRowsOfSelectExpansion := 0
@@ -3478,28 +3480,30 @@ SelectPack(HG := false) {
             }
         }
 
-        if (openPack == "Parade" || openPack == "CrimsonBlaze" || openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
+        if (openPack == "PaldeanWonders" || openPack == "Parade" || openPack == "CrimsonBlaze" || openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
             Delay(4)
             adbClick(52, 455) ; click B series. need more robust system later
             Delay(4)
-            if (openPack == "Parade") {
+            if (openPack == "PaldeanWonders") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionLeftColumnMiddleX
-            } else if (openPack == "CrimsonBlaze") {
+            } else if (openPack == "Parade") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionRightColumnMiddleX
-            } else if (openPack == "MegaGyarados") {
+            } else if (openPack == "CrimsonBlaze") {
                 packy := 442
                 packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
-                ; packx := 18 ; custom location to avoid accidentally rotating through pack wheel on following screen
             } else if (openPack == "MegaBlaziken") {
                 packy := 442
-                packx := SelectExpansionLeftColumnMiddleX
+                packx := SelectExpansionRightColumnMiddleX
             } else if (openPack == "MegaAltaria") {
                 packy := 442
-                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
+                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionRight
                 ; packx := 258 ; custom locations to avoid accidentally rotating through pack wheel on following screen
                 ; packy := 309 ; custom locations to avoid accidentally rotating through pack wheel on following screen
+            } else if (openPack == "MegaGyarados") {
+                packy := 442
+                packx := SelectExpansionRightColumnMiddleX
             }
         }
 

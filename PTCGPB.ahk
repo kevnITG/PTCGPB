@@ -106,7 +106,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.5.3beta"
+   ,localVersion := "v9.5.4"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -361,7 +361,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.5.3 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.5.4 kevinnnn"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -466,11 +466,13 @@ SortByDropdownHandler:
 return
 
 UpdatePackSelectionButtonText() {
-    global Parade, CrimsonBlaze, MegaGyarados, MegaBlaziken, MegaAltaria, Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole
+    global PaldeanWonders, Parade, CrimsonBlaze, MegaGyarados, MegaBlaziken, MegaAltaria, Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole
     global Solgaleo, Lunala, Shining, Arceus, Palkia, Dialga, Pikachu, Charizard, Mewtwo, Mew, currentDictionary
 
     selectedPacks := []
 
+    if (PaldeanWonders)
+        selectedPacks.Push(currentDictionary.Txt_PaldeanWonders)
     if (Parade)
         selectedPacks.Push(currentDictionary.Txt_Parade)
     if (CrimsonBlaze)
@@ -555,6 +557,8 @@ ShowPackSelection:
     Gui, PackSelect:Font, s10 cWhite, Segoe UI
 
     yPos := 10
+    Gui, PackSelect:Add, Checkbox, % (PaldeanWonders ? "Checked" : "") " vPaldeanWonders_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_PaldeanWonders
+    yPos += 25
     Gui, PackSelect:Add, Checkbox, % (Parade ? "Checked" : "") " vParade_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Parade
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (CrimsonBlaze ? "Checked" : "") " vCrimsonBlaze_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_CrimsonBlaze
@@ -609,6 +613,7 @@ return
 ApplyPackSelection:
     Gui, PackSelect:Submit, NoHide
 
+    PaldeanWonders := PaldeanWonders_Popup
     Parade := Parade_Popup
     CrimsonBlaze := CrimsonBlaze_Popup
     MegaGyarados := MegaGyarados_Popup
@@ -1457,6 +1462,8 @@ Save:
   confirmMsg .= "`n"
   
   confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
+  if (PaldeanWonders)
+    confirmMsg .= "• " . currentDictionary.Txt_PaldeanWonders . "`n"
   if (Parade)
     confirmMsg .= "• " . currentDictionary.Txt_Parade . "`n"
   if (CrimsonBlaze)
@@ -1980,7 +1987,8 @@ LoadSettingsFromIni() {
       IniRead, MegaGyarados, Settings.ini, UserSettings, MegaGyarados, 0
       IniRead, MegaBlaziken, Settings.ini, UserSettings, MegaBlaziken, 0
       IniRead, MegaAltaria, Settings.ini, UserSettings, MegaAltaria, 0
-      IniRead, Parade, Settings.ini, UserSettings, Parade, 1
+      IniRead, Parade, Settings.ini, UserSettings, Parade, 0
+      IniRead, PaldeanWonders, Settings.ini, UserSettings, PaldeanWonders, 1
       
       IniRead, CheckShinyPackOnly, Settings.ini, UserSettings, CheckShinyPackOnly, 0
       IniRead, TrainerCheck, Settings.ini, UserSettings, TrainerCheck, 0
@@ -2050,7 +2058,8 @@ LoadSettingsFromIni() {
       IniRead, minStarsMegaBlaziken, Settings.ini, UserSettings, minStarsMegaBlaziken, 0
       IniRead, minStarsMegaAltaria, Settings.ini, UserSettings, minStarsMegaAltaria, 0
       IniRead, minStarsParade, Settings.ini, UserSettings, minStarsParade, 0
-      
+      IniRead, minStarsPaldeanWonders, Settings.ini, UserSettings, minStarsPaldeanWonders, 0
+
       IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
       IniRead, menuExpanded, Settings.ini, UserSettings, menuExpanded, True
@@ -2161,7 +2170,7 @@ SaveAllSettings() {
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
    global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
-   global MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, Parade
+   global MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, Parade, PaldeanWonders
    global slowMotion, ocrLanguage, clientLanguage
    global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, isDarkTheme
    global useBackgroundImage, tesseractPath, debugMode, useTesseract, statusMessage
@@ -2174,7 +2183,7 @@ SaveAllSettings() {
    global minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b
    global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA3b
    global minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe
-   global minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria, minStarsParade
+   global minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria, minStarsParade, minStarsPaldeanWonders
    global menuExpanded
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
    global autoRestartMumu, runsBeforeRestart
@@ -2242,6 +2251,7 @@ SaveAllSettings() {
    iniContent .= "MegaAltaria=" MegaAltaria "`n"
    iniContent .= "CrimsonBlaze=" CrimsonBlaze "`n"
    iniContent .= "Parade=" Parade "`n"
+   iniContent .= "PaldeanWonders=" PaldeanWonders "`n"
    iniContent .= "CheckShinyPackOnly=" CheckShinyPackOnly "`n"
    iniContent .= "TrainerCheck=" TrainerCheck "`n"
    iniContent .= "FullArtCheck=" FullArtCheck "`n"
@@ -2366,6 +2376,7 @@ SaveAllSettings() {
    iniContent_Second .= "minStarsMegaMegaAltaria=" minStarsMegaAltaria "`n"
    iniContent_Second .= "minStarsCrimsonBlaze=" minStarsCrimsonBlaze "`n"
    iniContent_Second .= "minStarsParade=" minStarsParade "`n"
+   iniContent_Second .= "minStarsPaldeanWonders=" minStarsPaldeanWonders "`n"
    iniContent_Second .= "s4tWPMinCards=" s4tWPMinCards "`n"
    iniContent_Second .= "s4tDiscordUserId=" s4tDiscordUserId "`n"
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"
@@ -2409,7 +2420,7 @@ StartBot() {
    global heartBeat, heartBeatName, heartBeatWebhookURL, heartBeatDelay, debugMode
    global Shining, Arceus, Palkia, Dialga, Mew, Pikachu, Charizard, Mewtwo
    global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
-   global MegaBlaziken, MegaGyarados, MegaAltaria, CrimsonBlaze, Parade, packMethod, nukeAccount
+   global MegaBlaziken, MegaGyarados, MegaAltaria, CrimsonBlaze, Parade, PaldeanWonders, packMethod, nukeAccount
    global SelectedMonitorIndex, localVersion, githubUser, rerollTime, PackGuiBuild
    
    PackGuiBuild := 0
@@ -2570,6 +2581,8 @@ StartBot() {
       Selected.Push("CrimsonBlaze")
    if(Parade)
       Selected.Push("Parade")
+   if(PaldeanWonders)
+      Selected.Push("PaldeanWonders")
 
    for index, value in Selected {
       if(index = Selected.MaxIndex())
