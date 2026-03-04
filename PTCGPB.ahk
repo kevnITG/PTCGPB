@@ -2281,8 +2281,7 @@ SaveAllSettings() {
    iniContent .= "heartBeat=" heartBeat "`n"
    iniContent .= "menuExpanded=" menuExpanded "`n"
    iniContent .= "groupRerollEnabled=" groupRerollEnabled "`n"
-   ; Force claimSpecialMissions to always be 0
-   iniContent .= "claimSpecialMissions=0`n"
+   iniContent .= "claimSpecialMissions=" claimSpecialMissions "`n"
    iniContent .= "claimDailyMission=" claimDailyMission "`n"
    iniContent .= "wonderpickForEventMissions=" wonderpickForEventMissions "`n"
    iniContent .= "autoRestartMumu=" autoRestartMumu "`n"

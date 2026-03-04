@@ -195,7 +195,7 @@ IniRead, waitForEligibleAccounts, %A_ScriptDir%\..\Settings.ini, UserSettings, w
 IniRead, maxWaitHours, %A_ScriptDir%\..\Settings.ini, UserSettings, maxWaitHours, 24
 IniRead, skipMissionsInjectMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, skipMissionsInjectMissions, 0
 IniRead, claimSpecialMissions, %A_ScriptDir%\..\Settings.ini, UserSettings, claimSpecialMissions, 0
-claimSpecialMissions := 0 ; Disable special missions now that no event missions are ongoing
+; claimSpecialMissions := 0 ; Disable special missions now that no event missions are ongoing
 IniRead, spendHourGlass, %A_ScriptDir%\..\Settings.ini, UserSettings, spendHourGlass, 1
 IniRead, openExtraPack, %A_ScriptDir%\..\Settings.ini, UserSettings, openExtraPack, 0
 IniRead, verboseLogging, %A_ScriptDir%\..\Settings.ini, UserSettings, debugMode, 0
@@ -4101,7 +4101,7 @@ GetEventRewards(frommain := true){
     failSafeTime := 0
     Loop{
         adbSwipe(adbSwipeParams2)
-        Sleep, 200
+        Sleep, 50
         if (FindOrLoseImage(225, 444, 272, 470, , "Premium", 0, failSafeTime)){
             break
         }
@@ -4115,23 +4115,85 @@ GetEventRewards(frommain := true){
     }
 
     adbClick(139,465) ;Important - clicks the center-most mission first.
-    Delay(2)
+    Delay(6)
 
     ;====== Generic mission clicks, if only 1 mission is going on ======
     ; pick ONE of these click locations based upon which events are currently going on.
     ; adbClick_wbb(120, 465) ; used to click the middle mission button
     ; adbClick_wbb(25, 465) ;used to click the left-most mission button
 
-    ;====== Special Event CLaim ======
+    ;====== Special Event Claim #1 ======
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
-        ;if (FindOrLoseImage(199, 203, 212, 211, , "MissionWater", 0, failSafeTime)){
-        ;    break
-        ;}
+        if (FindOrLoseImage(199, 203, 212, 211, , "MissionLightBlue", 0, failSafeTime)){
+            break
+        }
+        if (FindOrLoseImage(199, 203, 212, 211, , "MissionDarkBlue", 0, failSafeTime)){
+            break
+        }
         if (FindOrLoseImage(199, 203, 212, 211, , "MissionOliveGreen", 0, failSafeTime)){
             break
         }
+        if (FindOrLoseImage(201, 201, 211, 211, , "MissionYellow", 0, failSafeTime)){
+            break
+        }
+        adbClick_wbb(6, 465) ; used to scroll to other missions further left.
+        Delay(6)
+        if (failSafeTime > 10){
+            adbInput("111")
+            Sleep, 1000
+            return
+        }
+        failSafeTime := (A_TickCount - failSafe) // 1000
+        if (FindOrLoseImage(201, 106, 215, 129, , "MissionDeck", 0, failSafeTime)) {
+            HandleMissionDeckFailsafe()
+            return
+        }
+    }
+
+    ; ====== Collect all rewards ======
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop{
+        adbClick_wbb(172, 427) ;clicks complete all and ok
+        Sleep, 1500
+        adbClick_wbb(139, 464) ;when too many rewards, ok button goes lower
+        Sleep, 1500
+        if FindOrLoseImage(244, 406, 273, 449, , "GotAllMissions", 0, 0) {
+            break
+        }
+        if (FindOrLoseImage(243, 202, 256, 212, , "bonusWeek", 0, failSafeTime)){
+            break
+        }
+        if (failSafeTime > 20){
+            adbInput("111")
+            Sleep, 1000
+            return
+        }
+        failSafeTime := (A_TickCount - failSafe) // 1000
+        if (FindOrLoseImage(201, 106, 215, 129, , "MissionDeck", 0, failSafeTime)) {
+            HandleMissionDeckFailsafe()
+            return
+        }
+    }
+
+        ;====== Special Event Claim #2, for when 2 events are going on at the same time ======
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop{
+        ; if (FindOrLoseImage(199, 203, 212, 211, , "MissionLightBlue", 0, failSafeTime)){
+        ;     break
+        ; }
+        if (FindOrLoseImage(199, 203, 212, 211, , "MissionDarkBlue", 0, failSafeTime)){
+            break
+        }
+        ; if (FindOrLoseImage(199, 203, 212, 211, , "MissionOliveGreen", 0, failSafeTime)){
+        ;     break
+        ; }
+        ; if (FindOrLoseImage(201, 201, 211, 211, , "MissionYellow", 0, failSafeTime)){
+        ;     break
+        ; }
         adbClick_wbb(6, 465) ; used to scroll to other missions further left.
         Delay(4)
         if (failSafeTime > 10){
@@ -4171,7 +4233,6 @@ GetEventRewards(frommain := true){
             return
         }
     }
-    */
 
     GoToMain()
 }
