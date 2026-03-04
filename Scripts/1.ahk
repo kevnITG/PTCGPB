@@ -3494,7 +3494,7 @@ SelectPack(HG := false) {
                 packx := SelectExpansionRightColumnMiddleX
             } else if (openPack == "CrimsonBlaze") {
                 packy := 442
-                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
+                packx := SelectExpansionLeftColumnMiddleX
             } else if (openPack == "MegaBlaziken") {
                 packy := 442
                 packx := SelectExpansionRightColumnMiddleX
@@ -3505,7 +3505,7 @@ SelectPack(HG := false) {
                 ; packy := 309 ; custom locations to avoid accidentally rotating through pack wheel on following screen
             } else if (openPack == "MegaGyarados") {
                 packy := 442
-                packx := SelectExpansionRightColumnMiddleX
+                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionLeft
             }
         }
 
