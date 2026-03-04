@@ -4087,7 +4087,7 @@ GetEventRewards(frommain := true){
             if FindOrLoseImage(204, 195, 223, 202, , "DailyMissions", 0, failSafeTime)
                 break
             failSafeTime := (A_TickCount - failSafe) // 1000
-            if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
+            if (FindOrLoseImage(201, 106, 215, 129, , "MissionDeck", 0, failSafeTime)) {
                 HandleMissionDeckFailsafe()
                 return
             }
