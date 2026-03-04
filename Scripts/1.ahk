@@ -4108,7 +4108,7 @@ GetEventRewards(frommain := true){
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for PremiumMissions`n(" . failSafeTime . "/45 seconds)")
         Delay(1)
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
+        if (FindOrLoseImage(201, 106, 215, 129, , "MissionDeck", 0, failSafeTime)) {
             HandleMissionDeckFailsafe()
             return
         }
@@ -4140,7 +4140,7 @@ GetEventRewards(frommain := true){
             return
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
+        if (FindOrLoseImage(201, 106, 215, 129, , "MissionDeck", 0, failSafeTime)) {
             HandleMissionDeckFailsafe()
             return
         }
@@ -4166,7 +4166,7 @@ GetEventRewards(frommain := true){
             return
         }
         failSafeTime := (A_TickCount - failSafe) // 1000
-        if (FindOrLoseImage(158, 104, 170, 117, , "MissionDeck", 0, failSafeTime)) {
+        if (FindOrLoseImage(201, 106, 215, 129, , "MissionDeck", 0, failSafeTime)) {
             HandleMissionDeckFailsafe()
             return
         }
