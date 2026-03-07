@@ -2141,7 +2141,7 @@ ControlClick(X, Y) {
 }
 
 Screenshot_dev(fileType := "Dev",subDir := "") {
-    global adbShell, adbPath, packs, winTitle
+    global adbShell, adbPath, packs, winTitle, titleHeight
     SetWorkingDir %A_ScriptDir%  ; Ensures the working directory is the script's directory
 
     ; Define folder and file paths
@@ -2174,16 +2174,18 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
         sleep 100
         msgbox click on top-left corner and bottom-right corners
 
+        yBias := titleHeight - 45  ; MuMuV5 chrome is 5px taller than old MuMu (50 vs 45)
+
         KeyWait, LButton, D
         MouseGetPos , X1, Y1, OutputVarWin, OutputVarControl
         KeyWait, LButton, U
-        Y1 -= 31
+        Y1 -= 31 + yBias
         ;MsgBox, The cursor is at X%X1% Y%Y1%.
 
         KeyWait, LButton, D
         MouseGetPos , X2, Y2, OutputVarWin, OutputVarControl
         KeyWait, LButton, U
-        Y2 -= 31
+        Y2 -= 31 + yBias
         ;MsgBox, The cursor is at X%X2% Y%Y2%.
 
         W:=X2-X1
@@ -2202,7 +2204,7 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
         KeyWait, LButton, D
         MouseGetPos , X3, Y3, OutputVarWin, OutputVarControl
         KeyWait, LButton, U
-        Y3 -= 31
+        Y3 -= 31 + yBias
 
         ; Convert window coordinates to device/OCR coordinates
         ; Device resolution: 540x960, Window resolution: 277x489, Y offset: 44
@@ -2221,8 +2223,8 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
         (LTrim
             ctrl+C to copy:
             FindOrLoseImage(%X1%, %Y1%, %X2%, %Y2%, , "%fileName%", 0, failSafeTime)
-            FindImageAndClick(%X1%, %Y1%, %X2%, %Y2%, , "%fileName%", %X3%, %outY3%, sleepTime)
-            adbClick_wbb(%X3%, %outY3%)
+            FindImageAndClick(%X1%, %Y1%, %X2%, %Y2%, , "%fileName%", %X3%, %Y3%, sleepTime)
+            adbClick_wbb(%X3%, %Y3%)
             OCR coordinates: %OCR_X3%, %OCR_Y3%, %OCR_W%, %OCR_H%
         )
     }
