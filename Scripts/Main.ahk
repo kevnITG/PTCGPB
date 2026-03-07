@@ -911,8 +911,28 @@ RemoveNonVipFriends() {
                     CreateStatusMessage("Parsed friend: " . friendAccount.ToString() . "`nMatched VIP: " . matchedFriend.ToString() . "`nSkipping VIP...",,,, false)
 					scrolledWithoutFriend := 0
 				}
-                Sleep, 1500 ; Time to read
-                FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 500)
+                ; Sleep, 1500 ; Time to read - this sleep is entirely unnecessary I think, so disabling for now to speed up GPtest. -kevinnnn 2026.3.7
+                
+                Loop {
+                    if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
+                        break
+                    }
+                    if (FindOrLoseImage(266, 100, 270, 135, , "AddGray", 0)) {
+                        ; This is if we're loading the friend list but it's taking time.
+                        Sleep, 500
+                        break
+                    }
+                    if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0)) {
+                        CreateStatusMessage("Oops! Social screen; going back.")
+                        Delay(4)
+                        adbClick(37,475)
+                        Sleep, 3000
+                        break
+                    }  
+                    adbClick(143, 507)
+                    Sleep, 1000
+                }
+                
                 Delay(2)
                 if (friendIndex < 2)
                     friendIndex++
@@ -934,11 +954,29 @@ RemoveNonVipFriends() {
                 ; If NOT a VIP remove the friend
                 CreateStatusMessage("Parsed friend: " . friendAccount.ToString() . "`nNo VIP match found.`nRemoving friend...",,,, false)
                 LogToFile("Friend removed: " . friendAccount.ToString() . ". No VIP match found.", "GPTestLog.txt")
-                Sleep, 1500 ; Time to read
+                ; Sleep, 1500 ; Time to read - Removing this sleep to speed up GPtest, as the status message should be enough to indicate what's happening. -kevinnnn 2026.3.7
                 FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
                 FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372, 500)
                 Delay(1)
-                FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 500)
+                Loop {
+                    if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
+                        break
+                    }
+                    if (FindOrLoseImage(266, 100, 270, 135, , "AddGray", 0)) {
+                        ; This is if we're loading the friend list but it's taking time.
+                        Sleep, 500
+                        break
+                    }
+                    if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0)) {
+                        CreateStatusMessage("Oops! Social screen; going back.")
+                        Delay(4)
+                        adbClick(37,475)
+                        Sleep, 3000
+                        break
+                    }
+                    adbClick(143, 507)
+                    Sleep, 1000
+                }  
                 Delay(3)
 				scrolledWithoutFriend := 0
             }
@@ -958,8 +996,26 @@ RemoveNonVipFriends() {
                 adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 200)
                 Sleep, 500
             }
-            else { ; Handling for account not currently in use
-                FindImageAndClick(226, 100, 270, 135, , "Add", 143, 508, 500)
+            else {
+                Loop {
+                    if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
+                        break
+                    }
+                    if (FindOrLoseImage(266, 100, 270, 135, , "AddGray", 0)) {
+                        ; This is if we're loading the friend list but it's taking time.
+                        Sleep, 500
+                        break
+                    }
+                    if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0)) {
+                        CreateStatusMessage("Oops! Social screen; going back.")
+                        Delay(4)
+                        adbClick(37,475)
+                        Sleep, 3000
+                        break
+                    }
+                    adbClick(143, 507)
+                    Sleep, 1000
+                }  
                 Delay(3)
             }
 			scrolledWithoutFriend++
