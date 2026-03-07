@@ -1052,8 +1052,8 @@ RemoveNonVipFriends() {
             }
             if (enteredProfile)
                 break
-            ; Timeout — check if friend removed us (on their profile but FavouriteFriend absent)
-            if (!FindOrLoseImage(172, 257, 185, 266, , "FavouriteFriend", 0)) {
+            ; Timeout — check if friend removed us (on their profile but FavouriteFriend2 absent)
+            if (!FindOrLoseImage(84, 397, 98, 410, , "FavouriteFriend2", 0)) {
                 CreateStatusMessage("Friend removed us. Skipping...",,,, false)
                 FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
                 Delay(2)
