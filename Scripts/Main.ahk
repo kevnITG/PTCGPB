@@ -31,6 +31,7 @@ WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, skipInvalidGP, deleteXML, packs, FriendID, AddFriend, Instances, showStatus, stopToggle
 global triggerTestNeeded, testStartTime, firstRun, minStars, minStarsA2b, vipIdsURL
 global autoUseGPTest, autotest, autotest_time, A_gptest, TestTime
+global gptest_nonFriends, gptest_alreadyFavourited
 global MuMuv5, titleHeight
 MuMuv5 := isMuMuv5()
 
@@ -815,213 +816,298 @@ GetNeedle(Path) {
 GPTestScript() {
     global triggerTestNeeded
     triggerTestNeeded := false
+    FavoriteVipFriends()
     RemoveNonVipFriends()
 }
 
-; Automation script for removing Non-VIP firends.
-RemoveNonVipFriends() {
-    global GPTest, vipIdsURL, failSafe
+;---------------------------------------------------------
+; FavoriteVipFriends - Mark all VIP friends as favourites 
+;---------------------------------------------------------
+FavoriteVipFriends() {
+    global GPTest, vipIdsURL, failSafe, gptest_nonFriends, gptest_alreadyFavourited
+
+    ; Skip lists — persist across GP Test calls within the same session 
+    ; to avoid re-checking accounts already determined as non-friends or already favourited
+    if (!IsObject(gptest_nonFriends))
+        gptest_nonFriends := {}
+    if (!IsObject(gptest_alreadyFavourited))
+        gptest_alreadyFavourited := {}
+
+    ; Navigate to Social screen
     failSafe := A_TickCount
     failSafeTime := 0
-    ; Get us to the Social screen. Won't be super resilient but should be more consistent for most cases.
     Loop {
-        adbClick(143, 518)
+        adbClick_wbb(143, 518)
+        if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0))
+            adbClick_wbb(139, 371)
         if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime))
             break
-        Delay(5)
         failSafeTime := (A_TickCount - failSafe) // 1000
-        CreateStatusMessage("In failsafe for Social. " . failSafeTime "/90 seconds")
+        CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
     }
-    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
-    Delay(3)
 
+    ; Download and load VIP list
     CreateStatusMessage("Downloading vip_ids.txt.",,,, false)
     if (vipIdsURL != "" && !DownloadFile(vipIdsURL, "vip_ids.txt")) {
-        CreateStatusMessage("Failed to download vip_ids.txt..`nIf you are botting solo, disable AutoGPTest to fix this issue.`nAborting test...",,,, false)
+        CreateStatusMessage("Failed to download vip_ids.txt. Aborting FavoriteVipFriends...",,,, false)
         return
     }
 
     includesIdsAndNames := false
-    vipFriendsArray :=  GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
-    
-		; append new list onto vipFriendsArray to combine manual and automatic GPtesting KSBM
-		manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
-		if FileExist(manualVipFile) {
-		    ManualvipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
-		    vipFriendsArray.push(ManualvipFriendsArray*)
-		}                
-    
+    vipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
+
+    manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
+    if FileExist(manualVipFile) {
+        manualVipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
+        vipFriendsArray.push(manualVipFriendsArray*)
+    }
+
     if (!vipFriendsArray.MaxIndex()) {
-        CreateStatusMessage("No accounts found in vip_ids.txt. Aborting test...",,,, false)
+        CreateStatusMessage("No accounts found in vip_ids.txt. Aborting FavoriteVipFriends...",,,, false)
         return
     }
 
-    friendIndex := 0
-    repeatFriendAccounts := 0
-	scrolledWithoutFriend := 0
-    recentFriendAccounts := []
-    Loop {
-        if (scrolledWithoutFriend > 5){
-            CreateStatusMessage("End of list - scrolled without friend codes multiple times.`nReady to test.")
-            if(A_gptest && autoUseGPTest) {
-                A_gptest := 0
-                autotest := A_TickCount
-                ToggleTestScript()
-			}
+    ; Check if all valid VIP codes are already cached — skip search entirely if so
+    allCached := true
+    for _, vipFriend in vipFriendsArray {
+        vipCode := vipFriend.Code
+        if (StrLen(vipCode) != 16)
+            continue
+        if (!gptest_nonFriends.HasKey(vipCode) && !gptest_alreadyFavourited.HasKey(vipCode)) {
+            allCached := false
+            break
+        }
+    }
+    if (allCached) {
+        CreateStatusMessage("All VIP accounts already processed (cached). Skipping FavoriteVipFriends.",,,, false)
+        return
+    }
+
+    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500) ; Friends tab
+    Delay(2)
+
+    ; Open search input
+    FindImageAndClick(205, 430, 255, 475, , "Search", 240, 120, 1500)
+    FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
+
+    n := vipFriendsArray.MaxIndex()
+    for index, vipFriend in vipFriendsArray {
+        if (!GPTest)
             return
+
+        vipCode := vipFriend.Code
+        if (StrLen(vipCode) != 16)
+            continue
+
+        ; Skip accounts cached from previous GP Test runs this session
+        if (gptest_nonFriends.HasKey(vipCode)) {
+            CreateStatusMessage("Skipping non-friend VIP (cached): " . vipFriend.ToString(),,,, false)
+            continue
         }
-        friendClickY := 195 + (95 * friendIndex)
-        if (FindImageAndClick(75, 400, 105, 420, , "Friend", 138, friendClickY, 500, 3)) {
+        if (gptest_alreadyFavourited.HasKey(vipCode)) {
+            CreateStatusMessage("Skipping already-favourited VIP (cached): " . vipFriend.ToString(),,,, false)
+            continue
+        }
+
+        CreateStatusMessage("Favouriting VIP " . index . "/" . n . "`n" . vipFriend.ToString(),,,, false)
+
+        ; Type the code and wait for Search2 to appear
+        failSafe := A_TickCount
+        failSafeTime := 0
+        Loop {
             Delay(1)
-
-            ; Get the friend account
-            parseFriendResult := ParseFriendInfo(friendCode, friendName, parseFriendCodeResult, parseFriendNameResult, includesIdsAndNames)
-            friendAccount := new FriendAccount(friendCode, friendName)
-
-            ; Check if this is a repeat
-            if (IsRecentlyCheckedAccount(friendAccount, recentFriendAccounts)) {
-                repeatFriendAccounts++
-            }
-            else if (parseFriendResult) {
-                repeatFriendAccounts := 0
-            }
-            if (repeatFriendAccounts > 2) {
-                if (Debug)
-                    CreateStatusMessage("End of list - parsed the same friend codes multiple times.`nReady to test.")
-                else
-                    CreateStatusMessage("Ready to test.",,,, false)
-                adbClick(143, 507)
-                if(A_gptest && autoUseGPTest) {
-					A_gptest := 0
-					autotest := A_TickCount
-					ToggleTestScript()
-				}
-                return
-            }
-            matchedFriend := ""
-            isVipResult := IsFriendAccountInList(friendAccount, vipFriendsArray, matchedFriend)
-            if (isVipResult || !parseFriendResult) {
-                ; If we couldn't parse the friend, skip removal
-                if (!parseFriendResult) {
-                    CreateStatusMessage("Couldn't parse friend. Skipping friend...`nParsed friend: " . friendAccount.ToString(),,,, false)
-                    LogToFile("Friend skipped: " . friendAccount.ToString() . ". Couldn't parse identifiers.", "GPTestLog.txt")
-                }
-                ; If it's a VIP friend, skip removal
-                if (isVipResult) {
-                    CreateStatusMessage("Parsed friend: " . friendAccount.ToString() . "`nMatched VIP: " . matchedFriend.ToString() . "`nSkipping VIP...",,,, false)
-					scrolledWithoutFriend := 0
-				}
-                ; Sleep, 1500 ; Time to read - this sleep is entirely unnecessary I think, so disabling for now to speed up GPtest. -kevinnnn 2026.3.7
-                
-                Loop {
-                    if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
-                        break
-                    }
-                    if (FindOrLoseImage(266, 100, 270, 135, , "AddGray", 0)) {
-                        ; This is if we're loading the friend list but it's taking time.
-                        Sleep, 500
-                        break
-                    }
-                    if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0)) {
-                        CreateStatusMessage("Oops! Social screen; going back.")
-                        Delay(4)
-                        adbClick(37,475)
-                        Sleep, 3000
-                        break
-                    }  
-                    adbClick(143, 507)
-                    Sleep, 1000
-                }
-                
-                Delay(2)
-                if (friendIndex < 2)
-                    friendIndex++
-                else {
-                    ; Large vertical swipe up, to scroll through no more than 3 friends on the friend list.
-                    ; The swipe is performed with a fixed X-coordinate, simulating a larger vertical swipe.
-                    X := 138
-                    Y1 := 380
-                    Y2 := 200
-
-                    Delay(10)
-                    adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 300)
-                    Sleep, 1000
-
-                    friendIndex := 0
-                }
-            }
-            else {
-                ; If NOT a VIP remove the friend
-                CreateStatusMessage("Parsed friend: " . friendAccount.ToString() . "`nNo VIP match found.`nRemoving friend...",,,, false)
-                LogToFile("Friend removed: " . friendAccount.ToString() . ". No VIP match found.", "GPTestLog.txt")
-                ; Sleep, 1500 ; Time to read - Removing this sleep to speed up GPtest, as the status message should be enough to indicate what's happening. -kevinnnn 2026.3.7
-                FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
-                FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372, 500)
-                Delay(1)
-                Loop {
-                    if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
-                        break
-                    }
-                    if (FindOrLoseImage(266, 100, 270, 135, , "AddGray", 0)) {
-                        ; This is if we're loading the friend list but it's taking time.
-                        Sleep, 500
-                        break
-                    }
-                    if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0)) {
-                        CreateStatusMessage("Oops! Social screen; going back.")
-                        Delay(4)
-                        adbClick(37,475)
-                        Sleep, 3000
-                        break
-                    }
-                    adbClick(143, 507)
-                    Sleep, 1000
-                }  
-                Delay(3)
-				scrolledWithoutFriend := 0
-            }
+            adbInput(vipCode)
+            Delay(1)
+            if(FindOrLoseImage(205, 430, 255, 475, , "Search2", 0, failSafeTime))
+                break
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            CreateStatusMessage("Waiting for Search2`n(" . failSafeTime . "/45 seconds)")
         }
-        else {
-            ; If on social screen, we're stuck between friends, micro scroll
-            If (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
-                CreateStatusMessage("Stuck between friends. Tiny scroll and continue.")
 
-                ; Very small vertical swipe up, to correct miss-swipe on the friend list.
-                ; The swipe is performed with a fixed X-coordinate, simulating a small vertical swipe.
-                X := 138
-                Y1 := 380
-                Y2 := 355
-
-                Delay(3)
-                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 200)
-                Sleep, 500
-            }
-            else {
+        ; Click search and check result on the search results screen
+        failSafe := A_TickCount
+        failSafeTime := 0
+        Loop {
+            adbClick_wbb(232, 453) ; confirm search
+            Delay(2)
+            if(FindOrLoseImage(172, 257, 185, 266, , "FavouriteFriend", 0, failSafeTime)) {
+                ; Already friends — keep clicking until FavouriteFriend disappears (profile opened)
+                failSafe2 := A_TickCount
                 Loop {
-                    if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
+                    if (!FindOrLoseImage(172, 257, 185, 266, , "FavouriteFriend", 0))
                         break
-                    }
-                    if (FindOrLoseImage(266, 100, 270, 135, , "AddGray", 0)) {
-                        ; This is if we're loading the friend list but it's taking time.
-                        Sleep, 500
+                    if ((A_TickCount - failSafe2) // 1000 > 30)
                         break
-                    }
-                    if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0)) {
-                        CreateStatusMessage("Oops! Social screen; going back.")
-                        Delay(4)
-                        adbClick(37,475)
-                        Sleep, 3000
+                    adbClick_wbb(143, 258)
+                    Sleep, 500
+                    CreateStatusMessage("Entering profile`n(" . (A_TickCount - failSafe2) // 1000 . "/30 seconds)")
+                }
+                ; Wait for FavouriteN or FavouriteY to confirm profile has loaded
+                failSafe2 := A_TickCount
+                Loop {
+                    if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)
+                        || FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0))
                         break
-                    }
-                    adbClick(143, 507)
-                    Sleep, 1000
-                }  
-                Delay(3)
+                    if ((A_TickCount - failSafe2) // 1000 > 30)
+                        break
+                    Sleep, 500
+                    CreateStatusMessage("Waiting for profile to load`n(" . (A_TickCount - failSafe2) // 1000 . "/30 seconds)")
+                }
+                if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)) {
+                    adbClick(252, 81)
+                    Delay(1)
+                    CreateStatusMessage("Favourited: " . vipFriend.ToString(),,,, false)
+                } else {
+                    CreateStatusMessage("Already favourited: " . vipFriend.ToString(),,,, false)
+                }
+                gptest_alreadyFavourited[vipCode] := true
+                break
             }
-			scrolledWithoutFriend++
+            else if(FindOrLoseImage(165, 245, 190, 270, , "Send", 0, failSafeTime)) {
+                ; Not friends — skip without entering profile
+                CreateStatusMessage("Not friends with VIP: " . vipFriend.ToString() . ". Skipping.",,,, false)
+                gptest_nonFriends[vipCode] := true
+                break
+            }
+            Delay(1)
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            CreateStatusMessage("Waiting for search result`n(" . failSafeTime . "/45 seconds)")
         }
-        if (!GPTest) {
-            Return
+
+        ; Return to search input for next VIP 
+        if (index < n) {
+            FindImageAndClick(205, 430, 255, 475, , "Search2", 143, 518)
+            EraseInput(index, n)
+        }
+    }
+
+    ; Return to Social main screen
+    FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+}
+
+; Removes non-favourited friends starting from the bottom of the list.
+; Stops when a favourited (VIP) friend is encountered.
+RemoveNonVipFriends() {
+    global GPTest, autoUseGPTest, A_gptest, autotest, failSafe
+
+    ; Navigate to Social screen
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop {
+        adbClick_wbb(143, 518)
+        if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0))
+            adbClick_wbb(139, 371)
+        if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime))
+            break
+        failSafeTime := (A_TickCount - failSafe) // 1000
+        CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
+    }
+
+    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500) ; Friends tab
+    Delay(2)
+
+    ; Load VIP list from file (already downloaded by FavoriteVipFriends)
+    includesIdsAndNames := false
+    vipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
+    manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
+    if FileExist(manualVipFile) {
+        manualVipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
+        vipFriendsArray.push(manualVipFriendsArray*)
+    }
+
+    ; Scroll to the bottom of the friend list (might be too much of a scroll, 
+    ; but ensures all friends are loaded and visible)
+    CreateStatusMessage("Scrolling to bottom of friend list...",,,, false)
+    Loop, 10 {
+        adbSwipe(143 . " " . 700 . " " . 143 . " " . 110 . " " . 300)
+        Sleep, 200
+    }
+    Delay(2)
+
+    ; Remove non-favourited friends from the bottom up
+    ocrFailStreak := 0
+    stoppedAtVip := false
+    Loop {
+        if (!GPTest)
+            return
+
+        ; Try to enter the bottommost visible friend's profile (positions Y = 385, 290, 195)
+        enteredProfile := false
+        friendClickY := 385
+        ; Could be cleaner
+        Loop, 3 {
+            adbClick_wbb(138, friendClickY)
+            failSafe2 := A_TickCount
+            Loop {
+                if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)
+                    || FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0)) {
+                    enteredProfile := true
+                    break
+                }
+                if ((A_TickCount - failSafe2) // 1000 > 5)
+                    break
+                Sleep, 300
+            }
+            if (enteredProfile)
+                break
+            friendClickY -= 95 ; try Y=290, then Y=195
+        }
+
+        if (!enteredProfile) {
+            CreateStatusMessage("No friends found. Done.",,,, false)
+            break
+        }
+
+        ; Favourited friend reached — stop removal
+        if (FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0)) {
+            CreateStatusMessage("Reached favourited (VIP) friend. Stopping removal.",,,, false)
+            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            stoppedAtVip := true
+            break
+        }
+
+        ; Not favourited — OCR check against VIP list
+        parseFriendResult := ParseFriendInfo(friendCode, friendName, parseFriendCodeResult, parseFriendNameResult, includesIdsAndNames)
+        friendAccount := new FriendAccount(friendCode, friendName)
+
+        if (!parseFriendResult) {
+            ; OCR failed — skip this friend safely
+            ocrFailStreak++
+            CreateStatusMessage("Couldn't parse friend. Skipping...",,,, false)
+            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            Delay(2)
+            continue
+        }
+
+        ocrFailStreak := 0
+        matchedFriend := ""
+        isVipResult := IsFriendAccountInList(friendAccount, vipFriendsArray, matchedFriend)
+
+        if (isVipResult) {
+            ; VIP missed by Phase 1 — favourite them instead of removing
+            CreateStatusMessage("VIP not favourited: " . friendAccount.ToString() . "`nFavouring...",,,, false)
+            adbClick(252, 81) ; click favourite star
+            Delay(1)
+            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            Delay(2)
+        } else {
+            ; Not VIP — remove
+            CreateStatusMessage("Removing non-VIP friend: " . friendAccount.ToString(),,,, false)
+            FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
+            FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372, 500)
+            Delay(1)
+            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            Delay(2)
+        }
+    }
+
+    if (stoppedAtVip) {
+        if (A_gptest && autoUseGPTest) {
+            A_gptest := 0
+            autotest := A_TickCount
+            ToggleTestScript()
+        } else {
+            CreateStatusMessage("Ready to test.",,,, false)
         }
     }
 }
