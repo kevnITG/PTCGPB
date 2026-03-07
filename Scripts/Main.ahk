@@ -1018,7 +1018,7 @@ RemoveNonVipFriends() {
     ; Scroll to the bottom of the friend list (might be too much of a scroll, 
     ; but ensures all friends are loaded and visible)
     CreateStatusMessage("Scrolling to bottom of friend list...",,,, false)
-    Loop, 10 {
+    Loop, 20 {
         adbSwipe(143 . " " . 700 . " " . 143 . " " . 110 . " " . 300)
         Sleep, 200
     }
@@ -1027,15 +1027,17 @@ RemoveNonVipFriends() {
     ; Remove non-favourited friends from the bottom up
     ocrFailStreak := 0
     stoppedAtVip := false
+    startY := 385 ; tracks the lowest position where a friend was last found
     Loop {
         if (!GPTest)
             return
 
-        ; Try to enter the bottommost visible friend's profile (positions Y = 385, 290, 195)
+        ; Try to enter the bottommost visible friend's profile, starting from last known position
         enteredProfile := false
-        friendClickY := 385
-        ; Could be cleaner
-        Loop, 3 {
+        friendRemovedUs := false
+        friendClickY := startY
+        numPositions := (startY - 195) // 95 + 1
+        Loop, %numPositions% {
             adbClick_wbb(138, friendClickY)
             failSafe2 := A_TickCount
             Loop {
@@ -1044,19 +1046,33 @@ RemoveNonVipFriends() {
                     enteredProfile := true
                     break
                 }
-                if ((A_TickCount - failSafe2) // 1000 > 5)
+                if ((A_TickCount - failSafe2) // 1000 > 15)
                     break
                 Sleep, 300
             }
             if (enteredProfile)
                 break
-            friendClickY -= 95 ; try Y=290, then Y=195
+            ; Timeout — check if friend removed us (on their profile but FavouriteFriend absent)
+            if (!FindOrLoseImage(172, 257, 185, 266, , "FavouriteFriend", 0)) {
+                CreateStatusMessage("Friend removed us. Skipping...",,,, false)
+                FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+                Delay(2)
+                friendRemovedUs := true
+                break
+            }
+            friendClickY -= 95
         }
+
+        if (friendRemovedUs)
+            continue
 
         if (!enteredProfile) {
             CreateStatusMessage("No friends found. Done.",,,, false)
             break
         }
+
+        ; Remember lowest position where a friend was found
+        startY := friendClickY
 
         ; Favourited friend reached — stop removal
         if (FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0)) {
@@ -1090,6 +1106,7 @@ RemoveNonVipFriends() {
             Delay(1)
             FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
             Delay(2)
+            startY := 385 ; re-check from bottom after VIP may have moved to top
         } else {
             ; Not VIP — remove
             CreateStatusMessage("Removing non-VIP friend: " . friendAccount.ToString(),,,, false)
