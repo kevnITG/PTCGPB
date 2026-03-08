@@ -1057,18 +1057,16 @@ RemoveNonVipFriends() {
                 friendClickY -= 95
                 continue
             }
-            ; We navigated to a profile — check if friend removed us first
-            Delay(2)
-            if (FindOrLoseImage(84, 397, 98, 410, , "FavouriteFriend2", 0)) {
-                CreateStatusMessage("Friend removed us. Skipping...",,,, false)
-                FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
-                Delay(2)
-                friendRemovedUs := true
-                break
-            }
-            ; Still friends — wait for FavouriteN or FavouriteY to load
+            ; Wait for profile to fully load — any of the three states confirms it
             failSafe2 := A_TickCount
             Loop {
+                if (FindOrLoseImage(84, 397, 98, 410, , "FavouriteFriend2", 0)) {
+                    CreateStatusMessage("Friend removed us. Skipping...",,,, false)
+                    FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+                    Delay(2)
+                    friendRemovedUs := true
+                    break
+                }
                 if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)
                     || FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0)) {
                     enteredProfile := true
@@ -1078,7 +1076,7 @@ RemoveNonVipFriends() {
                     break
                 Sleep, 300
             }
-            if (enteredProfile)
+            if (enteredProfile || friendRemovedUs)
                 break
             friendClickY -= 95
         }
