@@ -971,6 +971,12 @@ FavoriteVipFriends() {
             }
             Delay(1)
             failSafeTime := (A_TickCount - failSafe) // 1000
+            ; Perhaps a GP Friend added us while we were GP Testing, resulting in a pending friend 
+            ; request appearing in search results — check for and handle that if it appears
+            if (failSafeTime > 45) {
+                CreateStatusMessage("Search result unrecognised for: " . vipFriend.ToString() . ". Skipping.",,,, false)
+                break
+            }
             CreateStatusMessage("Waiting for search result`n(" . failSafeTime . "/45 seconds)")
         }
 
@@ -1038,7 +1044,29 @@ RemoveNonVipFriends() {
         friendClickY := startY
         numPositions := (startY - 195) // 95 + 1
         Loop, %numPositions% {
-            adbClick_wbb(138, friendClickY)
+            ; Click until we navigate away from the list (max 3 attempts)
+            Delay(1)
+            Loop, 3 {
+                adbClick_wbb(138, friendClickY)
+                Sleep, 600
+                if (!FindOrLoseImage(226, 100, 270, 135, , "Add", 0))
+                    break
+            }
+            ; If still on list after all attempts, slot is empty — try next position
+            if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
+                friendClickY -= 95
+                continue
+            }
+            ; We navigated to a profile — check if friend removed us first
+            Delay(2)
+            if (FindOrLoseImage(84, 397, 98, 410, , "FavouriteFriend2", 0)) {
+                CreateStatusMessage("Friend removed us. Skipping...",,,, false)
+                FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+                Delay(2)
+                friendRemovedUs := true
+                break
+            }
+            ; Still friends — wait for FavouriteN or FavouriteY to load
             failSafe2 := A_TickCount
             Loop {
                 if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)
@@ -1052,14 +1080,6 @@ RemoveNonVipFriends() {
             }
             if (enteredProfile)
                 break
-            ; Timeout — check if friend removed us (on their profile but FavouriteFriend2 absent)
-            if (!FindOrLoseImage(84, 397, 98, 410, , "FavouriteFriend2", 0)) {
-                CreateStatusMessage("Friend removed us. Skipping...",,,, false)
-                FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
-                Delay(2)
-                friendRemovedUs := true
-                break
-            }
             friendClickY -= 95
         }
 
