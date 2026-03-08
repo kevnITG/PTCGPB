@@ -820,14 +820,13 @@ GPTestScript() {
     RemoveNonVipFriends()
 }
 
-;---------------------------------------------------------
 ; FavoriteVipFriends - Mark all VIP friends as favourites 
-;---------------------------------------------------------
 FavoriteVipFriends() {
     global GPTest, vipIdsURL, failSafe, gptest_nonFriends, gptest_alreadyFavourited
 
     ; Skip lists — persist across GP Test calls within the same session 
-    ; to avoid re-checking accounts already determined as non-friends or already favourited
+    ; to avoid re-checking accounts already determined as non-friends or already favourited.
+    ; Saves time for multiple GP Test during the same session.
     if (!IsObject(gptest_nonFriends))
         gptest_nonFriends := {}
     if (!IsObject(gptest_alreadyFavourited))
@@ -837,14 +836,15 @@ FavoriteVipFriends() {
     failSafe := A_TickCount
     failSafeTime := 0
     Loop {
-        adbClick_wbb(143, 518)
-        if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0))
-            adbClick_wbb(139, 371)
+        adbClick(143, 518)
         if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime))
             break
+        Delay(5)
         failSafeTime := (A_TickCount - failSafe) // 1000
-        CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
+        CreateStatusMessage("In failsafe for Social. " . failSafeTime "/90 seconds")
     }
+    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
+    Delay(3)
 
     ; Download and load VIP list
     CreateStatusMessage("Downloading vip_ids.txt.",,,, false)
@@ -871,8 +871,6 @@ FavoriteVipFriends() {
     allCached := true
     for _, vipFriend in vipFriendsArray {
         vipCode := vipFriend.Code
-        if (StrLen(vipCode) != 16)
-            continue
         if (!gptest_nonFriends.HasKey(vipCode) && !gptest_alreadyFavourited.HasKey(vipCode)) {
             allCached := false
             break
@@ -896,8 +894,6 @@ FavoriteVipFriends() {
             return
 
         vipCode := vipFriend.Code
-        if (StrLen(vipCode) != 16)
-            continue
 
         ; Skip accounts cached from previous GP Test runs this session
         if (gptest_nonFriends.HasKey(vipCode)) {
@@ -1000,19 +996,19 @@ RemoveNonVipFriends() {
     failSafe := A_TickCount
     failSafeTime := 0
     Loop {
-        adbClick_wbb(143, 518)
-        if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0))
-            adbClick_wbb(139, 371)
+        adbClick(143, 518)
         if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime))
             break
+        Delay(5)
         failSafeTime := (A_TickCount - failSafe) // 1000
-        CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
+        CreateStatusMessage("In failsafe for Social. " . failSafeTime "/90 seconds")
     }
-
-    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500) ; Friends tab
-    Delay(2)
+    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
+    Delay(3)
 
     ; Load VIP list from file (already downloaded by FavoriteVipFriends)
+    ; We might want to re-download this in case it was updated after we favourited VIPs
+    ; Any VIPs missed during favouriting will be caught and handled here
     includesIdsAndNames := false
     vipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
     manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
@@ -1021,8 +1017,8 @@ RemoveNonVipFriends() {
         vipFriendsArray.push(manualVipFriendsArray*)
     }
 
-    ; Scroll to the bottom of the friend list (might be too much of a scroll, 
-    ; but ensures all friends are loaded and visible)
+    ; Scroll to the bottom of the friend list 
+    ; Might be too much of a scroll, but ensures all *99* friends are loaded and visible
     CreateStatusMessage("Scrolling to bottom of friend list...",,,, false)
     Loop, 20 {
         adbSwipe(143 . " " . 700 . " " . 143 . " " . 110 . " " . 300)
@@ -1060,6 +1056,8 @@ RemoveNonVipFriends() {
             ; Wait for profile to fully load — any of the three states confirms it
             failSafe2 := A_TickCount
             Loop {
+                ; Might happen that a friend removed us while we were busy scrolling the list 
+                ; and we only realise it after clicking on their profile
                 if (FindOrLoseImage(84, 397, 98, 410, , "FavouriteFriend2", 0)) {
                     CreateStatusMessage("Friend removed us. Skipping...",,,, false)
                     FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
@@ -1100,7 +1098,8 @@ RemoveNonVipFriends() {
             break
         }
 
-        ; Not favourited — OCR check against VIP list
+        ; Not favourited — OCR check again VIP list in case we missed them during favouriting, 
+        ; then remove if still not VIP
         parseFriendResult := ParseFriendInfo(friendCode, friendName, parseFriendCodeResult, parseFriendNameResult, includesIdsAndNames)
         friendAccount := new FriendAccount(friendCode, friendName)
 
@@ -1118,13 +1117,13 @@ RemoveNonVipFriends() {
         isVipResult := IsFriendAccountInList(friendAccount, vipFriendsArray, matchedFriend)
 
         if (isVipResult) {
-            ; VIP missed by Phase 1 — favourite them instead of removing
+            ; VIP missed by FavoriteVipFriends() — favourite them instead of removing
             CreateStatusMessage("VIP not favourited: " . friendAccount.ToString() . "`nFavouring...",,,, false)
             adbClick(252, 81) ; click favourite star
             Delay(1)
             FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
             Delay(2)
-            startY := 385 ; re-check from bottom after VIP may have moved to top
+            startY := 385 ; re-check from bottom after VIP have moved to top
         } else {
             ; Not VIP — remove
             CreateStatusMessage("Removing non-VIP friend: " . friendAccount.ToString(),,,, false)
