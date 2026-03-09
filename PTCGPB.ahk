@@ -96,6 +96,7 @@ DllCall("ntdll\ZwDelayExecution","Int",0,"Int64*",-5000)
 #Include ChooseColors.ahk
 #Include DropDownColor.ahk
 #Include Utils.ahk
+#Include GitManager.ahk
 
 version = Arturos PTCGP Bot
 #SingleInstance, force
@@ -1012,7 +1013,9 @@ ShowSystemSettings:
     Gui, SystemSettingsSelect:Add, Edit, vinstanceLaunchDelay_Popup w50 x170 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %instanceLaunchDelay%
     yPos += 35
     
-    Gui, SystemSettingsSelect:Add, Checkbox, % (autoLaunchMonitor ? "Checked" : "") " vautoLaunchMonitor_Popup x15 y" . yPos . " " . sectionColor, % currentDictionary.Txt_autoLaunchMonitor
+    Gui, SystemSettingsSelect:Add, Checkbox, % (autoLaunchMonitor ? "Checked" : "") " v autoLaunchMonitor_Popup x15 y" . yPos . " " . sectionColor, % currentDictionary.Txt_autoLaunchMonitor
+    yPos += 40
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (saveToGit ? "Checked" : "") " vsaveToGit_Popup gsaveToGit_Click x" . col2X . " y" . yPos . " " . sectionColor, Auto Save to Git (hourly)
     yPos += 40
     
     Gui, SystemSettingsSelect:Add, Button, x15 y%yPos% w100 h30 gApplySystemSettings, Apply
@@ -1033,6 +1036,7 @@ ApplySystemSettings:
     clientLanguage := clientLanguage_Popup
     instanceLaunchDelay := instanceLaunchDelay_Popup
     autoLaunchMonitor := autoLaunchMonitor_Popup
+    saveToGit := saveToGit_Popup
     
     Gui, SystemSettingsSelect:Destroy
     
@@ -1367,6 +1371,17 @@ return
 
 CancelToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Destroy
+return
+
+saveToGit_Click:
+    GuiControlGet, saveToGit_Popup, ToolsAndSystemSelect:, saveToGit_Popup
+    if (saveToGit_Popup) {
+        gitRoot := A_ScriptDir
+        if (!IsGitRepo(gitRoot)) {
+            GuiControl, ToolsAndSystemSelect:, saveToGit_Popup, 0
+            MsgBox, 48, Git Error, The script directory is not a git repository.`nAuto Save to Git cannot be enabled.`n`nTo fix this, run: git init`nIt is also recommended to connect it to a remote repository.
+        }
+    }
 return
 
 discordSettings:
@@ -1920,6 +1935,7 @@ LoadSettingsFromIni() {
       IniRead, Mains, Settings.ini, UserSettings, Mains, 1
       IniRead, AccountName, Settings.ini, UserSettings, AccountName, ""
       IniRead, autoLaunchMonitor, Settings.ini, UserSettings, autoLaunchMonitor, 1
+      IniRead, saveToGit, Settings.ini, UserSettings, saveToGit, 0
       IniRead, TestTime, Settings.ini, UserSettings, TestTime, 3600
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
       IniRead, waitTime, Settings.ini, UserSettings, waitTime, 5
@@ -2166,7 +2182,7 @@ SaveAllSettings() {
    global FriendID, AccountName, waitTime, Delay, folderPath, discordWebhookURL, discordUserId, Columns, godPack
    global Instances, instanceStartDelay, defaultLanguage, SelectedMonitorIndex, swipeSpeed, deleteMethod
    global runMain, Mains, heartBeat, heartBeatWebhookURL, heartBeatName, nukeAccount, packMethod
-   global autoLaunchMonitor, autoUseGPTest, TestTime, groupRerollEnabled
+   global autoLaunchMonitor, autoUseGPTest, TestTime, groupRerollEnabled, saveToGit
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
    global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
@@ -2221,6 +2237,7 @@ SaveAllSettings() {
    iniContent .= "autoUseGPTest=" autoUseGPTest "`n"
    iniContent .= "slowMotion=" slowMotion "`n"
    iniContent .= "autoLaunchMonitor=" autoLaunchMonitor "`n"
+   iniContent .= "saveToGit=" saveToGit "`n"
    iniContent .= "applyRoleFilters=" applyRoleFilters "`n"
    iniContent .= "debugMode=" debugMode "`n"
    iniContent .= "tesseractOption=" useTesseract "`n"
