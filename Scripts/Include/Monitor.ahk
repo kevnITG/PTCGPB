@@ -1,4 +1,5 @@
 #Include %A_ScriptDir%\Logging.ahk
+#Include %A_ScriptDir%\GitManager.ahk
 
 #SingleInstance, force
 CoordMode, Mouse, Screen
@@ -12,9 +13,11 @@ if not A_IsAdmin
 }
 
 lastReduceMemory := 0
+lastGitCommit := 0
 settingsPath := A_ScriptDir "\..\..\Settings.ini"
 
 IniRead, instanceLaunchDelay, %settingsPath%, UserSettings, instanceLaunchDelay, 5
+IniRead, saveToGit, %settingsPath%, UserSettings, saveToGit, 0
 IniRead, waitAfterBulkLaunch, %settingsPath%, UserSettings, waitAfterBulkLaunch, 40000
 IniRead, Instances, %settingsPath%, UserSettings, Instances, 1
 IniRead, folderPath, %settingsPath%, UserSettings, folderPath, C:\Program Files\Netease
@@ -100,6 +103,20 @@ Loop {
                 scriptPath := A_ScriptDir "\.." "\" scriptName
                 Run, "%A_AhkPath%" /restart "%scriptPath%"
             }
+        }
+    }
+
+    if (saveToGit && A_TickCount - lastGitCommit > 3600000) {
+        LogToFile("Git auto-commit start.", "Monitor.txt")
+        gitRoot := A_ScriptDir . "\..\.."
+        paths := []
+        paths.Push({path: "Accounts/Saved", suffix: ".xml"})
+        paths.Push({path: "Screenshots", suffix: ".png"})
+        paths.Push({path: "Accounts/Trades/Trades_Database.csv", suffix: ""})
+        paths.Push({path: "Accounts/Trades/Trades_Index.json", suffix: ""})
+        isCommit := CommitAndPushGit(gitRoot, "Monitor.txt", paths)
+        if (isCommit) {
+            lastGitCommit := A_TickCount
         }
     }
     
