@@ -814,9 +814,11 @@ GetNeedle(Path) {
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GPTestScript() {
-    global triggerTestNeeded
+    global triggerTestNeeded, GPTest
     triggerTestNeeded := false
     FavoriteVipFriends()
+    if (!GPTest)
+        return
     RemoveNonVipFriends()
 }
 
@@ -824,13 +826,21 @@ GPTestScript() {
 FavoriteVipFriends() {
     global GPTest, vipIdsURL, failSafe, gptest_nonFriends, gptest_alreadyFavourited
 
-    ; Skip lists — persist across GP Test calls within the same session 
-    ; to avoid re-checking accounts already determined as non-friends or already favourited.
-    ; Saves time for multiple GP Test during the same session.
-    if (!IsObject(gptest_nonFriends))
-        gptest_nonFriends := {}
-    if (!IsObject(gptest_alreadyFavourited))
-        gptest_alreadyFavourited := {}
+    ; Load persistent GP Test cache from disk.
+    ; Always reload from file — it is the source of truth and survives bot restarts.
+    gptest_nonFriends := {}
+    gptest_alreadyFavourited := {}
+    gptestedFile := A_ScriptDir . "\..\FriendsGPTested.txt"
+    if FileExist(gptestedFile) {
+        Loop, Read, %gptestedFile%
+        {
+            line := A_LoopReadLine
+            if (SubStr(line, 1, 2) = "N:")
+                gptest_nonFriends[SubStr(line, 3)] := true
+            else if (SubStr(line, 1, 2) = "F:")
+                gptest_alreadyFavourited[SubStr(line, 3)] := true
+        }
+    }
 
     ; Navigate to Social screen
     failSafe := A_TickCount
@@ -843,8 +853,6 @@ FavoriteVipFriends() {
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("In failsafe for Social. " . failSafeTime "/90 seconds")
     }
-    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
-    Delay(3)
 
     ; Download and load VIP list
     CreateStatusMessage("Downloading vip_ids.txt.",,,, false)
@@ -866,6 +874,24 @@ FavoriteVipFriends() {
         CreateStatusMessage("No accounts found in vip_ids.txt. Aborting FavoriteVipFriends...",,,, false)
         return
     }
+
+    ; Remove cache entries whose codes are no longer in the VIP list
+    vipCodeSet := {}
+    for _, vipFriend in vipFriendsArray
+        vipCodeSet[vipFriend.Code] := true
+    toDelete := []
+    for code, _ in gptest_nonFriends
+        if (!vipCodeSet.HasKey(code))
+            toDelete.Push(code)
+    for _, code in toDelete
+        gptest_nonFriends.Delete(code)
+    toDelete := []
+    for code, _ in gptest_alreadyFavourited
+        if (!vipCodeSet.HasKey(code))
+            toDelete.Push(code)
+    for _, code in toDelete
+        gptest_alreadyFavourited.Delete(code)
+    SaveGPTestedCache()
 
     ; Check if all valid VIP codes are already cached — skip search entirely if so
     allCached := true
@@ -890,8 +916,13 @@ FavoriteVipFriends() {
 
     n := vipFriendsArray.MaxIndex()
     for index, vipFriend in vipFriendsArray {
-        if (!GPTest)
+        if (!GPTest) {
+            adbInputEvent("4") ; close keyboard
+            Sleep, 300
+            adbInputEvent("4") ; close search modal
+            Sleep, 300
             return
+        }
 
         vipCode := vipFriend.Code
 
@@ -957,12 +988,14 @@ FavoriteVipFriends() {
                     CreateStatusMessage("Already favourited: " . vipFriend.ToString(),,,, false)
                 }
                 gptest_alreadyFavourited[vipCode] := true
+                SaveGPTestedCache()
                 break
             }
             else if(FindOrLoseImage(165, 245, 190, 270, , "Send", 0, failSafeTime)) {
                 ; Not friends — skip without entering profile
                 CreateStatusMessage("Not friends with VIP: " . vipFriend.ToString() . ". Skipping.",,,, false)
                 gptest_nonFriends[vipCode] := true
+                SaveGPTestedCache()
                 break
             }
             Delay(1)
@@ -990,7 +1023,7 @@ FavoriteVipFriends() {
 ; Removes non-favourited friends starting from the bottom of the list.
 ; Stops when a favourited (VIP) friend is encountered.
 RemoveNonVipFriends() {
-    global GPTest, autoUseGPTest, A_gptest, autotest, failSafe
+    global GPTest, autoUseGPTest, A_gptest, autotest, failSafe, gptest_alreadyFavourited
 
     ; Navigate to Social screen
     failSafe := A_TickCount
@@ -1104,11 +1137,17 @@ RemoveNonVipFriends() {
         friendAccount := new FriendAccount(friendCode, friendName)
 
         if (!parseFriendResult) {
-            ; OCR failed — skip this friend safely
             ocrFailStreak++
-            CreateStatusMessage("Couldn't parse friend. Skipping...",,,, false)
+            CreateStatusMessage("Couldn't parse friend (streak: " . ocrFailStreak . "). Skipping...",,,, false)
             FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
             Delay(2)
+            if (ocrFailStreak >= 3) {
+                ; Persistent OCR failure on the same position — move on to avoid infinite loop
+                ocrFailStreak := 0
+                startY := friendClickY - 95
+                if (startY < 195)
+                    break
+            }
             continue
         }
 
@@ -1121,6 +1160,8 @@ RemoveNonVipFriends() {
             CreateStatusMessage("VIP not favourited: " . friendAccount.ToString() . "`nFavouring...",,,, false)
             adbClick(252, 81) ; click favourite star
             Delay(1)
+            gptest_alreadyFavourited[friendAccount.Code] := true
+            SaveGPTestedCache()
             FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
             Delay(2)
             startY := 385 ; re-check from bottom after VIP have moved to top
@@ -1140,10 +1181,21 @@ RemoveNonVipFriends() {
             A_gptest := 0
             autotest := A_TickCount
             ToggleTestScript()
-        } else {
-            CreateStatusMessage("Ready to test.",,,, false)
         }
+        CreateStatusMessage("Ready to test.",,,, false)
     }
+}
+
+; Writes gptest_nonFriends and gptest_alreadyFavourited to FriendsGPTested.txt.
+; Called after each status update so the cache survives bot restarts.
+SaveGPTestedCache() {
+    global gptest_nonFriends, gptest_alreadyFavourited
+    filePath := A_ScriptDir . "\..\FriendsGPTested.txt"
+    FileDelete, %filePath%
+    for code, _ in gptest_nonFriends
+        FileAppend, N:%code%`n, %filePath%
+    for code, _ in gptest_alreadyFavourited
+        FileAppend, F:%code%`n, %filePath%
 }
 
 ; Attempts to extract a friend accounts's code and name from the screen, by taking screenshot and running OCR on specific regions.
