@@ -2212,7 +2212,6 @@ Screenshot_dev(fileType := "Dev", subDir := "", srcPath := "") {
         filePath := fileDir "\" . fileName . ".png"
         Gdip_SaveBitmapToFile(pBitmap, filePath)
 
-
         msgbox click on coordinate for adbClick
 
         KeyWait, LButton, D
