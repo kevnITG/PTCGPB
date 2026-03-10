@@ -828,7 +828,7 @@ FavoriteVipFriends() {
     global GPTest, vipIdsURL, failSafe, gptest_nonFriends, gptest_alreadyFavourited
 
     ; Load persistent GP Test cache from disk.
-    ; Always reload from file — it is the source of truth and survives bot restarts.
+    ; Always reload from file as it survives bot restarts.
     gptest_nonFriends := {}
     gptest_alreadyFavourited := {}
     gptestedFile := A_ScriptDir . "\..\FriendsGPTested.txt"
@@ -1002,7 +1002,7 @@ FavoriteVipFriends() {
             Delay(1)
             failSafeTime := (A_TickCount - failSafe) // 1000
             ; Perhaps a GP Friend added us while we were GP Testing, resulting in a pending friend 
-            ; request appearing in search results — check for and handle that if it appears
+            ; request appearing in search results — check for and handle that if it appears. Rare but was observed during testing.
             if (failSafeTime > 45) {
                 CreateStatusMessage("Search result unrecognised for: " . vipFriend.ToString() . ". Skipping.",,,, false)
                 break
@@ -1041,7 +1041,6 @@ RemoveNonVipFriends() {
     Delay(3)
 
     ; Load VIP list from file (already downloaded by FavoriteVipFriends)
-    ; We might want to re-download this in case it was updated after we favourited VIPs
     ; Any VIPs missed during favouriting will be caught and handled here
     includesIdsAndNames := false
     vipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
@@ -1184,11 +1183,16 @@ RemoveNonVipFriends() {
             ToggleTestScript()
         }
         CreateStatusMessage("Ready to test.",,,, false)
+    } else if (A_gptest && autoUseGPTest) {
+        A_gptest := 0
+        ToggleTestScript()
     }
 }
 
 ; Writes gptest_nonFriends and gptest_alreadyFavourited to FriendsGPTested.txt.
 ; Called after each status update so the cache survives bot restarts.
+; It is necessary to add 0 at the start because AHK removes leading zeros from numbers, 
+; but friend codes can have leading zeros that are necessary for them to be 16 digits long and valid.
 SaveGPTestedCache() {
     global gptest_nonFriends, gptest_alreadyFavourited
     filePath := A_ScriptDir . "\..\FriendsGPTested.txt"
