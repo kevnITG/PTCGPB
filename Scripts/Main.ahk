@@ -176,6 +176,7 @@ Loop {
         CreateStatusMessage("Auto GP Test Timer : " . autotest_time .  "/ " . TestTime . " seconds", "AutoGPTest", 0, 605, false, true)
         if (autotest_time >= TestTime) {
             A_gptest := 1
+            autotest := A_TickCount
             ToggleTestScript()
         }        
     }
@@ -1192,10 +1193,16 @@ SaveGPTestedCache() {
     global gptest_nonFriends, gptest_alreadyFavourited
     filePath := A_ScriptDir . "\..\FriendsGPTested.txt"
     FileDelete, %filePath%
-    for code, _ in gptest_nonFriends
+    for code, _ in gptest_nonFriends {
+        while (StrLen(code) < 16)
+            code := "0" . code
         FileAppend, N:%code%`n, %filePath%
-    for code, _ in gptest_alreadyFavourited
+    }
+    for code, _ in gptest_alreadyFavourited {
+        while (StrLen(code) < 16)
+            code := "0" . code
         FileAppend, F:%code%`n, %filePath%
+    }
 }
 
 ; Attempts to extract a friend accounts's code and name from the screen, by taking screenshot and running OCR on specific regions.
