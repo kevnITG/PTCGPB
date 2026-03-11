@@ -30,7 +30,7 @@ WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, skipInvalidGP, deleteXML, packs, FriendID, AddFriend, Instances, showStatus, stopToggle
 global triggerTestNeeded, testStartTime, firstRun, minStars, minStarsA2b, vipIdsURL
-global autoUseGPTest, autotest, autotest_time, A_gptest, TestTime
+global autoUseGPTest, autotest, autotest_time, A_gptest, TestTime, stopAfterGPTest
 global gptest_nonFriends, gptest_alreadyFavourited
 global MuMuv5, titleHeight
 MuMuv5 := isMuMuv5()
@@ -144,6 +144,7 @@ Loop {
 rerollTime := A_TickCount
 autotest := A_TickCount
 A_gptest := 0
+stopAfterGPTest := false
 
 initializeAdbShell()
 CreateStatusMessage("Initializing bot...",,,, false)
@@ -184,6 +185,8 @@ Loop {
     if (GPTest) {
         if (triggerTestNeeded)
             GPTestScript()
+        if (stopAfterGPTest)
+            ExitApp
         Sleep, 1000
         if (heartBeat && (Mod(A_Index, 60) = 0))
             IniWrite, 1, %A_ScriptDir%\..\HeartBeat.ini, HeartBeat, Main
@@ -615,10 +618,57 @@ ResumeScript:
     failSafe := A_TickCount
 return
 
-; Stop Script - Main.ahk always exits immediately (no "end of run" concept)
 StopScript:
+    settingsPath := A_ScriptDir . "\..\Settings.ini"
+    IniRead, savedStopPreferenceMain, %settingsPath%, UserSettings, stopPreferenceMain, none
+    if (savedStopPreferenceMain = "immediate") {
+        CreateStatusMessage("Stopping script...",,,, false)
+        ExitApp
+    } else if (savedStopPreferenceMain = "gp_test") {
+        Gosub, StopMainAfterGPTest
+    } else {
+        Gui, StopMain:Destroy
+        Gui, StopMain:New, +AlwaysOnTop, Stop Main Instance
+        Gui, StopMain:Add, Text, x20 y15 w220 Center, What would you like to do?
+        Gui, StopMain:Add, Button, x20 y45 w220 h30 gStopMainImmediately, Stop Immediately
+        Gui, StopMain:Add, Button, x20 y80 w220 h30 gStopMainAfterGPTest, Run GP Test then Stop
+        Gui, StopMain:Add, Checkbox, x20 y120 w220 vRememberStopPreferenceMain, Remember my choice
+        Gui, StopMain:Show, w260 h150, Stop Main Instance
+    }
+return
+
+StopMainImmediately:
+    Gui, StopMain:Submit, NoHide
+    if (RememberStopPreferenceMain) {
+        settingsPath := A_ScriptDir . "\..\Settings.ini"
+        IniWrite, immediate, %settingsPath%, UserSettings, stopPreferenceMain
+    }
+    Gui, StopMain:Destroy
     CreateStatusMessage("Stopping script...",,,, false)
     ExitApp
+return
+
+StopMainAfterGPTest:
+    Gui, StopMain:Submit, NoHide
+    if (RememberStopPreferenceMain) {
+        settingsPath := A_ScriptDir . "\..\Settings.ini"
+        IniWrite, gp_test, %settingsPath%, UserSettings, stopPreferenceMain
+    }
+    Gui, StopMain:Destroy
+    stopAfterGPTest := true
+    if (!GPTest) {
+        GPTest := true
+        triggerTestNeeded := true
+        testStartTime := A_TickCount
+        CreateStatusMessage("Running GP Test then stopping...",,,, false)
+    } else {
+        CreateStatusMessage("Will stop after current GP Test completes...",,,, false)
+    }
+return
+
+StopMainGuiClose:
+StopMainGuiEscape:
+    Gui, StopMain:Destroy
 return
 
 ShowStatusMessages:
@@ -754,7 +804,7 @@ from_window(ByRef image) {
 
 ~+F5::SafeReload()
 ~+F6::Pause
-~+F7::ExitApp  ; Main.ahk always exits immediately - no "end of run" concept
+~+F7::Gosub, StopScript
 ~+F8::ToggleStatusMessages()
 ~+F9::ToggleTestScript() ; hoytdj Add
 
