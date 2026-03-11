@@ -836,23 +836,13 @@ FavoriteVipFriends() {
         Loop, Read, %gptestedFile%
         {
             line := A_LoopReadLine
+            ; N: prefix indicates code was tested and is not a friend, 
+            ; F: prefix indicates code was tested and is already favourited.
             if (SubStr(line, 1, 2) = "N:")
                 gptest_nonFriends[SubStr(line, 3)] := true
             else if (SubStr(line, 1, 2) = "F:")
                 gptest_alreadyFavourited[SubStr(line, 3)] := true
         }
-    }
-
-    ; Navigate to Social screen
-    failSafe := A_TickCount
-    failSafeTime := 0
-    Loop {
-        adbClick(143, 518)
-        if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime))
-            break
-        Delay(5)
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        CreateStatusMessage("In failsafe for Social. " . failSafeTime "/90 seconds")
     }
 
     ; Download and load VIP list
@@ -880,21 +870,31 @@ FavoriteVipFriends() {
     vipCodeSet := {}
     for _, vipFriend in vipFriendsArray
         vipCodeSet[vipFriend.Code] := true
+
+    ; Prune silently "N" entries not in VIP list: were never friends, no game action needed
     toDelete := []
     for code, _ in gptest_nonFriends
         if (!vipCodeSet.HasKey(code))
             toDelete.Push(code)
     for _, code in toDelete
         gptest_nonFriends.Delete(code)
-    toDelete := []
-    for code, _ in gptest_alreadyFavourited
-        if (!vipCodeSet.HasKey(code))
-            toDelete.Push(code)
-    for _, code in toDelete
-        gptest_alreadyFavourited.Delete(code)
+
+    ; Collect "F" entries not in VIP list for in-game de-star + removal (do NOT prune yet)
+    ; This tries to catch VIP friends not removed manually by the user
+    ; after they lost VIP status, as they would otherwise be missed and left as favourites
+    ; in the case they're unfriended and befriended again in the same main session (game bug?)
+    toRemove := []
+    for code, _ in gptest_alreadyFavourited {
+        if (!vipCodeSet.HasKey(code)) {
+            while (StrLen(code) < 16)
+                code := "0" . code
+            toRemove.Push(code)
+        }
+    }
     SaveGPTestedCache()
 
-    ; Check if all valid VIP codes are already cached — skip search entirely if so
+    ; Check if all valid VIP codes are already cached AND no ex-VIPs to clean
+    ; We can move to non favourite removal if so
     allCached := true
     for _, vipFriend in vipFriendsArray {
         vipCode := vipFriend.Code
@@ -903,20 +903,37 @@ FavoriteVipFriends() {
             break
         }
     }
-    if (allCached) {
+    if (allCached && !toRemove.MaxIndex()) {
         CreateStatusMessage("All VIP accounts already processed (cached). Skipping FavoriteVipFriends.",,,, false)
         return
     }
 
+    ; Navigate to Social screen
+    failSafe := A_TickCount
+    failSafeTime := 0
+    Loop {
+        adbClick(143, 518)
+        if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime))
+            break
+        Delay(5)
+        failSafeTime := (A_TickCount - failSafe) // 1000
+        CreateStatusMessage("In failsafe for Social. " . failSafeTime "/90 seconds")
+    }
     FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500) ; Friends tab
     Delay(2)
-
-    ; Open search input
     FindImageAndClick(205, 430, 255, 475, , "Search", 240, 120, 1500)
     FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
 
-    n := vipFriendsArray.MaxIndex()
-    for index, vipFriend in vipFriendsArray {
+    ; Build combined list: ex-VIP removals first, then uncached VIPs to star
+    allVips := []
+    for _, code in toRemove
+        allVips.Push({isRemoval: 1, Code: code})
+    for _, vipFriend in vipFriendsArray
+        if (!gptest_nonFriends.HasKey(vipFriend.Code) && !gptest_alreadyFavourited.HasKey(vipFriend.Code))
+            allVips.Push({isRemoval: 0, Code: vipFriend.Code, Friend: vipFriend})
+
+    n := allVips.MaxIndex()
+    for index, vip in allVips {
         if (!GPTest) {
             adbInputEvent("4") ; close keyboard
             Sleep, 300
@@ -925,31 +942,38 @@ FavoriteVipFriends() {
             return
         }
 
-        vipCode := vipFriend.Code
+        vipCode := vip.Code
 
-        ; Skip accounts cached from previous GP Test runs this session
-        if (gptest_nonFriends.HasKey(vipCode)) {
-            CreateStatusMessage("Skipping non-friend VIP (cached): " . vipFriend.ToString(),,,, false)
-            continue
-        }
-        if (gptest_alreadyFavourited.HasKey(vipCode)) {
-            CreateStatusMessage("Skipping already-favourited VIP (cached): " . vipFriend.ToString(),,,, false)
-            continue
-        }
-
-        CreateStatusMessage("Favouriting VIP " . index . "/" . n . "`n" . vipFriend.ToString(),,,, false)
+        if (vip.isRemoval)
+            CreateStatusMessage("Removing ex-VIP " . index . "/" . n . ": " . vipCode,,,, false)
+        else
+            CreateStatusMessage("Favouriting VIP " . index . "/" . n . "`n" . vip.Friend.ToString(),,,, false)
 
         ; Type the code and wait for Search2 to appear
         failSafe := A_TickCount
         failSafeTime := 0
+        search2Ready := false
         Loop {
             Delay(1)
             adbInput(vipCode)
             Delay(1)
-            if(FindOrLoseImage(205, 430, 255, 475, , "Search2", 0, failSafeTime))
+            if(FindOrLoseImage(205, 430, 255, 475, , "Search2", 0, failSafeTime)) {
+                search2Ready := true
                 break
+            }
             failSafeTime := (A_TickCount - failSafe) // 1000
+            if (failSafeTime > 45) {
+                CreateStatusMessage("Search2 not found for: " . vipCode . ". Skipping.",,,, false)
+                break
+            }
             CreateStatusMessage("Waiting for Search2`n(" . failSafeTime . "/45 seconds)")
+        }
+        if (!search2Ready) {
+            if (index < n) {
+                FindImageAndClick(205, 430, 255, 475, , "Search2", 143, 518)
+                EraseInput(index, n)
+            }
+            continue
         }
 
         ; Click search and check result on the search results screen
@@ -959,7 +983,7 @@ FavoriteVipFriends() {
             adbClick_wbb(232, 453) ; confirm search
             Delay(2)
             if(FindOrLoseImage(172, 257, 185, 266, , "FavouriteFriend", 0, failSafeTime)) {
-                ; Already friends — keep clicking until FavouriteFriend disappears (profile opened)
+                ; Friend — enter profile
                 failSafe2 := A_TickCount
                 Loop {
                     if (!FindOrLoseImage(172, 257, 185, 266, , "FavouriteFriend", 0))
@@ -981,36 +1005,53 @@ FavoriteVipFriends() {
                     Sleep, 500
                     CreateStatusMessage("Waiting for profile to load`n(" . (A_TickCount - failSafe2) // 1000 . "/30 seconds)")
                 }
-                if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)) {
-                    adbClick(252, 81)
+                if (vip.isRemoval) {
+                    ; De-star if currently starred, then remove from friends
+                    if (FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0)) {
+                        adbClick(252, 81)
+                        Delay(1)
+                    }
+                    FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
+                    FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372, 500)
                     Delay(1)
-                    CreateStatusMessage("Favourited: " . vipFriend.ToString(),,,, false)
+                    gptest_alreadyFavourited.Delete(vipCode)
                 } else {
-                    CreateStatusMessage("Already favourited: " . vipFriend.ToString(),,,, false)
+                    ; Star if not yet starred
+                    if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)) {
+                        adbClick(252, 81)
+                        Delay(1)
+                        CreateStatusMessage("Favourited: " . vip.Friend.ToString(),,,, false)
+                    } else {
+                        CreateStatusMessage("Already favourited: " . vip.Friend.ToString(),,,, false)
+                    }
+                    gptest_alreadyFavourited[vipCode] := true
                 }
-                gptest_alreadyFavourited[vipCode] := true
                 SaveGPTestedCache()
                 break
             }
             else if(FindOrLoseImage(165, 245, 190, 270, , "Send", 0, failSafeTime)) {
-                ; Not friends — skip without entering profile
-                CreateStatusMessage("Not friends with VIP: " . vipFriend.ToString() . ". Skipping.",,,, false)
-                gptest_nonFriends[vipCode] := true
+                if (vip.isRemoval) {
+                    CreateStatusMessage("Ex-VIP no longer a friend: " . vipCode . ". Skipping.",,,, false)
+                    gptest_alreadyFavourited.Delete(vipCode)
+                } else {
+                    CreateStatusMessage("Not friends with VIP: " . vip.Friend.ToString() . ". Skipping.",,,, false)
+                    gptest_nonFriends[vipCode] := true
+                }
                 SaveGPTestedCache()
                 break
             }
             Delay(1)
             failSafeTime := (A_TickCount - failSafe) // 1000
-            ; Perhaps a GP Friend added us while we were GP Testing, resulting in a pending friend 
+            ; Perhaps a GP Friend added us while we were GP Testing, resulting in a pending friend
             ; request appearing in search results — check for and handle that if it appears. Rare but was observed during testing.
-            if (failSafeTime > 45) {
-                CreateStatusMessage("Search result unrecognised for: " . vipFriend.ToString() . ". Skipping.",,,, false)
+            if (failSafeTime > 20) {
+                CreateStatusMessage("Search result unrecognised for: " . vipCode . ". Skipping.",,,, false)
                 break
             }
             CreateStatusMessage("Waiting for search result`n(" . failSafeTime . "/45 seconds)")
         }
 
-        ; Return to search input for next VIP 
+        ; Return to search input for next item
         if (index < n) {
             FindImageAndClick(205, 430, 255, 475, , "Search2", 143, 518)
             EraseInput(index, n)
