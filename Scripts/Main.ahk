@@ -889,9 +889,9 @@ FavoriteVipFriends() {
             ; N: prefix indicates code was tested and is not a friend, 
             ; F: prefix indicates code was tested and is already favourited.
             if (SubStr(line, 1, 2) = "N:")
-                gptest_nonFriends[SubStr(line, 3)] := true
+                gptest_nonFriends["_" . SubStr(line, 3)] := true
             else if (SubStr(line, 1, 2) = "F:")
-                gptest_alreadyFavourited[SubStr(line, 3)] := true
+                gptest_alreadyFavourited["_" . SubStr(line, 3)] := true
         }
     }
 
@@ -923,24 +923,20 @@ FavoriteVipFriends() {
 
     ; Prune silently "N" entries not in VIP list: were never friends, no game action needed
     toDelete := []
-    for code, _ in gptest_nonFriends
-        if (!vipCodeSet.HasKey(code))
-            toDelete.Push(code)
-    for _, code in toDelete
-        gptest_nonFriends.Delete(code)
+    for key, _ in gptest_nonFriends
+        if (!vipCodeSet.HasKey(SubStr(key, 2)))
+            toDelete.Push(key)
+    for _, key in toDelete
+        gptest_nonFriends.Delete(key)
 
     ; Collect "F" entries not in VIP list for in-game de-star + removal (do NOT prune yet)
     ; This tries to catch VIP friends not removed manually by the user
     ; after they lost VIP status, as they would otherwise be missed and left as favourites
     ; in the case they're unfriended and befriended again in the same main session (game bug?)
     toRemove := []
-    for code, _ in gptest_alreadyFavourited {
-        if (!vipCodeSet.HasKey(code)) {
-            while (StrLen(code) < 16)
-                code := "0" . code
-            toRemove.Push(code)
-        }
-    }
+    for key, _ in gptest_alreadyFavourited
+        if (!vipCodeSet.HasKey(SubStr(key, 2)))
+            toRemove.Push(SubStr(key, 2))
     SaveGPTestedCache()
 
     ; Check if all valid VIP codes are already cached AND no ex-VIPs to clean
@@ -948,7 +944,7 @@ FavoriteVipFriends() {
     allCached := true
     for _, vipFriend in vipFriendsArray {
         vipCode := vipFriend.Code
-        if (!gptest_nonFriends.HasKey(vipCode) && !gptest_alreadyFavourited.HasKey(vipCode)) {
+        if (!gptest_nonFriends.HasKey("_" . vipCode) && !gptest_alreadyFavourited.HasKey("_" . vipCode)) {
             allCached := false
             break
         }
@@ -979,7 +975,7 @@ FavoriteVipFriends() {
     for _, code in toRemove
         allVips.Push({isRemoval: 1, Code: code})
     for _, vipFriend in vipFriendsArray
-        if (!gptest_nonFriends.HasKey(vipFriend.Code) && !gptest_alreadyFavourited.HasKey(vipFriend.Code))
+        if (!gptest_nonFriends.HasKey("_" . vipFriend.Code) && !gptest_alreadyFavourited.HasKey("_" . vipFriend.Code))
             allVips.Push({isRemoval: 0, Code: vipFriend.Code, Friend: vipFriend})
 
     n := allVips.MaxIndex()
@@ -1064,7 +1060,7 @@ FavoriteVipFriends() {
                     FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
                     FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372, 500)
                     Delay(1)
-                    gptest_alreadyFavourited.Delete(vipCode)
+                    gptest_alreadyFavourited.Delete("_" . vipCode)
                 } else {
                     ; Star if not yet starred
                     if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)) {
@@ -1074,7 +1070,7 @@ FavoriteVipFriends() {
                     } else {
                         CreateStatusMessage("Already favourited: " . vip.Friend.ToString(),,,, false)
                     }
-                    gptest_alreadyFavourited[vipCode] := true
+                    gptest_alreadyFavourited["_" . vipCode] := true
                 }
                 SaveGPTestedCache()
                 break
@@ -1082,23 +1078,50 @@ FavoriteVipFriends() {
             else if(FindOrLoseImage(165, 245, 190, 270, , "Send", 0, failSafeTime)) {
                 if (vip.isRemoval) {
                     CreateStatusMessage("Ex-VIP no longer a friend: " . vipCode . ". Skipping.",,,, false)
-                    gptest_alreadyFavourited.Delete(vipCode)
+                    gptest_alreadyFavourited.Delete("_" . vipCode)
                 } else {
                     CreateStatusMessage("Not friends with VIP: " . vip.Friend.ToString() . ". Skipping.",,,, false)
-                    gptest_nonFriends[vipCode] := true
+                    gptest_nonFriends["_" . vipCode] := true
+                }
+                SaveGPTestedCache()
+                break
+            }
+            ; Account doesn't exist: banned, deleted, or code never existed  
+            else if(FindOrLoseImage(31, 238, 61, 252, , "NotFound", 0, failSafeTime)) {
+                adbClick_wbb(138, 380)
+                Sleep, 500
+                if (vip.isRemoval) {
+                    CreateStatusMessage("Code not found (ex-VIP): " . vipCode . ". Removing from cache.",,,, false)
+                    gptest_alreadyFavourited.Delete("_" . vipCode)
+                } else {
+                    CreateStatusMessage("Code not found (VIP): " . vip.Friend.ToString() . ". Marking as N.",,,, false)
+                    gptest_nonFriends["_" . vipCode] := true
+                }
+                SaveGPTestedCache()
+                if (index < n)
+                    EraseInput(index, n)
+                continue 2 ; already back at search input — skip the nav block below
+            }
+            ; Pending friend request from the account: either VIP that we weren't able to befriend in time,
+            ; or ex-VIP that alrerady sent us a request as we were GP Testing
+            else if(FindOrLoseImage(188, 243, 221, 274, , "PendingFriendRequest", 0, failSafeTime)) {
+                if (vip.isRemoval) {
+                    CreateStatusMessage("Pending request from ex-VIP: " . vipCode . ". Removing from cache.",,,, false)
+                    gptest_alreadyFavourited.Delete("_" . vipCode)
+                } else {
+                    CreateStatusMessage("Pending request from VIP: " . vip.Friend.ToString() . ". Marking as N.",,,, false)
+                    gptest_nonFriends["_" . vipCode] := true
                 }
                 SaveGPTestedCache()
                 break
             }
             Delay(1)
             failSafeTime := (A_TickCount - failSafe) // 1000
-            ; Perhaps a GP Friend added us while we were GP Testing, resulting in a pending friend
-            ; request appearing in search results — check for and handle that if it appears. Rare but was observed during testing.
             if (failSafeTime > 20) {
                 CreateStatusMessage("Search result unrecognised for: " . vipCode . ". Skipping.",,,, false)
                 break
             }
-            CreateStatusMessage("Waiting for search result`n(" . failSafeTime . "/45 seconds)")
+            CreateStatusMessage("Waiting for search result`n(" . failSafeTime . "/20 seconds)")
         }
 
         ; Return to search input for next item
@@ -1251,7 +1274,7 @@ RemoveNonVipFriends() {
             CreateStatusMessage("VIP not favourited: " . friendAccount.ToString() . "`nFavouring...",,,, false)
             adbClick(252, 81) ; click favourite star
             Delay(1)
-            gptest_alreadyFavourited[friendAccount.Code] := true
+            gptest_alreadyFavourited["_" . friendAccount.Code] := true
             SaveGPTestedCache()
             FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
             Delay(2)
@@ -1282,20 +1305,18 @@ RemoveNonVipFriends() {
 
 ; Writes gptest_nonFriends and gptest_alreadyFavourited to FriendsGPTested.txt.
 ; Called after each status update so the cache survives bot restarts.
-; It is necessary to add 0 at the start because AHK removes leading zeros from numbers, 
-; but friend codes can have leading zeros that are necessary for them to be 16 digits long and valid.
+; Keys are stored with a "_" prefix to prevent AHK v1 from normalising numeric strings
+; to integers (which would strip leading zeros). The prefix is stripped when writing to file.
 SaveGPTestedCache() {
     global gptest_nonFriends, gptest_alreadyFavourited
     filePath := A_ScriptDir . "\..\FriendsGPTested.txt"
     FileDelete, %filePath%
-    for code, _ in gptest_nonFriends {
-        while (StrLen(code) < 16)
-            code := "0" . code
+    for key, _ in gptest_nonFriends {
+        code := SubStr(key, 2)
         FileAppend, N:%code%`n, %filePath%
     }
-    for code, _ in gptest_alreadyFavourited {
-        while (StrLen(code) < 16)
-            code := "0" . code
+    for key, _ in gptest_alreadyFavourited {
+        code := SubStr(key, 2)
         FileAppend, F:%code%`n, %filePath%
     }
 }
