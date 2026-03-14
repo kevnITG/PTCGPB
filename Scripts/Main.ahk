@@ -875,23 +875,26 @@ GPTestScript() {
 
 ; FavoriteVipFriends - Mark all VIP friends as favourites 
 FavoriteVipFriends() {
-    global GPTest, vipIdsURL, failSafe, gptest_nonFriends, gptest_alreadyFavourited
+    global GPTest, vipIdsURL, failSafe, gptest_nonFriends, gptest_alreadyFavourited, scriptName
 
     ; Load persistent GP Test cache from disk.
     ; Always reload from file as it survives bot restarts.
     gptest_nonFriends := {}
     gptest_alreadyFavourited := {}
-    gptestedFile := A_ScriptDir . "\..\FriendsGPTested.txt"
+    gptestedFile := A_ScriptDir . "\..\FriendsGPTested_" . scriptName . ".txt"
     if FileExist(gptestedFile) {
         Loop, Read, %gptestedFile%
         {
             line := A_LoopReadLine
             ; N: prefix indicates code was tested and is not a friend, 
             ; F: prefix indicates code was tested and is already favourited.
-            if (SubStr(line, 1, 2) = "N:")
-                gptest_nonFriends["_" . SubStr(line, 3)] := true
-            else if (SubStr(line, 1, 2) = "F:")
-                gptest_alreadyFavourited["_" . SubStr(line, 3)] := true
+            if (SubStr(line, 1, 2) = "N:") {
+                parts := StrSplit(SubStr(line, 3), "|")
+                gptest_nonFriends["_" . parts[1]] := {Name: parts[2], Time: parts[3]}
+            } else if (SubStr(line, 1, 2) = "F:") {
+                parts := StrSplit(SubStr(line, 3), "|")
+                gptest_alreadyFavourited["_" . parts[1]] := {Name: parts[2], Time: parts[3]}
+            }
         }
     }
 
@@ -973,7 +976,7 @@ FavoriteVipFriends() {
     ; Build combined list: ex-VIP removals first, then uncached VIPs to star
     allVips := []
     for _, code in toRemove
-        allVips.Push({isRemoval: 1, Code: code})
+        allVips.Push({isRemoval: 1, Code: code, Name: gptest_alreadyFavourited["_" . code].Name})
     for _, vipFriend in vipFriendsArray
         if (!gptest_nonFriends.HasKey("_" . vipFriend.Code) && !gptest_alreadyFavourited.HasKey("_" . vipFriend.Code))
             allVips.Push({isRemoval: 0, Code: vipFriend.Code, Friend: vipFriend})
@@ -991,7 +994,7 @@ FavoriteVipFriends() {
         vipCode := vip.Code
 
         if (vip.isRemoval)
-            CreateStatusMessage("Removing ex-VIP " . index . "/" . n . ": " . vipCode,,,, false)
+            CreateStatusMessage("Removing ex-VIP " . index . "/" . n . ": " . vipCode . (vip.Name != "" ? "`n" . vip.Name : ""),,,, false)
         else
             CreateStatusMessage("Favouriting VIP " . index . "/" . n . "`n" . vip.Friend.ToString(),,,, false)
 
@@ -1070,32 +1073,35 @@ FavoriteVipFriends() {
                     } else {
                         CreateStatusMessage("Already favourited: " . vip.Friend.ToString(),,,, false)
                     }
-                    gptest_alreadyFavourited["_" . vipCode] := true
+                    FormatTime, checkedAt, , yyyy-MM-dd HH:mm
+                    gptest_alreadyFavourited["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
                 }
                 SaveGPTestedCache()
                 break
             }
             else if(FindOrLoseImage(165, 245, 190, 270, , "Send", 0, failSafeTime)) {
                 if (vip.isRemoval) {
-                    CreateStatusMessage("Ex-VIP no longer a friend: " . vipCode . ". Skipping.",,,, false)
+                    CreateStatusMessage("Ex-VIP no longer a friend: " . vipCode . (vip.Name != "" ? " (" . vip.Name . ")" : "") . ". Skipping.",,,, false)
                     gptest_alreadyFavourited.Delete("_" . vipCode)
                 } else {
                     CreateStatusMessage("Not friends with VIP: " . vip.Friend.ToString() . ". Skipping.",,,, false)
-                    gptest_nonFriends["_" . vipCode] := true
+                    FormatTime, checkedAt, , yyyy-MM-dd HH:mm
+                    gptest_nonFriends["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
                 }
                 SaveGPTestedCache()
                 break
             }
-            ; Account doesn't exist: banned, deleted, or code never existed  
+            ; Account doesn't exist: banned, deleted, or code never existed
             else if(FindOrLoseImage(31, 238, 61, 252, , "NotFound", 0, failSafeTime)) {
                 adbClick_wbb(138, 380)
                 Sleep, 500
                 if (vip.isRemoval) {
-                    CreateStatusMessage("Code not found (ex-VIP): " . vipCode . ". Removing from cache.",,,, false)
+                    CreateStatusMessage("Code not found (ex-VIP): " . vipCode . (vip.Name != "" ? " (" . vip.Name . ")" : "") . ". Removing from cache.",,,, false)
                     gptest_alreadyFavourited.Delete("_" . vipCode)
                 } else {
                     CreateStatusMessage("Code not found (VIP): " . vip.Friend.ToString() . ". Marking as N.",,,, false)
-                    gptest_nonFriends["_" . vipCode] := true
+                    FormatTime, checkedAt, , yyyy-MM-dd HH:mm
+                    gptest_nonFriends["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
                 }
                 SaveGPTestedCache()
                 if (index < n)
@@ -1106,11 +1112,12 @@ FavoriteVipFriends() {
             ; or ex-VIP that alrerady sent us a request as we were GP Testing
             else if(FindOrLoseImage(188, 243, 221, 274, , "PendingFriendRequest", 0, failSafeTime)) {
                 if (vip.isRemoval) {
-                    CreateStatusMessage("Pending request from ex-VIP: " . vipCode . ". Removing from cache.",,,, false)
+                    CreateStatusMessage("Pending request from ex-VIP: " . vipCode . (vip.Name != "" ? " (" . vip.Name . ")" : "") . ". Removing from cache.",,,, false)
                     gptest_alreadyFavourited.Delete("_" . vipCode)
                 } else {
                     CreateStatusMessage("Pending request from VIP: " . vip.Friend.ToString() . ". Marking as N.",,,, false)
-                    gptest_nonFriends["_" . vipCode] := true
+                    FormatTime, checkedAt, , yyyy-MM-dd HH:mm
+                    gptest_nonFriends["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
                 }
                 SaveGPTestedCache()
                 break
@@ -1274,7 +1281,8 @@ RemoveNonVipFriends() {
             CreateStatusMessage("VIP not favourited: " . friendAccount.ToString() . "`nFavouring...",,,, false)
             adbClick(252, 81) ; click favourite star
             Delay(1)
-            gptest_alreadyFavourited["_" . friendAccount.Code] := true
+            FormatTime, checkedAt, , yyyy-MM-dd HH:mm
+            gptest_alreadyFavourited["_" . friendAccount.Code] := {Name: friendAccount.Name, Time: checkedAt}
             SaveGPTestedCache()
             FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
             Delay(2)
@@ -1308,16 +1316,19 @@ RemoveNonVipFriends() {
 ; Keys are stored with a "_" prefix to prevent AHK v1 from normalising numeric strings
 ; to integers (which would strip leading zeros). The prefix is stripped when writing to file.
 SaveGPTestedCache() {
-    global gptest_nonFriends, gptest_alreadyFavourited
-    filePath := A_ScriptDir . "\..\FriendsGPTested.txt"
+    global gptest_nonFriends, gptest_alreadyFavourited, scriptName
+    filePath := A_ScriptDir . "\..\FriendsGPTested_" . scriptName . ".txt"
     FileDelete, %filePath%
-    for key, _ in gptest_nonFriends {
+    FileAppend, # F: = VIP already starred in-game | N: = not a friend / code not found`n# Format: TYPE:code|name|checked_at`n, %filePath%
+    for key, entry in gptest_nonFriends {
         code := SubStr(key, 2)
-        FileAppend, N:%code%`n, %filePath%
+        line := code . "|" . entry.Name . "|" . entry.Time
+        FileAppend, N:%line%`n, %filePath%
     }
-    for key, _ in gptest_alreadyFavourited {
+    for key, entry in gptest_alreadyFavourited {
         code := SubStr(key, 2)
-        FileAppend, F:%code%`n, %filePath%
+        line := code . "|" . entry.Name . "|" . entry.Time
+        FileAppend, F:%line%`n, %filePath%
     }
 }
 
