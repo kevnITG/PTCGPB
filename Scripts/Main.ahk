@@ -1092,7 +1092,7 @@ FavoriteVipFriends() {
                 break
             }
             ; Account doesn't exist: banned, deleted, or code never existed
-            else if(FindOrLoseImage(31, 238, 61, 252, , "NotFound", 0, failSafeTime)) {
+            else if(FindOrLoseImage(28, 369, 55, 394, , "NotFound", 0, failSafeTime)) {
                 adbClick_wbb(138, 380)
                 Sleep, 500
                 if (vip.isRemoval) {
