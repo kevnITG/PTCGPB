@@ -2191,6 +2191,7 @@ SaveAllSettings() {
    ; Preserve stop preferences before rewriting Settings.ini
    IniRead, stopPreference, Settings.ini, UserSettings, stopPreference, %A_Space%
    IniRead, stopPreferenceSingle, Settings.ini, UserSettings, stopPreferenceSingle, %A_Space%
+   IniRead, stopPreferenceMain, Settings.ini, UserSettings, stopPreferenceMain, %A_Space%
 
    if (deleteMethod != "Inject Wonderpick 96P+") {
        packMethod := false
@@ -2383,6 +2384,7 @@ SaveAllSettings() {
    iniContent_Second .= "tesseractPath=" tesseractPath "`n"
    iniContent_Second .= "stopPreference=" stopPreference "`n"
    iniContent_Second .= "stopPreferenceSingle=" stopPreferenceSingle "`n"
+   iniContent_Second .= "stopPreferenceMain=" stopPreferenceMain "`n"
 
    iniFull := iniContent . iniContent_Second
    FileDelete, Settings.ini
