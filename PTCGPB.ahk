@@ -2182,7 +2182,7 @@ SaveAllSettings() {
    global FriendID, AccountName, waitTime, Delay, folderPath, discordWebhookURL, discordUserId, Columns, godPack
    global Instances, instanceStartDelay, defaultLanguage, SelectedMonitorIndex, swipeSpeed, deleteMethod
    global runMain, Mains, heartBeat, heartBeatWebhookURL, heartBeatName, nukeAccount, packMethod
-   global autoLaunchMonitor, autoUseGPTest, TestTime, gpTestWaitTime, groupRerollEnabled
+   global autoLaunchMonitor, autoUseGPTest, TestTime, gpTestWaitTime, groupRerollEnabled, hasUnopenedPack
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
    global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
