@@ -188,9 +188,11 @@ AddFriends(renew := false, getFC := false) {
     FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
 
     ; ratelimit, only use this route when number of added ids is 6-10, 16-20, etc
-    if (Mod(n - 1, 10) >= 10) {
+    if (Mod(n - 1, 10) >= 0) {
         FindImageAndClick(90, 260, 126, 290, , "Settings", 245, 520, 500)
         Delay(1)
+        failSafe := A_TickCount
+        failSafeTime := 0
         loop {
             adbClick_wbb(140, 450)
             Delay(1)
@@ -199,7 +201,11 @@ AddFriends(renew := false, getFC := false) {
             } else if(FindOrLoseImage(80, 340, 160, 430, , "Birth", 0, failSafeTime)) {
                 adbClick_wbb(200, 370)
                 break
+            } else if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime)) {
+                adbClick_wbb(245, 520)
             }
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            CreateStatusMessage("Waiting for Menu`n(" . failSafeTime . "/45 seconds)")
             Delay(1)
         }
     } 

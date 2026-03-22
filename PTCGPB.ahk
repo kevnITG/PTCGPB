@@ -791,7 +791,7 @@ CancelCardDetection:
 return
 
 UpdateGroupRerollButtonText() {
-    global groupRerollEnabled, mainIdsURL, vipIdsURL, autoUseGPTest, applyRoleFilters, gpTestWaitTime
+    global groupRerollEnabled, mainIdsURL, vipIdsURL, autoUseGPTest, applyRoleFilters, gpTestWaitTime, hasUnopenedPack
     global currentDictionary
     
     if (!groupRerollEnabled) {
@@ -852,8 +852,10 @@ ShowGroupRerollSettings:
     Gui, GroupRerollSelect:Add, Text, x15 y%yPos% cWhite, GP Test Wait (s):
     yPos += 20
     Gui, GroupRerollSelect:Add, Edit, vgpTestWaitTime_Popup w50 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %gpTestWaitTime%
-    yPos += 35
-    
+    yPos += 30
+    Gui, GroupRerollSelect:Add, Checkbox, % (hasUnopenedPack ? "Checked" : "") " vhasUnopenedPack_Popup x15 y" . yPos . " cWhite", Unopened Pack
+    yPos += 30
+
     Gui, GroupRerollSelect:Add, Checkbox, % (applyRoleFilters ? "Checked" : "") " vapplyRoleFilters_Popup x15 y" . yPos . " cWhite", Role-Based Filters
     yPos += 40
     
@@ -873,6 +875,7 @@ ApplyGroupRerollSettings:
     autoUseGPTest := autoUseGPTest_Popup
     TestTime := TestTime_Popup
     gpTestWaitTime := gpTestWaitTime_Popup
+    hasUnopenedPack := hasUnopenedPack_Popup
     applyRoleFilters := applyRoleFilters_Popup
     
     Gui, GroupRerollSelect:Destroy
@@ -1926,9 +1929,9 @@ LoadSettingsFromIni() {
       IniRead, AccountName, Settings.ini, UserSettings, AccountName, ""
       IniRead, autoLaunchMonitor, Settings.ini, UserSettings, autoLaunchMonitor, 1
       IniRead, TestTime, Settings.ini, UserSettings, TestTime, 3600
-      IniRead, gpTestWaitTime, Settings.ini, UserSettings, gpTestWaitTime, 120
+      IniRead, gpTestWaitTime, Settings.ini, UserSettings, gpTestWaitTime, 150
       if (gpTestWaitTime = "" || gpTestWaitTime <= 0)
-          gpTestWaitTime := 120
+          gpTestWaitTime := 150
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
       IniRead, waitTime, Settings.ini, UserSettings, waitTime, 5
       IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 500
@@ -2045,6 +2048,9 @@ LoadSettingsFromIni() {
       IniRead, showcaseLikes, Settings.ini, UserSettings, showcaseLikes, 5
       IniRead, autoUseGPTest, Settings.ini, UserSettings, autoUseGPTest, 0
       IniRead, applyRoleFilters, Settings.ini, UserSettings, applyRoleFilters, 0
+      IniRead, hasUnopenedPack, Settings.ini, UserSettings, hasUnopenedPack, 0
+      if (hasUnopenedPack = "")
+          hasUnopenedPack := 0
 
       IniRead, minStarsA1Charizard, Settings.ini, UserSettings, minStarsA1Charizard, 0
       IniRead, minStarsA1Mewtwo, Settings.ini, UserSettings, minStarsA1Mewtwo, 0
@@ -2136,7 +2142,8 @@ CreateDefaultSettingsFile() {
       iniContent .= "Mains=0`n"
       iniContent .= "autoUseGPTest=0`n"
       iniContent .= "TestTime=3600`n"
-      iniContent .= "gpTestWaitTime=120`n"
+      iniContent .= "gpTestWaitTime=150`n"
+      iniContent .= "hasUnopenedPack=0`n"
       iniContent .= "heartBeat=0`n"
       iniContent .= "heartBeatWebhookURL=`n"
       iniContent .= "heartBeatName=`n"
@@ -2313,6 +2320,7 @@ SaveAllSettings() {
    autoUseGPTest := 0
    TestTime := 3600
    applyRoleFilters := 0
+   hasUnopenedPack := 0
    }
    
    if (SortByDropdown = "Oldest First")
@@ -2351,6 +2359,7 @@ SaveAllSettings() {
    iniContent_Second .= "Mains=" Mains "`n"
    iniContent_Second .= "TestTime=" TestTime "`n"
    iniContent_Second .= "gpTestWaitTime=" gpTestWaitTime "`n"
+   iniContent_Second .= "hasUnopenedPack=" hasUnopenedPack "`n"
    iniContent_Second .= "heartBeatWebhookURL=" heartBeatWebhookURL "`n"
    iniContent_Second .= "heartBeatName=" heartBeatName "`n"
    iniContent_Second .= "heartBeatDelay=" heartBeatDelay "`n"
