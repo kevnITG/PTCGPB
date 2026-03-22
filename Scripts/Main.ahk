@@ -1178,6 +1178,11 @@ FavoriteVipFriends() {
                                 if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0))
                                     break
                                 failSafeTime := (A_TickCount - failSafe) // 1000
+                                if (failSafeTime > 90) {
+                                    GPTest := false
+                                    restartGameInstance("Stuck at Social after rate limit")
+                                    break
+                                }
                                 CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
                                 Delay(3)
                             }
@@ -1450,6 +1455,11 @@ RemoveNonVipFriends() {
                         if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0))
                             break
                         failSafeTime := (A_TickCount - failSafe) // 1000
+                        if (failSafeTime > 90) {
+                            GPTest := false
+                            restartGameInstance("Stuck at Social after rate limit")
+                            break
+                        }
                         CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
                         Delay(3)
                     }
