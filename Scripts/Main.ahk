@@ -30,7 +30,8 @@ WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, skipInvalidGP, deleteXML, packs, FriendID, AddFriend, Instances, showStatus, stopToggle
 global triggerTestNeeded, testStartTime, firstRun, minStars, minStarsA2b, vipIdsURL
-global autoUseGPTest, autotest, autotest_time, A_gptest, TestTime, stopAfterGPTest
+global autoUseGPTest, autotest, autotest_time, A_gptest, TestTime, stopAfterGPTest, groupRerollEnabled
+global friendOpsCount, friendOpsWindowStart, gpTestWaitTime, rateLimitAction
 global gptest_nonFriends, gptest_alreadyFavourited
 global MuMuv5, titleHeight
 MuMuv5 := isMuMuv5()
@@ -75,8 +76,12 @@ IniRead, clientLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, clientLang
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsA2b, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA2b, 0
 
+IniRead, groupRerollEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, groupRerollEnabled, 0
 IniRead, autoUseGPTest, %A_ScriptDir%\..\Settings.ini, UserSettings, autoUseGPTest, 0
 IniRead, TestTime, %A_ScriptDir%\..\Settings.ini, UserSettings, TestTime, 3600
+IniRead, gpTestWaitTime, %A_ScriptDir%\..\Settings.ini, UserSettings, gpTestWaitTime, 120
+if (gpTestWaitTime = "" || gpTestWaitTime <= 0)
+    gpTestWaitTime := 120
 global MuMuv5
 MuMuv5 := isMuMuv5()
 instanceSleep := scriptName * 1000
@@ -145,6 +150,9 @@ rerollTime := A_TickCount
 autotest := A_TickCount
 A_gptest := 0
 stopAfterGPTest := false
+friendOpsCount := 0
+friendOpsWindowStart := A_TickCount
+rateLimitAction := ""
 
 initializeAdbShell()
 CreateStatusMessage("Initializing bot...",,,, false)
@@ -624,16 +632,21 @@ StopScript:
     if (savedStopPreferenceMain = "immediate") {
         CreateStatusMessage("Stopping script...",,,, false)
         ExitApp
-    } else if (savedStopPreferenceMain = "gp_test") {
+    } else if (savedStopPreferenceMain = "gp_test" && groupRerollEnabled) {
         Gosub, StopMainAfterGPTest
     } else {
         Gui, StopMain:Destroy
         Gui, StopMain:New, +AlwaysOnTop, Stop Main Instance
         Gui, StopMain:Add, Text, x20 y15 w220 Center, What would you like to do?
         Gui, StopMain:Add, Button, x20 y45 w220 h30 gStopMainImmediately, Stop Immediately
-        Gui, StopMain:Add, Button, x20 y80 w220 h30 gStopMainAfterGPTest, Run GP Test then Stop
-        Gui, StopMain:Add, Checkbox, x20 y120 w220 vRememberStopPreferenceMain, Remember my choice
-        Gui, StopMain:Show, w260 h150, Stop Main Instance
+        if (groupRerollEnabled) {
+            Gui, StopMain:Add, Button, x20 y80 w220 h30 gStopMainAfterGPTest, Run GP Test then Stop
+            Gui, StopMain:Add, Checkbox, x20 y120 w220 vRememberStopPreferenceMain, Remember my choice
+            Gui, StopMain:Show, w260 h150, Stop Main Instance
+        } else {
+            Gui, StopMain:Add, Checkbox, x20 y85 w220 vRememberStopPreferenceMain, Remember my choice
+            Gui, StopMain:Show, w260 h115, Stop Main Instance
+        }
     }
 return
 
@@ -669,6 +682,18 @@ return
 StopMainGuiClose:
 StopMainGuiEscape:
     Gui, StopMain:Destroy
+return
+
+RateLimitSleep:
+    rateLimitAction := "sleep"
+    Gui, RateLimit:Destroy
+return
+
+RateLimitContinue:
+RateLimitGuiClose:
+RateLimitGuiEscape:
+    rateLimitAction := "continue"
+    Gui, RateLimit:Destroy
 return
 
 ShowStatusMessages:
@@ -865,17 +890,85 @@ GetNeedle(Path) {
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GPTestScript() {
-    global triggerTestNeeded, GPTest
+    global triggerTestNeeded, GPTest, gpTestWaitTime, friendOpsCount, friendOpsWindowStart, rateLimitAction
     triggerTestNeeded := false
+    rateLimitAction := ""
     FavoriteVipFriends()
-    if (!GPTest)
+    if (!GPTest || rateLimitAction = "sleep")
         return
+    gpTestWaitStart := A_TickCount
+    Loop {
+        if (!GPTest)
+            return
+        remaining := gpTestWaitTime * 1000 - (A_TickCount - gpTestWaitStart)
+        if (remaining <= 0)
+            break
+        CreateStatusMessage("Waiting for instances to remove friends (" . Ceil(remaining / 1000) . "s)...",,,, false)
+        Sleep, 1000
+    }
     RemoveNonVipFriends()
+}
+
+; Returns true if a friend add/remove op can proceed (and increments the counter).
+; In auto GP Test mode, returns false when the rate limit is reached — caller should abort.
+; In manual GP Test mode, waits for the 5-minute window to reset and returns true.
+CheckFriendOpsRateLimit() {
+    global friendOpsCount, friendOpsWindowStart, A_gptest, GPTest, rateLimitAction, RateLimitText
+    if (friendOpsCount = 0) {
+        ; First operation of this window — start the clock now
+        friendOpsWindowStart := A_TickCount
+    } else {
+        elapsed := A_TickCount - friendOpsWindowStart
+        if (elapsed >= 300000) {
+            friendOpsCount := 0
+            friendOpsWindowStart := A_TickCount
+        }
+    }
+    if (friendOpsCount >= 10) {
+        remaining := 300000 - (A_TickCount - friendOpsWindowStart)
+        if (remaining <= 0) {
+            friendOpsCount := 0
+            friendOpsWindowStart := A_TickCount
+        } else if (A_gptest) {
+            return false
+        } else {
+            ; Manual mode: show countdown dialog with two cancel options
+            rateLimitAction := ""
+            Gui, RateLimit:Destroy
+            Gui, RateLimit:New, +AlwaysOnTop, GP Test - Rate Limit
+            countdownText := "Rate limit reached. Waiting " . Ceil(remaining / 1000) . "s..."
+            Gui, RateLimit:Add, Text, x20 y15 w220 Center vRateLimitText, %countdownText%
+            Gui, RateLimit:Add, Text, x20 y42 w220 Center, The next removal may trigger a network error. Please wait.
+            Gui, RateLimit:Add, Button, x20 y72 w220 h30 gRateLimitSleep, Stop GP Test && Sleep
+            Gui, RateLimit:Add, Button, x20 y107 w220 h30 gRateLimitContinue, Stop GP Test && Continue
+            Gui, RateLimit:Show, w260 h150, GP Test - Rate Limit
+            Loop {
+                remaining := 300000 - (A_TickCount - friendOpsWindowStart)
+                if (remaining <= 0 || rateLimitAction != "")
+                    break
+                countdownText := "Rate limit reached. Waiting " . Ceil(remaining / 1000) . "s..."
+                GuiControl, RateLimit:, RateLimitText, %countdownText%
+                Sleep, 1000
+            }
+            Gui, RateLimit:Destroy
+            if (rateLimitAction = "sleep") {
+                return false  ; GPTest stays true — main idles in "Ready to test" mode
+            } else if (rateLimitAction = "continue") {
+                GPTest := false
+                return false
+            }
+            ; Timer expired — reset and continue
+            friendOpsCount := 0
+            friendOpsWindowStart := A_TickCount
+        }
+    }
+    friendOpsCount++
+    return true
 }
 
 ; FavoriteVipFriends - Mark all VIP friends as favourites 
 FavoriteVipFriends() {
-    global GPTest, vipIdsURL, failSafe, gptest_nonFriends, gptest_alreadyFavourited, scriptName
+    global GPTest, vipIdsURL, failSafe, gptest_nonFriends, gptest_alreadyFavourited, scriptName, friendOpsCount, friendOpsWindowStart
 
     ; Load persistent GP Test cache from disk.
     ; Always reload from file as it survives bot restarts.
@@ -1060,8 +1153,18 @@ FavoriteVipFriends() {
                         adbClick(252, 81)
                         Delay(1)
                     }
+                    if (!CheckFriendOpsRateLimit()) {
+                        ; Auto mode rate limit: navigate back to Social and abort
+                        FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+                        return
+                    }
                     FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
-                    FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372, 500)
+                    Loop {
+                        adbClick_wbb(200, 372)
+                        if (FindOrLoseImage(70, 395, 100, 420, , "Send2", 0))
+                            break
+                        Delay(1)
+                    }
                     Delay(1)
                     gptest_alreadyFavourited.Delete("_" . vipCode)
                 } else {
@@ -1145,7 +1248,7 @@ FavoriteVipFriends() {
 ; Removes non-favourited friends starting from the bottom of the list.
 ; Stops when a favourited (VIP) friend is encountered.
 RemoveNonVipFriends() {
-    global GPTest, autoUseGPTest, A_gptest, autotest, failSafe, gptest_alreadyFavourited
+    global GPTest, autoUseGPTest, A_gptest, autotest, failSafe, gptest_alreadyFavourited, friendOpsCount, friendOpsWindowStart, vipIdsURL
 
     ; Navigate to Social screen
     failSafe := A_TickCount
@@ -1161,7 +1264,11 @@ RemoveNonVipFriends() {
     FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
     Delay(3)
 
-    ; Load VIP list from file (already downloaded by FavoriteVipFriends)
+    ; Re-download VIP list — a GP may have been found during the wait, adding new VIPs
+    if (vipIdsURL != "")
+        DownloadFile(vipIdsURL, "vip_ids.txt")
+
+    ; Load VIP list from file
     ; Any VIPs missed during favouriting will be caught and handled here
     includesIdsAndNames := false
     vipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
@@ -1290,9 +1397,24 @@ RemoveNonVipFriends() {
         } else {
             ; Not VIP — remove
             CreateStatusMessage("Removing non-VIP friend: " . friendAccount.ToString(),,,, false)
+            if (!CheckFriendOpsRateLimit()) {
+                ; Auto mode rate limit: navigate back and stop removal
+                FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+                if (A_gptest && autoUseGPTest) {
+                    A_gptest := 0
+                    autotest := A_TickCount
+                    ToggleTestScript()
+                }
+                CreateStatusMessage("Rate limit reached. Stopping removal.",,,, false)
+                return
+            }
             FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
-            FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372, 500)
-            Delay(1)
+            Loop {
+                adbClick_wbb(200, 372)
+                if (FindOrLoseImage(70, 395, 100, 420, , "Send2", 0))
+                    break
+                Delay(1)
+            }
             FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
             Delay(2)
         }

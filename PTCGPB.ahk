@@ -791,7 +791,7 @@ CancelCardDetection:
 return
 
 UpdateGroupRerollButtonText() {
-    global groupRerollEnabled, mainIdsURL, vipIdsURL, autoUseGPTest, applyRoleFilters
+    global groupRerollEnabled, mainIdsURL, vipIdsURL, autoUseGPTest, applyRoleFilters, gpTestWaitTime
     global currentDictionary
     
     if (!groupRerollEnabled) {
@@ -849,6 +849,10 @@ ShowGroupRerollSettings:
     yPos += 20
     Gui, GroupRerollSelect:Add, Edit, vTestTime_Popup w50 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %TestTime%
     yPos += 35
+    Gui, GroupRerollSelect:Add, Text, x15 y%yPos% cWhite, GP Test Wait (s):
+    yPos += 20
+    Gui, GroupRerollSelect:Add, Edit, vgpTestWaitTime_Popup w50 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %gpTestWaitTime%
+    yPos += 35
     
     Gui, GroupRerollSelect:Add, Checkbox, % (applyRoleFilters ? "Checked" : "") " vapplyRoleFilters_Popup x15 y" . yPos . " cWhite", Role-Based Filters
     yPos += 40
@@ -868,6 +872,7 @@ ApplyGroupRerollSettings:
     vipIdsURL := vipIdsURL_Popup
     autoUseGPTest := autoUseGPTest_Popup
     TestTime := TestTime_Popup
+    gpTestWaitTime := gpTestWaitTime_Popup
     applyRoleFilters := applyRoleFilters_Popup
     
     Gui, GroupRerollSelect:Destroy
@@ -1921,6 +1926,9 @@ LoadSettingsFromIni() {
       IniRead, AccountName, Settings.ini, UserSettings, AccountName, ""
       IniRead, autoLaunchMonitor, Settings.ini, UserSettings, autoLaunchMonitor, 1
       IniRead, TestTime, Settings.ini, UserSettings, TestTime, 3600
+      IniRead, gpTestWaitTime, Settings.ini, UserSettings, gpTestWaitTime, 120
+      if (gpTestWaitTime = "" || gpTestWaitTime <= 0)
+          gpTestWaitTime := 120
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
       IniRead, waitTime, Settings.ini, UserSettings, waitTime, 5
       IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 500
@@ -2128,6 +2136,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "Mains=0`n"
       iniContent .= "autoUseGPTest=0`n"
       iniContent .= "TestTime=3600`n"
+      iniContent .= "gpTestWaitTime=120`n"
       iniContent .= "heartBeat=0`n"
       iniContent .= "heartBeatWebhookURL=`n"
       iniContent .= "heartBeatName=`n"
@@ -2166,7 +2175,7 @@ SaveAllSettings() {
    global FriendID, AccountName, waitTime, Delay, folderPath, discordWebhookURL, discordUserId, Columns, godPack
    global Instances, instanceStartDelay, defaultLanguage, SelectedMonitorIndex, swipeSpeed, deleteMethod
    global runMain, Mains, heartBeat, heartBeatWebhookURL, heartBeatName, nukeAccount, packMethod
-   global autoLaunchMonitor, autoUseGPTest, TestTime, groupRerollEnabled
+   global autoLaunchMonitor, autoUseGPTest, TestTime, gpTestWaitTime, groupRerollEnabled
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
    global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
@@ -2341,6 +2350,7 @@ SaveAllSettings() {
    iniContent_Second .= "swipeSpeed=" swipeSpeed "`n"
    iniContent_Second .= "Mains=" Mains "`n"
    iniContent_Second .= "TestTime=" TestTime "`n"
+   iniContent_Second .= "gpTestWaitTime=" gpTestWaitTime "`n"
    iniContent_Second .= "heartBeatWebhookURL=" heartBeatWebhookURL "`n"
    iniContent_Second .= "heartBeatName=" heartBeatName "`n"
    iniContent_Second .= "heartBeatDelay=" heartBeatDelay "`n"

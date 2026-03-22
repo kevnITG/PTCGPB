@@ -117,8 +117,6 @@ AddFriends(renew := false, getFC := false) {
         friendIDs[j] := temp . ""
     }
     for index, value in friendIDs {
-        ; ratelimit
-        RedoAdd:
         if (StrLen(value) != 16) {
             ; Wrong id value
             continue
@@ -164,21 +162,6 @@ AddFriends(renew := false, getFC := false) {
             failSafeTime := (A_TickCount - failSafe) // 1000
             CreateStatusMessage("Waiting for AddFriends4`n(" . failSafeTime . "/45 seconds)")
         }
-
-        ;ratelimit, using a timed loop to avoid withdrawing request and stuck with failed add, either by max request on main or delay too short
-        Loop, 6 {
-            if(FindOrLoseImage(165, 240, 255, 270, , "Withdraw", 0, failSafeTime)) {
-                break
-            } else if(FindOrLoseImage(165, 250, 190, 275, , "Accepted", 0, failSafeTime)) {
-                break
-            } else if(FindOrLoseImage(100, 180, 170, 230, , "Error", 0)) {
-                adbClick_wbb(139, 371)
-                reenterSocial(true)
-                Goto, RedoAdd
-            }
-            Sleep, 500
-        }
-
         if(index != friendIDs.maxIndex()) {
             FindImageAndClick(205, 430, 255, 475, , "Search2", 143, 518)
             EraseInput(index, n)
@@ -187,29 +170,11 @@ AddFriends(renew := false, getFC := false) {
 
     FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
 
-    ; ratelimit, only use this route when number of added ids is 6-10, 16-20, etc
-    if (Mod(n - 1, 10) >= 10) {
-        FindImageAndClick(90, 260, 126, 290, , "Settings", 245, 520, 500)
-        Delay(1)
-        loop {
-            adbClick_wbb(140, 450)
-            Delay(1)
-            if(FindOrLoseImage(20, 140, 57, 189, , "Account", 0, failSafeTime)) { ; would click X at company info
-                adbClick_wbb(140, 450)
-            } else if(FindOrLoseImage(80, 340, 160, 430, , "Birth", 0, failSafeTime)) {
-                adbClick_wbb(200, 370)
-                break
-            }
-            Delay(1)
-        }
-    } 
-    else {
-        FindImageAndClick(20, 500, 55, 530, , "Home", 40, 516, 500)
+    FindImageAndClick(20, 500, 55, 530, , "Home", 40, 516, 500)
 
-        Loop %waitTime% {
-            CreateStatusMessage("Waiting for friends to accept request`n(" . A_Index . "/" . waitTime . " seconds)")
-            sleep, 1000
-        }
+    Loop %waitTime% {
+        CreateStatusMessage("Waiting for friends to accept request`n(" . A_Index . "/" . waitTime . " seconds)")
+        sleep, 1000
     }
     return n ;return added friends so we can dynamically update the .txt in the middle of a run without leaving friends at the end
 }
@@ -273,8 +238,6 @@ RemoveFriends() {
 
     FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460)
     Delay(2)
-    ; ratelimit
-    RedoClearAll:
     FindImageAndClick(97, 452, 104, 476, 10, "requests", 167, 472)
     Delay(2)
     adbClick(167, 472) ; extra click since failing to get into requests sometimes
@@ -288,14 +251,6 @@ RemoveFriends() {
         if (FindOrLoseImage(135, 355, 160, 385, , "Remove", 0, failSafeTime))
             adbClick(210, 372)
         Delay(1)
-
-        ; ratelimit
-        if(FindOrLoseImage(100, 180, 170, 230, , "Error", 0)) {
-            adbClick_wbb(139, 371)
-            reenterSocial()
-            Goto, RedoClearAll
-        }
-
         failSafeTime := (A_TickCount - failSafe) // 1000
         CreateStatusMessage("Waiting for clearAll`n(" . failSafeTime . "/45 seconds)")
     }
@@ -329,22 +284,8 @@ RemoveFriends() {
         if(accepted){
             accepted := false
             FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407)
-
-            ; ratelimit
-            Loop {
-                adbClick_wbb(200, 372)
-                if(FindOrLoseImage(70, 395, 100, 420, , "Send2", 0, failSafeTime)) {
-                    break
-                }
-                if(FindOrLoseImage(100, 180, 170, 230, , "Error", 0)) {
-                    adbClick_wbb(139, 371)
-                    reenterSocial()
-                    break
-                }
-            Delay(1)
-            }
+            FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372)
         }
-
         failSafe := A_TickCount
         failSafeTime := 0
         ; Either find "Add" (expected), or if we accidentally went back too many pages to "Social", go back into friends.
@@ -543,50 +484,4 @@ getFriendCode() {
     friendCode := AddFriends(false, true)
 
     return friendCode
-}
-
-; ratelimit
-reenterSocial(adding := false) {
-    Loop {
-        adbClick_wbb(143, 518)
-        if(FindOrLoseImage(241, 377, 269, 407, , "closeduringpack", 0)) {
-            adbClick_wbb(139, 371)
-        }
-        if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime)) {
-            break
-        }
-        else if(!renew && !getFC) {
-            Delay(3)
-            clickButton := FindOrLoseImage(75, 360, 195, 410, 75, "Button", 0)
-            if(clickButton) {
-                StringSplit, pos, clickButton, `,  ; Split at ", "
-                if (scaleParam = 287) {
-                    pos2 += 5
-                }
-                adbClick_wbb(pos1, pos2)
-            }
-        }
-        else if(FindOrLoseImage(175, 165, 255, 235, , "Hourglass3", 0)) {
-            Delay(3)
-            adbClick_wbb(146, 441) ; 146 440
-            Delay(3)
-            adbClick_wbb(146, 441)
-            Delay(3)
-            adbClick_wbb(146, 441)
-            Delay(3)
-
-            FindImageAndClick(98, 184, 151, 224, , "Hourglass1", 168, 438, 500, 5) ;stop at hourglasses tutorial 2
-            Delay(1)
-
-            adbClick_wbb(203, 436) ; 203 436
-        }
-        failSafeTime := (A_TickCount - failSafe) // 1000
-        CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
-    }
-    
-    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
-    if(adding) {
-        FindImageAndClick(205, 430, 255, 475, , "Search", 240, 120, 1500)
-        FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
-    }
 }
