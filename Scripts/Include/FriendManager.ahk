@@ -188,15 +188,18 @@ AddFriends(renew := false, getFC := false) {
     FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
 
     ; ratelimit, only use this route when number of added ids is 6-10, 16-20, etc
-    if (Mod(n - 1, 10) >= 0) {
+    if (Mod(n - 1, 10) >= 10) {
         FindImageAndClick(90, 260, 126, 290, , "Settings", 245, 520, 500)
         Delay(1)
         failSafe := A_TickCount
         failSafeTime := 0
         loop {
+            adbClick_wbb(140, 480)
             adbClick_wbb(140, 450)
             Delay(1)
-            if(FindOrLoseImage(20, 140, 57, 189, , "Account", 0, failSafeTime)) { ; would click X at company info
+            if(FindOrLoseImage(20, 140, 57, 189, , "Account", 0, failSafeTime)) { ; fail to find gear icon, would click X at company info
+                Delay(1)
+                adbClick_wbb(140, 480)
                 adbClick_wbb(140, 450)
             } else if(FindOrLoseImage(80, 340, 160, 430, , "Birth", 0, failSafeTime)) {
                 adbClick_wbb(200, 370)
