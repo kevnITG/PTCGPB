@@ -346,7 +346,8 @@ if(InStr(deleteMethod, "Inject"))
 
 initializeAdbShell()
 
-createAccountList(scriptName)
+if(injectMethod)
+    createAccountList(scriptName)
 
 rerolls_local := 0
 rerollStartTime_local := A_TickCount

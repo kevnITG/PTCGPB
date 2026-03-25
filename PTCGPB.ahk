@@ -1965,7 +1965,7 @@ LoadSettingsFromIni() {
           gpTestWaitTime := 120
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
       IniRead, waitTime, Settings.ini, UserSettings, waitTime, 5
-      IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 500
+      IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 250
       IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 0
       
       IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
@@ -2167,7 +2167,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "instanceStartDelay=10`n"
       iniContent .= "defaultLanguage=Scale125`n"
       iniContent .= "SelectedMonitorIndex=1`n"
-      iniContent .= "swipeSpeed=500`n"
+      iniContent .= "swipeSpeed=250`n"
       iniContent .= "runMain=0`n"
       iniContent .= "Mains=0`n"
       iniContent .= "autoUseGPTest=0`n"
