@@ -559,60 +559,72 @@ ShowPackSelection:
     Gui, PackSelect:Color, 1E1E1E, 333333
     Gui, PackSelect:Font, s10 cWhite, Segoe UI
 
-    yPos := 10
-    Gui, PackSelect:Add, Checkbox, % (MegaShine ? "Checked" : "") " vMegaShine_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaShine
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (PaldeanWonders ? "Checked" : "") " vPaldeanWonders_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_PaldeanWonders
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Parade ? "Checked" : "") " vParade_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Parade
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (CrimsonBlaze ? "Checked" : "") " vCrimsonBlaze_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_CrimsonBlaze
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (MegaGyarados ? "Checked" : "") " vMegaGyarados_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaGyarados
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (MegaBlaziken ? "Checked" : "") " vMegaBlaziken_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaBlaziken
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (MegaAltaria ? "Checked" : "") " vMegaAltaria_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaAltaria
-    yPos += 25
+    xLeft := 10
+    xRight := 180
+
+    ; Column headers
+    Gui, PackSelect:Add, Text, % "x" . xLeft  . " y10 cWhite", B-Series
+    Gui, PackSelect:Add, Text, % "x" . xRight . " y10 cWhite", A-Series
+
+    ; B-Series column (left)
+    yLeft := 35
+    Gui, PackSelect:Add, Checkbox, % (MegaShine ? "Checked" : "") " vMegaShine_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_MegaShine
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (PaldeanWonders ? "Checked" : "") " vPaldeanWonders_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_PaldeanWonders
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (Parade ? "Checked" : "") " vParade_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_Parade
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (CrimsonBlaze ? "Checked" : "") " vCrimsonBlaze_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_CrimsonBlaze
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (MegaGyarados ? "Checked" : "") " vMegaGyarados_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_MegaGyarados
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (MegaBlaziken ? "Checked" : "") " vMegaBlaziken_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_MegaBlaziken
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (MegaAltaria ? "Checked" : "") " vMegaAltaria_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_MegaAltaria
+    yLeft += 25
+
+    ; A-Series column (right)
     ; Disabling Deluxe since it's not available
-    ; Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Deluxe
-    ; yPos += 25    
-    Gui, PackSelect:Add, Checkbox, % (Springs ? "Checked" : "") " vSprings_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Springs
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (HoOh ? "Checked" : "") " vHoOh_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_HoOh
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Lugia ? "Checked" : "") " vLugia_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Lugia
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Eevee ? "Checked" : "") " vEevee_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Eevee
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Buzzwole ? "Checked" : "") " vBuzzwole_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Buzzwole
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Solgaleo ? "Checked" : "") " vSolgaleo_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Solgaleo
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Lunala ? "Checked" : "") " vLunala_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Lunala
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Shining ? "Checked" : "") " vShining_Popup x10 y" . yPos . " cWhite", Shining Revelry
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Arceus ? "Checked" : "") " vArceus_Popup x10 y" . yPos . " cWhite", Triumphant Light
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Dialga ? "Checked" : "") " vDialga_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Dialga
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Palkia ? "Checked" : "") " vPalkia_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Palkia
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Mew ? "Checked" : "") " vMew_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Mew
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Charizard ? "Checked" : "") " vCharizard_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Charizard
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Mewtwo ? "Checked" : "") " vMewtwo_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Mewtwo
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Pikachu ? "Checked" : "") " vPikachu_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Pikachu
-    yPos += 35
-    
+    ; Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Deluxe
+    ; yRight += 25
+    yRight := 35
+    Gui, PackSelect:Add, Checkbox, % (Springs ? "Checked" : "") " vSprings_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Springs
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (HoOh ? "Checked" : "") " vHoOh_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_HoOh
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Lugia ? "Checked" : "") " vLugia_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Lugia
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Eevee ? "Checked" : "") " vEevee_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Eevee
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Buzzwole ? "Checked" : "") " vBuzzwole_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Buzzwole
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Solgaleo ? "Checked" : "") " vSolgaleo_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Solgaleo
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Lunala ? "Checked" : "") " vLunala_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Lunala
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Shining ? "Checked" : "") " vShining_Popup x" . xRight . " y" . yRight . " cWhite", Shining Revelry
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Arceus ? "Checked" : "") " vArceus_Popup x" . xRight . " y" . yRight . " cWhite", Triumphant Light
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Dialga ? "Checked" : "") " vDialga_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Dialga
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Palkia ? "Checked" : "") " vPalkia_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Palkia
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Mew ? "Checked" : "") " vMew_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Mew
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Charizard ? "Checked" : "") " vCharizard_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Charizard
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Mewtwo ? "Checked" : "") " vMewtwo_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Mewtwo
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Pikachu ? "Checked" : "") " vPikachu_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Pikachu
+    yRight += 25
+
+    yPos := (yLeft > yRight ? yLeft : yRight) + 10
     Gui, PackSelect:Add, Button, x10 y%yPos% w80 h30 gApplyPackSelection, Apply
     Gui, PackSelect:Add, Button, x100 y%yPos% w80 h30 gCancelPackSelection, Cancel
     yPos += 40
-    
-    Gui, PackSelect:Show, x%popupX% y%popupY% w200 h%yPos%
+
+    Gui, PackSelect:Show, x%popupX% y%popupY% w350 h%yPos%
 return
 
 ApplyPackSelection:
@@ -1486,6 +1498,8 @@ Save:
   confirmMsg .= "`n"
   
   confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
+  if (MegaShine)
+    confirmMsg .= "• " . currentDictionary.Txt_MegaShine . "`n"
   if (PaldeanWonders)
     confirmMsg .= "• " . currentDictionary.Txt_PaldeanWonders . "`n"
   if (Parade)

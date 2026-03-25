@@ -38,6 +38,15 @@ if !FileExist(mumuFolder){
     ExitApp
 }
 
+; Reset LastEndEpoch for all instances at startup so stale timestamps from
+; a previous session don't immediately trigger the stuck detection.
+nowEpoch := A_NowUTC
+EnvSub, nowEpoch, 1970, seconds
+Loop %Instances% {
+    instanceNum := Format("{:u}", A_Index)
+    IniWrite, %nowEpoch%, %A_ScriptDir%\..\%instanceNum%.ini, Metrics, LastEndEpoch
+}
+
 Loop {
     ; Loop through each instance, check if it's started, and start it if it's not
     launched := 0

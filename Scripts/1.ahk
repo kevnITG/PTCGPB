@@ -4323,8 +4323,8 @@ GetEventRewards(frommain := true){
         ;     break
         ; }
         ; if (FindOrLoseImage(199, 203, 212, 211, , "MissionDarkBlue", 0, failSafeTime)){
-            break
-        }
+        ;     break
+        ; }
         if (FindOrLoseImage(199, 203, 212, 211, , "MissionLightPurple", 0, failSafeTime)){
             break
         }
