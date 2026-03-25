@@ -98,6 +98,7 @@
         Lang["Txt_claimSpecialMissions"] := "Claim Special Missions"
         Lang["SortByText"] := "Sort By:"
 
+        Lang["Txt_MegaShine"] := "Mega Shine"
         Lang["Txt_PaldeanWonders"] := "Paldean Wonders"
         Lang["Txt_Parade"] := "Parade"
         Lang["Txt_CrimsonBlaze"] := "Crimson Blaze"
@@ -251,6 +252,7 @@
         Lang["Txt_claimSpecialMissions"] := "領取特殊任務"
         Lang["SortByText"] := "注入排序："
 
+        Lang["Txt_MegaShine"] := "Mega Shine"
         Lang["Txt_PaldeanWonders"] := "Paldean Wonders"
         Lang["Txt_Parade"] := "Parade"
         Lang["Txt_CrimsonBlaze"] := "紅蓮烈焰"
@@ -404,6 +406,7 @@
         Lang["Txt_claimSpecialMissions"] := "イベント"
         Lang["SortByText"] := "注入序列："
 
+        Lang["Txt_MegaShine"] := "Mega Shine"
         Lang["Txt_PaldeanWonders"] := "Paldean Wonders"
         Lang["Txt_Parade"] := "Parade"
         Lang["Txt_CrimsonBlaze"] := "紅蓮ブレイズ"
@@ -559,6 +562,7 @@
         Lang["Txt_claimSpecialMissions"] := "Spezialmissionen"
         Lang["SortByText"] := "Sortieren nach:"
 
+        Lang["Txt_MegaShine"] := "Mega Shine"
         Lang["Txt_PaldeanWonders"] := "Paldean Wonders"
         Lang["Txt_Parade"] := "Parade"
         Lang["Txt_CrimsonBlaze"] := "Feuerrote Flammen"

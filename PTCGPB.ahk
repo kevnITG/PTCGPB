@@ -467,11 +467,13 @@ SortByDropdownHandler:
 return
 
 UpdatePackSelectionButtonText() {
-    global PaldeanWonders, Parade, CrimsonBlaze, MegaGyarados, MegaBlaziken, MegaAltaria, Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole
+    global MegaShine, PaldeanWonders, Parade, CrimsonBlaze, MegaGyarados, MegaBlaziken, MegaAltaria, Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole
     global Solgaleo, Lunala, Shining, Arceus, Palkia, Dialga, Pikachu, Charizard, Mewtwo, Mew, currentDictionary
 
     selectedPacks := []
 
+    if (MegaShine)
+        selectedPacks.Push(currentDictionary.Txt_MegaShine)
     if (PaldeanWonders)
         selectedPacks.Push(currentDictionary.Txt_PaldeanWonders)
     if (Parade)
@@ -558,6 +560,8 @@ ShowPackSelection:
     Gui, PackSelect:Font, s10 cWhite, Segoe UI
 
     yPos := 10
+    Gui, PackSelect:Add, Checkbox, % (MegaShine ? "Checked" : "") " vMegaShine_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaShine
+    yPos += 25
     Gui, PackSelect:Add, Checkbox, % (PaldeanWonders ? "Checked" : "") " vPaldeanWonders_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_PaldeanWonders
     yPos += 25
     Gui, PackSelect:Add, Checkbox, % (Parade ? "Checked" : "") " vParade_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Parade
@@ -614,6 +618,7 @@ return
 ApplyPackSelection:
     Gui, PackSelect:Submit, NoHide
 
+    MegaShine := MegaShine_Popup
     PaldeanWonders := PaldeanWonders_Popup
     Parade := Parade_Popup
     CrimsonBlaze := CrimsonBlaze_Popup
@@ -792,7 +797,7 @@ CancelCardDetection:
 return
 
 UpdateGroupRerollButtonText() {
-    global groupRerollEnabled, mainIdsURL, vipIdsURL, autoUseGPTest, applyRoleFilters
+    global groupRerollEnabled, mainIdsURL, vipIdsURL, autoUseGPTest, applyRoleFilters, gpTestWaitTime
     global currentDictionary
     
     if (!groupRerollEnabled) {
@@ -850,6 +855,10 @@ ShowGroupRerollSettings:
     yPos += 20
     Gui, GroupRerollSelect:Add, Edit, vTestTime_Popup w50 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %TestTime%
     yPos += 35
+    Gui, GroupRerollSelect:Add, Text, x15 y%yPos% cWhite, GP Test Wait (s):
+    yPos += 20
+    Gui, GroupRerollSelect:Add, Edit, vgpTestWaitTime_Popup w50 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %gpTestWaitTime%
+    yPos += 35
     
     Gui, GroupRerollSelect:Add, Checkbox, % (applyRoleFilters ? "Checked" : "") " vapplyRoleFilters_Popup x15 y" . yPos . " cWhite", Role-Based Filters
     yPos += 40
@@ -869,6 +878,7 @@ ApplyGroupRerollSettings:
     vipIdsURL := vipIdsURL_Popup
     autoUseGPTest := autoUseGPTest_Popup
     TestTime := TestTime_Popup
+    gpTestWaitTime := gpTestWaitTime_Popup
     applyRoleFilters := applyRoleFilters_Popup
     
     Gui, GroupRerollSelect:Destroy
@@ -1015,9 +1025,6 @@ ShowSystemSettings:
     
     Gui, SystemSettingsSelect:Add, Checkbox, % (autoLaunchMonitor ? "Checked" : "") " v autoLaunchMonitor_Popup x15 y" . yPos . " " . sectionColor, % currentDictionary.Txt_autoLaunchMonitor
     yPos += 40
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (saveToGit ? "Checked" : "") " vsaveToGit_Popup gsaveToGit_Click x" . col2X . " y" . yPos . " " . sectionColor, Auto Save to Git (hourly)
-    yPos += 40
-    
     Gui, SystemSettingsSelect:Add, Button, x15 y%yPos% w100 h30 gApplySystemSettings, Apply
     Gui, SystemSettingsSelect:Add, Button, x125 y%yPos% w100 h30 gCancelSystemSettings, Cancel
     yPos += 40
@@ -1036,8 +1043,7 @@ ApplySystemSettings:
     clientLanguage := clientLanguage_Popup
     instanceLaunchDelay := instanceLaunchDelay_Popup
     autoLaunchMonitor := autoLaunchMonitor_Popup
-    saveToGit := saveToGit_Popup
-    
+
     Gui, SystemSettingsSelect:Destroy
     
     Gui, 1:Default
@@ -1222,7 +1228,7 @@ ShowToolsAndSystemSettings:
     yPos += 35
     
     sectionColor := "cWhite"
-    eventMissionBoxH := 90
+    eventMissionBoxH := 65
     Gui, ToolsAndSystemSelect:Add, GroupBox, x%col1X% y%yPos% w%col1W% h%eventMissionBoxH% %sectionColor%, Special Event Missions
     yPos += 20
     
@@ -1308,7 +1314,9 @@ ShowToolsAndSystemSettings:
     autoMonitorY := yPos2 - 5
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (autoLaunchMonitor ? "Checked" : "") " vautoLaunchMonitor_Popup x" . col2X . " y" . autoMonitorY . " " . sectionColor, % currentDictionary.Txt_autoLaunchMonitor
     yPos2 += 20
-    
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (saveToGit ? "Checked" : "") " vsaveToGit_Popup gsaveToGit_Click x" . col2X . " y" . yPos2 . " " . sectionColor, Auto Save to Git (hourly)
+    yPos2 += 25
+
     Gui, ToolsAndSystemSelect:Font, s8 cWhite, Segoe UI
     xmlSortY := yPos2 - 5
     Gui, ToolsAndSystemSelect:Add, Button, x%col2X% y%xmlSortY% w170 h20 gRunXMLSortTool BackgroundTrans, XML pack counts
@@ -1345,6 +1353,7 @@ ApplyToolsAndSystemSettings:
     clientLanguage := clientLanguage_Popup
     instanceLaunchDelay := instanceLaunchDelay_Popup
     autoLaunchMonitor := autoLaunchMonitor_Popup
+    saveToGit := saveToGit_Popup
     autoRestartMumu := autoRestartMumu_Popup
     runsBeforeRestart := runsBeforeRestart_Popup
     ; Validate runsBeforeRestart (0-99)
@@ -1937,6 +1946,9 @@ LoadSettingsFromIni() {
       IniRead, autoLaunchMonitor, Settings.ini, UserSettings, autoLaunchMonitor, 1
       IniRead, saveToGit, Settings.ini, UserSettings, saveToGit, 0
       IniRead, TestTime, Settings.ini, UserSettings, TestTime, 3600
+      IniRead, gpTestWaitTime, Settings.ini, UserSettings, gpTestWaitTime, 120
+      if (gpTestWaitTime = "" || gpTestWaitTime <= 0)
+          gpTestWaitTime := 120
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
       IniRead, waitTime, Settings.ini, UserSettings, waitTime, 5
       IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 500
@@ -2004,7 +2016,8 @@ LoadSettingsFromIni() {
       IniRead, MegaBlaziken, Settings.ini, UserSettings, MegaBlaziken, 0
       IniRead, MegaAltaria, Settings.ini, UserSettings, MegaAltaria, 0
       IniRead, Parade, Settings.ini, UserSettings, Parade, 0
-      IniRead, PaldeanWonders, Settings.ini, UserSettings, PaldeanWonders, 1
+      IniRead, PaldeanWonders, Settings.ini, UserSettings, PaldeanWonders, 0
+      IniRead, MegaShine, Settings.ini, UserSettings, MegaShine, 1
       
       IniRead, CheckShinyPackOnly, Settings.ini, UserSettings, CheckShinyPackOnly, 0
       IniRead, TrainerCheck, Settings.ini, UserSettings, TrainerCheck, 0
@@ -2075,6 +2088,7 @@ LoadSettingsFromIni() {
       IniRead, minStarsMegaAltaria, Settings.ini, UserSettings, minStarsMegaAltaria, 0
       IniRead, minStarsParade, Settings.ini, UserSettings, minStarsParade, 0
       IniRead, minStarsPaldeanWonders, Settings.ini, UserSettings, minStarsPaldeanWonders, 0
+      IniRead, minStarsMegaShine, Settings.ini, UserSettings, minStarsMegaShine, 0
 
       IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
@@ -2144,6 +2158,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "Mains=0`n"
       iniContent .= "autoUseGPTest=0`n"
       iniContent .= "TestTime=3600`n"
+      iniContent .= "gpTestWaitTime=120`n"
       iniContent .= "heartBeat=0`n"
       iniContent .= "heartBeatWebhookURL=`n"
       iniContent .= "heartBeatName=`n"
@@ -2186,7 +2201,7 @@ SaveAllSettings() {
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
    global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
-   global MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, Parade, PaldeanWonders
+   global MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, Parade, PaldeanWonders, MegaShine
    global slowMotion, ocrLanguage, clientLanguage
    global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, isDarkTheme
    global useBackgroundImage, tesseractPath, debugMode, useTesseract, statusMessage
@@ -2199,7 +2214,7 @@ SaveAllSettings() {
    global minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b
    global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA3b
    global minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe
-   global minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria, minStarsParade, minStarsPaldeanWonders
+   global minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria, minStarsParade, minStarsPaldeanWonders, minStarsMegaShine
    global menuExpanded
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
    global autoRestartMumu, runsBeforeRestart
@@ -2207,6 +2222,7 @@ SaveAllSettings() {
    ; Preserve stop preferences before rewriting Settings.ini
    IniRead, stopPreference, Settings.ini, UserSettings, stopPreference, %A_Space%
    IniRead, stopPreferenceSingle, Settings.ini, UserSettings, stopPreferenceSingle, %A_Space%
+   IniRead, stopPreferenceMain, Settings.ini, UserSettings, stopPreferenceMain, %A_Space%
 
    if (deleteMethod != "Inject Wonderpick 96P+") {
        packMethod := false
@@ -2269,6 +2285,7 @@ SaveAllSettings() {
    iniContent .= "CrimsonBlaze=" CrimsonBlaze "`n"
    iniContent .= "Parade=" Parade "`n"
    iniContent .= "PaldeanWonders=" PaldeanWonders "`n"
+   iniContent .= "MegaShine=" MegaShine "`n"
    iniContent .= "CheckShinyPackOnly=" CheckShinyPackOnly "`n"
    iniContent .= "TrainerCheck=" TrainerCheck "`n"
    iniContent .= "FullArtCheck=" FullArtCheck "`n"
@@ -2357,6 +2374,7 @@ SaveAllSettings() {
    iniContent_Second .= "swipeSpeed=" swipeSpeed "`n"
    iniContent_Second .= "Mains=" Mains "`n"
    iniContent_Second .= "TestTime=" TestTime "`n"
+   iniContent_Second .= "gpTestWaitTime=" gpTestWaitTime "`n"
    iniContent_Second .= "heartBeatWebhookURL=" heartBeatWebhookURL "`n"
    iniContent_Second .= "heartBeatName=" heartBeatName "`n"
    iniContent_Second .= "heartBeatDelay=" heartBeatDelay "`n"
@@ -2393,6 +2411,7 @@ SaveAllSettings() {
    iniContent_Second .= "minStarsCrimsonBlaze=" minStarsCrimsonBlaze "`n"
    iniContent_Second .= "minStarsParade=" minStarsParade "`n"
    iniContent_Second .= "minStarsPaldeanWonders=" minStarsPaldeanWonders "`n"
+   iniContent_Second .= "minStarsMegaShine=" minStarsMegaShine "`n"
    iniContent_Second .= "s4tWPMinCards=" s4tWPMinCards "`n"
    iniContent_Second .= "s4tDiscordUserId=" s4tDiscordUserId "`n"
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"
@@ -2400,6 +2419,7 @@ SaveAllSettings() {
    iniContent_Second .= "tesseractPath=" tesseractPath "`n"
    iniContent_Second .= "stopPreference=" stopPreference "`n"
    iniContent_Second .= "stopPreferenceSingle=" stopPreferenceSingle "`n"
+   iniContent_Second .= "stopPreferenceMain=" stopPreferenceMain "`n"
 
    iniFull := iniContent . iniContent_Second
    FileDelete, Settings.ini

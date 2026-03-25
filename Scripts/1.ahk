@@ -141,7 +141,8 @@ IniRead, PseudoGodPack, %A_ScriptDir%\..\Settings.ini, UserSettings, PseudoGodPa
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsShiny, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsShiny, 0
 
-IniRead, PaldeanWonders, %A_ScriptDir%\..\Settings.ini, UserSettings, PaldeanWonders, 1
+IniRead, MegaShine, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaShine, 0
+IniRead, PaldeanWonders, %A_ScriptDir%\..\Settings.ini, UserSettings, PaldeanWonders, 0
 IniRead, Parade, %A_ScriptDir%\..\Settings.ini, UserSettings, Parade, 0
 IniRead, CrimsonBlaze, %A_ScriptDir%\..\Settings.ini, UserSettings, CrimsonBlaze, 0
 IniRead, MegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaGyarados, 0
@@ -187,6 +188,7 @@ IniRead, minStarsMegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, minS
 IniRead, minStarsMegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaAltaria, 0
 IniRead, minStarsParade, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsParade, 0
 IniRead, minStarsPaldeanWonders, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsPaldeanWonders, 0
+IniRead, minStarsMegaShine, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaShine, 0
 
 IniRead, slowMotion, %A_ScriptDir%\..\Settings.ini, UserSettings, slowMotion, 0
 IniRead, DeadCheck, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck, 0
@@ -232,7 +234,7 @@ if(s4tEnabled){
     maxAccountPackNum := 9999
 }
 
-pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria", "CrimsonBlaze", "Parade", "PaldeanWonders"]
+pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria", "CrimsonBlaze", "Parade", "PaldeanWonders", "MegaShine"]
 shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1}
 
 packArray := []  ; Initialize an empty array
@@ -3413,27 +3415,27 @@ SelectPack(HG := false) {
     inselectexpansionscreen := 0
 
     packy := HomeScreenAllPackY
-    if (openPack == "CrimsonBlaze") {
+    if (openPack == "Parade") {
         packx := LeftPackX
-    } else if (openPack == "Parade") {
+    } else if (openPack == "PaldeanWonders") {
         packx := RightPackX
     } else { ; do not set this to a specific if openPack == "something" as all packs need to reference MiddlePackX as pack position.
         packx := MiddlePackX
     }
 
-    if(openPack == "CrimsonBlaze" || openPack == "Parade" || openPack == "PaldeanWonders") {
+    if(openPack == "Parade" || openPack == "PaldeanWonders" || openPack == "MegaShine") {
         PackIsInHomeScreen := 1
     } else {
         PackIsInHomeScreen := 0
     }
 
-    if(openPack == "PaldeanWonders") {
+    if(openPack == "MegaShine") {
         PackIsLatest := 1
     } else {
         PackIsLatest := 0
     }
 
-    if (openPack == "Parade" || openPack == "PaldeanWonders") {
+    if (openPack == "MegaShine" || openPack == "PaldeanWonders") {
         packInTopRowsOfSelectExpansion := 1
     } else {
         packInTopRowsOfSelectExpansion := 0
@@ -3597,30 +3599,49 @@ SelectPack(HG := false) {
             }
         }
 
-        if (openPack == "PaldeanWonders" || openPack == "Parade" || openPack == "CrimsonBlaze" || openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
+        if (openPack == "MegaShine" || openPack == "PaldeanWonders" || openPack == "Parade" || openPack == "CrimsonBlaze") { ; No swipe, initial screen
             Delay(4)
             adbClick(52, 455) ; click B series. need more robust system later
             Delay(4)
-            if (openPack == "PaldeanWonders") {
+            if (openPack == "MegaShine") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionLeftColumnMiddleX
-            } else if (openPack == "Parade") {
+            } else if (openPack == "PaldeanWonders") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionRightColumnMiddleX
+            } else if (openPack == "Parade") {
+                packy := 442
+                packx := SelectExpansionLeftColumnMiddleX
             } else if (openPack == "CrimsonBlaze") {
                 packy := 442
-                packx := SelectExpansionLeftColumnMiddleX
-            } else if (openPack == "MegaBlaziken") {
-                packy := 442
                 packx := SelectExpansionRightColumnMiddleX
-            } else if (openPack == "MegaAltaria") {
-                packy := 442
-                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionRight
-                ; packx := 258 ; custom locations to avoid accidentally rotating through pack wheel on following screen
-                ; packy := 309 ; custom locations to avoid accidentally rotating through pack wheel on following screen
-            } else if (openPack == "MegaGyarados") {
-                packy := 442
+            }
+        }
+
+        ; B-series packs requiring one swipe
+        if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") {
+            Delay(4)
+            adbClick(52, 455) ; click B series
+            Delay(3)
+
+            X := 266
+            Y1 := 430
+            Y2 := 50
+
+            Loop, 2 {
+                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . swipeSpeed)
+                Sleep, 600
+            }
+
+            if (openPack == "MegaGyarados") {
+                packx := SelectExpansionLeftColumnMiddleX
+                packy := 400
+            } else if (openPack == "MegaBlaziken") {
                 packx := SelectExpansionRightColumnMiddleX + 3PackExpansionLeft
+                packy := 400
+            } else if (openPack == "MegaAltaria") {
+                packx := SelectExpansionRightColumnMiddleX
+                packy := 400
             }
         }
 
@@ -4237,7 +4258,7 @@ GetEventRewards(frommain := true){
     ; adbClick_wbb(120, 465) ; used to click the middle mission button
     ; adbClick_wbb(25, 465) ;used to click the left-most mission button
 
-    ;====== Special Event Claim #1 ======
+    ;====== Special Event Claim #1, 30 Days of Gifts ======
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
@@ -4294,13 +4315,17 @@ GetEventRewards(frommain := true){
     }
 
         ;====== Special Event Claim #2, for when 2 events are going on at the same time ======
+        ;====== This update is for "Handy Card Collection Missions, ends ~April 29th =====
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
         ; if (FindOrLoseImage(199, 203, 212, 211, , "MissionLightBlue", 0, failSafeTime)){
         ;     break
         ; }
-        if (FindOrLoseImage(199, 203, 212, 211, , "MissionDarkBlue", 0, failSafeTime)){
+        ; if (FindOrLoseImage(199, 203, 212, 211, , "MissionDarkBlue", 0, failSafeTime)){
+            break
+        }
+        if (FindOrLoseImage(199, 203, 212, 211, , "MissionLightPurple", 0, failSafeTime)){
             break
         }
         ; if (FindOrLoseImage(199, 203, 212, 211, , "MissionOliveGreen", 0, failSafeTime)){

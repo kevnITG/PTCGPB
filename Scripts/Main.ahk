@@ -30,7 +30,9 @@ WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
 global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, skipInvalidGP, deleteXML, packs, FriendID, AddFriend, Instances, showStatus, stopToggle
 global triggerTestNeeded, testStartTime, firstRun, minStars, minStarsA2b, vipIdsURL
-global autoUseGPTest, autotest, autotest_time, A_gptest, TestTime
+global autoUseGPTest, autotest, autotest_time, A_gptest, TestTime, stopAfterGPTest, groupRerollEnabled
+global friendOpsCount, friendOpsWindowStart, gpTestWaitTime, rateLimitAction
+global gptest_nonFriends, gptest_alreadyFavourited
 global MuMuv5, titleHeight
 MuMuv5 := isMuMuv5()
 
@@ -74,8 +76,12 @@ IniRead, clientLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, clientLang
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsA2b, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA2b, 0
 
+IniRead, groupRerollEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, groupRerollEnabled, 0
 IniRead, autoUseGPTest, %A_ScriptDir%\..\Settings.ini, UserSettings, autoUseGPTest, 0
 IniRead, TestTime, %A_ScriptDir%\..\Settings.ini, UserSettings, TestTime, 3600
+IniRead, gpTestWaitTime, %A_ScriptDir%\..\Settings.ini, UserSettings, gpTestWaitTime, 120
+if (gpTestWaitTime = "" || gpTestWaitTime <= 0)
+    gpTestWaitTime := 120
 global MuMuv5
 MuMuv5 := isMuMuv5()
 instanceSleep := scriptName * 1000
@@ -143,6 +149,10 @@ Loop {
 rerollTime := A_TickCount
 autotest := A_TickCount
 A_gptest := 0
+stopAfterGPTest := false
+friendOpsCount := 0
+friendOpsWindowStart := A_TickCount
+rateLimitAction := ""
 
 initializeAdbShell()
 CreateStatusMessage("Initializing bot...",,,, false)
@@ -175,6 +185,7 @@ Loop {
         CreateStatusMessage("Auto GP Test Timer : " . autotest_time .  "/ " . TestTime . " seconds", "AutoGPTest", 0, 605, false, true)
         if (autotest_time >= TestTime) {
             A_gptest := 1
+            autotest := A_TickCount
             ToggleTestScript()
         }        
     }
@@ -182,6 +193,8 @@ Loop {
     if (GPTest) {
         if (triggerTestNeeded)
             GPTestScript()
+        if (stopAfterGPTest)
+            ExitApp
         Sleep, 1000
         if (heartBeat && (Mod(A_Index, 60) = 0))
             IniWrite, 1, %A_ScriptDir%\..\HeartBeat.ini, HeartBeat, Main
@@ -613,10 +626,74 @@ ResumeScript:
     failSafe := A_TickCount
 return
 
-; Stop Script - Main.ahk always exits immediately (no "end of run" concept)
 StopScript:
+    settingsPath := A_ScriptDir . "\..\Settings.ini"
+    IniRead, savedStopPreferenceMain, %settingsPath%, UserSettings, stopPreferenceMain, none
+    if (savedStopPreferenceMain = "immediate") {
+        CreateStatusMessage("Stopping script...",,,, false)
+        ExitApp
+    } else if (savedStopPreferenceMain = "gp_test" && groupRerollEnabled) {
+        Gosub, StopMainAfterGPTest
+    } else {
+        Gui, StopMain:Destroy
+        Gui, StopMain:New, +AlwaysOnTop, Stop Main Instance
+        Gui, StopMain:Add, Text, x20 y15 w220 Center, What would you like to do?
+        Gui, StopMain:Add, Button, x20 y45 w220 h30 gStopMainImmediately, Stop Immediately
+        if (groupRerollEnabled) {
+            Gui, StopMain:Add, Button, x20 y80 w220 h30 gStopMainAfterGPTest, Run GP Test then Stop
+            Gui, StopMain:Add, Checkbox, x20 y120 w220 vRememberStopPreferenceMain, Remember my choice
+            Gui, StopMain:Show, w260 h150, Stop Main Instance
+        } else {
+            Gui, StopMain:Add, Checkbox, x20 y85 w220 vRememberStopPreferenceMain, Remember my choice
+            Gui, StopMain:Show, w260 h115, Stop Main Instance
+        }
+    }
+return
+
+StopMainImmediately:
+    Gui, StopMain:Submit, NoHide
+    if (RememberStopPreferenceMain) {
+        settingsPath := A_ScriptDir . "\..\Settings.ini"
+        IniWrite, immediate, %settingsPath%, UserSettings, stopPreferenceMain
+    }
+    Gui, StopMain:Destroy
     CreateStatusMessage("Stopping script...",,,, false)
     ExitApp
+return
+
+StopMainAfterGPTest:
+    Gui, StopMain:Submit, NoHide
+    if (RememberStopPreferenceMain) {
+        settingsPath := A_ScriptDir . "\..\Settings.ini"
+        IniWrite, gp_test, %settingsPath%, UserSettings, stopPreferenceMain
+    }
+    Gui, StopMain:Destroy
+    stopAfterGPTest := true
+    if (!GPTest) {
+        GPTest := true
+        triggerTestNeeded := true
+        testStartTime := A_TickCount
+        CreateStatusMessage("Running GP Test then stopping...",,,, false)
+    } else {
+        CreateStatusMessage("Will stop after current GP Test completes...",,,, false)
+    }
+return
+
+StopMainGuiClose:
+StopMainGuiEscape:
+    Gui, StopMain:Destroy
+return
+
+RateLimitSleep:
+    rateLimitAction := "sleep"
+    Gui, RateLimit:Destroy
+return
+
+RateLimitContinue:
+RateLimitGuiClose:
+RateLimitGuiEscape:
+    rateLimitAction := "continue"
+    Gui, RateLimit:Destroy
 return
 
 ShowStatusMessages:
@@ -752,7 +829,7 @@ from_window(ByRef image) {
 
 ~+F5::SafeReload()
 ~+F6::Pause
-~+F7::ExitApp  ; Main.ahk always exits immediately - no "end of run" concept
+~+F7::Gosub, StopScript
 ~+F8::ToggleStatusMessages()
 ~+F9::ToggleTestScript() ; hoytdj Add
 
@@ -813,17 +890,369 @@ GetNeedle(Path) {
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GPTestScript() {
-    global triggerTestNeeded
+    global triggerTestNeeded, GPTest, gpTestWaitTime, friendOpsCount, friendOpsWindowStart, rateLimitAction
     triggerTestNeeded := false
+    rateLimitAction := ""
+    FavoriteVipFriends()
+    if (!GPTest || rateLimitAction = "sleep")
+        return
+    gpTestWaitStart := A_TickCount
+    Loop {
+        if (!GPTest)
+            return
+        remaining := gpTestWaitTime * 1000 - (A_TickCount - gpTestWaitStart)
+        if (remaining <= 0)
+            break
+        CreateStatusMessage("Waiting for instances to remove friends (" . Ceil(remaining / 1000) . "s)...",,,, false)
+        Sleep, 1000
+    }
     RemoveNonVipFriends()
 }
 
-; Automation script for removing Non-VIP firends.
-RemoveNonVipFriends() {
-    global GPTest, vipIdsURL, failSafe
+; Returns true if a friend add/remove op can proceed (and increments the counter).
+; In auto GP Test mode, returns false when the rate limit is reached — caller should abort.
+; In manual GP Test mode, waits for the 5-minute window to reset and returns true.
+CheckFriendOpsRateLimit() {
+    global friendOpsCount, friendOpsWindowStart, A_gptest, GPTest, rateLimitAction, RateLimitText
+    if (friendOpsCount = 0) {
+        ; First operation of this window — start the clock now
+        friendOpsWindowStart := A_TickCount
+    } else {
+        elapsed := A_TickCount - friendOpsWindowStart
+        if (elapsed >= 300000) {
+            friendOpsCount := 0
+            friendOpsWindowStart := A_TickCount
+        }
+    }
+    if (friendOpsCount >= 10) {
+        remaining := 300000 - (A_TickCount - friendOpsWindowStart)
+        if (remaining <= 0) {
+            friendOpsCount := 0
+            friendOpsWindowStart := A_TickCount
+        } else if (A_gptest) {
+            return false
+        } else {
+            ; Manual mode: show countdown dialog with two cancel options
+            rateLimitAction := ""
+            Gui, RateLimit:Destroy
+            Gui, RateLimit:New, +AlwaysOnTop, GP Test - Rate Limit
+            countdownText := "Rate limit reached. Waiting " . Ceil(remaining / 1000) . "s..."
+            Gui, RateLimit:Add, Text, x20 y15 w220 Center vRateLimitText, %countdownText%
+            Gui, RateLimit:Add, Text, x20 y42 w220 Center, The next removal may trigger a network error. Please wait.
+            Gui, RateLimit:Add, Button, x20 y72 w220 h30 gRateLimitSleep, Stop GP Test && Sleep
+            Gui, RateLimit:Add, Button, x20 y107 w220 h30 gRateLimitContinue, Stop GP Test && Continue
+            Gui, RateLimit:Show, w260 h150, GP Test - Rate Limit
+            Loop {
+                remaining := 300000 - (A_TickCount - friendOpsWindowStart)
+                if (remaining <= 0 || rateLimitAction != "")
+                    break
+                countdownText := "Rate limit reached. Waiting " . Ceil(remaining / 1000) . "s..."
+                GuiControl, RateLimit:, RateLimitText, %countdownText%
+                Sleep, 1000
+            }
+            Gui, RateLimit:Destroy
+            if (rateLimitAction = "sleep") {
+                return false  ; GPTest stays true — main idles in "Ready to test" mode
+            } else if (rateLimitAction = "continue") {
+                GPTest := false
+                return false
+            }
+            ; Timer expired — reset and continue
+            friendOpsCount := 0
+            friendOpsWindowStart := A_TickCount
+        }
+    }
+    friendOpsCount++
+    return true
+}
+
+; FavoriteVipFriends - Mark all VIP friends as favourites 
+FavoriteVipFriends() {
+    global GPTest, vipIdsURL, failSafe, gptest_nonFriends, gptest_alreadyFavourited, scriptName, friendOpsCount, friendOpsWindowStart
+
+    ; Load persistent GP Test cache from disk.
+    ; Always reload from file as it survives bot restarts.
+    gptest_nonFriends := {}
+    gptest_alreadyFavourited := {}
+    gptestedFile := A_ScriptDir . "\..\FriendsGPTested_" . scriptName . ".txt"
+    if FileExist(gptestedFile) {
+        Loop, Read, %gptestedFile%
+        {
+            line := A_LoopReadLine
+            ; N: prefix indicates code was tested and is not a friend, 
+            ; F: prefix indicates code was tested and is already favourited.
+            if (SubStr(line, 1, 2) = "N:") {
+                parts := StrSplit(SubStr(line, 3), "|")
+                gptest_nonFriends["_" . parts[1]] := {Name: parts[2], Time: parts[3]}
+            } else if (SubStr(line, 1, 2) = "F:") {
+                parts := StrSplit(SubStr(line, 3), "|")
+                gptest_alreadyFavourited["_" . parts[1]] := {Name: parts[2], Time: parts[3]}
+            }
+        }
+    }
+
+    ; Download and load VIP list
+    CreateStatusMessage("Downloading vip_ids.txt.",,,, false)
+    if (vipIdsURL != "" && !DownloadFile(vipIdsURL, "vip_ids.txt")) {
+        CreateStatusMessage("Failed to download vip_ids.txt. Aborting FavoriteVipFriends...",,,, false)
+        return
+    }
+
+    includesIdsAndNames := false
+    vipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
+
+    manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
+    if FileExist(manualVipFile) {
+        manualVipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
+        vipFriendsArray.push(manualVipFriendsArray*)
+    }
+
+    if (!vipFriendsArray.MaxIndex()) {
+        CreateStatusMessage("No accounts found in vip_ids.txt. Aborting FavoriteVipFriends...",,,, false)
+        return
+    }
+
+    ; Remove cache entries whose codes are no longer in the VIP list
+    vipCodeSet := {}
+    for _, vipFriend in vipFriendsArray
+        vipCodeSet[vipFriend.Code] := true
+
+    ; Prune silently "N" entries not in VIP list: were never friends, no game action needed
+    toDelete := []
+    for key, _ in gptest_nonFriends
+        if (!vipCodeSet.HasKey(SubStr(key, 2)))
+            toDelete.Push(key)
+    for _, key in toDelete
+        gptest_nonFriends.Delete(key)
+
+    ; Collect "F" entries not in VIP list for in-game de-star + removal (do NOT prune yet)
+    ; This tries to catch VIP friends not removed manually by the user
+    ; after they lost VIP status, as they would otherwise be missed and left as favourites
+    ; in the case they're unfriended and befriended again in the same main session (game bug?)
+    toRemove := []
+    for key, _ in gptest_alreadyFavourited
+        if (!vipCodeSet.HasKey(SubStr(key, 2)))
+            toRemove.Push(SubStr(key, 2))
+    SaveGPTestedCache()
+
+    ; Check if all valid VIP codes are already cached AND no ex-VIPs to clean
+    ; We can move to non favourite removal if so
+    allCached := true
+    for _, vipFriend in vipFriendsArray {
+        vipCode := vipFriend.Code
+        if (!gptest_nonFriends.HasKey("_" . vipCode) && !gptest_alreadyFavourited.HasKey("_" . vipCode)) {
+            allCached := false
+            break
+        }
+    }
+    if (allCached && !toRemove.MaxIndex()) {
+        CreateStatusMessage("All VIP accounts already processed (cached). Skipping FavoriteVipFriends.",,,, false)
+        return
+    }
+
+    ; Navigate to Social screen
     failSafe := A_TickCount
     failSafeTime := 0
-    ; Get us to the Social screen. Won't be super resilient but should be more consistent for most cases.
+    Loop {
+        adbClick(143, 518)
+        if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime))
+            break
+        Delay(5)
+        failSafeTime := (A_TickCount - failSafe) // 1000
+        CreateStatusMessage("In failsafe for Social. " . failSafeTime "/90 seconds")
+    }
+    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500) ; Friends tab
+    Delay(2)
+    FindImageAndClick(205, 430, 255, 475, , "Search", 240, 120, 1500)
+    FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
+
+    ; Build combined list: ex-VIP removals first, then uncached VIPs to star
+    allVips := []
+    for _, code in toRemove
+        allVips.Push({isRemoval: 1, Code: code, Name: gptest_alreadyFavourited["_" . code].Name})
+    for _, vipFriend in vipFriendsArray
+        if (!gptest_nonFriends.HasKey("_" . vipFriend.Code) && !gptest_alreadyFavourited.HasKey("_" . vipFriend.Code))
+            allVips.Push({isRemoval: 0, Code: vipFriend.Code, Friend: vipFriend})
+
+    n := allVips.MaxIndex()
+    for index, vip in allVips {
+        if (!GPTest) {
+            adbInputEvent("4") ; close keyboard
+            Sleep, 300
+            adbInputEvent("4") ; close search modal
+            Sleep, 300
+            return
+        }
+
+        vipCode := vip.Code
+
+        if (vip.isRemoval)
+            CreateStatusMessage("Removing ex-VIP " . index . "/" . n . ": " . vipCode . (vip.Name != "" ? "`n" . vip.Name : ""),,,, false)
+        else
+            CreateStatusMessage("Favouriting VIP " . index . "/" . n . "`n" . vip.Friend.ToString(),,,, false)
+
+        ; Type the code and wait for Search2 to appear
+        failSafe := A_TickCount
+        failSafeTime := 0
+        search2Ready := false
+        Loop {
+            Delay(1)
+            adbInput(vipCode)
+            Delay(1)
+            if(FindOrLoseImage(205, 430, 255, 475, , "Search2", 0, failSafeTime)) {
+                search2Ready := true
+                break
+            }
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            if (failSafeTime > 45) {
+                CreateStatusMessage("Search2 not found for: " . vipCode . ". Skipping.",,,, false)
+                break
+            }
+            CreateStatusMessage("Waiting for Search2`n(" . failSafeTime . "/45 seconds)")
+        }
+        if (!search2Ready) {
+            if (index < n) {
+                FindImageAndClick(205, 430, 255, 475, , "Search2", 143, 518)
+                EraseInput(index, n)
+            }
+            continue
+        }
+
+        ; Click search and check result on the search results screen
+        failSafe := A_TickCount
+        failSafeTime := 0
+        Loop {
+            adbClick_wbb(232, 453) ; confirm search
+            Delay(2)
+            if(FindOrLoseImage(172, 257, 185, 266, , "FavouriteFriend", 0, failSafeTime)) {
+                ; Friend — enter profile
+                failSafe2 := A_TickCount
+                Loop {
+                    if (!FindOrLoseImage(172, 257, 185, 266, , "FavouriteFriend", 0))
+                        break
+                    if ((A_TickCount - failSafe2) // 1000 > 30)
+                        break
+                    adbClick_wbb(143, 258)
+                    Sleep, 500
+                    CreateStatusMessage("Entering profile`n(" . (A_TickCount - failSafe2) // 1000 . "/30 seconds)")
+                }
+                ; Wait for FavouriteN or FavouriteY to confirm profile has loaded
+                failSafe2 := A_TickCount
+                Loop {
+                    if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)
+                        || FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0))
+                        break
+                    if ((A_TickCount - failSafe2) // 1000 > 30)
+                        break
+                    Sleep, 500
+                    CreateStatusMessage("Waiting for profile to load`n(" . (A_TickCount - failSafe2) // 1000 . "/30 seconds)")
+                }
+                if (vip.isRemoval) {
+                    ; De-star if currently starred, then remove from friends
+                    if (FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0)) {
+                        adbClick(252, 81)
+                        Delay(1)
+                    }
+                    if (!CheckFriendOpsRateLimit()) {
+                        ; Auto mode rate limit: navigate back to Social and abort
+                        FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+                        return
+                    }
+                    FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
+                    Loop {
+                        adbClick_wbb(200, 372)
+                        if (FindOrLoseImage(70, 395, 100, 420, , "Send2", 0))
+                            break
+                        Delay(1)
+                    }
+                    Delay(1)
+                    gptest_alreadyFavourited.Delete("_" . vipCode)
+                } else {
+                    ; Star if not yet starred
+                    if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)) {
+                        adbClick(252, 81)
+                        Delay(1)
+                        CreateStatusMessage("Favourited: " . vip.Friend.ToString(),,,, false)
+                    } else {
+                        CreateStatusMessage("Already favourited: " . vip.Friend.ToString(),,,, false)
+                    }
+                    FormatTime, checkedAt, , yyyy-MM-dd HH:mm
+                    gptest_alreadyFavourited["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
+                }
+                SaveGPTestedCache()
+                break
+            }
+            else if(FindOrLoseImage(165, 245, 190, 270, , "Send", 0, failSafeTime)) {
+                if (vip.isRemoval) {
+                    CreateStatusMessage("Ex-VIP no longer a friend: " . vipCode . (vip.Name != "" ? " (" . vip.Name . ")" : "") . ". Skipping.",,,, false)
+                    gptest_alreadyFavourited.Delete("_" . vipCode)
+                } else {
+                    CreateStatusMessage("Not friends with VIP: " . vip.Friend.ToString() . ". Skipping.",,,, false)
+                    FormatTime, checkedAt, , yyyy-MM-dd HH:mm
+                    gptest_nonFriends["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
+                }
+                SaveGPTestedCache()
+                break
+            }
+            ; Account doesn't exist: banned, deleted, or code never existed
+            else if(FindOrLoseImage(28, 369, 55, 394, , "NotFound", 0, failSafeTime)) {
+                adbClick_wbb(138, 380)
+                Sleep, 500
+                if (vip.isRemoval) {
+                    CreateStatusMessage("Code not found (ex-VIP): " . vipCode . (vip.Name != "" ? " (" . vip.Name . ")" : "") . ". Removing from cache.",,,, false)
+                    gptest_alreadyFavourited.Delete("_" . vipCode)
+                } else {
+                    CreateStatusMessage("Code not found (VIP): " . vip.Friend.ToString() . ". Marking as N.",,,, false)
+                    FormatTime, checkedAt, , yyyy-MM-dd HH:mm
+                    gptest_nonFriends["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
+                }
+                SaveGPTestedCache()
+                if (index < n)
+                    EraseInput(index, n)
+                continue 2 ; already back at search input — skip the nav block below
+            }
+            ; Pending friend request from the account: either VIP that we weren't able to befriend in time,
+            ; or ex-VIP that alrerady sent us a request as we were GP Testing
+            else if(FindOrLoseImage(188, 243, 221, 274, , "PendingFriendRequest", 0, failSafeTime)) {
+                if (vip.isRemoval) {
+                    CreateStatusMessage("Pending request from ex-VIP: " . vipCode . (vip.Name != "" ? " (" . vip.Name . ")" : "") . ". Removing from cache.",,,, false)
+                    gptest_alreadyFavourited.Delete("_" . vipCode)
+                } else {
+                    CreateStatusMessage("Pending request from VIP: " . vip.Friend.ToString() . ". Marking as N.",,,, false)
+                    FormatTime, checkedAt, , yyyy-MM-dd HH:mm
+                    gptest_nonFriends["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
+                }
+                SaveGPTestedCache()
+                break
+            }
+            Delay(1)
+            failSafeTime := (A_TickCount - failSafe) // 1000
+            if (failSafeTime > 20) {
+                CreateStatusMessage("Search result unrecognised for: " . vipCode . ". Skipping.",,,, false)
+                break
+            }
+            CreateStatusMessage("Waiting for search result`n(" . failSafeTime . "/20 seconds)")
+        }
+
+        ; Return to search input for next item
+        if (index < n) {
+            FindImageAndClick(205, 430, 255, 475, , "Search2", 143, 518)
+            EraseInput(index, n)
+        }
+    }
+
+    ; Return to Social main screen
+    FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+}
+
+; Removes non-favourited friends starting from the bottom of the list.
+; Stops when a favourited (VIP) friend is encountered.
+RemoveNonVipFriends() {
+    global GPTest, autoUseGPTest, A_gptest, autotest, failSafe, gptest_alreadyFavourited, friendOpsCount, friendOpsWindowStart, vipIdsURL
+
+    ; Navigate to Social screen
+    failSafe := A_TickCount
+    failSafeTime := 0
     Loop {
         adbClick(143, 518)
         if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime))
@@ -835,194 +1264,193 @@ RemoveNonVipFriends() {
     FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
     Delay(3)
 
-    CreateStatusMessage("Downloading vip_ids.txt.",,,, false)
-    if (vipIdsURL != "" && !DownloadFile(vipIdsURL, "vip_ids.txt")) {
-        CreateStatusMessage("Failed to download vip_ids.txt..`nIf you are botting solo, disable AutoGPTest to fix this issue.`nAborting test...",,,, false)
-        return
-    }
+    ; Re-download VIP list — a GP may have been found during the wait, adding new VIPs
+    if (vipIdsURL != "")
+        DownloadFile(vipIdsURL, "vip_ids.txt")
 
+    ; Load VIP list from file
+    ; Any VIPs missed during favouriting will be caught and handled here
     includesIdsAndNames := false
-    vipFriendsArray :=  GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
-    
-		; append new list onto vipFriendsArray to combine manual and automatic GPtesting KSBM
-		manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
-		if FileExist(manualVipFile) {
-		    ManualvipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
-		    vipFriendsArray.push(ManualvipFriendsArray*)
-		}                
-    
-    if (!vipFriendsArray.MaxIndex()) {
-        CreateStatusMessage("No accounts found in vip_ids.txt. Aborting test...",,,, false)
-        return
+    vipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
+    manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
+    if FileExist(manualVipFile) {
+        manualVipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
+        vipFriendsArray.push(manualVipFriendsArray*)
     }
 
-    friendIndex := 0
-    repeatFriendAccounts := 0
-	scrolledWithoutFriend := 0
-    recentFriendAccounts := []
+    ; Scroll to the bottom of the friend list 
+    ; Might be too much of a scroll, but ensures all *99* friends are loaded and visible
+    CreateStatusMessage("Scrolling to bottom of friend list...",,,, false)
+    Loop, 20 {
+        adbSwipe(143 . " " . 700 . " " . 143 . " " . 110 . " " . 300)
+        Sleep, 200
+    }
+    Delay(2)
+
+    ; Remove non-favourited friends from the bottom up
+    ocrFailStreak := 0
+    stoppedAtVip := false
+    startY := 385 ; tracks the lowest position where a friend was last found
     Loop {
-        if (scrolledWithoutFriend > 5){
-            CreateStatusMessage("End of list - scrolled without friend codes multiple times.`nReady to test.")
-            if(A_gptest && autoUseGPTest) {
-                A_gptest := 0
-                autotest := A_TickCount
-                ToggleTestScript()
-			}
+        if (!GPTest)
             return
-        }
-        friendClickY := 195 + (95 * friendIndex)
-        if (FindImageAndClick(75, 400, 105, 420, , "Friend", 138, friendClickY, 500, 3)) {
+
+        ; Try to enter the bottommost visible friend's profile, starting from last known position
+        enteredProfile := false
+        friendRemovedUs := false
+        friendClickY := startY
+        numPositions := (startY - 195) // 95 + 1
+        Loop, %numPositions% {
+            ; Click until we navigate away from the list (max 3 attempts)
             Delay(1)
-
-            ; Get the friend account
-            parseFriendResult := ParseFriendInfo(friendCode, friendName, parseFriendCodeResult, parseFriendNameResult, includesIdsAndNames)
-            friendAccount := new FriendAccount(friendCode, friendName)
-
-            ; Check if this is a repeat
-            if (IsRecentlyCheckedAccount(friendAccount, recentFriendAccounts)) {
-                repeatFriendAccounts++
+            Loop, 3 {
+                adbClick_wbb(138, friendClickY)
+                Sleep, 600
+                if (!FindOrLoseImage(226, 100, 270, 135, , "Add", 0))
+                    break
             }
-            else if (parseFriendResult) {
-                repeatFriendAccounts := 0
+            ; If still on list after all attempts, slot is empty — try next position
+            if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
+                friendClickY -= 95
+                continue
             }
-            if (repeatFriendAccounts > 2) {
-                if (Debug)
-                    CreateStatusMessage("End of list - parsed the same friend codes multiple times.`nReady to test.")
-                else
-                    CreateStatusMessage("Ready to test.",,,, false)
-                adbClick(143, 507)
-                if(A_gptest && autoUseGPTest) {
-					A_gptest := 0
-					autotest := A_TickCount
-					ToggleTestScript()
-				}
+            ; Wait for profile to fully load — any of the three states confirms it
+            failSafe2 := A_TickCount
+            Loop {
+                ; Might happen that a friend removed us while we were busy scrolling the list 
+                ; and we only realise it after clicking on their profile
+                if (FindOrLoseImage(84, 397, 98, 410, , "FavouriteFriend2", 0)) {
+                    CreateStatusMessage("Friend removed us. Skipping...",,,, false)
+                    FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+                    Delay(2)
+                    friendRemovedUs := true
+                    break
+                }
+                if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)
+                    || FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0)) {
+                    enteredProfile := true
+                    break
+                }
+                if ((A_TickCount - failSafe2) // 1000 > 15)
+                    break
+                Sleep, 300
+            }
+            if (enteredProfile || friendRemovedUs)
+                break
+            friendClickY -= 95
+        }
+
+        if (friendRemovedUs)
+            continue
+
+        if (!enteredProfile) {
+            CreateStatusMessage("No friends found. Done.",,,, false)
+            break
+        }
+
+        ; Remember lowest position where a friend was found
+        startY := friendClickY
+
+        ; Favourited friend reached — stop removal
+        if (FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0)) {
+            CreateStatusMessage("Reached favourited (VIP) friend. Stopping removal.",,,, false)
+            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            stoppedAtVip := true
+            break
+        }
+
+        ; Not favourited — OCR check again VIP list in case we missed them during favouriting, 
+        ; then remove if still not VIP
+        parseFriendResult := ParseFriendInfo(friendCode, friendName, parseFriendCodeResult, parseFriendNameResult, includesIdsAndNames)
+        friendAccount := new FriendAccount(friendCode, friendName)
+
+        if (!parseFriendResult) {
+            ocrFailStreak++
+            CreateStatusMessage("Couldn't parse friend (streak: " . ocrFailStreak . "). Skipping...",,,, false)
+            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            Delay(2)
+            if (ocrFailStreak >= 3) {
+                ; Persistent OCR failure on the same position — move on to avoid infinite loop
+                ocrFailStreak := 0
+                startY := friendClickY - 95
+                if (startY < 195)
+                    break
+            }
+            continue
+        }
+
+        ocrFailStreak := 0
+        matchedFriend := ""
+        isVipResult := IsFriendAccountInList(friendAccount, vipFriendsArray, matchedFriend)
+
+        if (isVipResult) {
+            ; VIP missed by FavoriteVipFriends() — favourite them instead of removing
+            CreateStatusMessage("VIP not favourited: " . friendAccount.ToString() . "`nFavouring...",,,, false)
+            adbClick(252, 81) ; click favourite star
+            Delay(1)
+            FormatTime, checkedAt, , yyyy-MM-dd HH:mm
+            gptest_alreadyFavourited["_" . friendAccount.Code] := {Name: friendAccount.Name, Time: checkedAt}
+            SaveGPTestedCache()
+            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            Delay(2)
+            startY := 385 ; re-check from bottom after VIP have moved to top
+        } else {
+            ; Not VIP — remove
+            CreateStatusMessage("Removing non-VIP friend: " . friendAccount.ToString(),,,, false)
+            if (!CheckFriendOpsRateLimit()) {
+                ; Auto mode rate limit: navigate back and stop removal
+                FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+                if (A_gptest && autoUseGPTest) {
+                    A_gptest := 0
+                    autotest := A_TickCount
+                    ToggleTestScript()
+                }
+                CreateStatusMessage("Rate limit reached. Stopping removal.",,,, false)
                 return
             }
-            matchedFriend := ""
-            isVipResult := IsFriendAccountInList(friendAccount, vipFriendsArray, matchedFriend)
-            if (isVipResult || !parseFriendResult) {
-                ; If we couldn't parse the friend, skip removal
-                if (!parseFriendResult) {
-                    CreateStatusMessage("Couldn't parse friend. Skipping friend...`nParsed friend: " . friendAccount.ToString(),,,, false)
-                    LogToFile("Friend skipped: " . friendAccount.ToString() . ". Couldn't parse identifiers.", "GPTestLog.txt")
-                }
-                ; If it's a VIP friend, skip removal
-                if (isVipResult) {
-                    CreateStatusMessage("Parsed friend: " . friendAccount.ToString() . "`nMatched VIP: " . matchedFriend.ToString() . "`nSkipping VIP...",,,, false)
-					scrolledWithoutFriend := 0
-				}
-                ; Sleep, 1500 ; Time to read - this sleep is entirely unnecessary I think, so disabling for now to speed up GPtest. -kevinnnn 2026.3.7
-                
-                Loop {
-                    if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
-                        break
-                    }
-                    if (FindOrLoseImage(266, 100, 270, 135, , "AddGray", 0)) {
-                        ; This is if we're loading the friend list but it's taking time.
-                        Sleep, 500
-                        break
-                    }
-                    if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0)) {
-                        CreateStatusMessage("Oops! Social screen; going back.")
-                        Delay(4)
-                        adbClick(37,475)
-                        Sleep, 3000
-                        break
-                    }  
-                    adbClick(143, 507)
-                    Sleep, 1000
-                }
-                
-                Delay(2)
-                if (friendIndex < 2)
-                    friendIndex++
-                else {
-                    ; Large vertical swipe up, to scroll through no more than 3 friends on the friend list.
-                    ; The swipe is performed with a fixed X-coordinate, simulating a larger vertical swipe.
-                    X := 138
-                    Y1 := 380
-                    Y2 := 200
-
-                    Delay(10)
-                    adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 300)
-                    Sleep, 1000
-
-                    friendIndex := 0
-                }
-            }
-            else {
-                ; If NOT a VIP remove the friend
-                CreateStatusMessage("Parsed friend: " . friendAccount.ToString() . "`nNo VIP match found.`nRemoving friend...",,,, false)
-                LogToFile("Friend removed: " . friendAccount.ToString() . ". No VIP match found.", "GPTestLog.txt")
-                ; Sleep, 1500 ; Time to read - Removing this sleep to speed up GPtest, as the status message should be enough to indicate what's happening. -kevinnnn 2026.3.7
-                FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
-                FindImageAndClick(70, 395, 100, 420, , "Send2", 200, 372, 500)
+            FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
+            Loop {
+                adbClick_wbb(200, 372)
+                if (FindOrLoseImage(70, 395, 100, 420, , "Send2", 0))
+                    break
                 Delay(1)
-                Loop {
-                    if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
-                        break
-                    }
-                    if (FindOrLoseImage(266, 100, 270, 135, , "AddGray", 0)) {
-                        ; This is if we're loading the friend list but it's taking time.
-                        Sleep, 500
-                        break
-                    }
-                    if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0)) {
-                        CreateStatusMessage("Oops! Social screen; going back.")
-                        Delay(4)
-                        adbClick(37,475)
-                        Sleep, 3000
-                        break
-                    }
-                    adbClick(143, 507)
-                    Sleep, 1000
-                }  
-                Delay(3)
-				scrolledWithoutFriend := 0
             }
+            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            Delay(2)
         }
-        else {
-            ; If on social screen, we're stuck between friends, micro scroll
-            If (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
-                CreateStatusMessage("Stuck between friends. Tiny scroll and continue.")
+    }
 
-                ; Very small vertical swipe up, to correct miss-swipe on the friend list.
-                ; The swipe is performed with a fixed X-coordinate, simulating a small vertical swipe.
-                X := 138
-                Y1 := 380
-                Y2 := 355
+    if (stoppedAtVip) {
+        if (A_gptest && autoUseGPTest) {
+            A_gptest := 0
+            autotest := A_TickCount
+            ToggleTestScript()
+        }
+        CreateStatusMessage("Ready to test.",,,, false)
+    } else if (A_gptest && autoUseGPTest) {
+        A_gptest := 0
+        ToggleTestScript()
+    }
+}
 
-                Delay(3)
-                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . 200)
-                Sleep, 500
-            }
-            else {
-                Loop {
-                    if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
-                        break
-                    }
-                    if (FindOrLoseImage(266, 100, 270, 135, , "AddGray", 0)) {
-                        ; This is if we're loading the friend list but it's taking time.
-                        Sleep, 500
-                        break
-                    }
-                    if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0)) {
-                        CreateStatusMessage("Oops! Social screen; going back.")
-                        Delay(4)
-                        adbClick(37,475)
-                        Sleep, 3000
-                        break
-                    }
-                    adbClick(143, 507)
-                    Sleep, 1000
-                }  
-                Delay(3)
-            }
-			scrolledWithoutFriend++
-        }
-        if (!GPTest) {
-            Return
-        }
+; Writes gptest_nonFriends and gptest_alreadyFavourited to FriendsGPTested.txt.
+; Called after each status update so the cache survives bot restarts.
+; Keys are stored with a "_" prefix to prevent AHK v1 from normalising numeric strings
+; to integers (which would strip leading zeros). The prefix is stripped when writing to file.
+SaveGPTestedCache() {
+    global gptest_nonFriends, gptest_alreadyFavourited, scriptName
+    filePath := A_ScriptDir . "\..\FriendsGPTested_" . scriptName . ".txt"
+    FileDelete, %filePath%
+    FileAppend, # F: = VIP already starred in-game | N: = not a friend / code not found`n# Format: TYPE:code|name|checked_at`n, %filePath%
+    for key, entry in gptest_nonFriends {
+        code := SubStr(key, 2)
+        line := code . "|" . entry.Name . "|" . entry.Time
+        FileAppend, N:%line%`n, %filePath%
+    }
+    for key, entry in gptest_alreadyFavourited {
+        code := SubStr(key, 2)
+        line := code . "|" . entry.Name . "|" . entry.Time
+        FileAppend, F:%line%`n, %filePath%
     }
 }
 
