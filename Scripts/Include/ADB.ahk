@@ -138,9 +138,9 @@ DisableBackgroundServices() {
 
     deviceAddress := "127.0.0.1:" . adbPort
     commands := []
-    commands.Push("pm disable-user --user 0 ""com.google.android.gms/.chimera.PersistentIntentOperationService""")
-    commands.Push("pm disable-user --user 0 ""com.google.android.gms/com.google.android.location.reporting.service.ReportingAndroidService""")
-    commands.Push("pm disable-user --user 0 com.mumu.store")
+    commands.Push("am stopservice com.google.android.gms/.chimera.PersistentIntentOperationService")
+    commands.Push("am stopservice com.google.android.gms/com.google.android.location.reporting.service.ReportingAndroidService")
+    commands.Push("am force-stop com.mumu.store")
 
     for index, command in commands {
         fullCommand := """" . adbPath . """ -s " . deviceAddress . " shell " . command

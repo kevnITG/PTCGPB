@@ -96,6 +96,7 @@ DllCall("ntdll\ZwDelayExecution","Int",0,"Int64*",-5000)
 #Include ChooseColors.ahk
 #Include DropDownColor.ahk
 #Include Utils.ahk
+#Include GitManager.ahk
 
 version = Arturos PTCGP Bot
 #SingleInstance, force
@@ -106,11 +107,11 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.5.5"
+   ,localVersion := "v9.5.6"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
-   ,intro := "Paldean Wonders"
+   ,intro := "Mega Shine"
 
 global GUI_WIDTH := 790
 global GUI_HEIGHT := 370
@@ -361,7 +362,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.5.5 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.5.6 kevinnnn"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -466,11 +467,13 @@ SortByDropdownHandler:
 return
 
 UpdatePackSelectionButtonText() {
-    global PaldeanWonders, Parade, CrimsonBlaze, MegaGyarados, MegaBlaziken, MegaAltaria, Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole
+    global MegaShine, PaldeanWonders, Parade, CrimsonBlaze, MegaGyarados, MegaBlaziken, MegaAltaria, Deluxe, Springs, HoOh, Lugia, Eevee, Buzzwole
     global Solgaleo, Lunala, Shining, Arceus, Palkia, Dialga, Pikachu, Charizard, Mewtwo, Mew, currentDictionary
 
     selectedPacks := []
 
+    if (MegaShine)
+        selectedPacks.Push(currentDictionary.Txt_MegaShine)
     if (PaldeanWonders)
         selectedPacks.Push(currentDictionary.Txt_PaldeanWonders)
     if (Parade)
@@ -556,63 +559,78 @@ ShowPackSelection:
     Gui, PackSelect:Color, 1E1E1E, 333333
     Gui, PackSelect:Font, s10 cWhite, Segoe UI
 
-    yPos := 10
-    Gui, PackSelect:Add, Checkbox, % (PaldeanWonders ? "Checked" : "") " vPaldeanWonders_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_PaldeanWonders
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Parade ? "Checked" : "") " vParade_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Parade
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (CrimsonBlaze ? "Checked" : "") " vCrimsonBlaze_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_CrimsonBlaze
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (MegaGyarados ? "Checked" : "") " vMegaGyarados_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaGyarados
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (MegaBlaziken ? "Checked" : "") " vMegaBlaziken_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaBlaziken
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (MegaAltaria ? "Checked" : "") " vMegaAltaria_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_MegaAltaria
-    yPos += 25
+    xLeft := 10
+    xRight := 180
+
+    ; Column headers
+    Gui, PackSelect:Add, Text, % "x" . xLeft  . " y10 cWhite", B-Series
+    Gui, PackSelect:Add, Text, % "x" . xRight . " y10 cWhite", A-Series
+
+    ; B-Series column (left)
+    yLeft := 35
+    Gui, PackSelect:Add, Checkbox, % (MegaShine ? "Checked" : "") " vMegaShine_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_MegaShine
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (PaldeanWonders ? "Checked" : "") " vPaldeanWonders_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_PaldeanWonders
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (Parade ? "Checked" : "") " vParade_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_Parade
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (CrimsonBlaze ? "Checked" : "") " vCrimsonBlaze_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_CrimsonBlaze
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (MegaGyarados ? "Checked" : "") " vMegaGyarados_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_MegaGyarados
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (MegaBlaziken ? "Checked" : "") " vMegaBlaziken_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_MegaBlaziken
+    yLeft += 25
+    Gui, PackSelect:Add, Checkbox, % (MegaAltaria ? "Checked" : "") " vMegaAltaria_Popup x" . xLeft . " y" . yLeft . " cWhite", % currentDictionary.Txt_MegaAltaria
+    yLeft += 25
+
+    ; A-Series column (right)
     ; Disabling Deluxe since it's not available
-    ; Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Deluxe
-    ; yPos += 25    
-    Gui, PackSelect:Add, Checkbox, % (Springs ? "Checked" : "") " vSprings_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Springs
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (HoOh ? "Checked" : "") " vHoOh_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_HoOh
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Lugia ? "Checked" : "") " vLugia_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Lugia
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Eevee ? "Checked" : "") " vEevee_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Eevee
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Buzzwole ? "Checked" : "") " vBuzzwole_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Buzzwole
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Solgaleo ? "Checked" : "") " vSolgaleo_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Solgaleo
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Lunala ? "Checked" : "") " vLunala_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Lunala
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Shining ? "Checked" : "") " vShining_Popup x10 y" . yPos . " cWhite", Shining Revelry
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Arceus ? "Checked" : "") " vArceus_Popup x10 y" . yPos . " cWhite", Triumphant Light
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Dialga ? "Checked" : "") " vDialga_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Dialga
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Palkia ? "Checked" : "") " vPalkia_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Palkia
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Mew ? "Checked" : "") " vMew_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Mew
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Charizard ? "Checked" : "") " vCharizard_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Charizard
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Mewtwo ? "Checked" : "") " vMewtwo_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Mewtwo
-    yPos += 25
-    Gui, PackSelect:Add, Checkbox, % (Pikachu ? "Checked" : "") " vPikachu_Popup x10 y" . yPos . " cWhite", % currentDictionary.Txt_Pikachu
-    yPos += 35
-    
+    ; Gui, PackSelect:Add, Checkbox, % (Deluxe ? "Checked" : "") " vDeluxe_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Deluxe
+    ; yRight += 25
+    yRight := 35
+    Gui, PackSelect:Add, Checkbox, % (Springs ? "Checked" : "") " vSprings_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Springs
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (HoOh ? "Checked" : "") " vHoOh_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_HoOh
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Lugia ? "Checked" : "") " vLugia_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Lugia
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Eevee ? "Checked" : "") " vEevee_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Eevee
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Buzzwole ? "Checked" : "") " vBuzzwole_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Buzzwole
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Solgaleo ? "Checked" : "") " vSolgaleo_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Solgaleo
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Lunala ? "Checked" : "") " vLunala_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Lunala
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Shining ? "Checked" : "") " vShining_Popup x" . xRight . " y" . yRight . " cWhite", Shining Revelry
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Arceus ? "Checked" : "") " vArceus_Popup x" . xRight . " y" . yRight . " cWhite", Triumphant Light
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Dialga ? "Checked" : "") " vDialga_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Dialga
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Palkia ? "Checked" : "") " vPalkia_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Palkia
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Mew ? "Checked" : "") " vMew_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Mew
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Charizard ? "Checked" : "") " vCharizard_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Charizard
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Mewtwo ? "Checked" : "") " vMewtwo_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Mewtwo
+    yRight += 25
+    Gui, PackSelect:Add, Checkbox, % (Pikachu ? "Checked" : "") " vPikachu_Popup x" . xRight . " y" . yRight . " cWhite", % currentDictionary.Txt_Pikachu
+    yRight += 25
+
+    yPos := (yLeft > yRight ? yLeft : yRight) + 10
     Gui, PackSelect:Add, Button, x10 y%yPos% w80 h30 gApplyPackSelection, Apply
     Gui, PackSelect:Add, Button, x100 y%yPos% w80 h30 gCancelPackSelection, Cancel
     yPos += 40
-    
-    Gui, PackSelect:Show, x%popupX% y%popupY% w200 h%yPos%
+
+    Gui, PackSelect:Show, x%popupX% y%popupY% w350 h%yPos%
 return
 
 ApplyPackSelection:
     Gui, PackSelect:Submit, NoHide
 
+    MegaShine := MegaShine_Popup
     PaldeanWonders := PaldeanWonders_Popup
     Parade := Parade_Popup
     CrimsonBlaze := CrimsonBlaze_Popup
@@ -1020,9 +1038,8 @@ ShowSystemSettings:
     Gui, SystemSettingsSelect:Add, Edit, vinstanceLaunchDelay_Popup w50 x170 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %instanceLaunchDelay%
     yPos += 35
     
-    Gui, SystemSettingsSelect:Add, Checkbox, % (autoLaunchMonitor ? "Checked" : "") " vautoLaunchMonitor_Popup x15 y" . yPos . " " . sectionColor, % currentDictionary.Txt_autoLaunchMonitor
+    Gui, SystemSettingsSelect:Add, Checkbox, % (autoLaunchMonitor ? "Checked" : "") " v autoLaunchMonitor_Popup x15 y" . yPos . " " . sectionColor, % currentDictionary.Txt_autoLaunchMonitor
     yPos += 40
-    
     Gui, SystemSettingsSelect:Add, Button, x15 y%yPos% w100 h30 gApplySystemSettings, Apply
     Gui, SystemSettingsSelect:Add, Button, x125 y%yPos% w100 h30 gCancelSystemSettings, Cancel
     yPos += 40
@@ -1041,7 +1058,7 @@ ApplySystemSettings:
     clientLanguage := clientLanguage_Popup
     instanceLaunchDelay := instanceLaunchDelay_Popup
     autoLaunchMonitor := autoLaunchMonitor_Popup
-    
+
     Gui, SystemSettingsSelect:Destroy
     
     Gui, 1:Default
@@ -1226,7 +1243,7 @@ ShowToolsAndSystemSettings:
     yPos += 35
     
     sectionColor := "cWhite"
-    eventMissionBoxH := 90
+    eventMissionBoxH := 65
     Gui, ToolsAndSystemSelect:Add, GroupBox, x%col1X% y%yPos% w%col1W% h%eventMissionBoxH% %sectionColor%, Special Event Missions
     yPos += 20
     
@@ -1312,7 +1329,9 @@ ShowToolsAndSystemSettings:
     autoMonitorY := yPos2 - 5
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (autoLaunchMonitor ? "Checked" : "") " vautoLaunchMonitor_Popup x" . col2X . " y" . autoMonitorY . " " . sectionColor, % currentDictionary.Txt_autoLaunchMonitor
     yPos2 += 20
-    
+    Gui, ToolsAndSystemSelect:Add, Checkbox, % (saveToGit ? "Checked" : "") " vsaveToGit_Popup gsaveToGit_Click x" . col2X . " y" . yPos2 . " " . sectionColor, Auto Save to Git (hourly)
+    yPos2 += 25
+
     Gui, ToolsAndSystemSelect:Font, s8 cWhite, Segoe UI
     xmlSortY := yPos2 - 5
     Gui, ToolsAndSystemSelect:Add, Button, x%col2X% y%xmlSortY% w170 h20 gRunXMLSortTool BackgroundTrans, XML pack counts
@@ -1349,6 +1368,7 @@ ApplyToolsAndSystemSettings:
     clientLanguage := clientLanguage_Popup
     instanceLaunchDelay := instanceLaunchDelay_Popup
     autoLaunchMonitor := autoLaunchMonitor_Popup
+    saveToGit := saveToGit_Popup
     autoRestartMumu := autoRestartMumu_Popup
     runsBeforeRestart := runsBeforeRestart_Popup
     ; Validate runsBeforeRestart (0-99)
@@ -1375,6 +1395,17 @@ return
 
 CancelToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Destroy
+return
+
+saveToGit_Click:
+    GuiControlGet, saveToGit_Popup, ToolsAndSystemSelect:, saveToGit_Popup
+    if (saveToGit_Popup) {
+        gitRoot := A_ScriptDir
+        if (!IsGitRepo(gitRoot)) {
+            GuiControl, ToolsAndSystemSelect:, saveToGit_Popup, 0
+            MsgBox, 48, Git Error, The script directory is not a git repository.`nAuto Save to Git cannot be enabled.`n`nTo fix this, run: git init`nIt is also recommended to connect it to a remote repository.
+        }
+    }
 return
 
 discordSettings:
@@ -1470,6 +1501,8 @@ Save:
   confirmMsg .= "`n"
   
   confirmMsg .= "`n" . SetUpDictionary.Confirm_SelectedPacks . "`n"
+  if (MegaShine)
+    confirmMsg .= "• " . currentDictionary.Txt_MegaShine . "`n"
   if (PaldeanWonders)
     confirmMsg .= "• " . currentDictionary.Txt_PaldeanWonders . "`n"
   if (Parade)
@@ -1928,13 +1961,14 @@ LoadSettingsFromIni() {
       IniRead, Mains, Settings.ini, UserSettings, Mains, 1
       IniRead, AccountName, Settings.ini, UserSettings, AccountName, ""
       IniRead, autoLaunchMonitor, Settings.ini, UserSettings, autoLaunchMonitor, 1
+      IniRead, saveToGit, Settings.ini, UserSettings, saveToGit, 0
       IniRead, TestTime, Settings.ini, UserSettings, TestTime, 3600
       IniRead, gpTestWaitTime, Settings.ini, UserSettings, gpTestWaitTime, 150
       if (gpTestWaitTime = "" || gpTestWaitTime <= 0)
           gpTestWaitTime := 150
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
       IniRead, waitTime, Settings.ini, UserSettings, waitTime, 5
-      IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 500
+      IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 250
       IniRead, slowMotion, Settings.ini, UserSettings, slowMotion, 0
       
       IniRead, SelectedMonitorIndex, Settings.ini, UserSettings, SelectedMonitorIndex, 1
@@ -1999,7 +2033,8 @@ LoadSettingsFromIni() {
       IniRead, MegaBlaziken, Settings.ini, UserSettings, MegaBlaziken, 0
       IniRead, MegaAltaria, Settings.ini, UserSettings, MegaAltaria, 0
       IniRead, Parade, Settings.ini, UserSettings, Parade, 0
-      IniRead, PaldeanWonders, Settings.ini, UserSettings, PaldeanWonders, 1
+      IniRead, PaldeanWonders, Settings.ini, UserSettings, PaldeanWonders, 0
+      IniRead, MegaShine, Settings.ini, UserSettings, MegaShine, 1
       
       IniRead, CheckShinyPackOnly, Settings.ini, UserSettings, CheckShinyPackOnly, 0
       IniRead, TrainerCheck, Settings.ini, UserSettings, TrainerCheck, 0
@@ -2073,6 +2108,7 @@ LoadSettingsFromIni() {
       IniRead, minStarsMegaAltaria, Settings.ini, UserSettings, minStarsMegaAltaria, 0
       IniRead, minStarsParade, Settings.ini, UserSettings, minStarsParade, 0
       IniRead, minStarsPaldeanWonders, Settings.ini, UserSettings, minStarsPaldeanWonders, 0
+      IniRead, minStarsMegaShine, Settings.ini, UserSettings, minStarsMegaShine, 0
 
       IniRead, waitForEligibleAccounts, Settings.ini, UserSettings, waitForEligibleAccounts, 1
       IniRead, maxWaitHours, Settings.ini, UserSettings, maxWaitHours, 24
@@ -2137,7 +2173,7 @@ CreateDefaultSettingsFile() {
       iniContent .= "instanceStartDelay=10`n"
       iniContent .= "defaultLanguage=Scale125`n"
       iniContent .= "SelectedMonitorIndex=1`n"
-      iniContent .= "swipeSpeed=500`n"
+      iniContent .= "swipeSpeed=250`n"
       iniContent .= "runMain=0`n"
       iniContent .= "Mains=0`n"
       iniContent .= "autoUseGPTest=0`n"
@@ -2186,7 +2222,7 @@ SaveAllSettings() {
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
    global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
-   global MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, Parade, PaldeanWonders
+   global MegaGyarados, MegaBlaziken, MegaAltaria, CrimsonBlaze, Parade, PaldeanWonders, MegaShine
    global slowMotion, ocrLanguage, clientLanguage
    global CurrentVisibleSection, heartBeatDelay, sendAccountXml, showcaseEnabled, isDarkTheme
    global useBackgroundImage, tesseractPath, debugMode, useTesseract, statusMessage
@@ -2199,7 +2235,7 @@ SaveAllSettings() {
    global minStarsA2Dialga, minStarsA2Palkia, minStarsA2a, minStarsA2b
    global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA3a, minStarsA3b
    global minStarsA4HoOh, minStarsA4Lugia, minStarsA4Springs, minStarsA4Deluxe
-   global minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria, minStarsParade, minStarsPaldeanWonders
+   global minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria, minStarsParade, minStarsPaldeanWonders, minStarsMegaShine
    global menuExpanded
    global claimSpecialMissions, claimDailyMission, wonderpickForEventMissions
    global autoRestartMumu, runsBeforeRestart
@@ -2238,6 +2274,7 @@ SaveAllSettings() {
    iniContent .= "autoUseGPTest=" autoUseGPTest "`n"
    iniContent .= "slowMotion=" slowMotion "`n"
    iniContent .= "autoLaunchMonitor=" autoLaunchMonitor "`n"
+   iniContent .= "saveToGit=" saveToGit "`n"
    iniContent .= "applyRoleFilters=" applyRoleFilters "`n"
    iniContent .= "debugMode=" debugMode "`n"
    iniContent .= "tesseractOption=" useTesseract "`n"
@@ -2269,6 +2306,7 @@ SaveAllSettings() {
    iniContent .= "CrimsonBlaze=" CrimsonBlaze "`n"
    iniContent .= "Parade=" Parade "`n"
    iniContent .= "PaldeanWonders=" PaldeanWonders "`n"
+   iniContent .= "MegaShine=" MegaShine "`n"
    iniContent .= "CheckShinyPackOnly=" CheckShinyPackOnly "`n"
    iniContent .= "TrainerCheck=" TrainerCheck "`n"
    iniContent .= "FullArtCheck=" FullArtCheck "`n"
@@ -2396,6 +2434,7 @@ SaveAllSettings() {
    iniContent_Second .= "minStarsCrimsonBlaze=" minStarsCrimsonBlaze "`n"
    iniContent_Second .= "minStarsParade=" minStarsParade "`n"
    iniContent_Second .= "minStarsPaldeanWonders=" minStarsPaldeanWonders "`n"
+   iniContent_Second .= "minStarsMegaShine=" minStarsMegaShine "`n"
    iniContent_Second .= "s4tWPMinCards=" s4tWPMinCards "`n"
    iniContent_Second .= "s4tDiscordUserId=" s4tDiscordUserId "`n"
    iniContent_Second .= "s4tDiscordWebhookURL=" s4tDiscordWebhookURL "`n"

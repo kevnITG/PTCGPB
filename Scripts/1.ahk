@@ -14,6 +14,7 @@
 #Include %A_ScriptDir%\Include\AccountManager.ahk
 #Include %A_ScriptDir%\Include\FriendManager.ahk
 #Include %A_ScriptDir%\Include\Dictionary.ahk
+#Include %A_ScriptDir%\Include\Recorder.ahk
 
 #SingleInstance on
 SetMouseDelay, -1
@@ -140,7 +141,8 @@ IniRead, PseudoGodPack, %A_ScriptDir%\..\Settings.ini, UserSettings, PseudoGodPa
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsShiny, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsShiny, 0
 
-IniRead, PaldeanWonders, %A_ScriptDir%\..\Settings.ini, UserSettings, PaldeanWonders, 1
+IniRead, MegaShine, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaShine, 0
+IniRead, PaldeanWonders, %A_ScriptDir%\..\Settings.ini, UserSettings, PaldeanWonders, 0
 IniRead, Parade, %A_ScriptDir%\..\Settings.ini, UserSettings, Parade, 0
 IniRead, CrimsonBlaze, %A_ScriptDir%\..\Settings.ini, UserSettings, CrimsonBlaze, 0
 IniRead, MegaGyarados, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaGyarados, 0
@@ -186,6 +188,7 @@ IniRead, minStarsMegaBlaziken, %A_ScriptDir%\..\Settings.ini, UserSettings, minS
 IniRead, minStarsMegaAltaria, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaAltaria, 0
 IniRead, minStarsParade, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsParade, 0
 IniRead, minStarsPaldeanWonders, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsPaldeanWonders, 0
+IniRead, minStarsMegaShine, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsMegaShine, 0
 
 IniRead, slowMotion, %A_ScriptDir%\..\Settings.ini, UserSettings, slowMotion, 0
 IniRead, DeadCheck, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck, 0
@@ -231,7 +234,7 @@ if(s4tEnabled){
     maxAccountPackNum := 9999
 }
 
-pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria", "CrimsonBlaze", "Parade", "PaldeanWonders"]
+pokemonList := ["Mewtwo", "Charizard", "Pikachu", "Mew", "Dialga", "Palkia", "Arceus", "Shining", "Solgaleo", "Lunala", "Buzzwole", "Eevee", "HoOh", "Lugia", "Springs", "Deluxe", "MegaGyarados", "MegaBlaziken", "MegaAltaria", "CrimsonBlaze", "Parade", "PaldeanWonders", "MegaShine"]
 shinyPacks := {"Shining": 1, "Solgaleo": 1, "Lunala": 1, "Buzzwole": 1, "Eevee": 1, "HoOh": 1, "Lugia": 1, "Springs": 1, "Deluxe": 1}
 
 packArray := []  ; Initialize an empty array
@@ -343,7 +346,8 @@ if(InStr(deleteMethod, "Inject"))
 
 initializeAdbShell()
 
-createAccountList(scriptName)
+if(injectMethod)
+    createAccountList(scriptName)
 
 rerolls_local := 0
 rerollStartTime_local := A_TickCount
@@ -2140,12 +2144,12 @@ ControlClick(X, Y) {
     ControlClick, x%X% y%Y%, %winTitle%
 }
 
-Screenshot_dev(fileType := "Dev",subDir := "") {
-    global adbShell, adbPath, packs, winTitle, titleHeight
+Screenshot_dev(fileType := "Dev", subDir := "", srcPath := "") {
+    global adbShell, adbPath, packs, winTitle, rec_Active
     SetWorkingDir %A_ScriptDir%  ; Ensures the working directory is the script's directory
 
     ; Define folder and file paths
-    fileDir := A_ScriptDir "\..\Screenshots"
+    fileDir := A_ScriptDir "\..\Screenshots\grab"
     if !FileExist(fileDir)
         FileCreateDir, %fileDir%
     if (subDir) {
@@ -2158,7 +2162,10 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
     fileName := A_Now . "_" . winTitle . "_" . fileType . ".png"
     filePath := fileDir "\" . fileName
 
-    pBitmapW := from_window(WinExist(winTitle))
+    if (srcPath != "" && FileExist(srcPath))
+        pBitmapW := Gdip_CreateBitmapFromFile(srcPath)
+    else
+        pBitmapW := from_window(WinExist(winTitle))
     Gdip_SaveBitmapToFile(pBitmapW, filePath)
 
     sleep 100
@@ -2179,22 +2186,31 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
         KeyWait, LButton, D
         MouseGetPos , X1, Y1, OutputVarWin, OutputVarControl
         KeyWait, LButton, U
-        Y1 -= 31 + yBias
-        ;MsgBox, The cursor is at X%X1% Y%Y1%.
+        Y1 -= 31
+        Y1Image := Y1 + yBias
+
+        ; Return in case of user close the screen
+        if !WinExist("Screensho " winTitle)
+            return
 
         KeyWait, LButton, D
         MouseGetPos , X2, Y2, OutputVarWin, OutputVarControl
         KeyWait, LButton, U
-        Y2 -= 31 + yBias
-        ;MsgBox, The cursor is at X%X2% Y%Y2%.
+        Y2 -= 31
+        Y2Image := Y2 + yBias
 
         W:=X2-X1
         H:=Y2-Y1
 
-        pBitmap := Gdip_CloneBitmapArea(pBitmapW, X1, Y1, W, H)
+        pBitmap := Gdip_CloneBitmapArea(pBitmapW, X1, Y1Image, W, H)
 
         InputBox, fileName, ,"Enter the name of the needle to save"
 
+        if (fileName = "") {
+            return ""
+        }
+
+        fullScreenPath := filePath
         fileDir := A_ScriptDir . "\Scale125"
         filePath := fileDir "\" . fileName . ".png"
         Gdip_SaveBitmapToFile(pBitmap, filePath)
@@ -2205,6 +2221,11 @@ Screenshot_dev(fileType := "Dev",subDir := "") {
         MouseGetPos , X3, Y3, OutputVarWin, OutputVarControl
         KeyWait, LButton, U
         Y3 -= 31 + yBias
+
+        global rec_LastScreenGrab
+        rec_LastScreenGrab := {fileName: fileName, needlePath: filePath
+            , screenshot: fullScreenPath
+            , x1: X1, y1: Y1, x2: X2, y2: Y2, x3: X3, y3: Y3}
 
         ; Convert window coordinates to device/OCR coordinates
         ; Device resolution: 540x960, Window resolution: 277x489, Y offset: 44
@@ -2623,6 +2644,64 @@ return
 ;~+F8::ToggleStatusMessages()
 ;~F9::restartGameInstance("F9")
 
+; ===== RECORDER HOTKEY =====
+; Fires on every left-click; no-op unless recording is active.
+~LButton::
+    if (!rec_Active) {
+        return
+    }
+    if (rec_SuspendCapture) {
+        return
+    }
+    MouseGetPos, rec_DownX, rec_DownY, clickedHwnd
+    if (clickedHwnd != WinExist(winTitle)) {
+        return
+    }
+    CoordMode, Mouse, Screen
+    MouseGetPos, rec_DownX, rec_DownY
+    CoordMode, Mouse, Relative
+
+    rec_DownTime := A_TickCount
+    KeyWait, LButton
+
+    CoordMode, Mouse, Screen
+    MouseGetPos, upX, upY
+    CoordMode, Mouse, Relative
+    held := A_TickCount - rec_DownTime
+
+    ; Compute window-relative coords first, then use them for distance
+    WinGetPos, wx, wy, ww, wh, %winTitle%
+    devX1 := rec_DownX - wx
+    devY1 := rec_DownY - wy
+    devX2 := upX - wx
+    devY2 := upY - wy
+
+    ; Ignore clicks that started outside the emulator window
+    if (devX1 < 0 || devY1 < 0 || devX1 > ww || devY1 > wh) {
+        return
+    }
+
+    dist := Sqrt((devX2 - devX1) ** 2 + (devY2 - devY1) ** 2)
+
+    if (dist > 20)
+        type := "swipe"
+    else if (held >= 500)
+        type := "hold"
+    else
+        type := "click"
+
+    ssPath := RecordingCapture()
+    rawDelay := A_TickCount - rec_LastTime - held
+    delay := (rawDelay > 0) ? rawDelay // Delay : 0
+    rec_LastTime := A_TickCount
+    actionIdx := rec_Actions.Length() + 1
+    LogToFile("[Hook] Pushing action idx=" actionIdx " type=" type " x1=" devX1 " y1=" devY1 " x2=" devX2 " y2=" devY2 " ssPath=" ssPath, "recorder.txt")
+    rec_Actions.Push({type: type, x1: devX1, y1: devY1, x2: devX2, y2: devY2
+        , duration: held, delay: delay, screenshot: ssPath, comment: "", code: ""})
+    LogToFile("[Hook] rec_Actions.Length()=" rec_Actions.Length() " last.screenshot=" rec_Actions[rec_Actions.Length()].screenshot, "recorder.txt")
+    CreateStatusMessage("Recording: Capture`n" type " (" devX1 "," devY1 ")-(" devX2 "," devY2 ") dist=" dist)
+return
+
 ToggleDevMode() {
 
     try {
@@ -2639,6 +2718,10 @@ ToggleDevMode() {
 
         Gui, DevMode%winTitle%:Add, Button, % "x" . (buttonWidth * 2) . " y0 w" . buttonWidth . " h25 gscreenshotscript", screen grab
 
+        Gui, DevMode%winTitle%:Add, Button, % "x" . (buttonWidth * 3) . " y0 w" . buttonWidth . " h25 gStartStopRecording", Start Recording
+
+        Gui, DevMode%winTitle%:Add, Button, % "x" . (buttonWidth * 0) . " y" . (25 + 5) " w" . buttonWidth . " h25 gLogout", Logout
+
         Gui, DevMode%winTitle%:Show, w250 h100, Dev Mode %winTitle%
 
     }
@@ -2648,7 +2731,40 @@ ToggleDevMode() {
 }
 
 screenshotscript:
-    Screenshot_dev()
+    if (rec_Active) {
+        rawDelay := A_TickCount - rec_LastTime
+        delay := (rawDelay > 0) ? rawDelay // Delay : 0
+        rec_SuspendCapture := true
+        CreateStatusMessage("Recording: Capture`nYou could deside what to do with it later.")
+        rec_LastScreenGrab := ""
+        Screenshot_dev()
+        rec_SuspendCapture := false
+        if (rec_LastScreenGrab != "") {
+            rec_Actions.Push({type: "screenshot"
+                , fileName:       rec_LastScreenGrab.fileName
+                , needlePath:     rec_LastScreenGrab.needlePath
+                , screenshot:     rec_LastScreenGrab.screenshot
+                , x1: rec_LastScreenGrab.x1, y1: rec_LastScreenGrab.y1
+                , x2: rec_LastScreenGrab.x2, y2: rec_LastScreenGrab.y2
+                , x3: rec_LastScreenGrab.x3, y3: rec_LastScreenGrab.y3
+                , delay: delay, screenshot: rec_LastScreenGrab.needlePath
+                , comment: "", code: "", choice: ""})
+            rec_LastTime := A_TickCount
+            CreateStatusMessage("Recording: Image captured")
+        } else {
+            CreateStatusMessage("")
+        }
+    } else {
+        Screenshot_dev()
+    }
+return
+
+Logout:
+     adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
+     Sleep, 300
+     adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
+     Sleep, 300
+     adbWriteRaw("am start -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity")
 return
 
 bboxScript:
@@ -3300,27 +3416,27 @@ SelectPack(HG := false) {
     inselectexpansionscreen := 0
 
     packy := HomeScreenAllPackY
-    if (openPack == "CrimsonBlaze") {
+    if (openPack == "Parade") {
         packx := LeftPackX
-    } else if (openPack == "Parade") {
+    } else if (openPack == "PaldeanWonders") {
         packx := RightPackX
     } else { ; do not set this to a specific if openPack == "something" as all packs need to reference MiddlePackX as pack position.
         packx := MiddlePackX
     }
 
-    if(openPack == "CrimsonBlaze" || openPack == "Parade" || openPack == "PaldeanWonders") {
+    if(openPack == "Parade" || openPack == "PaldeanWonders" || openPack == "MegaShine") {
         PackIsInHomeScreen := 1
     } else {
         PackIsInHomeScreen := 0
     }
 
-    if(openPack == "PaldeanWonders") {
+    if(openPack == "MegaShine") {
         PackIsLatest := 1
     } else {
         PackIsLatest := 0
     }
 
-    if (openPack == "Parade" || openPack == "PaldeanWonders") {
+    if (openPack == "MegaShine" || openPack == "PaldeanWonders") {
         packInTopRowsOfSelectExpansion := 1
     } else {
         packInTopRowsOfSelectExpansion := 0
@@ -3484,30 +3600,49 @@ SelectPack(HG := false) {
             }
         }
 
-        if (openPack == "PaldeanWonders" || openPack == "Parade" || openPack == "CrimsonBlaze" || openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") { ; No swipe, inital screen
+        if (openPack == "MegaShine" || openPack == "PaldeanWonders" || openPack == "Parade" || openPack == "CrimsonBlaze") { ; No swipe, initial screen
             Delay(4)
             adbClick(52, 455) ; click B series. need more robust system later
             Delay(4)
-            if (openPack == "PaldeanWonders") {
+            if (openPack == "MegaShine") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionLeftColumnMiddleX
-            } else if (openPack == "Parade") {
+            } else if (openPack == "PaldeanWonders") {
                 packy := SelectExpansionFirstRowY
                 packx := SelectExpansionRightColumnMiddleX
+            } else if (openPack == "Parade") {
+                packy := 442
+                packx := SelectExpansionLeftColumnMiddleX
             } else if (openPack == "CrimsonBlaze") {
                 packy := 442
-                packx := SelectExpansionLeftColumnMiddleX
-            } else if (openPack == "MegaBlaziken") {
-                packy := 442
                 packx := SelectExpansionRightColumnMiddleX
-            } else if (openPack == "MegaAltaria") {
-                packy := 442
-                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionRight
-                ; packx := 258 ; custom locations to avoid accidentally rotating through pack wheel on following screen
-                ; packy := 309 ; custom locations to avoid accidentally rotating through pack wheel on following screen
-            } else if (openPack == "MegaGyarados") {
-                packy := 442
+            }
+        }
+
+        ; B-series packs requiring one swipe
+        if (openPack == "MegaGyarados" || openPack == "MegaBlaziken" || openPack == "MegaAltaria") {
+            Delay(4)
+            adbClick(52, 455) ; click B series
+            Delay(3)
+
+            X := 266
+            Y1 := 430
+            Y2 := 50
+
+            Loop, 2 {
+                adbSwipe(X . " " . Y1 . " " . X . " " . Y2 . " " . swipeSpeed)
+                Sleep, 600
+            }
+
+            if (openPack == "MegaGyarados") {
+                packx := SelectExpansionLeftColumnMiddleX
+                packy := 400
+            } else if (openPack == "MegaBlaziken") {
                 packx := SelectExpansionRightColumnMiddleX + 3PackExpansionLeft
+                packy := 400
+            } else if (openPack == "MegaAltaria") {
+                packx := SelectExpansionRightColumnMiddleX
+                packy := 400
             }
         }
 
@@ -4124,7 +4259,7 @@ GetEventRewards(frommain := true){
     ; adbClick_wbb(120, 465) ; used to click the middle mission button
     ; adbClick_wbb(25, 465) ;used to click the left-most mission button
 
-    ;====== Special Event Claim #1 ======
+    ;====== Special Event Claim #1, 30 Days of Gifts ======
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
@@ -4181,13 +4316,17 @@ GetEventRewards(frommain := true){
     }
 
         ;====== Special Event Claim #2, for when 2 events are going on at the same time ======
+        ;====== This update is for "Handy Card Collection Missions, ends ~April 29th =====
     failSafe := A_TickCount
     failSafeTime := 0
     Loop{
         ; if (FindOrLoseImage(199, 203, 212, 211, , "MissionLightBlue", 0, failSafeTime)){
         ;     break
         ; }
-        if (FindOrLoseImage(199, 203, 212, 211, , "MissionDarkBlue", 0, failSafeTime)){
+        ; if (FindOrLoseImage(199, 203, 212, 211, , "MissionDarkBlue", 0, failSafeTime)){
+        ;     break
+        ; }
+        if (FindOrLoseImage(199, 203, 212, 211, , "MissionLightPurple", 0, failSafeTime)){
             break
         }
         ; if (FindOrLoseImage(199, 203, 212, 211, , "MissionOliveGreen", 0, failSafeTime)){
