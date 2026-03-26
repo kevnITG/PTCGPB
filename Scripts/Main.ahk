@@ -257,15 +257,23 @@ Loop {
                     Sleep, 4000
                     SafeReload()
                 } else if(clickButton) {
+                    ; Invite was withdrawn — click OK and return to requests tab.
+                    ; No delete needed (avoids rate limit): the request disappears on its own.
                     StringSplit, pos, clickButton, `,  ; Split at ", "
                     if (scaleParam = 287) {
                         pos2 += 5
                     }
-                    Sleep, 1000
-                    if(FindImageAndClick(190, 195, 215, 220, , "DeleteFriend", pos1, pos2, 4000)) {
-                        Sleep, %Delay%
-                        adbClick(210, 210)
+                    Loop, 5 {
+                        adbClick_wbb(pos1, pos2)
+                        Sleep, 500
+                        if (!FindOrLoseImage(75, 340, 195, 530, 80, "Button", 0))
+                            break
                     }
+                    adbInputEvent("4")
+                    Sleep, 500
+                    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
+                    FindImageAndClick(170, 450, 195, 480, , "Approve", 228, 464)
+                    break
                 }
                 if (GPTest)
                     break
@@ -1171,7 +1179,12 @@ FavoriteVipFriends() {
                             break
                         if (hasUnopenedPack && FindOrLoseImage(100, 180, 170, 230, , "Error", 0)) {
                             CreateStatusMessage("Rate limit hit. Recovering...",,,, false)
-                            adbClick_wbb(139, 371)
+                            Loop, 5 {
+                                adbClick_wbb(139, 371)
+                                Sleep, 500
+                                if (!FindOrLoseImage(100, 180, 170, 230, , "Error", 0))
+                                    break
+                            }
                             failSafe := A_TickCount
                             Loop {
                                 adbClick_wbb(143, 518)
@@ -1448,7 +1461,12 @@ RemoveNonVipFriends() {
                     break
                 if (hasUnopenedPack && FindOrLoseImage(100, 180, 170, 230, , "Error", 0)) {
                     CreateStatusMessage("Rate limit hit. Recovering...",,,, false)
-                    adbClick_wbb(139, 371)
+                    Loop, 5 {
+                        adbClick_wbb(139, 371)
+                        Sleep, 500
+                        if (!FindOrLoseImage(100, 180, 170, 230, , "Error", 0))
+                            break
+                    }
                     failSafe := A_TickCount
                     Loop {
                         adbClick_wbb(143, 518)
