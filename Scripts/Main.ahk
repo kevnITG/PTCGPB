@@ -1062,6 +1062,12 @@ FavoriteVipFriends() {
     includesIdsAndNames := false
     vipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
 
+    ; Build vipCodeSet from the FULL remote list before any trimming.
+    ; This ensures out-of-trim accounts are never mistaken for ex-VIPs during cache pruning.
+    vipCodeSet := {}
+    for _, vipFriend in vipFriendsArray
+        vipCodeSet[vipFriend.Code] := true
+
     ; If the remote list is large, trim it to a manageable subset (manual VIPs are never trimmed)
     if (vipFriendsArray.MaxIndex() >= 40) {
         if (A_gptest && autoUseGPTest) {
@@ -1081,17 +1087,14 @@ FavoriteVipFriends() {
     if FileExist(manualVipFile) {
         manualVipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
         vipFriendsArray.push(manualVipFriendsArray*)
+        for _, vipFriend in manualVipFriendsArray
+            vipCodeSet[vipFriend.Code] := true
     }
 
     if (!vipFriendsArray.MaxIndex()) {
         CreateStatusMessage("No accounts found in vip_ids.txt. Aborting FavoriteVipFriends...",,,, false)
         return
     }
-
-    ; Remove cache entries whose codes are no longer in the VIP list
-    vipCodeSet := {}
-    for _, vipFriend in vipFriendsArray
-        vipCodeSet[vipFriend.Code] := true
 
     ; Prune silently "N" entries not in VIP list: were never friends, no game action needed
     toDelete := []
@@ -1380,10 +1383,6 @@ RemoveNonVipFriends() {
     ; Any VIPs missed during favouriting will be caught and handled here
     includesIdsAndNames := false
     vipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
-
-    ; Re-apply the same trim chosen during FavoriteVipFriends (no dialog shown again)
-    if (vipListTrimApplied)
-        vipFriendsArray := ApplyVipTrim(vipFriendsArray)
 
     manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
     if FileExist(manualVipFile) {
