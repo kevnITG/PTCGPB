@@ -82,7 +82,10 @@ IniRead, autoUseGPTest, %A_ScriptDir%\..\Settings.ini, UserSettings, autoUseGPTe
 IniRead, TestTime, %A_ScriptDir%\..\Settings.ini, UserSettings, TestTime, 3600
 IniRead, gpTestWaitTime, %A_ScriptDir%\..\Settings.ini, UserSettings, gpTestWaitTime, 150
 if (gpTestWaitTime = "" || gpTestWaitTime <= 0)
-    gpTestWaitTime := 120
+    gpTestWaitTime := 150
+IniRead, hasUnopenedPack, %A_ScriptDir%\..\Settings.ini, UserSettings, hasUnopenedPack, 0
+if (hasUnopenedPack = "")
+    hasUnopenedPack := 0
 IniRead, vipListTrimMode, %A_ScriptDir%\..\Settings.ini, UserSettings, vipListTrimMode, bottom
 IniRead, vipListTrimCount, %A_ScriptDir%\..\Settings.ini, UserSettings, vipListTrimCount, 40
 if (vipListTrimCount = "" || vipListTrimCount < 1)
