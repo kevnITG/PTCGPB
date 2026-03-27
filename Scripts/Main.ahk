@@ -643,26 +643,25 @@ ResumeScript:
 return
 
 StopScript:
+    if (!groupRerollEnabled) {
+        CreateStatusMessage("Stopping script...",,,, false)
+        ExitApp
+    }
     settingsPath := A_ScriptDir . "\..\Settings.ini"
     IniRead, savedStopPreferenceMain, %settingsPath%, UserSettings, stopPreferenceMain, none
     if (savedStopPreferenceMain = "immediate") {
         CreateStatusMessage("Stopping script...",,,, false)
         ExitApp
-    } else if (savedStopPreferenceMain = "gp_test" && groupRerollEnabled) {
+    } else if (savedStopPreferenceMain = "gp_test") {
         Gosub, StopMainAfterGPTest
     } else {
         Gui, StopMain:Destroy
         Gui, StopMain:New, +AlwaysOnTop, Stop Main Instance
         Gui, StopMain:Add, Text, x20 y15 w220 Center, What would you like to do?
         Gui, StopMain:Add, Button, x20 y45 w220 h30 gStopMainImmediately, Stop Immediately
-        if (groupRerollEnabled) {
-            Gui, StopMain:Add, Button, x20 y80 w220 h30 gStopMainAfterGPTest, Run GP Test then Stop
-            Gui, StopMain:Add, Checkbox, x20 y120 w220 vRememberStopPreferenceMain, Remember my choice
-            Gui, StopMain:Show, w260 h150, Stop Main Instance
-        } else {
-            Gui, StopMain:Add, Checkbox, x20 y85 w220 vRememberStopPreferenceMain, Remember my choice
-            Gui, StopMain:Show, w260 h115, Stop Main Instance
-        }
+        Gui, StopMain:Add, Button, x20 y80 w220 h30 gStopMainAfterGPTestButton, Run GP Test then Stop
+        Gui, StopMain:Add, Checkbox, x20 y120 w220 vRememberStopPreferenceMain, Remember my choice
+        Gui, StopMain:Show, w260 h150, Stop Main Instance
     }
 return
 
@@ -677,13 +676,15 @@ StopMainImmediately:
     ExitApp
 return
 
-StopMainAfterGPTest:
+StopMainAfterGPTestButton:
     Gui, StopMain:Submit, NoHide
+    Gui, StopMain:Destroy
     if (RememberStopPreferenceMain) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
         IniWrite, gp_test, %settingsPath%, UserSettings, stopPreferenceMain
     }
-    Gui, StopMain:Destroy
+
+StopMainAfterGPTest:
     stopAfterGPTest := true
     if (!GPTest) {
         GPTest := true
