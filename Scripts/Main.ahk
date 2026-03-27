@@ -33,6 +33,7 @@ global triggerTestNeeded, testStartTime, firstRun, minStars, minStarsA2b, vipIds
 global autoUseGPTest, autotest, autotest_time, A_gptest, TestTime, stopAfterGPTest, groupRerollEnabled, hasUnopenedPack
 global friendOpsCount, friendOpsWindowStart, gpTestWaitTime, rateLimitAction
 global gptest_nonFriends, gptest_alreadyFavourited
+global vipListTrimMode, vipListTrimCount, vipListTrimApplied, vipTrimDialogDone
 global MuMuv5, titleHeight
 MuMuv5 := isMuMuv5()
 
@@ -81,10 +82,11 @@ IniRead, autoUseGPTest, %A_ScriptDir%\..\Settings.ini, UserSettings, autoUseGPTe
 IniRead, TestTime, %A_ScriptDir%\..\Settings.ini, UserSettings, TestTime, 3600
 IniRead, gpTestWaitTime, %A_ScriptDir%\..\Settings.ini, UserSettings, gpTestWaitTime, 150
 if (gpTestWaitTime = "" || gpTestWaitTime <= 0)
-    gpTestWaitTime := 150
-IniRead, hasUnopenedPack, %A_ScriptDir%\..\Settings.ini, UserSettings, hasUnopenedPack, 0
-if (hasUnopenedPack = "")
-    hasUnopenedPack := 0
+    gpTestWaitTime := 120
+IniRead, vipListTrimMode, %A_ScriptDir%\..\Settings.ini, UserSettings, vipListTrimMode, bottom
+IniRead, vipListTrimCount, %A_ScriptDir%\..\Settings.ini, UserSettings, vipListTrimCount, 40
+if (vipListTrimCount = "" || vipListTrimCount < 1)
+    vipListTrimCount := 40
 global MuMuv5
 MuMuv5 := isMuMuv5()
 instanceSleep := scriptName * 1000
@@ -707,6 +709,46 @@ RateLimitGuiEscape:
     Gui, RateLimit:Destroy
 return
 
+VipTrimModeChanged:
+    Gui, VipTrim:Submit, NoHide
+    isCustom := VipTrimCustom
+    GuiControl, % (isCustom ? "Enable" : "Disable"), VipCustomCount
+    GuiControl, % (isCustom ? "Enable" : "Disable"), VipCustomDirTop
+    GuiControl, % (isCustom ? "Enable" : "Disable"), VipCustomDirBottom
+return
+
+VipTrimStart:
+    global vipListTrimMode, vipListTrimCount, vipListTrimApplied, vipTrimDialogDone
+    Gui, VipTrim:Submit, NoHide
+    if (VipTrimTop) {
+        vipListTrimMode := "top"
+        vipListTrimCount := 40
+    } else if (VipTrimBottom) {
+        vipListTrimMode := "bottom"
+        vipListTrimCount := 40
+    } else {
+        customCount := VipCustomCount + 0
+        if (customCount < 1 || customCount > 99) {
+            MsgBox, 48, Invalid Count, Please enter a number between 1 and 99.
+            return
+        }
+        vipListTrimMode := VipCustomDirTop ? "top" : "bottom"
+        vipListTrimCount := customCount
+    }
+    vipListTrimApplied := true
+    settingsPath := A_ScriptDir . "\..\Settings.ini"
+    IniWrite, %vipListTrimMode%, %settingsPath%, UserSettings, vipListTrimMode
+    IniWrite, %vipListTrimCount%, %settingsPath%, UserSettings, vipListTrimCount
+    Gui, VipTrim:Destroy
+    vipTrimDialogDone := true
+return
+
+VipTrimGuiClose:
+VipTrimGuiEscape:
+    Gui, VipTrim:Destroy
+    vipTrimDialogDone := true
+return
+
 ShowStatusMessages:
     ToggleStatusMessages()
 return
@@ -901,9 +943,10 @@ GetNeedle(Path) {
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GPTestScript() {
-    global triggerTestNeeded, GPTest, gpTestWaitTime, friendOpsCount, friendOpsWindowStart, rateLimitAction, hasUnopenedPack
+    global triggerTestNeeded, GPTest, gpTestWaitTime, friendOpsCount, friendOpsWindowStart, rateLimitAction, hasUnopenedPack, vipListTrimApplied
     triggerTestNeeded := false
     rateLimitAction := ""
+    vipListTrimApplied := false
     FavoriteVipFriends()
     if (!GPTest || rateLimitAction = "sleep")
         return
@@ -982,6 +1025,7 @@ CheckFriendOpsRateLimit() {
 ; FavoriteVipFriends - Mark all VIP friends as favourites 
 FavoriteVipFriends() {
     global GPTest, vipIdsURL, failSafe, gptest_nonFriends, gptest_alreadyFavourited, scriptName, friendOpsCount, friendOpsWindowStart, hasUnopenedPack
+    global A_gptest, autoUseGPTest, vipListTrimMode, vipListTrimCount, vipListTrimApplied
 
     ; Load persistent GP Test cache from disk.
     ; Always reload from file as it survives bot restarts.
@@ -1013,6 +1057,21 @@ FavoriteVipFriends() {
 
     includesIdsAndNames := false
     vipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
+
+    ; If the remote list is large, trim it to a manageable subset (manual VIPs are never trimmed)
+    if (vipFriendsArray.MaxIndex() >= 40) {
+        if (A_gptest && autoUseGPTest) {
+            ; Auto mode: silently use the bottom 40 (most recently added accounts)
+            vipListTrimMode := "bottom"
+            vipListTrimCount := 40
+            vipListTrimApplied := true
+            vipFriendsArray := ApplyVipTrim(vipFriendsArray)
+        } else {
+            vipFriendsArray := PromptVipListTrim(vipFriendsArray)
+            if (!GPTest)
+                return
+        }
+    }
 
     manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
     if FileExist(manualVipFile) {
@@ -1240,7 +1299,7 @@ FavoriteVipFriends() {
                 break
             }
             ; Account doesn't exist: banned, deleted, or code never existed
-            else if(FindOrLoseImage(28, 369, 55, 394, , "NotFound", 0, failSafeTime)) {
+            else if(FindOrLoseImage(211, 320, 245, 344, , "GPTest_NotFound", 0, failSafeTime)) {
                 adbClick_wbb(138, 380)
                 Sleep, 500
                 if (vip.isRemoval) {
@@ -1293,7 +1352,7 @@ FavoriteVipFriends() {
 ; Removes non-favourited friends starting from the bottom of the list.
 ; Stops when a favourited (VIP) friend is encountered.
 RemoveNonVipFriends() {
-    global GPTest, autoUseGPTest, A_gptest, autotest, failSafe, gptest_alreadyFavourited, friendOpsCount, friendOpsWindowStart, hasUnopenedPack, vipIdsURL
+    global GPTest, autoUseGPTest, A_gptest, autotest, failSafe, gptest_alreadyFavourited, friendOpsCount, friendOpsWindowStart, hasUnopenedPack, vipIdsURL, vipListTrimApplied
 
     ; Navigate to Social screen
     failSafe := A_TickCount
@@ -1317,6 +1376,11 @@ RemoveNonVipFriends() {
     ; Any VIPs missed during favouriting will be caught and handled here
     includesIdsAndNames := false
     vipFriendsArray := GetFriendAccountsFromFile(A_ScriptDir . "\..\vip_ids.txt", includesIdsAndNames)
+
+    ; Re-apply the same trim chosen during FavoriteVipFriends (no dialog shown again)
+    if (vipListTrimApplied)
+        vipFriendsArray := ApplyVipTrim(vipFriendsArray)
+
     manualVipFile := A_ScriptDir . "\..\manual_vip_ids.txt"
     if FileExist(manualVipFile) {
         manualVipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
@@ -1533,6 +1597,86 @@ SaveGPTestedCache() {
         line := code . "|" . entry.Name . "|" . entry.Time
         FileAppend, F:%line%`n, %filePath%
     }
+}
+
+; Shows a pop-up when the remote VIP list has >= 40 accounts, letting the user choose
+; Top 40, Bottom 40, or a custom count (1-39) from either end.
+; Stores the choice in vipListTrimMode/Count globals so RemoveNonVipFriends can reuse it.
+; Closing the dialog without clicking Start proceeds with the full unmodified list.
+PromptVipListTrim(vipFriendsArray) {
+    global GPTest, vipListTrimMode, vipListTrimCount, vipListTrimApplied, vipTrimDialogDone
+    global VipTrimTop, VipTrimBottom, VipTrimCustom, VipCustomCount, VipCustomDirTop, VipCustomDirBottom
+    vipCount := vipFriendsArray.MaxIndex()
+    vipTrimDialogDone := false
+
+    ; Determine initial dialog state from saved settings
+    savedIsCustom := (vipListTrimCount != 40 || (vipListTrimMode != "top" && vipListTrimMode != "bottom"))
+
+    Gui, VipTrim:Destroy
+    Gui, VipTrim:New, +AlwaysOnTop, Large VIP List Detected
+    Gui, VipTrim:Add, Text, x20 y15 w280 Center, %vipCount% accounts found in the remote VIP list.
+    Gui, VipTrim:Add, Text, x20 y35 w280 Center, Select which accounts to GP Test against:
+    Gui, VipTrim:Add, Radio, x20 y65 w280 vVipTrimTop Group gVipTrimModeChanged, Top 40
+    Gui, VipTrim:Add, Radio, x20 y88 w280 vVipTrimBottom gVipTrimModeChanged, Bottom 40
+    Gui, VipTrim:Add, Radio, x20 y111 w280 vVipTrimCustom gVipTrimModeChanged, Custom
+    Gui, VipTrim:Add, Text, x40 y138 w85, Count (1-99):
+    Gui, VipTrim:Add, Edit, x130 y135 w60 vVipCustomCount Number, %vipListTrimCount%
+    Gui, VipTrim:Add, Radio, x40 y162 w80 vVipCustomDirTop Group, Top
+    Gui, VipTrim:Add, Radio, x130 y162 w80 vVipCustomDirBottom, Bottom
+    Gui, VipTrim:Add, Button, x20 y195 w280 h30 gVipTrimStart, Start GP Test
+    Gui, VipTrim:Show, w320 h242, Large VIP List Detected
+
+    ; Apply saved state: select the right radio and enable/disable custom inputs
+    if (savedIsCustom) {
+        GuiControl, , VipTrimCustom, 1
+        if (vipListTrimMode = "top")
+            GuiControl, , VipCustomDirTop, 1
+        else
+            GuiControl, , VipCustomDirBottom, 1
+    } else if (vipListTrimMode = "top") {
+        GuiControl, , VipTrimTop, 1
+        GuiControl, Disable, VipCustomCount
+        GuiControl, Disable, VipCustomDirTop
+        GuiControl, Disable, VipCustomDirBottom
+    } else {
+        GuiControl, , VipTrimBottom, 1
+        GuiControl, Disable, VipCustomCount
+        GuiControl, Disable, VipCustomDirTop
+        GuiControl, Disable, VipCustomDirBottom
+    }
+
+    Loop {
+        if (vipTrimDialogDone)
+            break
+        if (!GPTest) {
+            Gui, VipTrim:Destroy
+            return vipFriendsArray
+        }
+        Sleep, 100
+    }
+    return ApplyVipTrim(vipFriendsArray)
+}
+
+; Applies the stored trim (vipListTrimMode/Count) to an array without showing a dialog.
+; Returns the original array if no trim was selected this run.
+ApplyVipTrim(vipFriendsArray) {
+    global vipListTrimMode, vipListTrimCount, vipListTrimApplied
+    if (!vipListTrimApplied)
+        return vipFriendsArray
+
+    vipCount := vipFriendsArray.MaxIndex()
+    trimCount := (vipListTrimCount < vipCount) ? vipListTrimCount : vipCount
+    trimmed := []
+    if (vipListTrimMode = "top") {
+        Loop, %trimCount%
+            trimmed.Push(vipFriendsArray[A_Index])
+    } else {
+        startIdx := vipCount - trimCount + 1
+        Loop, %trimCount%
+            trimmed.Push(vipFriendsArray[startIdx + A_Index - 1])
+    }
+    CreateStatusMessage("VIP list trimmed to " . trimCount . " accounts (" . vipListTrimMode . ").",,,, false)
+    return trimmed
 }
 
 ; Attempts to extract a friend accounts's code and name from the screen, by taking screenshot and running OCR on specific regions.
