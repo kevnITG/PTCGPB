@@ -720,8 +720,8 @@ VipTrimStart:
         vipListTrimCount := 40
     } else {
         customCount := VipCustomCount + 0
-        if (customCount < 1 || customCount >= 40) {
-            MsgBox, 48, Invalid Count, Please enter a number between 1 and 39.
+        if (customCount < 1 || customCount > 99) {
+            MsgBox, 48, Invalid Count, Please enter a number between 1 and 99.
             return
         }
         vipListTrimMode := VipCustomDirTop ? "top" : "bottom"
@@ -1541,7 +1541,7 @@ PromptVipListTrim(vipFriendsArray) {
     Gui, VipTrim:Add, Radio, x20 y65 w280 vVipTrimTop Group gVipTrimModeChanged, Top 40
     Gui, VipTrim:Add, Radio, x20 y88 w280 vVipTrimBottom gVipTrimModeChanged, Bottom 40
     Gui, VipTrim:Add, Radio, x20 y111 w280 vVipTrimCustom gVipTrimModeChanged, Custom
-    Gui, VipTrim:Add, Text, x40 y138 w85, Count (1-39):
+    Gui, VipTrim:Add, Text, x40 y138 w85, Count (1-99):
     Gui, VipTrim:Add, Edit, x130 y135 w60 vVipCustomCount Number, %vipListTrimCount%
     Gui, VipTrim:Add, Radio, x40 y162 w80 vVipCustomDirTop Group, Top
     Gui, VipTrim:Add, Radio, x130 y162 w80 vVipCustomDirBottom, Bottom
