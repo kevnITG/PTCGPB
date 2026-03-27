@@ -908,6 +908,7 @@ ApplyGroupRerollSettings:
     GuiControl,, autoUseGPTest, %autoUseGPTest%
     GuiControl,, TestTime, %TestTime%
     GuiControl,, applyRoleFilters, %applyRoleFilters%
+    SaveAllSettings()
 return
 
 CancelGroupRerollSettings:
@@ -2352,15 +2353,6 @@ SaveAllSettings() {
       deleteMethod := "Create Bots (13P)"
    }
 
-   if (!groupRerollEnabled) {
-   mainIdsURL := ""
-   vipIdsURL := ""
-   autoUseGPTest := 0
-   TestTime := 3600
-   applyRoleFilters := 0
-   hasUnopenedPack := 0
-   }
-   
    if (SortByDropdown = "Oldest First")
       injectSortMethod := "ModifiedAsc"
    else if (SortByDropdown = "Newest First")
