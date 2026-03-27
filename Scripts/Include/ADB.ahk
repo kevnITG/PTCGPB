@@ -140,7 +140,7 @@ DisableBackgroundServices() {
     commands := []
     commands.Push("am stopservice com.google.android.gms/.chimera.PersistentIntentOperationService")
     commands.Push("am stopservice com.google.android.gms/com.google.android.location.reporting.service.ReportingAndroidService")
-    commands.Push("am force-stop com.mumu.store")
+    commands.Push("pm uninstall -k --user 0 com.mumu.store")
 
     for index, command in commands {
         fullCommand := """" . adbPath . """ -s " . deviceAddress . " shell " . command

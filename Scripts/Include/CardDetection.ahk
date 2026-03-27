@@ -106,7 +106,7 @@ CheckCardLoading(){
 ; FindBorders - Find card borders of specific type in pack
 ;-------------------------------------------------------------------------------
 FindBorders(prefix) {
-    global currentPackIs6Card, currentPackIs4Card, scaleParam, winTitle, defaultLanguage
+    global currentPackIs6Card, currentPackIs4Card, scaleParam, winTitle, defaultLanguage, MegaShine
     count := 0
     searchVariation := 40 ;
 
@@ -310,13 +310,67 @@ FindBorders(prefix) {
         }
 
         Path := A_ScriptDir . "\" . defaultLanguage . "\" . imageName . ".png"
+        slotFound := false
         if (FileExist(Path)) {
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
-            if (vRet = 1) {
-                count += 1
+            if (vRet = 1)
+                slotFound := true
+        }
+
+        ; MegaShine-specific variant needles (only searched when MegaShine is an enabled pack)
+        if (!slotFound && MegaShine) {
+            ; Full Art: also try fullart-megashine1.png and fullart-megashine2.png for any slot
+            if (prefix = "fullArt") {
+                ; fullart-megashine1.png: search 103px higher (top border rather than bottom border because 4-diamond mega also uses pure green border in the bottom border screen region which leads to false positives)
+                altPath := A_ScriptDir . "\" . defaultLanguage . "\fullart-megashine1.png"
+                if (FileExist(altPath)) {
+                    pNeedle := GetNeedle(altPath)
+                    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2] - 103, coords[3], coords[4] - 103, currentSearchVariation)
+                    if (vRet = 1)
+                        slotFound := true
+                }
+                ; fullart-megashine2.png: search at normal border coords
+                if (!slotFound) {
+                    altPath := A_ScriptDir . "\" . defaultLanguage . "\fullart-megashine2.png"
+                    if (FileExist(altPath)) {
+                        pNeedle := GetNeedle(altPath)
+                        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
+                        if (vRet = 1)
+                            slotFound := true
+                    }
+                }
+            }
+
+            ; Immersive slot 6 (6-card): also try immersive-megashine6.png
+            if (!slotFound && prefix = "immersive" && is6CardPack && A_Index = 6) {
+                altPath := A_ScriptDir . "\" . defaultLanguage . "\immersive-megashine6.png"
+                if (FileExist(altPath)) {
+                    pNeedle := GetNeedle(altPath)
+                    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
+                    if (vRet = 1)
+                        slotFound := true
+                }
+            }
+
+            ; Shiny 2star slot 6 (6-card): also try shiny2star6card-megashine1, -2, -3
+            if (!slotFound && prefix = "shiny2star" && is6CardPack && A_Index = 6) {
+                Loop, 3 {
+                    altPath := A_ScriptDir . "\" . defaultLanguage . "\shiny2star6card-megashine" . A_Index . ".png"
+                    if (FileExist(altPath)) {
+                        pNeedle := GetNeedle(altPath)
+                        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
+                        if (vRet = 1) {
+                            slotFound := true
+                            break
+                        }
+                    }
+                }
             }
         }
+
+        if (slotFound)
+            count += 1
     }
     Gdip_DisposeImage(pBitmap)
     return count
