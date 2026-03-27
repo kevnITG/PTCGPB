@@ -342,14 +342,19 @@ FindBorders(prefix) {
                 }
             }
 
-            ; Immersive slot 6 (6-card): also try immersive-megashine6.png
+            ; Immersive slot 6 (6-card): also try immersive-megashine6.png and immersive-megashine6-1.png
             if (!slotFound && prefix = "immersive" && is6CardPack && A_Index = 6) {
-                altPath := A_ScriptDir . "\" . defaultLanguage . "\immersive-megashine6.png"
-                if (FileExist(altPath)) {
-                    pNeedle := GetNeedle(altPath)
-                    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
-                    if (vRet = 1)
-                        slotFound := true
+                Loop, 2 {
+                    altName := (A_Index = 1) ? "immersive-megashine6" : "immersive-megashine6-1"
+                    altPath := A_ScriptDir . "\" . defaultLanguage . "\" . altName . ".png"
+                    if (FileExist(altPath)) {
+                        pNeedle := GetNeedle(altPath)
+                        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
+                        if (vRet = 1) {
+                            slotFound := true
+                            break
+                        }
+                    }
                 }
             }
 
