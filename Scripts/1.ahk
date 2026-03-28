@@ -141,7 +141,7 @@ IniRead, PseudoGodPack, %A_ScriptDir%\..\Settings.ini, UserSettings, PseudoGodPa
 IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
 IniRead, minStarsShiny, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsShiny, 0
 
-IniRead, MegaShine, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaShine, 0
+IniRead, MegaShine, %A_ScriptDir%\..\Settings.ini, UserSettings, MegaShine, 1
 IniRead, PaldeanWonders, %A_ScriptDir%\..\Settings.ini, UserSettings, PaldeanWonders, 0
 IniRead, Parade, %A_ScriptDir%\..\Settings.ini, UserSettings, Parade, 0
 IniRead, CrimsonBlaze, %A_ScriptDir%\..\Settings.ini, UserSettings, CrimsonBlaze, 0

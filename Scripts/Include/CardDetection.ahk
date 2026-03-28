@@ -313,7 +313,11 @@ FindBorders(prefix) {
         slotFound := false
         if (FileExist(Path)) {
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
+            ; Immersive slot 6 (6-card): use x from slot 3 (top-right), y from slot 4 (bottom row)
+            if (prefix = "immersive" && is6CardPack && A_Index = 6)
+                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, borderCoords[3][1], borderCoords[4][2], borderCoords[3][3], borderCoords[4][4], currentSearchVariation)
+            else
+                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
             if (vRet = 1)
                 slotFound := true
         }
@@ -349,7 +353,8 @@ FindBorders(prefix) {
                     altPath := A_ScriptDir . "\" . defaultLanguage . "\" . altName . ".png"
                     if (FileExist(altPath)) {
                         pNeedle := GetNeedle(altPath)
-                        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
+                        ; x from slot 3 (top-right), y from slot 4 (bottom row)
+                        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, borderCoords[3][1], borderCoords[4][2], borderCoords[3][3], borderCoords[4][4], currentSearchVariation)
                         if (vRet = 1) {
                             slotFound := true
                             break
@@ -358,9 +363,9 @@ FindBorders(prefix) {
                 }
             }
 
-            ; Shiny 2star slot 6 (6-card): also try shiny2star6card-megashine1, -2, -3
+            ; Shiny 2star slot 6 (6-card): also try shiny2star6card-megashine1, -2, -3, -4
             if (!slotFound && prefix = "shiny2star" && is6CardPack && A_Index = 6) {
-                Loop, 3 {
+                Loop, 4 {
                     altPath := A_ScriptDir . "\" . defaultLanguage . "\shiny2star6card-megashine" . A_Index . ".png"
                     if (FileExist(altPath)) {
                         pNeedle := GetNeedle(altPath)
