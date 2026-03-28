@@ -107,7 +107,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.5.7"
+   ,localVersion := "v9.5.8"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -362,7 +362,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.5.7 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.5.8 kevinnnn"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -874,6 +874,7 @@ ShowGroupRerollSettings:
     Gui, GroupRerollSelect:Add, Checkbox, % (hasUnopenedPack ? "Checked" : "") " vhasUnopenedPack_Popup x15 y" . yPos . " cWhite", Unopened Pack
     yPos += 30
 
+    
     Gui, GroupRerollSelect:Add, Checkbox, % (applyRoleFilters ? "Checked" : "") " vapplyRoleFilters_Popup x15 y" . yPos . " cWhite", Role-Based Filters
     yPos += 40
     
@@ -2219,7 +2220,7 @@ SaveAllSettings() {
    global FriendID, AccountName, waitTime, Delay, folderPath, discordWebhookURL, discordUserId, Columns, godPack
    global Instances, instanceStartDelay, defaultLanguage, SelectedMonitorIndex, swipeSpeed, deleteMethod
    global runMain, Mains, heartBeat, heartBeatWebhookURL, heartBeatName, nukeAccount, packMethod
-   global autoLaunchMonitor, autoUseGPTest, TestTime, gpTestWaitTime, groupRerollEnabled, hasUnopenedPack
+   global autoLaunchMonitor, autoUseGPTest, TestTime, groupRerollEnabled, saveToGit, gpTestWaitTime, hasUnopenedPack
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
    global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
