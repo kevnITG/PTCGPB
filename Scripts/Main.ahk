@@ -87,9 +87,9 @@ IniRead, hasUnopenedPack, %A_ScriptDir%\..\Settings.ini, UserSettings, hasUnopen
 if (hasUnopenedPack = "")
     hasUnopenedPack := 0
 IniRead, vipListTrimMode, %A_ScriptDir%\..\Settings.ini, UserSettings, vipListTrimMode, bottom
-IniRead, vipListTrimCount, %A_ScriptDir%\..\Settings.ini, UserSettings, vipListTrimCount, 40
+IniRead, vipListTrimCount, %A_ScriptDir%\..\Settings.ini, UserSettings, vipListTrimCount, 60
 if (vipListTrimCount = "" || vipListTrimCount < 1)
-    vipListTrimCount := 40
+    vipListTrimCount := 60
 global MuMuv5
 MuMuv5 := isMuMuv5()
 instanceSleep := scriptName * 1000
@@ -727,10 +727,10 @@ VipTrimStart:
     Gui, VipTrim:Submit, NoHide
     if (VipTrimTop) {
         vipListTrimMode := "top"
-        vipListTrimCount := 40
+        vipListTrimCount := 60
     } else if (VipTrimBottom) {
         vipListTrimMode := "bottom"
-        vipListTrimCount := 40
+        vipListTrimCount := 60
     } else {
         customCount := VipCustomCount + 0
         if (customCount < 1 || customCount > 99) {
@@ -1073,11 +1073,11 @@ FavoriteVipFriends() {
         vipCodeSet[vipFriend.Code] := true
 
     ; If the remote list is large, trim it to a manageable subset (manual VIPs are never trimmed)
-    if (vipFriendsArray.MaxIndex() >= 40) {
+    if (vipFriendsArray.MaxIndex() > 60) {
         if (A_gptest && autoUseGPTest) {
-            ; Auto mode: silently use the bottom 40 (most recently added accounts)
+            ; Auto mode: silently use the bottom 60 (most recently added accounts)
             vipListTrimMode := "bottom"
-            vipListTrimCount := 40
+            vipListTrimCount := 60
             vipListTrimApplied := true
             vipFriendsArray := ApplyVipTrim(vipFriendsArray)
         } else {
@@ -1606,8 +1606,8 @@ SaveGPTestedCache() {
     }
 }
 
-; Shows a pop-up when the remote VIP list has >= 40 accounts, letting the user choose
-; Top 40, Bottom 40, or a custom count (1-39) from either end.
+; Shows a pop-up when the remote VIP list has > 60 accounts, letting the user choose
+; Top 60, Bottom 60, or a custom count from either end.
 ; Stores the choice in vipListTrimMode/Count globals so RemoveNonVipFriends can reuse it.
 ; Closing the dialog without clicking Start proceeds with the full unmodified list.
 PromptVipListTrim(vipFriendsArray) {
@@ -1617,14 +1617,14 @@ PromptVipListTrim(vipFriendsArray) {
     vipTrimDialogDone := false
 
     ; Determine initial dialog state from saved settings
-    savedIsCustom := (vipListTrimCount != 40 || (vipListTrimMode != "top" && vipListTrimMode != "bottom"))
+    savedIsCustom := (vipListTrimCount != 60 || (vipListTrimMode != "top" && vipListTrimMode != "bottom"))
 
     Gui, VipTrim:Destroy
     Gui, VipTrim:New, +AlwaysOnTop, Large VIP List Detected
     Gui, VipTrim:Add, Text, x20 y15 w280 Center, %vipCount% accounts found in the remote VIP list.
     Gui, VipTrim:Add, Text, x20 y35 w280 Center, Select which accounts to GP Test against:
-    Gui, VipTrim:Add, Radio, x20 y65 w280 vVipTrimTop Group gVipTrimModeChanged, Top 40
-    Gui, VipTrim:Add, Radio, x20 y88 w280 vVipTrimBottom gVipTrimModeChanged, Bottom 40
+    Gui, VipTrim:Add, Radio, x20 y65 w280 vVipTrimTop Group gVipTrimModeChanged, Top 60
+    Gui, VipTrim:Add, Radio, x20 y88 w280 vVipTrimBottom gVipTrimModeChanged, Bottom 60
     Gui, VipTrim:Add, Radio, x20 y111 w280 vVipTrimCustom gVipTrimModeChanged, Custom
     Gui, VipTrim:Add, Text, x40 y138 w85, Count (1-99):
     Gui, VipTrim:Add, Edit, x130 y135 w60 vVipCustomCount Number, %vipListTrimCount%
