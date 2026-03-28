@@ -275,9 +275,9 @@ Sleep, 1000
 ConnectAdb(folderPath)
 
 Sleep, 2000
-; CreateStatusMessage("Disabling background services...")
-; DisableBackgroundServices()
-; Sleep, 5000
+CreateStatusMessage("Disabling background services...")
+DisableBackgroundServices()
+Sleep, 5000
 
 resetWindows()
 MaxRetries := 10
