@@ -3635,13 +3635,13 @@ SelectPack(HG := false) {
             }
 
             if (openPack == "MegaGyarados") {
-                packx := SelectExpansionLeftColumnMiddleX
+                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionLeft
                 packy := 400
             } else if (openPack == "MegaBlaziken") {
-                packx := SelectExpansionRightColumnMiddleX + 3PackExpansionLeft
+                packx := SelectExpansionLeftColumnMiddleX
                 packy := 400
             } else if (openPack == "MegaAltaria") {
-                packx := SelectExpansionRightColumnMiddleX
+                packx := SelectExpansionLeftColumnMiddleX + 3PackExpansionRight
                 packy := 400
             }
         }
