@@ -107,7 +107,7 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.5.7"
+   ,localVersion := "v9.5.8"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -362,7 +362,7 @@ NextStep:
    Gui, Font, s12 cWhite Bold
    Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % currentDictionary.title_main
    Gui, Font, s10 cWhite Bold
-   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.5.7 kevinnnn"
+   Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % "`nv9.5.8 kevinnnn"
 
    Gui, Add, Picture, gBuyMeCoffee x625 y60, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -809,7 +809,7 @@ CancelCardDetection:
 return
 
 UpdateGroupRerollButtonText() {
-    global groupRerollEnabled, mainIdsURL, vipIdsURL, autoUseGPTest, applyRoleFilters, gpTestWaitTime
+    global groupRerollEnabled, mainIdsURL, vipIdsURL, autoUseGPTest, applyRoleFilters, gpTestWaitTime, hasUnopenedPack
     global currentDictionary
     
     if (!groupRerollEnabled) {
@@ -870,7 +870,9 @@ ShowGroupRerollSettings:
     Gui, GroupRerollSelect:Add, Text, x15 y%yPos% cWhite, GP Test Wait (s):
     yPos += 20
     Gui, GroupRerollSelect:Add, Edit, vgpTestWaitTime_Popup w50 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, %gpTestWaitTime%
-    yPos += 35
+    yPos += 30
+    Gui, GroupRerollSelect:Add, Checkbox, % (hasUnopenedPack ? "Checked" : "") " vhasUnopenedPack_Popup x15 y" . yPos . " cWhite", Unopened Pack
+    yPos += 30
     
     Gui, GroupRerollSelect:Add, Checkbox, % (applyRoleFilters ? "Checked" : "") " vapplyRoleFilters_Popup x15 y" . yPos . " cWhite", Role-Based Filters
     yPos += 40
@@ -891,6 +893,7 @@ ApplyGroupRerollSettings:
     autoUseGPTest := autoUseGPTest_Popup
     TestTime := TestTime_Popup
     gpTestWaitTime := gpTestWaitTime_Popup
+    hasUnopenedPack := hasUnopenedPack_Popup
     applyRoleFilters := applyRoleFilters_Popup
     
     Gui, GroupRerollSelect:Destroy
@@ -905,6 +908,7 @@ ApplyGroupRerollSettings:
     GuiControl,, autoUseGPTest, %autoUseGPTest%
     GuiControl,, TestTime, %TestTime%
     GuiControl,, applyRoleFilters, %applyRoleFilters%
+    SaveAllSettings()
 return
 
 CancelGroupRerollSettings:
@@ -1960,9 +1964,9 @@ LoadSettingsFromIni() {
       IniRead, autoLaunchMonitor, Settings.ini, UserSettings, autoLaunchMonitor, 1
       IniRead, saveToGit, Settings.ini, UserSettings, saveToGit, 0
       IniRead, TestTime, Settings.ini, UserSettings, TestTime, 3600
-      IniRead, gpTestWaitTime, Settings.ini, UserSettings, gpTestWaitTime, 120
+      IniRead, gpTestWaitTime, Settings.ini, UserSettings, gpTestWaitTime, 150
       if (gpTestWaitTime = "" || gpTestWaitTime <= 0)
-          gpTestWaitTime := 120
+          gpTestWaitTime := 150
       IniRead, Delay, Settings.ini, UserSettings, Delay, 250
       IniRead, waitTime, Settings.ini, UserSettings, waitTime, 5
       IniRead, swipeSpeed, Settings.ini, UserSettings, swipeSpeed, 250
@@ -2080,6 +2084,9 @@ LoadSettingsFromIni() {
       IniRead, showcaseLikes, Settings.ini, UserSettings, showcaseLikes, 5
       IniRead, autoUseGPTest, Settings.ini, UserSettings, autoUseGPTest, 0
       IniRead, applyRoleFilters, Settings.ini, UserSettings, applyRoleFilters, 0
+      IniRead, hasUnopenedPack, Settings.ini, UserSettings, hasUnopenedPack, 0
+      if (hasUnopenedPack = "")
+          hasUnopenedPack := 0
 
       IniRead, minStarsA1Charizard, Settings.ini, UserSettings, minStarsA1Charizard, 0
       IniRead, minStarsA1Mewtwo, Settings.ini, UserSettings, minStarsA1Mewtwo, 0
@@ -2172,7 +2179,8 @@ CreateDefaultSettingsFile() {
       iniContent .= "Mains=0`n"
       iniContent .= "autoUseGPTest=0`n"
       iniContent .= "TestTime=3600`n"
-      iniContent .= "gpTestWaitTime=120`n"
+      iniContent .= "gpTestWaitTime=150`n"
+      iniContent .= "hasUnopenedPack=0`n"
       iniContent .= "heartBeat=0`n"
       iniContent .= "heartBeatWebhookURL=`n"
       iniContent .= "heartBeatName=`n"
@@ -2211,7 +2219,7 @@ SaveAllSettings() {
    global FriendID, AccountName, waitTime, Delay, folderPath, discordWebhookURL, discordUserId, Columns, godPack
    global Instances, instanceStartDelay, defaultLanguage, SelectedMonitorIndex, swipeSpeed, deleteMethod
    global runMain, Mains, heartBeat, heartBeatWebhookURL, heartBeatName, nukeAccount, packMethod
-   global autoLaunchMonitor, autoUseGPTest, TestTime, groupRerollEnabled, saveToGit
+   global autoLaunchMonitor, autoUseGPTest, TestTime, groupRerollEnabled, saveToGit, gpTestWaitTime, hasUnopenedPack
    global CheckShinyPackOnly, TrainerCheck, FullArtCheck, RainbowCheck, ShinyCheck, CrownCheck
    global InvalidCheck, ImmersiveCheck, PseudoGodPack, minStars, Palkia, Dialga, Arceus, Shining
    global Mew, Pikachu, Charizard, Mewtwo, Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
@@ -2346,11 +2354,10 @@ SaveAllSettings() {
    }
 
    if (!groupRerollEnabled) {
-   mainIdsURL := ""
-   vipIdsURL := ""
    autoUseGPTest := 0
    TestTime := 3600
    applyRoleFilters := 0
+   hasUnopenedPack := 0
    }
    
    if (SortByDropdown = "Oldest First")
@@ -2389,6 +2396,7 @@ SaveAllSettings() {
    iniContent_Second .= "Mains=" Mains "`n"
    iniContent_Second .= "TestTime=" TestTime "`n"
    iniContent_Second .= "gpTestWaitTime=" gpTestWaitTime "`n"
+   iniContent_Second .= "hasUnopenedPack=" hasUnopenedPack "`n"
    iniContent_Second .= "heartBeatWebhookURL=" heartBeatWebhookURL "`n"
    iniContent_Second .= "heartBeatName=" heartBeatName "`n"
    iniContent_Second .= "heartBeatDelay=" heartBeatDelay "`n"
