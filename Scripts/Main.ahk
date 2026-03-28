@@ -948,7 +948,7 @@ GetNeedle(Path) {
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GPTestScript() {
-    global triggerTestNeeded, GPTest, gpTestWaitTime, friendOpsCount, friendOpsWindowStart, rateLimitAction, vipListTrimApplied, gpTestFirstRun
+    global triggerTestNeeded, GPTest, gpTestWaitTime, friendOpsCount, friendOpsWindowStart, rateLimitAction, vipListTrimApplied, gpTestFirstRun, hasUnopenedPack
     triggerTestNeeded := false
     rateLimitAction := ""
     vipListTrimApplied := false
