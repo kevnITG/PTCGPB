@@ -2478,7 +2478,7 @@ StartBot() {
    global heartBeat, heartBeatName, heartBeatWebhookURL, heartBeatDelay, debugMode
    global Shining, Arceus, Palkia, Dialga, Mew, Pikachu, Charizard, Mewtwo
    global Solgaleo, Lunala, Buzzwole, Eevee, HoOh, Lugia, Springs, Deluxe
-   global MegaBlaziken, MegaGyarados, MegaAltaria, CrimsonBlaze, Parade, PaldeanWonders, packMethod, nukeAccount
+   global MegaBlaziken, MegaGyarados, MegaAltaria, CrimsonBlaze, Parade, PaldeanWonders, MegaShine, packMethod, nukeAccount
    global SelectedMonitorIndex, localVersion, githubUser, rerollTime, PackGuiBuild
    
    PackGuiBuild := 0
@@ -2635,12 +2635,14 @@ StartBot() {
       Selected.Push("MegaBlaziken")
    if(MegaAltaria)
       Selected.Push("MegaAltaria")
-  if(CrimsonBlaze)
+   if(CrimsonBlaze)
       Selected.Push("CrimsonBlaze")
    if(Parade)
       Selected.Push("Parade")
    if(PaldeanWonders)
       Selected.Push("PaldeanWonders")
+   if(MegaShine)
+      Selected.Push("MegaShine")   
 
    for index, value in Selected {
       if(index = Selected.MaxIndex())
