@@ -167,7 +167,7 @@ saveAccount() {
 
     Loop {
 
-        adbShell.StdIn.WriteLine("rm /sdcard/deviceAccount.xml")
+        adbShell.StdIn.WriteLine("rm -f /sdcard/deviceAccount.xml")
 
         Sleep, 500
 
@@ -193,7 +193,7 @@ saveAccount() {
 
     adbShell.StdIn.WriteLine("am force-stop jp.pokemon.pokemontcgp")
 
-    adbShell.StdIn.WriteLine("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data
+    adbShell.StdIn.WriteLine("rm -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") ; delete account data
 
     MsgBox, Success! Extracted account '%fileName%.xml' to the Accounts folder, closed the game, and deleted the local save from the instance.
 }

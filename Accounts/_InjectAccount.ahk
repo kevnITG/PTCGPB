@@ -313,7 +313,7 @@ loadAccount() {
     Sleep, 200
 
     ; Clean up and launch app (reduced delay between operations)
-    adbShell.StdIn.WriteLine("rm /sdcard/deviceAccount.xml")
+    adbShell.StdIn.WriteLine("rm -f /sdcard/deviceAccount.xml")
 
     ; Launch the app with both commands in quick succession
     adbShell.StdIn.WriteLine("am start -n jp.pokemon.pokemontcgp/jp.pokemon.pokemontcgp.UnityPlayerActivity")

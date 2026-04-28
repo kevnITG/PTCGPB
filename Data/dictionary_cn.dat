@@ -1,0 +1,218 @@
+﻿fail_fetch:無法取得發行資訊。
+fail_url:無法在發行資訊中找到 ZIP 下載連結。
+fail_version:無法取得版本資訊。
+update_title:有新版本可用
+confirm_dl:你想要下載最新版本嗎？
+downloading:正在下載最新版本……
+dl_failed:下載更新失敗。
+dl_complete:下載完成，正在解壓縮……
+extract_failed:解壓縮更新失敗。
+installed:更新安裝完成，正在重新啟動……
+missing_files:找不到解壓縮後的內容。
+cancel:已取消更新。
+up_to_date:你已使用最新版本。
+
+title_set:在這裡選擇你要修改的設定。
+btn_reroll:刷包設定
+btn_system:系統設定
+btn_pack:卡包設定
+btn_save:交換設定
+btn_discord:Discord 設定
+btn_download:下載設定
+btn_main:🏠︎ 主畫面
+
+title_main:Arturo's PTCGP Bot
+btn_arrange:排列視窗
+btn_coffee:給作者一杯咖啡
+btn_join:加入Reroll群
+btn_mumu:啟動MUMU模擬器
+btn_balance:均分XML檔案
+btn_start:開始運行
+btn_update:檢查更新
+btn_setting:⚙️ 設定頁面
+btn_return:↩️ 返回
+
+btn_ToolTip:使用說明
+btn_Language:語言
+languageNotice:切換語言需重啟腳本，是否重啟?
+btn_reload:重啟
+btn_bg_Off:背景關閉
+btn_bg_On:背景開啟
+btn_theme_Dark:深色
+btn_theme_Light:淺色
+
+FriendIDLabel:你的遊戲ID
+InstanceSettings:模擬器設定
+BotSettings:刷包設定
+TimeSettings:時間設定
+PackHeading:卡包選擇
+CardDetection:卡片偵測
+SaveForTrade:保存交換
+GroupSettings:群組設定
+DiscordSettingsHeading:Discord 設定
+btn_OK:確定
+btn_Cancel:取消
+HeartbeatSettingsSubHeading:心跳設定
+
+Txt_Instances:模擬器數量：
+Txt_InstanceStartDelay:啟動延遲：
+Txt_Columns:排列數：
+Txt_runMain:運行主帳
+Txt_AccountName:帳號名稱：
+Txt_autoUseGPTest:自動使用 GP Test（秒）：
+Txt_Delay:指令延遲：
+Txt_WaitTime:等待同意：
+Txt_SwipeSpeed:劃包速度：
+Txt_slowMotion:兼容原版速度
+
+Txt_Monitor:顯示器：
+Txt_Scale:縮放比例：
+Txt_RowGap:列間距：
+Txt_FolderPath:資料夾路徑：
+Txt_OcrLanguage:OCR 語言：
+Txt_ClientLanguage:遊戲語言
+Txt_InstanceLaunchDelay:開啟模擬器延遲：
+Txt_autoLaunchMonitor:啟用監視器
+ExtraSettingsHeading:進階設定
+Txt_applyRoleFilters:使用角色篩選器
+Msg_UnopenedPackTitle:GP 測試：未開包模式
+Msg_UnopenedPack_p1:僅在此帳號仍至少還有一個尚未開啟的增益包時，才可使用未開包模式。
+Msg_UnopenedPack_p2:移除好友時一定會觸發請求頻率限制；隨後腳本會實際重新啟動遊戲。
+Msg_UnopenedPack_p3:若帳號仍有該增益包：重啟後會進入增益包畫面而非主畫面。若沒有：會回到主畫面且 Wonderpick 會重新整理。
+Msg_UnopenedPack_p4:點確定以確認。
+Txt_debugMode:除錯模式
+Txt_tesseractOption:啟用 Tesseract
+Txt_statusMessage:顯示狀態訊息
+Txt_TesseractPath:Tesseract 路徑：
+Txt_SystemSettings:系統設定
+
+Txt_MinStars:最小 2 ★：
+Txt_ShinyMinStars:閃光最小  2 ★：
+Txt_minStarsEnabled:設定所有最小 2 ★
+Txt_DeleteMethod:刷包法：
+Txt_InjectMaxValue:上限：
+Txt_InjectMinValue:下限：
+Txt_InjectRange:範圍：
+Txt_packMethod:單包模式
+Txt_nukeAccount:清單刪除
+Txt_spendHourGlass:使用所有沙漏
+Txt_openExtraPack:額外多開一包
+Txt_claimSpecialMissions:領取特殊任務
+SortByText:注入排序：
+
+Txt_MegaShine:Mega Shine
+Txt_PaldeanWonders:Paldean Wonders
+Txt_Parade:Parade
+Txt_CrimsonBlaze:紅蓮烈焰
+Txt_MegaGyarados:超級暴鯉龍
+Txt_MegaBlaziken:超級火焰雞
+Txt_MegaAltaria:超級七夕青鳥
+Txt_Deluxe:高級擴充包ex
+Txt_Springs:未知水域
+Txt_HoOh:鳳王
+Txt_Lugia:洛奇亞
+Txt_Eevee:伊布
+Txt_Buzzwole:爆肌蚊
+Txt_Solgaleo:索爾迦雷歐
+Txt_Lunala:露奈雅拉
+Txt_Shining:嗨放異彩
+Txt_Arceus:阿爾宙斯
+Txt_Palkia:帕路奇亞
+Txt_Dialga:帝牙盧卡
+Txt_Pikachu:皮卡丘
+Txt_Charizard:噴火龍
+Txt_Mewtwo:超夢
+Txt_Mew:夢幻
+AllPack:🔎查看所有卡包
+
+Txt_FullArtCheck:單張全圖
+Txt_TrainerCheck:單張人物
+Txt_RainbowCheck:單張彩圖
+Txt_PseudoGodPack:雙 2 ★
+Txt_CheckShinyPackOnly:僅在閃光包套用以上設定
+Txt_CrownCheck:保留皇冠
+Txt_ShinyCheck:保留閃光
+Txt_ImmersiveCheck:保留實境
+Txt_InvalidCheck:忽略無效包
+
+Txt_s4tEnabled:啟用保存交換
+Txt_S4TEnabled:S4T: 已啟用
+Txt_S4TDisabled:已停用
+Txt_s4tSilent:靜音（不通知）
+Txt_s4tWP:得卡挑戰
+Txt_s4tWPMinCards:最少卡數：
+S4TDiscordSettingsSubHeading:S4T Discord 設定
+Txt_s4tSendAccountXml:傳送帳號 XML
+
+Txt_sendAccountXml:傳送帳號 XML
+Txt_heartBeat:Discord 心跳
+hbName:名稱：
+hbDelay:間隔時間（分鐘）:
+
+Txt_showcaseEnabled:使用 showcase_ids.txt
+Txt_Disabled:已停用
+
+stop_confirm_title:停止所有腳本
+stop_immediately:立即停止
+stop_wait_end:等待此次運行結束
+stop_kill_mumu:立即停止並關閉 MuMu
+stop_remember_preference:記住我的選擇，下次不再詢問
+
+RecommandSwipeSpeedNoModMenu:→ 650 is recommended if the 'No Speedmod Menu' checkbox is checked.
+RecommandSwipeSpeedUseModMenu:→ 250 is recommended if the 'No Speedmod Menu' checkbox is unchecked.
+HideSwipeToolTip:(This message disappears when you click outside the input field.)
+
+Title:本專案現已採用 CC BY-NC 4.0 授權
+Content:本專案的初衷並非用於任何形式的付費服務，即使這些服務以「斗內」的名義包裝也不例外。
+我希望大家能尊重我與社群的意願。 本授權允許您在非商業用途下使用、修改與分享本軟體。 
+任何商業用途（包括使用本軟體提供付費服務或銷售，即使是透過斗內方式），在此授權條款下皆不被允許。 
+新授權條款適用於本版本以及所有未來版本。
+
+Notice:偵測到代理，已切換至代理版本。
+
+Error_BotPathTooLong:機器人資料夾的路徑太長或包含空白，
+請將其移至較短且不含空格的路徑
+Confirm_SelectedMethod:刷包法：
+Confirm_RangeValue:範圍：
+Confirm_MaxPackCount:最大卡包數量：
+Confirm_MinPackCount:最小卡包數量：
+Confirm_SelectedPacks:選擇的卡包：
+Confirm_AdditionalSettings:其他設定：
+Confirm_1PackMethod:• 單包模式
+Confirm_MenuDelete:• 選單刪除
+Confirm_openExtraPack:• 開啟額外卡包
+Confirm_SpendHourGlass:• 使用沙漏
+Confirm_ClaimMissions:• 領取特殊任務
+Confirm_SortBy:• 注入排序：
+Confirm_None:無
+Confirm_CardDetection:卡片偵測：
+Confirm_SingleFullArt:• 單張全圖
+Confirm_SingleTrainer:• 單張人物
+Confirm_SingleRainbow:• 單張彩圖
+Confirm_Double2Star:• 雙 2 ★
+Confirm_SaveCrowns:• 保留皇冠
+Confirm_SaveShiny:• 保留閃光
+Confirm_SaveImmersives:• 保留實境
+Confirm_IgnoreInvalid:• 忽略無效包
+Confirm_RowGap:列間距：
+Confirm_SaveForTrade:啟用保存交換
+Confirm_Enabled:已啟用
+Confirm_Disabled:已禁用
+Confirm_SilentPings:靜音（不通知）
+Confirm_Gholdengo:賽富豪
+Confirm_WonderPick:得卡挑戰
+Confirm_MinCards:最少卡數
+Confirm_XMLWarning:⚠️ 警告：傳送帳號 XML 已啟用。此設定僅建議單獨使用。請勿在群組中使用，因為您的帳號將會共享給群組的其他成員。
+Confirm_StartBot:按「是」開始運行，按「否」返回修改設定。
+
+Help_Shortcuts:快捷鍵說明：
+Help_FunctionKeys:功能鍵：
+Help_F4:顯示此說明選單
+Help_ShiftF7:傳送所有離線狀態並關閉
+Help_Interface:介面設定：
+Help_CurrentTheme:目前主題：
+Help_BackgroundImage:背景圖片：
+Help_Enabled:開啟
+Help_Disabled:關閉
+Help_ToggleTheme:可使用視窗頂部的按鈕切換主題。
+Help_ToggleBG:可使用「背景」按鈕開關背景圖片。

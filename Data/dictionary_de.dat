@@ -1,0 +1,227 @@
+﻿fail_fetch:Abrufen der Versionsinformationen fehlgeschlagen.
+fail_url:Die ZIP-Download-URL konnte in dieser Version nicht gefunden werden.
+fail_version:Versionsinformationen konnten nicht abgerufen werden.
+update_title:Update verfügbar
+confirm_dl:Möchtest du die neueste Version herunterladen?
+downloading:Neueste Version wird heruntergeladen...
+dl_failed:Update konnte nicht heruntergeladen werden.
+dl_complete:Download abgeschlossen. Entpacken...
+extract_failed:Update konnte nicht entpackt werden.
+installed:Update installiert. Neustart...
+missing_files:Extrahierte Inhalte konnten nicht gefunden werden.
+cancel:Das Update wurde abgebrochen.
+up_to_date:Du verwendest die neueste Version.
+
+title_set:Hier kannst du die Einstellungen ändern
+btn_reroll:Reroll Einstellungen
+btn_system:Systemeinstellungen
+btn_pack:Pack Einstellungen
+btn_save:Für Tausch speichern
+btn_discord:Discord Einstellungen
+btn_download:Download Einstellungen
+btn_main:Startseite
+
+title_main:Arturo's PTCGP BOT
+btn_arrange:Fenster anordnen
+btn_coffee:Spendiere mir einen Kaffee
+btn_join:Discord beitreten
+btn_mumu:Alle Instanzen starten
+btn_balance:XMLs ausgleichen
+btn_start:Bot starten
+btn_update:Auf Updates überprüfen
+btn_setting:Einstellungen
+btn_return:↩️ Zurück
+
+btn_ToolTip:QuickInfo
+btn_Language:Sprache
+languageNotice:PTCGPB.ahk muss neu geladen werden, um die Sprache zu wechseln. Klicke auf‚ Ja' zum Neuladen oder auf‚ Nein', um zu den Einstellungen zurückzukehren.
+btn_reload:Neu laden
+btn_bg_Off:Hintergrund aus
+btn_bg_On:Hintergrund an
+btn_theme_Dark:Dunkel
+btn_theme_Light:Hell
+
+FriendIDLabel:Deine Freundes-ID
+InstanceSettings:Instanz-Einstellungen
+BotSettings:Bot-Einstellungen
+TimeSettings:Zeit-Einstellungen
+PackHeading:Pack-Auswahl
+CardDetection:Karten-Erkennung
+SaveForTrade:Für Tausch speichern
+GroupSettings:Gruppen-Einstellungen
+DiscordSettingsHeading:Discord Einstellungen
+btn_OK:OK
+btn_Cancel:Abbrechen
+HeartbeatSettingsSubHeading:Herzschlag Einstellungen
+
+Txt_Instances:Instanzen:
+Txt_InstanceStartDelay:Startverzögerung:
+Txt_Columns:Spalten:
+Txt_runMain:Main Account laufen:
+Txt_AccountName:Kontoname:
+Txt_autoUseGPTest:Auto GPTest (s):
+Txt_Delay:Verzögerung:
+Txt_WaitTime:Wartezeit:
+Txt_SwipeSpeed:Wischgeschwindigkeit:
+Txt_slowMotion:Kompatibilität mit Basisspiel
+
+Txt_Monitor:Überwachen:
+Txt_Scale:Skalierung:
+Txt_RowGap:Abstand zw. Instanzen:
+Txt_FolderPath:Ordnerpfad:
+Txt_OcrLanguage:OCR:
+Txt_ClientLanguage:Klient
+Txt_InstanceLaunchDelay:MUMU-Startverzögerung:
+Txt_autoLaunchMonitor:Überwachung automatisch starten
+ExtraSettingsHeading:Weitere Einstellungen
+Txt_applyRoleFilters:Rollenbasierte Filter verwenden
+Msg_UnopenedPackTitle:GP-Test: Modus „Ungeöffnetes Pack“
+Msg_UnopenedPack_p1:Nutze den Modus „Ungeöffnetes Pack“ nur, wenn auf diesem Konto mindestens ein noch ungeöffnetes Booster-Pack vorhanden ist.
+Msg_UnopenedPack_p2:Das Entfernen von Freunden löst immer das Ratenlimit aus
+Msg_UnopenedPack_p3:Mit diesem Pack landest du nach dem Neustart auf dem Booster-Pack-Bildschirm statt auf Home. Ohne Pack landest du auf Home und Wonderpicks werden aktualisiert.
+Msg_UnopenedPack_p4:Tippe auf OK, um zu bestätigen.
+Txt_debugMode:Debug-Modus
+Txt_tesseractOption:Tesseract nutzen
+Txt_statusMessage:Statusnachrichten
+Txt_TesseractPath:Tesseract Pfad:
+Txt_SystemSettings:Systemeinstellungen
+
+Txt_MinStars:Min. 2 ★:
+Txt_ShinyMinStars:2 ★ für Schillernde Packs:
+Txt_minStarsEnabled:Alle Min. 2 ★ setzen
+Txt_DeleteMethod:Methode:
+Txt_InjectMaxValue:Max:
+Txt_InjectMinValue:Min:
+Txt_InjectRange:Bereich:
+Txt_packMethod:1 Pack Methode
+Txt_nukeAccount:Account löschen
+Txt_spendHourGlass:Sanduhren verwenden
+Txt_openExtraPack:Extra-Pack öffnen
+Txt_claimSpecialMissions:Spezialmissionen
+SortByText:Sortieren nach:
+
+Txt_MegaShine:Mega Shine
+Txt_PaldeanWonders:Paldean Wonders
+Txt_Parade:Parade
+Txt_CrimsonBlaze:Feuerrote Flammen
+Txt_MegaGyarados:Mega-Garados
+Txt_MegaBlaziken:Mega-Lohgock
+Txt_MegaAltaria:Mega-Altaria
+Txt_Deluxe:Deluxe-Pack: ex
+Txt_Springs:Verborgene Quelle
+Txt_HoOh:Ho-Oh
+Txt_Lugia:Lugia
+Txt_Eevee:Evoli
+Txt_Buzzwole:Masskito
+Txt_Solgaleo:Solgaleo
+Txt_Lunala:Lunala
+Txt_Shining:Schillernd
+Txt_Arceus:Arceus
+Txt_Palkia:Palkia
+Txt_Dialga:Dialga
+Txt_Pikachu:Pikachu
+Txt_Charizard:Glurak
+Txt_Mewtwo:Mewtwo
+Txt_Mew:Mew
+AllPack:🔎Zeige alle Packs
+
+Txt_FullArtCheck:Einzelne Full Art
+Txt_TrainerCheck:Einzelne Trainer
+Txt_RainbowCheck:Einzelne Regenbogen
+Txt_PseudoGodPack:Doppelte 2 ★
+Txt_CheckShinyPackOnly:Nur schillernde Booster
+Txt_CrownCheck:Kronen speichern
+Txt_ShinyCheck:Schillernde speichern
+Txt_ImmersiveCheck:Immersive speichern
+Txt_InvalidCheck:Ignoriere ungültige Packs
+
+Txt_s4tEnabled:Für Tausch speichern aktivieren
+Txt_S4TEnabled:S4T: Aktiviert
+Txt_S4TDisabled:Deaktiviert
+Txt_s4tSilent:Still (Kein Ping)
+Txt_s4tWP:Wunderwahl
+Txt_s4tWPMinCards:Min. Karten:
+S4TDiscordSettingsSubHeading:S4T Discord Einstellungen
+Txt_s4tSendAccountXml:Account XML senden
+
+Txt_sendAccountXml:Account XML senden
+Txt_heartBeat:Discord Herzschlag
+hbName:Name:
+hbDelay:Herzschlag Verzögerung (min):
+
+Txt_showcaseEnabled:Showcase aus showcase_ids.txt verwenden
+Txt_Disabled:Deaktiviert
+
+stop_confirm_title:Skripte stoppen
+stop_immediately:Sofort stoppen
+stop_wait_end:Ende dieses Laufs abwarten
+stop_kill_mumu:Stoppen & MuMu beenden
+stop_remember_preference:Auswahl merken und nicht erneut fragen
+
+RecommandSwipeSpeedNoModMenu:→ 650 is recommended if the 'No Speedmod Menu' checkbox is checked.
+RecommandSwipeSpeedUseModMenu:→ 250 is recommended if the 'No Speedmod Menu' checkbox is unchecked.
+HideSwipeToolTip:(This message disappears when you click outside the input field.)
+
+Title:Dieses Projekt ist lizensiert unter CC BY-NC 4.0
+Content:Die ursprüngliche Absicht dieses Projekts war nicht,
+ dass es für bezahlte Dienste genutzt wird – 
+auch nicht in Form angeblicher 'Spenden'. 
+Ich hoffe, dass die Leute meine Wünsche und die der Community respektieren.
+`nDas Projekt steht nun unter der Lizenz CC BY-NC 4.0. Diese erlaubt die Nutzung, 
+Modifikation und Weitergabe der 
+Software ausschließlich für nicht-kommerzielle Zwecke. 
+Kommerzielle Nutzung – einschließlich bezahlter Dienste oder 
+Verkäufe (auch mit Spenden) – ist unter dieser Lizenz nicht gestattet. 
+Die neue Lizenz gilt für diese und alle zukünftigen Versionen.
+
+Notice:Proxy erkannt. Wechsle zur Proxy-Version.
+
+Error_BotPathTooLong:Der Pfad zum Bot-Ordner ist zu lang oder 
+enthält Leerzeichen. Bitte verschiebe 
+ihn in ein kürzeres Verzeichnis ohne Leerzeichen.
+Confirm_SelectedMethod:Gewählte Methode: 
+Confirm_RangeValue:Wertbereich: 
+Confirm_MaxPackCount:Maximale Paketanzahl: 
+Confirm_MinPackCount:Mindestpackungsanzahl: 
+Confirm_SelectedPacks:Gewählte Packs: 
+Confirm_AdditionalSettings:Weitere Einstellungen: 
+Confirm_1PackMethod:• 1-Pack Methode
+Confirm_MenuDelete:• Menü löschen
+Confirm_SpendHourGlass:• Sanduhren verwenden
+Confirm_openExtraPack:• Extra-Pack öffnen
+Confirm_ClaimMissions:• Spezialmissionen einfordern
+Confirm_SortBy:• Sortieren nach: 
+Confirm_None:Keine
+Confirm_CardDetection:Kartenerkennung: 
+Confirm_SingleFullArt:• Einzelne Full Art
+Confirm_SingleTrainer:• Einzelne Trainer
+Confirm_SingleRainbow:• Einzelne Regenbogen
+Confirm_Double2Star:• Doppelte 2 ★
+Confirm_SaveCrowns:• Kronen speichern
+Confirm_SaveShiny:• Schillernde speichern
+Confirm_SaveImmersives:• Immersive speichern
+Confirm_IgnoreInvalid:• Ignoriere ungültige Packs
+Confirm_RowGap:Abstand zw. Instanzen: 
+Confirm_SaveForTrade:Für Tausch speichern aktivieren
+Confirm_Enabled:Aktiviert
+Confirm_Disabled:Deaktiviert
+Confirm_SilentPings:Still (Kein Ping)
+Confirm_Gholdengo:Gholdengo
+Confirm_WonderPick:Wunderwahl
+Confirm_MinCards:Min. Karten
+Confirm_XMLWarning:⚠️ WARNUNG: Account XML senden ist aktiviert. Diese Einstellung wird nur zur alleinigen Nutzung empfohlen. Verwenden Sie sie nicht in Gruppen, da Ihre Konten mit anderen Mitgliedern Ihrer Gruppe geteilt werden.
+Confirm_StartBot:Klicke auf Ja, um den BOT mit diesen 
+Einstellungen zu STARTEN. Klicke auf 
+Nein, um die Einstellungen zu ÄNDERN.
+
+Help_Shortcuts:Tastatur Shortcuts: 
+Help_FunctionKeys:Funktionstasten: 
+Help_F4:Dieses Hilfemenü anzeigen
+Help_ShiftF7:Sende alle Offline Status & Verlassen
+Help_Interface:Oberflächeneinstellungen: 
+Help_CurrentTheme:Aktuelles Thema: 
+Help_BackgroundImage:Hintergrundbild: 
+Help_Enabled:Aktiviert
+Help_Disabled:Deaktiviert
+Help_ToggleTheme:Wechsle das Thema mit dem Knopf oben im Fenster.
+Help_ToggleBG:Hintergrundbild mit dem BG-Button ein-/ausschalten.

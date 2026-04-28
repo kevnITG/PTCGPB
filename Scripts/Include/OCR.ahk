@@ -77,7 +77,7 @@ ocr(fileOrStream, lang := "FirstFromAvailableLanguages")
             CreateHString(lang, hString)
             DllCall(NumGet(NumGet(LanguageFactory+0)+6*A_PtrSize), "ptr", LanguageFactory, "ptr", hString, "ptr*", Language)   ; CreateLanguage
             DeleteHString(hString)
-            DllCall(NumGet(NumGet(OcrEngineStatics+0)+9*A_PtrSize), "ptr", OcrEngineStatics, ptr, Language, "ptr*", OcrEngine)   ; TryCreateFromLanguage
+            DllCall(NumGet(NumGet(OcrEngineStatics+0)+9*A_PtrSize), "ptr", OcrEngineStatics, "ptr", Language, "ptr*", OcrEngine)   ; TryCreateFromLanguage
         }
         if (OcrEngine = 0)
         {
@@ -215,44 +215,42 @@ WaitForAsync(ByRef Object)
 ; FindPackStats - Navigate to profile and OCR pack count
 ;-------------------------------------------------------------------------------
 FindPackStats() {
-    global adbShell, scriptName, ocrLanguage, loadDir, scaleParam, accountOpenPacks, ocrSuccess
+    global session
 
-	failSafe := A_TickCount
+	session.set("failSafe", A_TickCount)
 	failSafeTime := 0
     ; Click for hamburger menu and wait for profile
     Loop {
-        adbClick(240, 499)
-        if(FindOrLoseImage(230, 120, 260, 150, , "UserProfile", 0, failSafeTime)) {
+        adbClick(240, 494)
+        if(FindOrLoseImage("Profile_UserNameArrowInSettingMenu", 0, failSafeTime)) {
             break
         } else {
-            clickButton := FindOrLoseImage(75, 340, 195, 530, 80, "Button", 0)
+            clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, , 80)
             if(clickButton) {
                 StringSplit, pos, clickButton, `,  ; Split at ", "
-                if (scaleParam = 287) {
-                    pos2 += 5
-                }
                 adbClick(pos1, pos2)
 			}
 		}
-		LevelUp()
         Delay(1)
-		failSafeTime := (A_TickCount - failSafe) // 1000
+		failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
     }
 
-	FindImageAndClick(203, 272, 237, 300, , "Profile", 210, 140, 200) ; Open profile/stats page and wait
+	FindImageAndClick("Profile_EditNameButtonIcon", 210, 140, , 200) ; Open profile/stats page and wait
 
     ; Swipe until you get to trophy
-	failSafe := A_TickCount
+	session.set("failSafe", A_TickCount)
 	failSafeTime := 0
     Loop {
-        adbSwipe("266 770 266 355 300")
-		if(FindOrLoseImage(13, 110, 31, 129, , "trophy", 0, failSafeTime))
+        adbSwipe("266 770 266 555 300")
+        trophyPos := FindOrLoseImage("Profile_TrophyStandIconInProfile", 0, failSafeTime)
+		if(trophyPos){
+            StringSplit, pos, trophyPos, `,  ; Split at ", "
+	        FindImageAndClick("Profile_ShinedustIconInTrophyDetails", (pos1+18), pos2, 30, 200) ; Open pack trophy page and wait
 			break
-		failSafeTime := (A_TickCount - failSafe) // 1000
+        }
+		failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
 
     }
-
-	FindImageAndClick(122, 375, 161, 390, , "trophyPage", 50, 107, 200) ; Open pack trophy page
 
     ; Take screenshot and prepare for OCR
     Sleep, 100
@@ -261,7 +259,7 @@ FindPackStats() {
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%
 
-	fullScreenshotFile := tempDir . "\" .  winTitle . "_AccountPacks.png"
+	fullScreenshotFile := tempDir . "\" .  session.get("scriptName") . "_AccountPacks.png"
 	adbTakeScreenshot(fullScreenshotFile)
 
 	Sleep, 100
@@ -272,13 +270,13 @@ FindPackStats() {
 	;214, 438, 111x30
 	;214, 434, 111x38
 	;214, 441, 111x24
-	ocrSuccess := 0
+	session.set("ocrSuccess", 0)
     if(RefinedOCRText(fullScreenshotFile, 214, 438, 111, 30, "0123456789,/", "^\d{1,3}(,\d{3})?\/\d{1,3}(,\d{3})?$", trophyOCR)) {
 		;MsgBox, %trophyOCR%
 		ocrParts := StrSplit(trophyOCR, "/")
-		accountOpenPacks := ocrParts[1]
+		session.set("accountOpenPacks", ocrParts[1])
 		;MsgBox, %accountOpenPacks%
-		ocrSuccess := 1
+		session.get("ocrSuccess", 1)
 
 		UpdateAccount()
 	}
@@ -286,7 +284,7 @@ FindPackStats() {
 	if (FileExist(fullScreenshotFile))
 		FileDelete, %fullScreenshotFile%
 
-	FindImageAndClick(230, 120, 260, 150, , "UserProfile", 140, 496, 200) ; go back to hamburger menu
+	FindImageAndClick("Profile_UserNameArrowInSettingMenu", 140, 496, , 200) ; go back to hamburger menu
 
     Loop {
         adbClick(34,65)
@@ -295,13 +293,13 @@ FindPackStats() {
 			Delay(1)
         adbClick(34,65)
 			Delay(1)
-        if(FindOrLoseImage(233, 400, 264, 428, , "Points", 0, failSafeTime)) {
+        if(FindOrLoseImage("Pack_PackPointButton", 0, failSafeTime)) {
             break
         } else {
 			adbClick_wbb(141, 480)
 			Delay(1)
 		}
-		failSafeTime := (A_TickCount - failSafe) // 1000
+		failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
     }
 }
 
@@ -321,6 +319,7 @@ RefinedOCRText(screenshotFile, x, y, w, h, allowedChars, validPattern, ByRef out
         pBitmap := CropAndFormatForOcr(screenshotFile, x, y, w, h, blowUp[A_Index])
         ; Run OCR
         output := GetTextFromBitmap(pBitmap, allowedChars)
+        Gdip_DisposeImage(pBitmap)
         ; Validate result
         if (RegExMatch(output, validPattern)) {
             success := True
@@ -334,14 +333,15 @@ RefinedOCRText(screenshotFile, x, y, w, h, allowedChars, validPattern, ByRef out
 ; CropAndFormatForOcr - Crops, scales, grayscales and enhances image for OCR
 ;-------------------------------------------------------------------------------
 CropAndFormatForOcr(inputFile, x := 0, y := 0, width := 200, height := 200, scaleUpPercent := 200) {
-    global winTitle
+    ;global session
     ; Get bitmap from file
     pBitmapOrignal := Gdip_CreateBitmapFromFile(inputFile)
     ; Crop to region, Scale up the image, Convert to greyscale, Increase contrast
     pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOrignal, x, y, width, height, scaleUpPercent, 75)
 
-	filePath := A_ScriptDir . "\temp\" .  winTitle . "_AccountPacks_crop.png"
-    Gdip_SaveBitmapToFile(pBitmapFormatted, filePath)
+	; Dev-only debug dump (disabled for runtime performance):
+	; filePath := A_ScriptDir . "\temp\" .  session.get("winTitle") . "_AccountPacks_crop.png"
+    ; Gdip_SaveBitmapToFile(pBitmapFormatted, filePath)
 
 	; Cleanup references
     Gdip_DisposeImage(pBitmapOrignal)
@@ -352,14 +352,15 @@ CropAndFormatForOcr(inputFile, x := 0, y := 0, width := 200, height := 200, scal
 ; GetTextFromBitmap - Extracts text from bitmap using OCR
 ;-------------------------------------------------------------------------------
 GetTextFromBitmap(pBitmap, charAllowList := "") {
-    global ocrLanguage
+    global botConfig
+
     ocrText := ""
     ; OCR the bitmap directly
     hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmap)
     pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
-    ocrText := ocr(pIRandomAccessStream, ocrLanguage)
+    ocrText := ocr(pIRandomAccessStream, botConfig.get("ocrLanguage"))
     ; Cleanup references
-    DeleteObject(hBitmapFriendCode)
+    DeleteObject(hBitmap)
     ; Remove disallowed characters
     if (charAllowList != "") {
         allowedPattern := "[^" RegExEscape(charAllowList) "]"
@@ -380,33 +381,33 @@ RegExEscape(str) {
 ; CountShinedust - Navigate to items and OCR shinedust value
 ;-------------------------------------------------------------------------------
 CountShinedust() {
-    global injectMethod, loadedAccount, friended, scriptName, winTitle
+    global session
 
-    FindImageAndClick(252, 78, 263, 92, , "inHamburgerMenu", 244, 518, 2000)
+    FindImageAndClick("Shinedust_CopySupportIDButtonInSettings", 244, 518, , 2000)
 
-    failSafe := A_TickCount
+    session.set("failSafe", A_TickCount)
     Loop {
-        failSafeTime := (A_TickCount - failSafe) // 1000
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
         if (failSafeTime > 30) {
-            if (injectMethod && loadedAccount && friended) {
-                IniWrite, 1, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+            if (session.get("injectMethod") && session.get("loadedAccount") && session.get("friended")) {
+                IniWrite, 1, % session.get("scriptIniFile"), UserSettings, DeadCheck
             }
             restartGameInstance("Stuck at Shinedust menu")
             return
         }
-        if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime)) {
+        if (FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime)) {
             ; accidentally re-clicked hamburger menu while page was loading
             ; and we're back on homescreen. we need to re-enter hamburger menu
             adbClick(244, 518)
             Sleep, 3000
         }
-        if FindOrLoseImage(26, 188, 43, 204, , "shinedustItems", 0, failSafeTime)
+        if FindOrLoseImage("Shinedust_ShinedustInInventorys", 0, failSafeTime)
             break
         adbClick(99, 279)
         ; be careful moving this. intentionally chosen to avoid
         ; accidentally clicking a pack on the homescreen (clicks between instead.)
         Sleep, 3000
-        if FindOrLoseImage(133, 369, 148, 385, , "wrongItem", 0, failSafeTime) {
+        if FindOrLoseImage("Shinedust_CloseButtonInDetailWindow", 0, failSafeTime) {
             Sleep, 1000
             adbInputEvent("111")
             Sleep, 1000
@@ -418,7 +419,7 @@ CountShinedust() {
         FileCreateDir, %tempDir%
 
     Sleep, 500
-    shinedustScreenshotFile := tempDir . "\" . winTitle . "_Shinedust.png"
+    shinedustScreenshotFile := tempDir . "\" . session.get("scriptName") . "_Shinedust.png"
     adbTakeScreenshot(shinedustScreenshotFile)
     Sleep, 500
 

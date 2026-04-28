@@ -36,13 +36,14 @@ RecNext             := ""
 
 ; ===== FUNCTIONS =====
 RecordingCapture() {
-    global winTitle
+    global session
+
     fileDir := A_ScriptDir . "\..\Screenshots\Rec"
     if !FileExist(fileDir)
         FileCreateDir, %fileDir%
     filePath := fileDir . "\" . A_TickCount . "_rec.png"
     LogToFile("[Capture] Generated filePath=" filePath, "recorder.txt")
-    pBitmap := from_window(WinExist(winTitle))
+    pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
     saveResult := Gdip_SaveBitmapToFile(pBitmap, filePath)
     fileExists := FileExist(filePath) ? "YES" : "NO"
     LogToFile("[Capture] SaveResult=" saveResult " FileExists=" fileExists " path=" filePath, "recorder.txt")
@@ -332,22 +333,23 @@ ShowRecordingScript(script) {
 
 
 RecGoTo() {
-    global winTitle
+    global session
     global rec_Active, rec_Actions, rec_LastTime, rec_ReviewBack, rec_IsScreenshotAction, rec_ReviewComment, RecComment
     global RecChoiceWait, RecChoiceWaitGone, RecChoiceFC, rec_ScreenshotChoice, rec_ReviewDone
     global rec_SuspendCapture, rec_LastScreenGrab, rec_ReviewIndex, rec_GrabDone, rec_ReviewAbort, rec_BuildScript, rec_JumpToOutput
     global rec_ReturnToReview, rec_OutputDone, rec_ReviewHwnd
 
 StartStopRecording:
+    guiSuffix := session.get("winTitle")
     if (!rec_Active) {
         rec_Active      := true
         rec_Actions     := []
         rec_LastTime    := A_TickCount
-        GuiControl, DevMode%winTitle%:, Start Recording, Stop Recording
+        GuiControl, DevMode%guiSuffix%:, Start Recording, Stop Recording
         CreateStatusMessage("Recording: Start")
     } else {
         rec_Active := false
-        GuiControl, DevMode%winTitle%:, Stop Recording, Start Recording
+        GuiControl, DevMode%guiSuffix%:, Stop Recording, Start Recording
         CreateStatusMessage("Recording: Done")
         ReviewRecording()
     }

@@ -17,12 +17,13 @@
 ; DetectSixCardPack - Detect if current pack is a 6-card pack
 ;-------------------------------------------------------------------------------
 DetectSixCardPack() {
-    global winTitle, defaultLanguage
+    global session
+
     searchVariation := 5 ; needed to tighten from 20 to avoid false positives
 
-    imagePath := A_ScriptDir . "\" . defaultLanguage . "\"
+    imagePath := A_ScriptDir . "\Needles\"
 
-    pBitmap := from_window(WinExist(winTitle))
+    pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
 
     ; Look for 6cardpackindicator.png (background element visible only in 5-card packs)
     Path = %imagePath%6cardpackindicator.png
@@ -45,50 +46,45 @@ DetectSixCardPack() {
 ; DetectFourCardPack - Detect if current pack is a 4-card Deluxe pack
 ;-------------------------------------------------------------------------------
 DetectFourCardPack() {
-    global openPack
-    if (openPack = "Deluxe") {
+    global session
+    if (session.get("openPack") = "Deluxe") {
         return true
     }
     return false
 }
 
-CheckCardLoading(){
-    global currentPackIs6Card, currentPackIs4Card, scaleParam, winTitle, defaultLanguage
+CheckCardLoading(totalCardsInPack){
+    global session
 
     count := 0
-    is6CardPack := currentPackIs6Card
-    is4CardPack := currentPackIs4Card
-    totalCardsInPack := 5
-
-    if (is4CardPack) {
-        totalCardsInPack := 4
-        borderCoords := [[96, 284, 116, 286]  ; Card 1
-            ,[181, 284, 201, 286] ; Card 2
-            ,[96, 399, 116, 401] ; Card 3
-            ,[181, 399, 201, 401]] ; Card 4
-    } else if (is6CardPack) {
+    if (totalCardsInPack = 4) {
+        borderCoords := [[96, 279, 116, 281]  ; Card 1
+            ,[181, 279, 201, 281] ; Card 2
+            ,[96, 394, 116, 396] ; Card 3
+            ,[181, 394, 201, 396]] ; Card 4
+    } else if (totalCardsInPack = 6) {
         totalCardsInPack := 6
-        borderCoords := [[56, 284, 76, 286]   ; Top row card 1
-            ,[139, 284, 159, 286] ; Top row card 2
-            ,[222, 284, 242, 286] ; Top row card 3
-            ,[56, 399, 76, 401]   ; Bottom row card 1
-            ,[139, 399, 159, 401] ; Bottom row card 2
-            ,[222, 399, 242, 401]] ; Bottom row card 3
+        borderCoords := [[56, 279, 76, 281]   ; Top row card 1
+            ,[139, 279, 159, 281] ; Top row card 2
+            ,[222, 279, 242, 281] ; Top row card 3
+            ,[56, 394, 76, 396]   ; Bottom row card 1
+            ,[139, 394, 159, 396] ; Bottom row card 2
+            ,[222, 394, 242, 396]] ; Bottom row card 3
     } else {
         ; 5-card pack
-        borderCoords := [[56, 284, 76, 286] ; Card 1
-            ,[139, 284, 159, 286] ; Card 2
-            ,[222, 284, 242, 286] ; Card 3
-            ,[96, 399, 116, 401] ; Card 4
-            ,[181, 399, 201, 401]] ; Card 5
+        borderCoords := [[56, 279, 76, 281] ; Card 1
+            ,[139, 279, 159, 281] ; Card 2
+            ,[222, 279, 242, 281] ; Card 3
+            ,[96, 394, 116, 396] ; Card 4
+            ,[181, 394, 201, 396]] ; Card 5
     }
 
-    pBitmap := from_window(WinExist(winTitle))
+    pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
     for index, value in borderCoords {
         coords := borderCoords[A_Index]
         imageName := "lag" . A_Index
 
-        Path := A_ScriptDir . "\" . defaultLanguage . "\" . imageName . ".png"
+        Path := A_ScriptDir . "\Needles\" . imageName . ".png"
         if (FileExist(Path)) {
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], 40)
@@ -103,150 +99,17 @@ CheckCardLoading(){
 }
 
 ;-------------------------------------------------------------------------------
-; FindBorders - Find card borders of specific type in pack
+; AnalysisBorder - Find card borders of specific type in pack
 ;-------------------------------------------------------------------------------
-FindBorders(prefix) {
-    global currentPackIs6Card, currentPackIs4Card, scaleParam, winTitle, defaultLanguage, MegaShine
-    count := 0
-    searchVariation := 40 ;
+AnalysisBorder(totalCardsInPack) {
+    global session, currentPackInfo, isDevelopment, rarityCheckers
 
-    searchVariation6Card := 60 ; looser tolerance for 6-card positions while we test if top row needles can be re-used for bottom row in 6-card packs
-    searchVariation4Card := 60 ;
-
-    if (prefix != "normal") { ; improve card detection of non-normal cards. normals must remain strict to avoid missing godpacks
-        searchVariation := 60
-        searchVariation6Card := 80
-        searchVariation4Card := 60
-    }
-
-    is6CardPack := currentPackIs6Card
-    is4CardPack := currentPackIs4Card
-
-    if (is4CardPack) {
-        borderCoords := [[96, 284, 123, 286]  ; Card 1
-            ,[181, 284, 208, 286] ; Card 2
-            ,[96, 399, 123, 401] ; Card 3
-            ,[181, 399, 208, 401]] ; Card 4
-    } else if (is6CardPack) {
-        borderCoords := [[56, 284, 83, 286]   ; Top row card 1
-            ,[139, 284, 166, 286] ; Top row card 2
-            ,[222, 284, 249, 286] ; Top row card 3
-            ,[56, 399, 83, 401]   ; Bottom row card 1
-            ,[139, 399, 166, 401] ; Bottom row card 2
-            ,[256, 386, 260, 402]] ; Bottom row card 3
-    } else {
-        ; 5-card pack
-        borderCoords := [[56, 284, 83, 286] ; Card 1
-            ,[139, 284, 166, 286] ; Card 2
-            ,[222, 284, 249, 286] ; Card 3
-            ,[96, 399, 123, 401] ; Card 4
-            ,[181, 399, 208, 401]] ; Card 5
-    }
-
-    ; custom smaller borders for Megas splash art compatiblity
-    if (prefix = "fullArt") { 
-        if (is4CardPack) {
-            borderCoords := [[96, 284, 117, 286]  ; Card 1
-                ,[181, 284, 202, 286] ; Card 2
-                ,[96, 399, 117, 401] ; Card 3
-                ,[181, 399, 202, 401]] ; Card 4
-        } else if (is6CardPack) {
-            borderCoords := [[71, 284, 77, 286]   ; Top row card 1
-                ,[154, 284, 160, 286] ; Top row card 2
-                ,[237, 284, 243, 286] ; Top row card 3
-                ,[71, 399, 77, 401]   ; Bottom row card 1
-                ,[154, 399, 160, 401] ; Bottom row card 2
-                ,[237, 399, 243, 401]] ; Bottom row card 3
-        } else {
-            borderCoords := [[71, 284, 77, 286] ; Card 1
-                ,[154, 284, 160, 286] ; Card 2
-                ,[237, 284, 243, 286] ; Card 3
-                ,[111, 399, 117, 401] ; Card 4
-                ,[196, 399, 202, 401]] ; Card 5
-        }
-    }
-
-    ; Changed Shiny 2star needles to improve detection after hours of testing previous needles.
-    if (prefix = "shiny2star") {
-        if (is4CardPack) {
-            borderCoords := [[110, 175, 140, 187]    ; Top row card 1
-                ,[192, 175, 223, 187]                ; Top row card 2
-                ,[110, 293, 140, 305]                ; Bottom row card 1
-                ,[192, 293, 223, 305]]               ; Bottom row card 2
-        } else if (is6CardPack) {
-            borderCoords := [[74, 175, 97, 187]
-                ,[153, 175, 180, 187]
-                ,[237, 175, 262, 187]
-                ,[74, 293, 97, 305]
-                ,[153, 293, 180, 305]
-                ,[253, 385, 259, 402]]
-        } else {
-            borderCoords := [[74, 175, 97, 187]
-                ,[153, 175, 180, 187]
-                ,[237, 175, 262, 187]
-                ,[110, 293, 140, 305]
-                ,[192, 293, 223, 305]]
-        }
-    }
-
-    if (prefix = "shiny1star") {
-        if (is6CardPack) {
-            borderCoords := [[90, 261, 93, 283]
-                ,[173, 261, 176, 283]
-                ,[255, 261, 258, 283]
-                ,[90, 376, 93, 398]
-                ,[173, 376, 176, 398]
-                ,[254, 384, 258, 400]]
-        } else {
-            borderCoords := [[90, 261, 93, 283]
-                ,[173, 261, 176, 283]
-                ,[255, 261, 258, 283]
-                ,[130, 376, 133, 398]
-                ,[215, 376, 218, 398]]
-        }
-    }
-
-    ; 100% scale adjustments
-    if (scaleParam = 287) {
-        if (prefix = "shiny1star" || prefix = "shiny2star") {
-            if (is6CardPack) {
-                borderCoords := [[91, 253, 95, 278]
-                    ,[175, 253, 179, 278]
-                    ,[259, 253, 263, 278]
-                    ,[91, 370, 95, 395]
-                    ,[175, 371, 179, 394]
-                    ,[259, 371, 263, 394]]
-            } else {
-                borderCoords := [[91, 253, 95, 278]
-                    ,[175, 253, 179, 278]
-                    ,[259, 253, 263, 278]
-                    ,[132, 370, 136, 395]
-                    ,[218, 371, 222, 394]]
-            }
-        } else {
-            if (is6CardPack) {
-                borderCoords := [[55, 278, 84, 280]     ; Card 1
-                    ,[139, 278, 168, 280]                ; Card 2
-                    ,[223, 278, 252, 280]                ; Card 3
-                    ,[55, 395, 84, 397]                  ; Card 4
-                    ,[139, 395, 168, 397]                ; Card 5
-                    ,[223, 395, 252, 397]]               ; Card 6
-            } else {
-                borderCoords := [[55, 278, 84, 280]     ; Card 1
-                    ,[139, 278, 168, 280]                ; Card 2
-                    ,[223, 278, 252, 280]                ; Card 3
-                    ,[96, 395, 125, 397]                 ; Card 4
-                    ,[182, 395, 211, 397]]               ; Card 5
-            }
-        }
-    }
-
-    loadingBorderCoords := [[121, 274, 154, 277], [121, 302, 154, 305]]
-
+    currentPackInfo := {"isVerified": false, "CardSlot": [], "TypeCount": {}}
+    loadingBorderCoords := [[121, 269, 154, 272], [121, 297, 154, 300]]    
     pBitmap := 0
     Loop, {
-        pBitmap := from_window(WinExist(winTitle))
-        Path := A_ScriptDir . "\" . defaultLanguage . "\LoadingBox.png"
+        pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
+        Path := A_ScriptDir . "\Needles\LoadingBox.png"
         if (FileExist(Path)) {
             pNeedle := GetNeedle(Path)
             vRet1 := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, loadingBorderCoords[1][1], loadingBorderCoords[1][2], loadingBorderCoords[1][3], loadingBorderCoords[1][4], 20)
@@ -254,143 +117,53 @@ FindBorders(prefix) {
             isExistLoadingBox := vRet1 | vRet2
 
             if(isExistLoadingBox = 0){
+                if(isDevelopment){
+                    ;getDevelopmentScreenShot(totalCardsInPack, pBitmap)
+                }
                 break
             }
             Sleep, 100
         }
     }
 
-    for index, value in borderCoords {
-        coords := borderCoords[A_Index]
-        imageName := "" ; prevents accidentally reusing previously loaded imageName if imageName is undefined in custom one-off needles
-        currentSearchVariation := searchVariation
+    Loop, % totalCardsInPack {
+        cardIndex := A_Index
+        if(currentPackInfo["CardSlot"][cardIndex] != "")
+            continue
 
-        if (is6CardPack && A_Index >= 4) {
-            ; Bottom row of 6-card pack (positions 4, 5, 6)
-            if (A_Index = 6 && (prefix = "shiny1star" || prefix = "shiny2star")) {
-                ; Use dedicated shiny1star6 needle for 6th card position
-                imageName := prefix . "6card6"
-            } else if (A_index = 4 && prefix = "normal" || prefix = "3diamond") {
-                ; Use dedicated normal4 needle for 4th card position
-                imageName := prefix . "6card4"
-            } else if (A_Index = 5 && prefix = "normal" || prefix = "3diamond") {
-                ; Use dedicated normal5 needle for 5th card position
-                imageName := prefix . "6card5"
-            } else {
-                ; Re-use top row images for positions 4 and 5
-                imageIndex := A_Index - 3  ; Card 4 -> uses Card 1 needle, 5->2
-            imageName := prefix . imageIndex
-            }
-            currentSearchVariation := searchVariation6Card
-        } else if (is4CardPack) {
-            ; 4-card pack (Deluxe) - special needle logic
-            if (A_Index <= 2) {
-                ; Slots 1 and 2 - try deluxe-specific needle first, fall back to regular
-                deluxeImageName := "deluxe" . prefix . A_Index
-                regularImageName := prefix . A_Index
+        cardRarityName := ""
+        for index, Checker in rarityCheckers {
+            cardRarityName := Checker.RarityName
 
-                ; Check if deluxe-specific needle exists
-                deluxePath := A_ScriptDir . "\" . defaultLanguage . "\" . deluxeImageName . ".png"
-                if (FileExist(deluxePath)) {
-                    imageName := deluxeImageName
-                } else {
-                    imageName := regularImageName
-                }
-            } else {
-                ; Slots 3 and 4 - reuse needles from regular 5-card pack slots 4 and 5
-                ; Deluxe slot 3 (A_Index=3) uses regular slot 4 needle
-                ; Deluxe slot 4 (A_Index=4) uses regular slot 5 needle
-                imageName := prefix . (A_Index + 1)
-            }
-            currentSearchVariation := searchVariation4Card
-        } else {
-            ; Top row of 6-card pack, or any position in 5-card pack, use the 'real' needles
-            imageName := prefix . A_Index
-            currentSearchVariation := searchVariation
-        }
+            isFound := Checker.Search(pBitmap, totalCardsInPack, cardIndex)
+            if (isFound) {
+                if(currentPackInfo["TypeCount"][cardRarityName] = "")
+                    currentPackInfo["TypeCount"][cardRarityName] := 0
 
-        Path := A_ScriptDir . "\" . defaultLanguage . "\" . imageName . ".png"
-        slotFound := false
-        if (FileExist(Path)) {
-            pNeedle := GetNeedle(Path)
-            ; Immersive slot 6 (6-card): use x from slot 3 (top-right), y from slot 4 (bottom row)
-            if (prefix = "immersive" && is6CardPack && A_Index = 6)
-                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, borderCoords[3][1], borderCoords[4][2], borderCoords[3][3], borderCoords[4][4], currentSearchVariation)
-            else
-                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
-            if (vRet = 1)
-                slotFound := true
-        }
-
-        ; MegaShine-specific variant needles (only searched when MegaShine is an enabled pack)
-        if (!slotFound && MegaShine) {
-            ; Full Art: also try fullart-megashine1.png and fullart-megashine2.png for any slot
-            if (prefix = "fullArt") {
-                ; fullart-megashine1.png: search 103px higher (top border rather than bottom border because 4-diamond mega also uses pure green border in the bottom border screen region which leads to false positives)
-                altPath := A_ScriptDir . "\" . defaultLanguage . "\fullart-megashine1.png"
-                if (FileExist(altPath)) {
-                    pNeedle := GetNeedle(altPath)
-                    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2] - 103, coords[3], coords[4] - 103, currentSearchVariation)
-                    if (vRet = 1)
-                        slotFound := true
-                }
-                ; fullart-megashine2.png: search at normal border coords
-                if (!slotFound) {
-                    altPath := A_ScriptDir . "\" . defaultLanguage . "\fullart-megashine2.png"
-                    if (FileExist(altPath)) {
-                        pNeedle := GetNeedle(altPath)
-                        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
-                        if (vRet = 1)
-                            slotFound := true
-                    }
-                }
-            }
-
-            ; Immersive slot 6 (6-card): also try immersive-megashine6.png and immersive-megashine6-1.png
-            if (!slotFound && prefix = "immersive" && is6CardPack && A_Index = 6) {
-                Loop, 2 {
-                    altName := (A_Index = 1) ? "immersive-megashine6" : "immersive-megashine6-1"
-                    altPath := A_ScriptDir . "\" . defaultLanguage . "\" . altName . ".png"
-                    if (FileExist(altPath)) {
-                        pNeedle := GetNeedle(altPath)
-                        ; x from slot 3 (top-right), y from slot 4 (bottom row)
-                        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, borderCoords[3][1], borderCoords[4][2], borderCoords[3][3], borderCoords[4][4], currentSearchVariation)
-                        if (vRet = 1) {
-                            slotFound := true
-                            break
-                        }
-                    }
-                }
-            }
-
-            ; Shiny 2star slot 6 (6-card): also try shiny2star6card-megashine1, -2, -3, -4
-            if (!slotFound && prefix = "shiny2star" && is6CardPack && A_Index = 6) {
-                Loop, 4 {
-                    altPath := A_ScriptDir . "\" . defaultLanguage . "\shiny2star6card-megashine" . A_Index . ".png"
-                    if (FileExist(altPath)) {
-                        pNeedle := GetNeedle(altPath)
-                        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], currentSearchVariation)
-                        if (vRet = 1) {
-                            slotFound := true
-                            break
-                        }
-                    }
-                }
+                currentPackInfo["CardSlot"][cardIndex] := cardRarityName
+                currentPackInfo["TypeCount"][cardRarityName] := (currentPackInfo["TypeCount"].HasKey(cardRarityName) ? currentPackInfo["TypeCount"][cardRarityName] : 0) + 1
+                break
             }
         }
-
-        if (slotFound)
-            count += 1
     }
+
+    For idx, Checker in rarityCheckers {
+        rarityName := Checker.RarityName
+        if(!currentPackInfo["TypeCount"].HasKey(rarityName) || currentPackInfo["TypeCount"][rarityName] == "")
+            currentPackInfo["TypeCount"][rarityName] := 0
+    }
+
     Gdip_DisposeImage(pBitmap)
-    return count
+    currentPackInfo["isVerified"] := true
+    return currentPackInfo
 }
 
 ;-------------------------------------------------------------------------------
 ; FindCard - Find specific card in opened pack
 ;-------------------------------------------------------------------------------
 FindCard(prefix) {
-    global winTitle, defaultLanguage, scaleParam
+    global session
+
     count := 0
     searchVariation := 40
     borderCoords := [[23, 191, 76, 193]
@@ -398,18 +171,10 @@ FindCard(prefix) {
         ,[189, 191, 242, 193]
         ,[63, 306, 116, 308]
         ,[146, 306, 199, 308]]
-    ; 100% scale changes
-    if (scaleParam = 287) {
-        borderCoords := [[23, 184, 81, 186]
-            ,[107, 184, 165, 186]
-            ,[191, 184, 249, 186]
-            ,[64, 301, 122, 303]
-            ,[148, 301, 206, 303]]
-    }
-    pBitmap := from_window(WinExist(winTitle))
+    pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
     for index, value in borderCoords {
         coords := borderCoords[A_Index]
-        Path = %A_ScriptDir%\%defaultLanguage%\%prefix%%A_Index%.png
+        Path = %A_ScriptDir%\Needles\%prefix%%A_Index%.png
         if (FileExist(Path)) {
             pNeedle := GetNeedle(Path)
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coords[1], coords[2], coords[3], coords[4], searchVariation)
@@ -426,76 +191,26 @@ FindCard(prefix) {
 ; FindGodPack - Detect if current pack is a god pack
 ;-------------------------------------------------------------------------------
 FindGodPack(invalidPack := false) {
-    global keepAccount, openPack, minStars, minStarsCrimsonBlaze, minStarsMegaGyarados, minStarsMegaBlaziken, minStarsMegaAltaria, minStarsMegaShine
-    global minStarsA4Deluxe, minStarsA4Springs, minStarsA4HoOh, minStarsA4Lugia, minStarsA3b, minStarsA3a
-    global minStarsA3Solgaleo, minStarsA3Lunala, minStarsA2b, minStarsA2a, minStarsA2Dialga, minStarsA2Palkia
-    global minStarsA1Mewtwo, minStarsA1Charizard, minStarsA1Pikachu, minStarsA1a, minStarsShiny, shinyPacks
-    global scriptName
+    global botConfig, session
 
+    currentPackInfo := session.get("currentPackInfo")
     ; Check for normal borders.
-    normalBorders := FindBorders("normal")
+    normalBorders := currentPackInfo["TypeCount"]["normal"]
     if (normalBorders) {
         CreateStatusMessage("Not a God Pack...",,,, false)
         return false
     }
 
     ; A god pack (although possibly invalid) has been found.
-    keepAccount := true
+    session.set("keepAccount", true)
 
     ; Determine the required minimum stars based on pack type.
-    requiredStars := minStars ; Default to general minStars
-
-    ; Check specific selections first, then default to shiny
-        if (openPack == "MegaShine") {
-            requiredStars := minStarsMegaShine
-        } else if (openPack == "CrimsonBlaze") {
-            requiredStars := minStarsCrimsonBlaze
-        } else if (openPack == "MegaGyarados") {
-            requiredStars := minStarsMegaGyarados
-        } else if (openPack == "MegaBlaziken") {
-            requiredStars := minStarsMegaBlaziken
-        } else if (openPack == "MegaAltaria") {
-            requiredStars := minStarsMegaAltaria
-        } else if (openPack == "Deluxe") {
-            requiredStars := minStarsA4Deluxe
-        } else if (openPack == "Springs") {
-            requiredStars := minStarsA4Springs
-        } else if (openPack == "HoOh") {
-            requiredStars := minStarsA4HoOh
-        } else if (openPack == "Lugia") {
-            requiredStars := minStarsA4Lugia
-        } else if (openPack == "Eevee") {
-            requiredStars := minStarsA3b
-        } else if (openPack == "Buzzwole") {
-            requiredStars := minStarsA3a
-        } else if (openPack == "Solgaleo") {
-            requiredStars := minStarsA3Solgaleo
-        } else if (openPack == "Lunala") {
-            requiredStars := minStarsA3Lunala
-        } else if (openPack = "Shining") {
-            requiredStars := minStarsA2b
-        } else if (openPack = "Arceus") {
-            requiredStars := minStarsA2a
-        } else if (openPack = "Dialga") {
-            requiredStars := minStarsA2Dialga
-        } else if (openPack = "Palkia") {
-            requiredStars := minStarsA2Palkia
-        } else if (openPack = "Mewtwo") {
-            requiredStars := minStarsA1Mewtwo
-        } else if (openPack = "Charizard") {
-            requiredStars := minStarsA1Charizard
-        } else if (openPack = "Pikachu") {
-            requiredStars := minStarsA1Pikachu
-        } else if (openPack = "Mew") {
-            requiredStars := minStarsA1a
-        } else if (shinyPacks.HasKey(openPack)) {
-            requiredStars := minStarsShiny
-        }
+    requiredStars := botConfig.get("minStars") ; Default to general minStars
 
     ; Check if pack meets minimum stars requirement
     if (!invalidPack) {
         ; Calculate tempStarCount by counting only valid 2-star cards for minimum check
-        tempStarCount := FindBorders("fullart") + FindBorders("rainbow") + FindBorders("trainer")
+        tempStarCount := currentPackInfo["TypeCount"]["fullart"] + currentPackInfo["TypeCount"]["rainbow"] + currentPackInfo["TypeCount"]["trainer"]
 
         if (requiredStars > 0 && tempStarCount < requiredStars) {
             CreateStatusMessage("Pack doesn't contain enough 2 stars...",,,, false)
@@ -506,31 +221,31 @@ FindGodPack(invalidPack := false) {
     if (invalidPack) {
         GodPackFound("Invalid")
         RemoveFriends()
-        IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+        IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
     } else {
         GodPackFound("Valid")
     }
 
-    return keepAccount
+    return session.get("keepAccount")
 }
 
 ;-------------------------------------------------------------------------------
 ; FoundStars - Process found star/special cards
 ;-------------------------------------------------------------------------------
 FoundStars(star) {
-    global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack, deleteMethod
-    global username, friendCode, loadedAccount
-    global accountFileName, sendAccountXml, winTitle, packsInPool
+    global botConfig, session, DeadCheck
+    global sendAccountXml
 
-    IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
-    keepAccount := true
+    IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
+    session.set("keepAccount", true)
 
     screenShot := Screenshot(star)
     accountFullPath := ""
+    username := ""
 
     accountFile := saveAccount(star, accountFullPath, "")
-
     friendCode := getFriendCode()
+    session.set("friendCode", friendCode)
 
     Sleep, 5000
     fcScreenshot := Screenshot("FRIENDCODE")
@@ -539,7 +254,7 @@ FoundStars(star) {
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%
 
-    usernameScreenshotFile := tempDir . "\" . winTitle . "_Username.png"
+    usernameScreenshotFile := tempDir . "\" . session.get("scriptName") . "_Username.png"
     adbTakeScreenshot(usernameScreenshotFile)
     Sleep, 100
 
@@ -548,10 +263,10 @@ FoundStars(star) {
     else {
         ; OCR username
         try {
-            if (injectMethod && IsFunc("ocr")) {
+            if (session.get("injectMethod") && IsFunc("ocr")) {
                 playerName := ""
-                allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+"
-                usernamePattern := "[\w-]+"
+                allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+_"
+                usernamePattern := "[\w-_]+"
 
                 if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
                     username := playerName
@@ -580,7 +295,9 @@ FoundStars(star) {
     if (friendCode && friendCode != "Unknown")
         statusMessage .= " (" . friendCode . ")"
 
-    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFile name: " . accountFile . "\nBacking up to the Accounts\\SpecificCards folder and continuing..."
+    logMessage := statusMessage . " in instance: " . session.get("scriptName")
+    logMessage .= " (" . session.get("packsInPool") . " packs, " . session.get("openPack") . ")\n"
+    logMessage .= "File name: " . accountFile . "\nBacking up to the Accounts\\SpecificCards folder and continuing..."
     LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""), fcScreenshot)
     LogToFile(StrReplace(logMessage, "\n", " "), "GPlog.txt")
 }
@@ -589,11 +306,13 @@ FoundStars(star) {
 ; GodPackFound - Process found god pack
 ;-------------------------------------------------------------------------------
 GodPackFound(validity) {
-    global scriptName, DeadCheck, ocrLanguage, injectMethod, openPack, deleteMethod
-    global username, friendCode, loadedAccount
-    global accountFileName, sendAccountXml, InvalidCheck, winTitle, packsInPool, starCount
+    global botConfig, session, DeadCheck
+    global sendAccountXml
 
-    IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+    currentPackInfo := session.get("currentPackInfo")
+    username := ""
+
+    IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
 
     if(validity = "Valid") {
         Praise := ["Congrats!", "Congratulations!", "GG!", "Whoa!", "Praise Helix!", "Way to go!", "You did it!", "Awesome!", "Nice!", "Cool!", "You deserve it!", "Keep going!", "This one has to be live!", "No duds, no duds, no duds!", "Fantastic!", "Bravo!", "Excellent work!", "Impressive!", "You're amazing!", "Well done!", "You're crushing it!", "Keep up the great work!", "You're unstoppable!", "Exceptional!", "You nailed it!", "Hats off to you!", "Sweet!", "Kudos!", "Phenomenal!", "Boom! Nailed it!", "Marvelous!", "Outstanding!", "Legendary!", "Youre a rock star!", "Unbelievable!", "Keep shining!", "Way to crush it!", "You're on fire!", "Killing it!", "Top-notch!", "Superb!", "Epic!", "Cheers to you!", "Thats the spirit!", "Magnificent!", "Youre a natural!", "Gold star for you!", "You crushed it!", "Incredible!", "Shazam!", "You're a genius!", "Top-tier effort!", "This is your moment!", "Powerful stuff!", "Wicked awesome!", "Props to you!", "Big win!", "Yesss!", "Champion vibes!", "Spectacular!"]
@@ -606,7 +325,7 @@ GodPackFound(validity) {
     Random, rand, 1, Randmax
     Interjection := Praise[rand]
 
-    starCount := FindBorders("fullart") + FindBorders("rainbow") + FindBorders("trainer")
+    starCount := currentPackInfo["TypeCount"]["fullart"] + currentPackInfo["TypeCount"]["rainbow"] + currentPackInfo["TypeCount"]["trainer"]
 
     screenShot := Screenshot(validity)
     accountFullPath := ""
@@ -614,6 +333,7 @@ GodPackFound(validity) {
     accountFile := saveAccount(validity, accountFullPath, "")
 
     friendCode := getFriendCode()
+    session.set("friendCode", friendCode)
 
     Sleep, 5000
     fcScreenshot := Screenshot("FRIENDCODE")
@@ -622,15 +342,15 @@ GodPackFound(validity) {
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%
 
-    usernameScreenshotFile := tempDir . "\" . winTitle . "_Username.png"
+    usernameScreenshotFile := tempDir . "\" . session.get("scriptName") . "_Username.png"
     adbTakeScreenshot(usernameScreenshotFile)
     Sleep, 100
 
     try {
-        if (injectMethod && IsFunc("ocr")) {
+        if (session.get("injectMethod") && IsFunc("ocr")) {
             playerName := ""
-            allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+"
-            usernamePattern := "[\w-]+"
+            allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+_"
+            usernamePattern := "[\w-_]+"
 
             if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
                 username := playerName
@@ -657,13 +377,14 @@ GodPackFound(validity) {
         logMessage .= username
     if (friendCode && friendCode != "Unknown")
         logMessage .= " (" . friendCode . ")"
-    logMessage .= "\n[" . starCount . "/5][" . packsInPool . "P][" . openPack . "] " . invalid . " God Pack found in instance: " . scriptName . "\nFile name: " . accountFile . "\nBacking up to the Accounts\\GodPacks folder and continuing..."
+    logMessage .= "\n[" . starCount . "/5][" . session.get("packsInPool") . "P][" . session.get("openPack") . "] "
+    logMessage .= invalid . " God Pack found in instance: " . session.get("scriptName") . "\nFile name: " . accountFile . "\nBacking up to the Accounts\\GodPacks folder and continuing..."
 
     LogToFile(StrReplace(logMessage, "\n", " "), "GPlog.txt")
 
     if (validity = "Valid") {
         LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""), fcScreenshot)
-    } else if (!InvalidCheck) {
+    } else if (!botConfig.get("InvalidCheck")) {
         LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""))
     }
 }
@@ -672,19 +393,18 @@ GodPackFound(validity) {
 ; FoundTradeable - Process found tradeable cards
 ;-------------------------------------------------------------------------------
 FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighoul := 0, foundCrown := 0, foundImmersive := 0, foundShiny1Star := 0, foundShiny2Star := 0, foundTrainer := 0, foundRainbow := 0, foundFullArt := 0) {
-    global scriptName, keepAccount, s4tWP, s4tWPMinCards, s4tSilent, s4tDiscordWebhookURL, s4tDiscordUserId
-    global s4tSendAccountXml, loadDir, deviceAccountXmlMap, s4tPendingTradeables, accountFileName
-    global winTitle, packsInPool, openPack, screenShotFileName
+    global botConfig, session
+    global screenShotFileName
 
-    IniWrite, 0, %A_ScriptDir%\%scriptName%.ini, UserSettings, DeadCheck
+    IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
 
-    keepAccount := true
+    session.set("keepAccount", true)
 
     foundTradeable := found3Dmnd + found4Dmnd + found1Star + foundGimmighoul + foundCrown + foundImmersive + foundShiny1Star + foundShiny2Star + foundTrainer + foundRainbow + foundFullArt
 
-    if (s4tWP && s4tWPMinCards = 2 && foundTradeable < 2) {
+    if (botConfig.get("s4tWP") && botConfig.get("s4tWPMinCards") = 2 && foundTradeable < 2) {
         CreateStatusMessage("s4t: insufficient cards (" . foundTradeable . "/2)",,,, false)
-        keepAccount := false
+        session.set("keepAccount", false)
         return
     }
 
@@ -740,15 +460,15 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
 
     savedXmlPath := ""
 
-    if (!loadDir) {
+    if (!session.get("loadDir")) {
         ; Create Bots mode: Check if XML already exists for this deviceAccount to prevent duplicates
-        if (deviceAccountXmlMap.HasKey(deviceAccount) && FileExist(deviceAccountXmlMap[deviceAccount])) {
-            savedXmlPath := deviceAccountXmlMap[deviceAccount]
+        if (session.get("deviceAccountXmlMap").HasKey(deviceAccount) && FileExist(session.get("deviceAccountXmlMap")[deviceAccount])) {
+            savedXmlPath := session.get("deviceAccountXmlMap")[deviceAccount]
             UpdateSavedXml(savedXmlPath)
 
             ; Update accountFileName from saved path
             SplitPath, savedXmlPath, xmlFileName
-            accountFileName := xmlFileName
+            session.set("accountFileName", xmlFileName)
         } else {
             ; Create new XML only if one doesn't exist
             saveAccount("All", savedXmlPath)
@@ -756,30 +476,30 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
             ; Extract filename and update accountFileName
             if (savedXmlPath) {
                 SplitPath, savedXmlPath, xmlFileName
-                accountFileName := xmlFileName
+                session.set("accountFileName", xmlFileName)
 
                 ; Store mapping for future reference
-                deviceAccountXmlMap[deviceAccount] := savedXmlPath
+                session.get("deviceAccountXmlMap")[deviceAccount] := savedXmlPath
             }
         }
 
         tradeableData := {}
         tradeableData.xmlPath := savedXmlPath
         tradeableData.deviceAccount := deviceAccount
-        s4tPendingTradeables.Push(tradeableData)
+        session.get("s4tPendingTradeables").Push(tradeableData)
     } else {
         ; Inject mode: Use the current accountFileName (which may have new name due to pack count)
         ; and construct the full path from it
-        saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
-        savedXmlPath := saveDir . "\" . accountFileName
+        saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
+        savedXmlPath := saveDir . "\" . session.get("accountFileName")
 
         ; Verify the file exists at this path
         if (!FileExist(savedXmlPath)) {
             ; If the direct path doesn't work, search for it by the timestamp portion
             ; Extract timestamp from filename between first and last underscore
 
-            if (InStr(accountFileName, "_")) {
-                parts := StrSplit(accountFileName, "_")
+            if (InStr(session.get("accountFileName"), "_")) {
+                parts := StrSplit(session.get("accountFileName"), "_")
                 if (parts.Length() >= 2) {
                     ; parts[1] = pack count (e.g., "91P")
                     ; parts[2] = timestamp (e.g., "20250101120000")
@@ -789,7 +509,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
                     Loop, Files, %saveDir%\*%timestampPattern%*.xml
                     {
                         savedXmlPath := A_LoopFileFullPath
-                        accountFileName := A_LoopFileName
+                        session.set("accountFileName", A_LoopFileName)
                         break  ; Use the first match
                     }
                 }
@@ -799,7 +519,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         ; verification
         if (!FileExist(savedXmlPath)) {
             CreateStatusMessage("Warning: Could not find account XML file for attachment", "", 0, 0, false)
-            LogToFile("FoundTradeable: Could not find XML file. accountFileName=" . accountFileName . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
+            LogToFile("FoundTradeable: Could not find XML file. accountFileName=" . session.get("accountFileName") . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
             savedXmlPath := ""  ; Clear it so we don't try to attach a non-existent file
         }
     }
@@ -812,10 +532,10 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
 
     CreateStatusMessage("Tradeable cards found! Logged to database and continuing...",,,, false)
 
-    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ") Logged to Trades Database. Screenshot file: " . screenShotFileName
+    logMessage := statusMessage . " in instance: " . session.get("scriptName") . " (" . session.get("packsInPool") . " packs, " . session.get("openPack") . ") Logged to Trades Database. Screenshot file: " . screenShotFileName
     LogToFile(logMessage, "S4T.txt")
 
-    if (!s4tSilent && s4tDiscordWebhookURL) {
+    if (!botConfig.get("s4tSilent") && botConfig.get("s4tDiscordWebhookURL")) {
         packDetailsMessage := ""
         if (found3Dmnd > 0)
             packDetailsMessage .= "Three Diamond (x" . found3Dmnd . "), "
@@ -842,18 +562,19 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
 
         packDetailsMessage := RTrim(packDetailsMessage, ", ")
 
-        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . openPack . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nLogged to Trades Database and continuing..."
+        discordMessage := statusMessage . " in instance: " . session.get("scriptName")
+        discordMessage .= " (" . session.get("packsInPool") . " packs, " . session.get("openPack") . ")\n"
+        discordMessage .= "Found: " . packDetailsMessage . "\n"
+        discordMessage .= "Screenshot File name: " . session.get("accountFileName") . "\nLogged to Trades Database and continuing..."
 
         ; Prepare XML file path for attachment
         xmlFileToSend := ""
         ; NOW savedXmlPath will have the correct path with the updated filename!
-        if (s4tSendAccountXml && savedXmlPath && FileExist(savedXmlPath)) {
+        if (botConfig.get("s4tSendAccountXml") && savedXmlPath && FileExist(savedXmlPath)) {
             xmlFileToSend := savedXmlPath
         }
 
-        LogToDiscord(discordMessage, screenShot, true, xmlFileToSend,, s4tDiscordWebhookURL, s4tDiscordUserId)
-
-
+        LogToDiscord(discordMessage, screenShot, true, xmlFileToSend,, botConfig.get("s4tDiscordWebhookURL"), botConfig.get("s4tDiscordUserId"))
     }
     return
 }
@@ -862,17 +583,17 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
 ; ProcessPendingTradeables - Update all pending tradeable XMLs
 ;-------------------------------------------------------------------------------
 ProcessPendingTradeables() {
-    global s4tPendingTradeables
+    global session
 
-    if (s4tPendingTradeables.Length() = 0)
+    if (session.get("s4tPendingTradeables").Length() = 0)
         return
 
     ; Update each saved XML with final account state
-    for index, data in s4tPendingTradeables {
+    for index, data in session.get("s4tPendingTradeables") {
         if (data.xmlPath && FileExist(data.xmlPath)) {
             UpdateSavedXml(data.xmlPath)
         }
     }
 
-    s4tPendingTradeables := []
+    session.set("s4tPendingTradeables", [])
 }

@@ -8,7 +8,6 @@ settingsPath := ScriptDir . "\..\..\Settings.ini"
 IniRead, discordWebhookURL, %settingsPath%, UserSettings, discordWebhookURL
 IniRead, discordUserId, %settingsPath%, UserSettings, discordUserId
 IniRead, sendAccountXml, %settingsPath%, UserSettings, sendAccountXml, 0
-IniRead, showStatus, %settingsPath%, UserSettings, statusMessage, 1
 IniRead, Debug, %settingsPath%, UserSettings, debugMode, 0
 
 ; Enable debugging to get more status messages and logging.
@@ -18,28 +17,31 @@ ResetStatusMessage() {
 }
 
 CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debugOnly := true, Persist := false) {
+    global session
+
     static hwnds := {}
     static resetStatusFunc := Func("ResetStatusMessage")
-
-    if (!showStatus)
-        return
+    static timerReposition
+    if (!timerReposition)
+        timerReposition := Func("SetReposition")
 
     if (Debug && Message != DEFAULT_STATUS_MESSAGE)
         LogToFile(GuiName . ": " . Message)
 
 	if(GuiName = "AvgRuns" || GuiName = "AutoGPTest")
-		guiheight := 20
+		guiheight := 30
 	else
 		guiheight := 40
 		
     try {
+
         ; Check if GUI with this name already exists.
-        GuiName := GuiName . scriptName
+        GuiName := GuiName . session.get("scriptName")
 		
         if !hwnds.HasKey(GuiName) {
-            WinGetPos, xpos, ypos, Width, Height, %winTitle%
-            X := X + xpos + 5
-            Y := Y + ypos
+            WinGetPos, xpos, ypos, Width, Height, % session.get("winTitle") . " ahk_class Qt5156QWindowIcon"
+            X := X + xpos + 5 -1
+            Y := Y + ypos + 5 - 11
             if (!X)
                 X := 0
             if (!Y)
@@ -49,14 +51,17 @@ CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debug
             Gui, %GuiName%:New, -AlwaysOnTop +ToolWindow -Caption -DPIScale
             Gui, %GuiName%:Margin, 2, 2  ; Set margin for the GUI
             Gui, %GuiName%:Font, s8  ; Set the font size to 8 (adjust as needed)
-            Gui, %GuiName%:Add, Text, hwndhCtrl vStatusText,
+            Gui, %GuiName%:Add, Text, hwndhCtrl,
             hwnds[GuiName] := hCtrl
-            OwnerWND := WinExist(winTitle)
-            Gui, %GuiName%:+Owner%OwnerWND% +LastFound
-            DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1  ; HWND_BOTTOM
-                , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
+            OwnerWND := WinExist(session.get("winTitle") . " ahk_class Qt5156QWindowIcon")
+            if(OwnerWND){
+                Gui, %GuiName%:+Owner%OwnerWND% +LastFound
+                DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1  ; HWND_BOTTOM
+                    , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
 
-            Gui, %GuiName%:Show, NoActivate x%X% y%Y% w275 h%guiheight%
+                Gui, %GuiName%:Show, NoActivate x%X% y%Y% w275 h%guiheight%
+            }
+            SetTimer, % timerReposition, 2000
         }
         SetTextAndResize(hwnds[GuiName], Message)
         Gui, %GuiName%:Show, NoActivate  w275 h%guiheight%
@@ -69,6 +74,38 @@ CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debug
             SetTimer, % resetStatusFunc, -2000
         }
     }
+}
+
+SetReposition(){
+    global session
+
+    PosOption := ""
+    GuiName := "StatusMessage" . session.get("scriptName")
+    instanceHwnd := WinExist(session.get("winTitle") . " ahk_class Qt5156QWindowIcon")
+
+    if(instanceHwnd){
+        WinGetPos, xpos, ypos, Width, Height, % session.get("winTitle") . " ahk_class Qt5156QWindowIcon"
+        X := xpos + 5 -1
+        Y := ypos + 5 + 565 - 11
+
+        if (!X)
+            X := 0
+        if (!Y)
+            Y := 0
+
+        Gui, %GuiName%:+LastFound
+        CurrentHwnd := WinExist()
+        WinGetPos, CurX, CurY,,, ahk_id %CurrentHwnd%
+
+        if(CurX == X && CurY == Y)
+            return
+
+        PosOption := "x" . X . " y" . Y
+    }
+    else
+        return
+
+    Gui, %GuiName%:Show, NoActivate %PosOption%
 }
 
 ;Modified from https://stackoverflow.com/a/49354127
@@ -103,7 +140,13 @@ LogToFile(message, logFile := "") {
     else
         logFile := LogsDir . "\" . logFile
     FormatTime, readableTime, %A_Now%, MMMM dd, yyyy HH:mm:ss
-    FileAppend, % "[" readableTime "] " message "`n", %logFile%
+
+    Loop, {
+        FileAppend, % "[" readableTime "] " message "`n", %logFile%
+        if !ErrorLevel
+            break
+        Sleep, 10
+    }
 }
 
 LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screenshotFile2 := "", altWebhookURL := "", altUserId := "") {

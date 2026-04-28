@@ -1,0 +1,1 @@
+﻿global isDevelopment := true
