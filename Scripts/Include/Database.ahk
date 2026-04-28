@@ -19,21 +19,21 @@
 ; GetDeviceAccountFromXML - Extract device account ID from XML
 ;-------------------------------------------------------------------------------
 GetDeviceAccountFromXML() {
-    global loadDir, accountFileName, adbPath, adbPort, scriptName, adbShell
+    global session
 
     deviceAccount := ""
 
-    if (loadDir && accountFileName) {
-        targetClean := RegExReplace(accountFileName, "^\d+P_", "")
+    if (session.get("loadDir") && session.get("accountFileName")) {
+        targetClean := RegExReplace(session.get("accountFileName"), "^\d+P_", "")
         targetClean := RegExReplace(targetClean, "_\d+(\([^)]+\))?\.xml$", "")
 
-        Loop, Files, %loadDir%\*.xml
+        Loop, Files, % session.get("loadDir") . "\*.xml"
         {
             currentClean := RegExReplace(A_LoopFileName, "^\d+P_", "")
             currentClean := RegExReplace(currentClean, "_\d+(\([^)]+\))?\.xml$", "")
 
             if (currentClean = targetClean) {
-                xmlPath := loadDir . "\" . A_LoopFileName
+                xmlPath := session.get("loadDir") . "\" . A_LoopFileName
                 FileRead, xmlContent, %xmlPath%
 
                 if (RegExMatch(xmlContent, "i)<string name=""deviceAccount"">([^<]+)</string>", match)) {
@@ -49,12 +49,12 @@ GetDeviceAccountFromXML() {
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%
 
-    tempPath := tempDir . "\current_device_" . scriptName . ".xml"
+    tempPath := tempDir . "\current_device_" . session.get("scriptName") . ".xml"
 
     adbWriteRaw("cp -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml /sdcard/deviceAccount.xml")
     Sleep, 500
 
-    RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " pull /sdcard/deviceAccount.xml """ . tempPath . """",, Hide
+    RunWait, % session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort") . " pull /sdcard/deviceAccount.xml """ . tempPath . """",, Hide
 
     Sleep, 500
 
@@ -66,7 +66,7 @@ GetDeviceAccountFromXML() {
         }
         FileDelete, %tempPath%
 
-        adbWriteRaw("rm /sdcard/deviceAccount.xml")
+        adbWriteRaw("rm -f /sdcard/deviceAccount.xml")
     }
 
     return deviceAccount
@@ -76,7 +76,7 @@ GetDeviceAccountFromXML() {
 ; LogToTradesDatabase - Log card trades to CSV database
 ;-------------------------------------------------------------------------------
 LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName := "", shinedustValue := "") {
-    global scriptName, accountFileName, accountOpenPacks, openPack
+    global session
 
     dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
 
@@ -95,7 +95,7 @@ LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName := 
         }
     }
 
-    cleanFilename := accountFileName
+    cleanFilename := session.get("accountFileName")
     cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
     cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]*\))?\.xml$", "")
 
@@ -115,16 +115,21 @@ LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName := 
     FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
 
     csvRow := timestamp . ","
-        . accountFileName . ","
+        . session.get("accountFileName") . ","
         . cleanFilename . ","
         . deviceAccount . ","
-        . openPack . ","
+        . session.get("openPack") . ","
         . cardTypeStr . ","
         . cardCountStr . ","
         . screenShotFileName . ","
         . shinedustValue . "`n"
 
-    FileAppend, %csvRow%, %dbPath%
+    Loop, {
+        FileAppend, %csvRow%, %dbPath%
+        if !ErrorLevel
+            break
+        Sleep, 10
+    }
 
     UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFileName, shinedustValue)
 }
@@ -133,20 +138,20 @@ LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName := 
 ; UpdateTradesJSON - Update JSON index with trade information
 ;-------------------------------------------------------------------------------
 UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFileName := "", shinedustValue := "") {
-    global scriptName, accountFileName, accountOpenPacks, openPack
+    global session
 
     jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
 
-    cleanFilename := accountFileName
+    cleanFilename := session.get("accountFileName")
     cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
     cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]+\))?\.xml$", "")
 
     jsonEntry := "{"
         . """timestamp"": """ . timestamp . """, "
         . """deviceAccount"": """ . deviceAccount . """, "
-        . """originalFilename"": """ . accountFileName . """, "
+        . """originalFilename"": """ . session.get("accountFileName") . """, "
         . """cleanFilename"": """ . cleanFilename . """, "
-        . """packType"": """ . openPack . """, "
+        . """packType"": """ . session.get("openPack") . """, "
         . """packScreenshot"": """ . screenShotFileName . """, "
 
     ; Add shinedust if provided
@@ -164,7 +169,12 @@ UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFile
 
     jsonEntry .= "]}`n"
 
-    FileAppend, %jsonEntry%, %jsonPath%
+    Loop, {
+        FileAppend, %jsonEntry%, %jsonPath%
+        if !ErrorLevel
+            break
+        Sleep, 10
+    }
 }
 
 ;-------------------------------------------------------------------------------
@@ -318,7 +328,7 @@ SaveCroppedImage(sourceFile, destFile, x, y, w, h) {
 ; LogShinedustToDatabase - Log shinedust value to database
 ;-------------------------------------------------------------------------------
 LogShinedustToDatabase(shinedustValue) {
-    global accountFileName
+    global session
 
     shinedustValueClean := StrReplace(shinedustValue, ",", "")
 
@@ -360,12 +370,12 @@ LogShinedustToDatabase(shinedustValue) {
     timestamp := A_Now
     FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
 
-    cleanFilename := accountFileName
+    cleanFilename := session.get("accountFileName")
     cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
     cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]*\))?\.xml$", "")
 
     csvRow := timestamp . ","
-        . accountFileName . ","
+        . session.get("accountFileName") . ","
         . cleanFilename . ","
         . deviceAccount . ","
         . ","
@@ -374,7 +384,12 @@ LogShinedustToDatabase(shinedustValue) {
         . ","
         . shinedustValueClean . "`n"
 
-    FileAppend, %csvRow%, %dbPath%
+    Loop, {
+        FileAppend, %csvRow%, %dbPath%
+        if !ErrorLevel
+            break
+        Sleep, 10
+    }
 
     UpdateShinedustJSON(deviceAccount, shinedustValueClean, timestamp, cleanFilename)
 }
@@ -383,14 +398,12 @@ LogShinedustToDatabase(shinedustValue) {
 ; UpdateShinedustJSON - Update JSON index with shinedust information
 ;-------------------------------------------------------------------------------
 UpdateShinedustJSON(deviceAccount, shinedustValue, timestamp, cleanFilename) {
-    global accountFileName
-
     jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
 
     jsonEntry := "{"
         . """timestamp"": """ . timestamp . """, "
         . """deviceAccount"": """ . deviceAccount . """, "
-        . """originalFilename"": """ . accountFileName . """, "
+        . """originalFilename"": """ . session.get("accountFileName") . """, "
         . """cleanFilename"": """ . cleanFilename . """, "
         . """shinedust"": """ . shinedustValue . """"
         . "}`n"
@@ -398,28 +411,29 @@ UpdateShinedustJSON(deviceAccount, shinedustValue, timestamp, cleanFilename) {
     FileAppend, %jsonEntry%, %jsonPath%
 }
 
-;-------------------------------------------------------------------------------
-; AppendToJsonFile - Append data to a JSON file
-;-------------------------------------------------------------------------------
-AppendToJsonFile(variableValue) {
-    global jsonFileName
-    if (!jsonFileName || !variableValue) {
-        return
+SendMetadataToPTCGPB(valueToSend) {
+    global session
+
+    DetectHiddenWindows, On
+    TargetScriptTitle := "PTCGPB.ahk ahk_class AutoHotkeyGUI"
+    
+    Random, randNum, 10000, 99999
+    msgID := A_Now . "_" . A_TickCount . "_" . randNum
+
+    payload := msgID . "|" . session.get("scriptName") . "|" . valueToSend
+    
+    VarSetCapacity(CopyDataStruct, 3*A_PtrSize, 0)
+    SizeInBytes := (StrLen(payload) + 1) * (A_IsUnicode ? 2 : 1)
+    NumPut(SizeInBytes, CopyDataStruct, A_PtrSize)
+    NumPut(&payload, CopyDataStruct, 2*A_PtrSize)
+    
+    SendMessage, 0x4A, 0, &CopyDataStruct,, %TargetScriptTitle%
+    
+    response := ErrorLevel
+    
+    if (response == "FAIL") {
+        return 0 
     }
-
-    ; Read the current content of the JSON file
-    FileRead, jsonContent, %jsonFileName%
-    if (jsonContent = "") {
-        jsonContent := "[]"
-    }
-
-    ; Parse and modify the JSON content
-    jsonContent := SubStr(jsonContent, 1, StrLen(jsonContent) - 1) ; Remove trailing bracket
-    if (jsonContent != "[")
-        jsonContent .= ","
-    jsonContent .= "{""time"": """ A_Now """, ""variable"": " variableValue "}]"
-
-    ; Write the updated JSON back to the file
-    FileDelete, %jsonFileName%
-    FileAppend, %jsonContent%, %jsonFileName%
+    
+    return response 
 }

@@ -19,36 +19,31 @@
 ; loadAccount - Load an account XML file into the game
 ;-------------------------------------------------------------------------------
 loadAccount() {
-    global beginnerMissionsDone, soloBattleMissionDone, intermediateMissionsDone, specialMissionsDone
-    global accountHasPackInTesting, resetSpecialMissionsDone, stopToggle, winTitle, loadDir
-    global accountFileName, accountOpenPacks, accountFileNameTmp, accountFileNameOrig, accountHasPackInfo
-    global currentLoadedAccountIndex, adbShell, adbPath, adbPort
-    global deleteMethod, folderPath
+    global botConfig, session
 
-    beginnerMissionsDone := 0
-    soloBattleMissionDone := 0
-    intermediateMissionsDone := 0
-    specialMissionsDone := 0
-    accountHasPackInTesting := 0
-    resetSpecialMissionsDone := 0
+    session.get("missionDoneList")["beginnerMissionsDone"] := 0
+    session.get("missionDoneList")["soloBattleMissionDone"] := 0
+    session.get("missionDoneList")["intermediateMissionsDone"] := 0
+    session.get("missionDoneList")["specialMissionsDone"] := 0
+    session.get("missionDoneList")["accountHasPackInTesting"] := 0
+    session.get("missionDoneList")["receivedGiftDone"] := 0
 
-    if (stopToggle) {
+    if (session.get("stopToggle")) {
         CreateStatusMessage("Stopping...",,,, false)
         ExitApp
     }
 
     CreateStatusMessage("Loading account...",,,, false)
 
-    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
-    loadDir := saveDir
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
+    session.set("loadDir", saveDir)
     outputTxt := saveDir . "\list_current.txt"
 
-    accountFileName := ""
-    accountOpenPacks := 0
-    accountFileNameTmp := ""
-    accountFileNameOrig := ""
-    accountHasPackInfo := 0
-    currentLoadedAccountIndex := 0
+    session.set("accountFileName", "")
+    session.set("accountOpenPacks", 0)
+    session.set("accountFileNameOrig", "")
+    session.set("accountHasPackInfo", 0)
+    session.set("currentLoadedAccountIndex", 0)
 
     if FileExist(outputTxt) {
         cycle := 0
@@ -75,10 +70,10 @@ loadAccount() {
                         continue
 
                     loadFile := testFile
-                    accountFileName := currentFile
+                    session.set("accountFileName", currentFile)
                     foundValidAccount := true
                     foundIndex := A_Index
-                    currentLoadedAccountIndex := A_Index
+                    session.set("currentLoadedAccountIndex", A_Index)
                     break
                 }
 
@@ -89,7 +84,7 @@ loadAccount() {
 				if (accountModifiedTimeDiff >= 24){
 					if(!InStr(fileLines[1], "T") || accountModifiedTimeDiff >= 5*24) {
 						; otherwise account has a pack under test
-						accountFileName := fileLines[1]
+						session.set("accountFileName", fileLines[1])
 						break
 					}
 				}
@@ -116,67 +111,26 @@ loadAccount() {
         return false
     }
 
-    adbWriteRaw("input keyevent 3")
-    waitadb()
+    CreateStatusMessage("Closing Pocket App.",,,, false, true)
+    closePTCGPApp()
+    Sleep, 50
+    clearMissionCache()
+    Sleep, 100
 
-    adbWriteRaw("am stop-app jp.pokemon.pokemontcgp")
-    Sleep, 500
-    adbWriteRaw("cmd activity stop-app jp.pokemon.pokemontcgp")
-    Sleep, 500
-
-    adbWriteRaw("am kill jp.pokemon.pokemontcgp")
-    Sleep, 500
-    adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
-    Sleep, 500
-
-    adbWriteRaw("sync")
-    Sleep, 3000
-
-    ; Injection cycle restart logic for "Inject 13P+" and "Inject Wonderpick 96P+" to mitigate MuMu memory leak / PTCGP incompatibility issues.
-    ; Read auto-restart settings from PTCGPB settings
-    IniRead, autoRestartMumu, %A_ScriptDir%\..\Settings.ini, UserSettings, autoRestartMumu, 1
-    IniRead, runsBeforeRestart, %A_ScriptDir%\..\Settings.ini, UserSettings, runsBeforeRestart, 13
-
-    if (autoRestartMumu = 1 && runsBeforeRestart > 0 && (deleteMethod = "Inject 13P+" || deleteMethod = "Inject Wonderpick 96P+")) {
-        IniRead, InjectionCycleCount, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount, 0
-        InjectionCycleCount := InjectionCycleCount + 1
-        IniWrite, %InjectionCycleCount%, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount
-
-        if (InjectionCycleCount >= runsBeforeRestart) {
-            InjectionCycleCount := 0
-            IniWrite, %InjectionCycleCount%, %A_ScriptDir%\%winTitle%.ini, Metrics, InjectionCycleCount
-
-            CreateStatusMessage("Restarting MuMu instance (" . runsBeforeRestart . " cycle)",,,, false)
-            LogToFile("Restarting MuMu instance after " . runsBeforeRestart . " injection cycles - full script reload")
-
-            killInstance(winTitle)
-            Sleep, 2000
-            launchInstance(winTitle)
-            Sleep, 5000  ; Give MuMu a head start before script reload
-
-            SafeReload()
-        }
-    }
-
-    waitadb()
-    RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " push " . loadFile . " /sdcard/deviceAccount.xml",, Hide
-    waitadb()
+    RunWait, % session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort") . " push " . loadFile . " /sdcard/deviceAccount.xml",, Hide
+    CreateStatusMessage("Injecting: " . session.get("accountFileName"),,,, false)
     adbWriteRaw("cp /sdcard/deviceAccount.xml /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
-    waitadb()
-    adbWriteRaw("rm /sdcard/deviceAccount.xml")
-    waitadb()
+    adbWriteRaw("rm -f /sdcard/deviceAccount.xml")
+    Sleep, 100
     ; Reliably restart the app: Wait for launch, and start in a clean, new task without animation.
-    adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
-    waitadb()
-    Sleep, 1000 
+    startPTCGPApp()
     ; Parse account filename for pack info (unchanged)
-    if (InStr(accountFileName, "P")) {
-        accountFileNameParts := StrSplit(accountFileName, "P")
-        accountOpenPacks := accountFileNameParts[1]
-        accountFileNameTmp := accountFileNameParts[2]
-        accountHasPackInfo := 1
+    if (InStr(session.get("accountFileName"), "P")) {
+        accountFileNameParts := StrSplit(session.get("accountFileName"), "P")
+        session.set("accountOpenPacks", accountFileNameParts[1])
+        session.set("accountHasPackInfo", 1)
     } else {
-        accountFileNameOrig := accountFileName
+        session.set("accountFileNameOrig", session.get("accountFileName"))
     }
 
     getMetaData()
@@ -188,14 +142,14 @@ loadAccount() {
 ; MarkAccountAsUsed - Mark account as successfully used and remove from queue
 ;-------------------------------------------------------------------------------
 MarkAccountAsUsed() {
-    global currentLoadedAccountIndex, accountFileName, winTitle
+    global session
 
-    if (!currentLoadedAccountIndex || !accountFileName) {
+    if (!session.get("currentLoadedAccountIndex") || !session.get("accountFileName")) {
         LogToFile("Warning: MarkAccountAsUsed called but no current account tracked")
         return
     }
 
-    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
     outputTxt := saveDir . "\list_current.txt"
 
     ; Remove the account from list_current.txt
@@ -205,7 +159,7 @@ MarkAccountAsUsed() {
 
         newListContent := ""
         Loop, % fileLines.MaxIndex() {
-            if (A_Index != currentLoadedAccountIndex)
+            if (A_Index != session.get("currentLoadedAccountIndex"))
                 newListContent .= fileLines[A_Index] "`r`n"
         }
 
@@ -214,57 +168,56 @@ MarkAccountAsUsed() {
     }
 
     ; Track as used with timestamp
-    TrackUsedAccount(accountFileName)
+    TrackUsedAccount(session.get("accountFileName"))
 
     ; Reset tracking
-    currentLoadedAccountIndex := 0
+    session.set("currentLoadedAccountIndex", 0)
 }
 
 ;-------------------------------------------------------------------------------
 ; saveAccount - Save current account from game to XML file
 ;-------------------------------------------------------------------------------
-saveAccount(file := "Valid", ByRef filePath := "", packDetails := "") {
-    global accountOpenPacks, beginnerMissionsDone, soloBattleMissionDone, intermediateMissionsDone
-    global specialMissionsDone, accountHasPackInTesting, winTitle, packsInPool, scriptName
-    global adbShell, adbPath, adbPort, Debug
+saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag := false) {
+    global session, Debug
 
     filePath := ""
     xmlFile := ""  ; Initialize xmlFile for all branches
 
     if (file = "All") {
         metadata := ""
-        if(beginnerMissionsDone)
+        if(session.get("missionDoneList")["beginnerMissionsDone"])
             metadata .= "B"
-        if(soloBattleMissionDone)
+        if(session.get("missionDoneList")["soloBattleMissionDone"])
             metadata .= "S"
-        if(intermediateMissionsDone)
+        if(session.get("missionDoneList")["intermediateMissionsDone"])
             metadata .= "I"
-        if(specialMissionsDone)
+        if(session.get("missionDoneList")["specialMissionsDone"])
             metadata .= "X"
-        if(accountHasPackInTesting)
+        if(session.get("missionDoneList")["accountHasPackInTesting"])
             metadata .= "T"
+        if(session.get("missionDoneList")["receivedGiftDone"])
+            metadata .= "R"
 
-        saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+        saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
 
         ; Create filename components
         timestamp := A_Now
-        xmlFile := accountOpenPacks . "P_" . timestamp . "_" . winTitle . "(" . metadata . ").xml"
+        xmlFile := session.get("accountOpenPacks") . "P_" . timestamp . "_" . session.get("scriptName") . "(" . metadata . ").xml"
         filePath := saveDir . "\" . xmlFile
 
     } else if (file = "Valid" || file = "Invalid") {
         saveDir := A_ScriptDir "\..\Accounts\GodPacks\"
-        xmlFile := A_Now . "_" . winTitle . "_" . file . "_" . packsInPool . "_packs.xml"
+        xmlFile := A_Now . "_" . session.get("scriptName") . "_" . file . "_" . session.get("packsInPool") . "_packs.xml"
         filePath := saveDir . xmlFile
 
     } else if (file = "Tradeable") {
         saveDir := A_ScriptDir "\..\Accounts\Trades\"
-        ;packsInPool doesn't make sense but nothing does, really.
-        xmlFile := A_Now . "_" . winTitle . (packDetails ? "_" . packDetails : "") . "_" . packsInPool . "_packs.xml"
+        xmlFile := A_Now . "_" . session.get("scriptName") . (packDetails ? "_" . packDetails : "") . "_" . session.get("packsInPool") . "_packs.xml"
         filePath := saveDir . xmlFile
 
     } else {
         saveDir := A_ScriptDir "\..\Accounts\SpecificCards\"
-        xmlFile := A_Now . "_" . winTitle . "_" . file . "_" . packsInPool . "_packs.xml"
+        xmlFile := A_Now . "_" . session.get("scriptName") . "_" . file . "_" . session.get("packsInPool") . "_packs.xml"
         filePath := saveDir . xmlFile
     }
 
@@ -282,11 +235,11 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "") {
         waitadb()
         Sleep, 500
 
-        RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " pull /sdcard/deviceAccount.xml """ . filePath,, Hide
+        RunWait, % session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort") . " pull /sdcard/deviceAccount.xml """ . filePath,, Hide
 
         Sleep, 500
 
-        adbWriteRaw("rm /sdcard/deviceAccount.xml")
+        adbWriteRaw("rm -f /sdcard/deviceAccount.xml")
 
         Sleep, 500
 
@@ -297,7 +250,7 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "") {
 
         if(count > 10 && file != "All") {
             CreateStatusMessage("Account not saved. Pausing...",,,, false)
-            LogToDiscord("Attempted to save account in " . scriptName . " but was unsuccessful. Pausing. You will need to manually extract.", Screenshot(), true)
+            LogToDiscord("Attempted to save account in " . session.get("scriptName") . " but was unsuccessful. Pausing. You will need to manually extract.", Screenshot(), true)
             Pause, On
         }
         count++
@@ -305,9 +258,9 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "") {
 
     ;Add metrics tracking whenever desired card is found
     now := A_NowUTC
-    IniWrite, %now%, %A_ScriptDir%\%scriptName%.ini, Metrics, LastEndTimeUTC
+    IniWrite, %now%, % session.get("scriptIniFile"), Metrics, LastEndTimeUTC
     EnvSub, now, 1970, seconds
-    IniWrite, %now%, %A_ScriptDir%\%scriptName%.ini, Metrics, LastEndEpoch
+    IniWrite, %now%, % session.get("scriptIniFile"), Metrics, LastEndEpoch
 
     return xmlFile  ; Now returns the filename for all branches
 }
@@ -316,8 +269,8 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "") {
 ; TrackUsedAccount - Track account as used with timestamp
 ;-------------------------------------------------------------------------------
 TrackUsedAccount(fileName) {
-    global winTitle
-    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    global session
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
     usedAccountsLog := saveDir . "\used_accounts.txt"
 
     ; Append with timestamp only (no epoch needed)
@@ -329,8 +282,8 @@ TrackUsedAccount(fileName) {
 ; CleanupUsedAccounts - Remove stale used account tracking data
 ;-------------------------------------------------------------------------------
 CleanupUsedAccounts() {
-    global winTitle, verboseLogging
-    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
+    global botConfig, session
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
     usedAccountsLog := saveDir . "\used_accounts.txt"
 
     if (!FileExist(usedAccountsLog)) {
@@ -367,7 +320,7 @@ CleanupUsedAccounts() {
             accountFilePath := saveDir . "\" . fileName
             if (!FileExist(accountFilePath)) {
                 removedCount++
-                if(verboseLogging)
+                if(botConfig.get("verboseLogging"))
                     LogToFile("Removed used account entry (file no longer exists): " . fileName)
                 continue
             }
@@ -380,7 +333,7 @@ CleanupUsedAccounts() {
             } else {
                 ; Account is older than 24 hours, remove it
                 removedCount++
-                if(verboseLogging)
+                if(botConfig.get("verboseLogging"))
                     LogToFile("Removed stale used account: " . fileName . " (used: " . timestamp . ")")
             }
         }
@@ -392,7 +345,7 @@ CleanupUsedAccounts() {
         FileAppend, %cleanedContent%, %usedAccountsLog%
     }
 
-    if(verboseLogging && removedCount > 0)
+    if(botConfig.get("verboseLogging") && removedCount > 0)
         LogToFile("Cleaned up used accounts: kept " . keptCount . ", removed " . removedCount)
 }
 
@@ -400,97 +353,97 @@ CleanupUsedAccounts() {
 ; UpdateAccount - Update account filename with pack count
 ;-------------------------------------------------------------------------------
 UpdateAccount() {
-    global accountOpenPacks, accountFileName, accountFileNameParts, accountFileNameOrig, ocrSuccess, winTitle
-    global aminutes, aseconds, rerolls
+    global session
 
-    accountOpenPacksStr := accountOpenPacks
-    if(accountOpenPacks<10)
-        accountOpenPacksStr := "0" . accountOpenPacks ; add a trailing 0 for sorting
+    accountOpenPacksStr := session.get("accountOpenPacks")
+    if(session.get("accountOpenPacks") < 10)
+        accountOpenPacksStr := "0" . session.get("accountOpenPacks") ; add a trailing 0 for sorting
 
-    if(InStr(accountFileName, "P")){
-        AccountName := StrSplit(accountFileName , "P")
-        accountFileNameParts := StrSplit(accountFileName, "P")  ; Split at P
+    if(InStr(session.get("accountFileName"), "P")){
+        accountFileNameParts := StrSplit(session.get("accountFileName"), "P")  ; Split at P
         AccountNewName := accountOpenPacksStr . "P" . accountFileNameParts[2]
-    } else if (ocrSuccess)
-        AccountNewName := accountOpenPacksStr . "P_" . accountFileNameOrig
+    } else if (session.get("ocrSuccess"))
+        AccountNewName := accountOpenPacksStr . "P_" . session.get("accountFileNameOrig")
     else
         return ; if OCR is not successful, don't modify account file
 
-    if(!InStr(accountFileName, "P") || accountOpenPacks > 0) {
-        saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
-        accountFile := saveDir . "\" . accountFileName
+    if(!InStr(session.get("accountFileName"), "P") || session.get("accountOpenPacks") > 0) {
+        saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
+        session.set("accountFile", saveDir . "\" . session.get("accountFileName"))
         accountNewFile := saveDir . "\" . AccountNewName
-        FileMove, %accountFile% , %accountNewFile% ;TODO enable
+        FileMove, % session.get("accountFile"), %accountNewFile% ;TODO enable
         FileSetTime,, %accountNewFile%
-        accountFileName := AccountNewName
+        session.set("accountFileName", AccountNewName)
     }
 
+    updateTotalTime()
+    
+    session.set("VRAMUsage", GetVRAMByScriptName(session.get("scriptName")))
     ; Direct display of metrics rather than calling function
-    CreateStatusMessage("Avg: " . aminutes . "m " . aseconds . "s | Runs: " . rerolls . " | Account Packs " . accountOpenPacks, "AvgRuns", 0, 605, false, true)
+    CreateStatusMessage(generateStatusText(), "AvgRuns", 0, 605, false, true)
 }
 
 ;-------------------------------------------------------------------------------
 ; getMetaData - Read metadata flags from account filename
 ;-------------------------------------------------------------------------------
 getMetaData() {
-    global accountFileName, beginnerMissionsDone, soloBattleMissionDone, intermediateMissionsDone
-    global specialMissionsDone, accountHasPackInTesting, resetSpecialMissionsDone, winTitle
+    global session
 
-    beginnerMissionsDone := 0
-    soloBattleMissionDone := 0
-    intermediateMissionsDone := 0
-    specialMissionsDone := 0
-    accountHasPackInTesting := 0
+    session.get("missionDoneList")["beginnerMissionsDone"] := 0
+    session.get("missionDoneList")["soloBattleMissionDone"] := 0
+    
+    session.get("missionDoneList")["intermediateMissionsDone"] := 0
+    session.get("missionDoneList")["specialMissionsDone"] := 0
+    session.get("missionDoneList")["accountHasPackInTesting"] := 0
+    session.get("missionDoneList")["receivedGiftDone"] := 0
 
     ; check if account file has metadata information
-    if(InStr(accountFileName, "(")) {
-        accountFileNameParts1 := StrSplit(accountFileName, "(")  ; Split at (
+    if(InStr(session.get("accountFileName"), "(")) {
+        accountFileNameParts1 := StrSplit(session.get("accountFileName"), "(")  ; Split at (
         if(InStr(accountFileNameParts1[2], ")")) {
             ; has metadata information
             accountFileNameParts2 := StrSplit(accountFileNameParts1[2], ")")  ; Split at )
             metadata := accountFileNameParts2[1]
+            if(InStr(metadata, "R"))
+                session.get("missionDoneList")["receivedGiftDone"] := 1
             if(InStr(metadata, "B"))
-                beginnerMissionsDone := 1
+                session.get("missionDoneList")["beginnerMissionsDone"] := 1
             if(InStr(metadata, "S"))
-                soloBattleMissionDone := 1
+                session.get("missionDoneList")["soloBattleMissionDone"] := 1
             if(InStr(metadata, "I"))
-                intermediateMissionsDone := 1
+                session.get("missionDoneList")["intermediateMissionsDone"] := 1
             if(InStr(metadata, "X"))
-                specialMissionsDone := 1
+                session.get("missionDoneList")["specialMissionsDone"] := 1
             if(InStr(metadata, "T")) {
-                saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
-                accountFile := saveDir . "\" . accountFileName
-                FileGetTime, fileTime, %accountFile%, M  ; M for modification time
+                saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
+                session.set("accountFile", saveDir . "\" . session.get("accountFileName"))
+                FileGetTime, fileTime, % session.get("accountFile"), M  ; M for modification time
                 EnvSub, fileTime, %A_Now%, hours
                 hoursDiff := Abs(fileTime)
                 if(hoursDiff >= 5*24) {
-                    accountHasPackInTesting := 0
+                    session.get("missionDoneList")["accountHasPackInTesting"] := 0
                     setMetaData()
                 } else {
-                    accountHasPackInTesting := 1
+                    session.get("missionDoneList")["accountHasPackInTesting"] := 1
                 }
             }
         }
     }
-
-    if(resetSpecialMissionsDone)
-        specialMissionsDone := 0
 }
 
 ;-------------------------------------------------------------------------------
 ; setMetaData - Write metadata flags to account filename
 ;-------------------------------------------------------------------------------
 setMetaData() {
-    global accountFileName, beginnerMissionsDone, soloBattleMissionDone, intermediateMissionsDone
-    global specialMissionsDone, accountHasPackInTesting, winTitle
+    global session
 
     hasMetaData := 0
     NamePartRightOfMeta := ""
     NamePartLeftOfMeta := ""
 
     ; check if account file has metadata information
-    if(InStr(accountFileName, "(")) {
-        accountFileNameParts1 := StrSplit(accountFileName, "(")  ; Split at (
+    if(InStr(session.get("accountFileName"), "(")) {
+        accountFileNameParts1 := StrSplit(session.get("accountFileName"), "(")  ; Split at (
         NamePartLeftOfMeta := accountFileNameParts1[1]
         if(InStr(accountFileNameParts1[2], ")")) {
             ; has metadata information
@@ -503,16 +456,18 @@ setMetaData() {
     }
 
     metadata := ""
-    if(beginnerMissionsDone)
+    if(session.get("missionDoneList")["beginnerMissionsDone"])
         metadata .= "B"
-    if(soloBattleMissionDone)
+    if(session.get("missionDoneList")["soloBattleMissionDone"])
         metadata .= "S"
-    if(intermediateMissionsDone)
+    if(session.get("missionDoneList")["intermediateMissionsDone"])
         metadata .= "I"
-    if(specialMissionsDone)
+    if(session.get("missionDoneList")["specialMissionsDone"])
         metadata .= "X"
-    if(accountHasPackInTesting)
+    if(session.get("missionDoneList")["accountHasPackInTesting"])
         metadata .= "T"
+    if(session.get("missionDoneList")["receivedGiftDone"])
+        metadata .= "R"
 
     ; Remove parentheses if no flags remain, helpful if there is only a T flag or manual removal of X flag
     if(hasMetaData) {
@@ -523,19 +478,19 @@ setMetaData() {
         }
     } else {
         if (metadata = "") {
-            NameAndExtension := StrSplit(accountFileName, ".")
+            NameAndExtension := StrSplit(session.get("accountFileName"), ".")
             AccountNewName := NameAndExtension[1] . ".xml"
         } else {
-            NameAndExtension := StrSplit(accountFileName, ".")
+            NameAndExtension := StrSplit(session.get("accountFileName"), ".")
             AccountNewName := NameAndExtension[1] . "(" . metadata . ").xml"
         }
     }
 
-    saveDir := A_ScriptDir "\..\Accounts\Saved\" . winTitle
-    accountFile := saveDir . "\" . accountFileName
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
+    session.set("accountFile", saveDir . "\" . session.get("accountFileName"))
     accountNewFile := saveDir . "\" . AccountNewName
-    FileMove, %accountFile% , %accountNewFile%
-    accountFileName := AccountNewName
+    FileMove, % session.get("accountFile"), %accountNewFile%
+    session.set("accountFileName", AccountNewName)
 }
 
 ;-------------------------------------------------------------------------------
@@ -567,158 +522,15 @@ HasFlagInMetadata(fileName, flag) {
 ; ClearDeviceAccountXmlMap - Clear tracked XML map for s4t
 ;-------------------------------------------------------------------------------
 ClearDeviceAccountXmlMap() {
-    global deviceAccountXmlMap
-    deviceAccountXmlMap := {}
-}
-
-;-------------------------------------------------------------------------------
-; killInstance - Kill MuMu instance by instance number
-;-------------------------------------------------------------------------------
-killInstance(instanceNum := "") {
-    killed := 0
-
-    pID := checkInstance(instanceNum)
-    if pID {
-        Process, Close, %pID%
-        killed := killed + 1
-    }
-
-    return killed
-}
-
-;-------------------------------------------------------------------------------
-; checkInstance - Check if MuMu instance exists and get its process ID
-;-------------------------------------------------------------------------------
-checkInstance(instanceNum := "") {
-    ret := WinExist(instanceNum)
-    if(ret) {
-        WinGet, temp_pid, PID, ahk_id %ret%
-        return temp_pid
-    }
-
-    return ""
-}
-
-;-------------------------------------------------------------------------------
-; launchInstance - Launch MuMu instance by instance number
-;-------------------------------------------------------------------------------
-launchInstance(instanceNum := "") {
-    global folderPath
-
-    ; Determine MuMu folder path
-    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMu Player 12"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMuPlayer-12.0"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMuPlayer"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMuPlayer-12"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMuPlayer12"
-
-    if(instanceNum != "") {
-        mumuNum := getMumuInstanceNumFromPlayerName(instanceNum)
-        if(mumuNum != "") {
-            mumuExe := mumuFolder . "\shell\MuMuPlayer.exe"
-            if !FileExist(mumuExe)
-                mumuExe := mumuFolder . "\nx_main\MuMuNxMain.exe"
-            Run_(mumuExe, "-v " . mumuNum)
-        }
-    }
-}
-
-;-------------------------------------------------------------------------------
-; getMumuInstanceNumFromPlayerName - Get MuMu instance number from player name
-;-------------------------------------------------------------------------------
-getMumuInstanceNumFromPlayerName(scriptName := "") {
-    global folderPath
-
-    if(scriptName == "") {
-        return ""
-    }
-
-    ; Determine MuMu folder path
-    mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMu Player 12"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMuPlayer-12.0"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMuPlayer"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMuPlayer-12"
-    if !FileExist(mumuFolder)
-        mumuFolder := folderPath . "\MuMuPlayer12"
-
-    ; Loop through all directories in the base folder
-    Loop, Files, %mumuFolder%\vms\*, D
-    {
-        folder := A_LoopFileFullPath
-        configFolder := folder "\configs"
-
-        IfExist, %configFolder%
-        {
-            extraConfigFile := configFolder "\extra_config.json"
-
-            IfExist, %extraConfigFile%
-            {
-                FileRead, extraConfigContent, %extraConfigFile%
-                RegExMatch(extraConfigContent, """playerName"":\s*""(.*?)""", playerName)
-                if(playerName1 == scriptName) {
-                    RegExMatch(A_LoopFileFullPath, "[^-]+$", mumuNum)
-                    return mumuNum
-                }
-            }
-        }
-    }
-}
-
-;-------------------------------------------------------------------------------
-; Run_ - Run as non-administrator (MuMu has issues running as admin)
-;-------------------------------------------------------------------------------
-Run_(target, args:="", workdir:="") {
-    try
-        ShellRun(target, args, workdir)
-    catch e
-        Run % args="" ? target : target " " args, % workdir
-}
-
-;-------------------------------------------------------------------------------
-; ShellRun - Helper function for Run_ to execute as non-admin
-;-------------------------------------------------------------------------------
-ShellRun(prms*) {
-    shellWindows := ComObjCreate("Shell.Application").Windows
-    VarSetCapacity(_hwnd, 4, 0)
-    desktop := shellWindows.FindWindowSW(0, "", 8, ComObj(0x4003, &_hwnd), 1)
-
-    if ptlb := ComObjQuery(desktop
-        , "{4C96BE40-915C-11CF-99D3-00AA004AE837}"
-        , "{000214E2-0000-0000-C000-000000000046}")
-    {
-        if DllCall(NumGet(NumGet(ptlb+0)+15*A_PtrSize), "ptr", ptlb, "ptr*", psv:=0) = 0
-        {
-            VarSetCapacity(IID_IDispatch, 16)
-            NumPut(0x46000000000000C0, NumPut(0x20400, IID_IDispatch, "int64"), "int64")
-
-            DllCall(NumGet(NumGet(psv+0)+15*A_PtrSize), "ptr", psv
-                , "uint", 0, "ptr", &IID_IDispatch, "ptr*", pdisp:=0)
-
-            shell := ComObj(9,pdisp,1).Application
-            shell.ShellExecute(prms*)
-
-            ObjRelease(psv)
-        }
-        ObjRelease(ptlb)
-    }
+    global session
+    session.set("deviceAccountXmlMap", {})
 }
 
 ;-------------------------------------------------------------------------------
 ; UpdateSavedXml - Update saved XML file with current game state
 ;-------------------------------------------------------------------------------
 UpdateSavedXml(xmlPath) {
-    global adbPath, adbPort, adbShell
+    global session
 
     count := 0
     Loop {
@@ -728,11 +540,11 @@ UpdateSavedXml(xmlPath) {
         waitadb()
         Sleep, 500
 
-        RunWait, % adbPath . " -s 127.0.0.1:" . adbPort . " pull /sdcard/deviceAccount.xml """ . xmlPath,, Hide
+        RunWait, % session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort") . " pull /sdcard/deviceAccount.xml """ . xmlPath,, Hide
 
         Sleep, 500
 
-        adbWriteRaw("rm /sdcard/deviceAccount.xml")
+        adbWriteRaw("rm -f /sdcard/deviceAccount.xml")
         Sleep, 500
 
         FileGetSize, OutputVar, %xmlPath%
@@ -750,7 +562,7 @@ UpdateSavedXml(xmlPath) {
 ; Note: This is a large function (300+ lines) included in full for completeness
 ;-------------------------------------------------------------------------------
 CreateAccountList(instance) {
-    global injectSortMethod, deleteMethod, winTitle, verboseLogging
+    global botConfig
 
     ; Clean up stale used accounts first
     CleanupUsedAccounts()
@@ -826,25 +638,22 @@ CreateAccountList(instance) {
         LogToFile("Cleared used accounts log - all accounts now available again")
     }
 
-    if (!injectSortMethod)
-        injectSortMethod := "ModifiedAsc"
-
     parseInjectType := "Inject 13P+"  ; Default
 
     ; Determine injection type and pack ranges
-    if (deleteMethod = "Inject 13P+") {
+    if (botConfig.get("deleteMethod") = "Inject 13P+") {
         parseInjectType := "Inject 13P+"
         minPacks := 0
         maxPacks := 9999
     }
-    else if (deleteMethod = "Inject Missions") {
+    else if (botConfig.get("deleteMethod") = "Inject Missions") {
         parseInjectType := "Inject Missions"
         minPacks := 0
         maxPacks := 38
     }
-    else if (deleteMethod = "Inject Wonderpick 96P+") {
+    else if (botConfig.get("deleteMethod") = "Inject Wonderpick 96P+") {
         parseInjectType := "Inject Wonderpick 96P+"
-        minPacks := 35
+        minPacks := 96
         maxPacks := 9999
     }
 
@@ -881,7 +690,7 @@ CreateAccountList(instance) {
 
         ; Skip if this account was recently used (unless we just cleared the log)
         if (usedAccounts.HasKey(A_LoopFileName)) {
-            if (verboseLogging)
+            if (botConfig.get("verboseLogging"))
                 LogToFile("Skipping recently used account: " . A_LoopFileName)
             continue
         }
@@ -897,7 +706,7 @@ CreateAccountList(instance) {
 
         ; Always maintain strict age requirements - never relax them
         if (hoursDiff < 24) {
-            if (verboseLogging)
+            if (botConfig.get("verboseLogging"))
                 LogToFile("Skipping account less than 24 hours old: " . A_LoopFileName . " (age: " . hoursDiff . " hours)")
             continue
         }
@@ -949,7 +758,7 @@ CreateAccountList(instance) {
 
     ; Sort regular files based on selected method
     if (fileNames.MaxIndex() > 0) {
-        sortMethod := (injectSortMethod) ? injectSortMethod : "ModifiedAsc"
+        sortMethod := botConfig.get("injectSortMethod")
 
         if (sortMethod == "ModifiedAsc") {
             SortArraysByProperty(fileNames, fileTimes, packCounts, "time", 1)

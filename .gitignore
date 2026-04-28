@@ -18,6 +18,7 @@ Scripts/*.ini
 Accounts/Saved/**/*.xml
 Accounts/Trades/*.csv
 Accounts/Trades/*.json
+Lab
 
 # macOS metadata files
 ._*

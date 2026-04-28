@@ -1,0 +1,221 @@
+﻿fail_fetch:新しいリリース情報が見つかりませんでした。
+fail_url:リリース情報にZIPダウンロードURLが見つかりません。
+fail_version:バージョン情報の取得に失敗しました。
+update_title:アップデートがあります
+confirm_dl:最新バージョンをダウンロードしますか？
+downloading:最新バージョンをダウンロード中…
+dl_failed:アップデートのダウンロードに失敗しました。
+dl_complete:ダウンロード完了。解凍中…
+extract_failed:アップデートの解凍に失敗しました。
+installed:アップデートが完了しました。再起動中…
+missing_files:解凍された内容が見つかりません。
+cancel:アップデートはキャンセルされました。
+up_to_date:ご利用のバージョン は最新です。
+
+title_set:ここで設定を変更できます。
+btn_reroll:リセマラ設定
+btn_system:システム設定
+btn_pack:パック設定
+btn_save:交換用に保存
+btn_discord:Discord 設定
+btn_download:ダウンロード設定
+btn_main:🏠︎ メインページ
+
+title_main:Arturo の PTCGP ボット
+btn_arrange:ウィンドウを整列
+btn_coffee:コーヒーを支援
+btn_join:Discordに参加
+btn_mumu:全てのエミュレータを起動
+btn_balance:XMLを均等に分ける
+btn_start:ボットを起動
+btn_update:更新を確認
+btn_setting:⚙️ 設定ページ
+btn_return:↩️ 戻る
+
+btn_ToolTip:ヒント
+btn_Language:言語
+languageNotice:言語切り替えると再起動が必要です。再起動しますか？
+btn_reload:リロード
+btn_bg_Off:背景オフ
+btn_bg_On:背景オン
+btn_theme_Dark:ダークモード
+btn_theme_Light:ライトモード
+
+FriendIDLabel:メインアカウントID
+InstanceSettings:エミュ設定
+BotSettings:ボット設定
+TimeSettings:時間設定
+PackHeading:パック選択
+CardDetection:カード検出
+SaveForTrade:交換保存
+GroupSettings:グループ設定
+DiscordSettingsHeading:Discord 設定
+btn_OK:OK
+btn_Cancel:キャンセル
+HeartbeatSettingsSubHeading:ハートビート設定
+
+Txt_Instances:エミュレータ数：
+Txt_InstanceStartDelay:起動遅延：
+Txt_Columns:列数：
+Txt_runMain:メインアカウント起動
+Txt_AccountName:アカウント名稱：
+Txt_autoUseGPTest:GP Test自動起動（秒）：
+Txt_Delay:遅延：
+Txt_WaitTime:待機時間：
+Txt_SwipeSpeed:スワイプ速度：
+Txt_slowMotion:互換モード
+
+Txt_Monitor:モニター：
+Txt_Scale:スケール：
+Txt_RowGap:行間隔：
+Txt_FolderPath:フォルダパス：
+Txt_OcrLanguage:OCR言語：
+Txt_ClientLanguage:クライアント
+Txt_InstanceLaunchDelay:エミュレータ起動遅延:
+Txt_autoLaunchMonitor:モニター自動起動
+ExtraSettingsHeading:追加設定
+Txt_applyRoleFilters:ロール別フィルター使用
+Msg_UnopenedPackTitle:GP テスト：未開封パックモード
+Msg_UnopenedPack_p1:未開封のブースターパックが少なくとも 1 つ残っているアカウントでのみ、このモードを使ってください。
+Msg_UnopenedPack_p2:フレンド削除では必ずレート制限が発生します。その後スクリプトが実際にゲームを再起動します。
+Msg_UnopenedPack_p3:パックがある場合は再起動後にブースターパック画面に進み、ホームには戻りません。ない場合はホームに戻り、Wonderpick が更新されます。
+Msg_UnopenedPack_p4:OK を押して確認してください。
+Txt_debugMode:デバッグモード
+Txt_tesseractOption:Tesseract使用
+Txt_statusMessage:ステータスメッセージ
+Txt_TesseractPath:Tesseractパス:
+Txt_SystemSettings:システム設定
+
+Txt_MinStars:最小 2 ★：
+Txt_ShinyMinStars:色違い最小  2 ★：
+Txt_minStarsEnabled:すべての最小 2 ★ を設定
+Txt_DeleteMethod:注入法：
+Txt_InjectMaxValue:上限：
+Txt_InjectMinValue:下限：
+Txt_InjectRange:範圍：
+Txt_packMethod:シングルパックモード
+Txt_nukeAccount:リスト削除
+Txt_spendHourGlass:砂時計使用
+Txt_openExtraPack:追加パックを開く
+Txt_claimSpecialMissions:イベント
+SortByText:注入序列：
+
+Txt_MegaShine:Mega Shine
+Txt_PaldeanWonders:Paldean Wonders
+Txt_Parade:Parade
+Txt_CrimsonBlaze:紅蓮ブレイズ
+Txt_MegaGyarados:メガギャラドス
+Txt_MegaBlaziken:メガバシャーモ
+Txt_MegaAltaria:メガチルタリス
+Txt_Deluxe:ハイクラスパックex
+Txt_Springs:未知なる水域
+Txt_HoOh:ホウオウ
+Txt_Lugia:ルギア
+Txt_Eevee:イーブイ
+Txt_Buzzwole:マッシブーン
+Txt_Solgaleo:ソルガレオ
+Txt_Lunala:ルナアーラ
+Txt_Shining:シャイニングハイ
+Txt_Arceus:アルセウス
+Txt_Palkia:パルキア
+Txt_Dialga:ディアルガ
+Txt_Pikachu:ピカチュウ
+Txt_Charizard:リザードン
+Txt_Mewtwo:ミュウツー
+Txt_Mew:ミュウ
+AllPack:🔎パックを表示
+
+Txt_FullArtCheck:単枚フルアート
+Txt_TrainerCheck:単枚トレーナー
+Txt_RainbowCheck:単枚レインボー
+Txt_PseudoGodPack:2枚2★
+Txt_CheckShinyPackOnly:色違いのみ
+Txt_CrownCheck:クラウン保存
+Txt_ShinyCheck:色違い保存
+Txt_ImmersiveCheck:イマーシブ保存
+Txt_InvalidCheck:無効パック無視
+
+Txt_s4tEnabled:交換保存を有効化
+Txt_S4TEnabled:S4T: 有効
+Txt_S4TDisabled:無効
+Txt_s4tSilent:通知なし（サイレント）
+Txt_s4tWP:ゲットチャレンジ
+Txt_s4tWPMinCards:最小枚数：
+S4TDiscordSettingsSubHeading:S4T Discord 設定
+Txt_s4tSendAccountXml:アカウント XML 送信
+
+Txt_sendAccountXml:アカウント XML 送信
+Txt_heartBeat:Discord ハートビート
+hbName:名称：
+hbDelay:ハートビート間隔（分）：
+
+Txt_showcaseEnabled:showcase_ids.txt を使用
+Txt_Disabled:無効
+
+stop_confirm_title:全スクリプトを停止
+stop_immediately:今すぐ停止
+stop_wait_end:この実行の終了を待つ
+stop_kill_mumu:停止 MuMu を終了
+stop_remember_preference:次回から確認せずにこの選択を記憶する
+
+RecommandSwipeSpeedNoModMenu:→ 650 is recommended if the 'No Speedmod Menu' checkbox is checked.
+RecommandSwipeSpeedUseModMenu:→ 250 is recommended if the 'No Speedmod Menu' checkbox is unchecked.
+HideSwipeToolTip:(This message disappears when you click outside the input field.)
+
+Title:このプロジェクトは現在、CC BY-NC 4.0 ライセンスの下で提供されています
+Content:本プロジェクトの本来の意図は、
+有償サービス（「寄付」と偽装されたものを含む）で使用されることではありません。
+私およびコミュニティの意志を尊重していただけることを願っています。
+現在適用されている CC BY-NC 4.0 ライセンスでは、非営利目的に限り、
+ソフトウェアの使用・改変・共有が可能です。営利目的での利用、
+たとえば有償サービスの提供や販売（寄付を含む）などは、このライセンスのもとでは許可されていません。
+この新しいライセンスは、本リリースおよび今後のすべてのリリースに適用されます。
+
+Notice:プロキシを検出しました。プロキシ版に切り替えました。
+
+Error_BotPathTooLong:BOTフォルダのパスが長すぎるか、スペースが含まれています
+。より短くスペースを含まないパスに移動してください。
+Confirm_SelectedMethod:注入法：
+Confirm_RangeValue:範圍：
+Confirm_MaxPackCount:上限：
+Confirm_MinPackCount:下限：
+Confirm_SelectedPacks:選択されたパック：
+Confirm_AdditionalSettings:追加設定：
+Confirm_1PackMethod:• シングルパックモード
+Confirm_MenuDelete:• リスト削除
+Confirm_openExtraPack:• 追加パックを開封
+Confirm_SpendHourGlass:• 砂時計使用
+Confirm_ClaimMissions:• イベント
+Confirm_SortBy:• 注入序列：
+Confirm_None:なし
+Confirm_CardDetection:カード検出：
+Confirm_SingleFullArt:• 単枚フルアート
+Confirm_SingleTrainer:• 単枚トレーナー
+Confirm_SingleRainbow:• 単枚レインボー
+Confirm_Double2Star:• 2枚2★
+Confirm_SaveCrowns:• クラウンを保存
+Confirm_SaveShiny:• 色違い保存
+Confirm_SaveImmersives:• イマーシブ保存
+Confirm_IgnoreInvalid:• 無効パック無視
+Confirm_RowGap:行間隔：
+Confirm_SaveForTrade:交換保存を有効化
+Confirm_Enabled:有効
+Confirm_Disabled:無効
+Confirm_SilentPings:通知なし（サイレント）
+Confirm_Gholdengo:サーフゴー
+Confirm_WonderPick:ゲットチャレンジ
+Confirm_MinCards:最小枚数
+Confirm_XMLWarning:⚠️ 警告：アカウント XML 送信が有効です。この設定は単独でのみ使用することをお勧めします。グループ内で使用しないでください。アカウントがグループの他のメンバーと共有されます。
+Confirm_StartBot:「はい」でこの設定でBOTを開始。「いいえ」で設定を変更します。
+
+Help_Shortcuts:ホットキー：
+Help_FunctionKeys:ファンクションキー：
+Help_F4:このヘルプメニューを表示
+Help_ShiftF7:全てのエミュレータにオフライン状況を送信し、ボットを終了する
+Help_Interface:インターフェース設定：
+Help_CurrentTheme:現在のモード：
+Help_BackgroundImage:背景画像：
+Help_Enabled:オン
+Help_Disabled:オフ
+Help_ToggleTheme:ウィンドウ上部のボタンでテーマを切り替えます。
+Help_ToggleBG:「背景」ボタンで背景画像を切り替えます。

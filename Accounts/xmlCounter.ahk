@@ -1,10 +1,28 @@
 #NoEnv
 #SingleInstance Force
+SetBatchLines, -1
+SetTitleMatchMode, 2
 SendMode Input
 SetWorkingDir %A_ScriptDir%
+global isShow := false
+global Message := ""
 
 ; Main execution
 Main()
+
+
+if(isShow)
+{
+    ; MsgBox, %Message%
+    Gui, Summary:New
+    Gui, Font, s10, Consolas
+    Gui, Add, Edit, w600 h500 +ReadOnly, %Message%
+    Gui, Add, Button, w80 h30 x260 y520 vCloseButton gExitButton, Close
+    Gui, Show, , Account Summary
+    GuiControl, Focus, CloseButton
+}
+
+return
 
 Main() {
     ; Get the script directory (should be in Accounts folder)
@@ -171,25 +189,31 @@ ShowSummary(Result) {
         Sort, Ranges, F SortRanges
 		
 		Loop, % Ranges.Length() - 1 {
-		i := A_Index
-		Loop, % Ranges.Length() - i {
-        j := A_Index
-        if (Ranges[j].s > Ranges[j+1].s) {
-            tmp := Ranges[j]
-            Ranges[j] := Ranges[j+1]
-            Ranges[j+1] := tmp
+    		i := A_Index
+    		Loop, % Ranges.Length() - i {
+                j := A_Index
+                if (Ranges[j].s > Ranges[j+1].s) {
+                    tmp := Ranges[j]
+                    Ranges[j] := Ranges[j+1]
+                    Ranges[j+1] := tmp
+                }
+            }
         }
-    }
-}
 
         for i, rr in Ranges
             Message .= rr.r " Packs: " rr.c "`n"
     }
-
-    Gui, Add, Edit, w600 h500 ReadOnly, %Message%
-    Gui, Show, , Account Summary
+    isShow := true
 }
 
 SortRanges(a, b) {
     return (a.s - b.s)
 }
+
+ExitButton:
+    ExitApp
+return
+
+SummaryGuiClose:
+   ExitApp
+return

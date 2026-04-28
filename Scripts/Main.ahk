@@ -1,131 +1,105 @@
-#Include %A_ScriptDir%\Include\Logging.ahk
-#Include %A_ScriptDir%\Include\ADB.ahk
-#Include %A_ScriptDir%\Include\Gdip_All.ahk
-#Include %A_ScriptDir%\Include\Gdip_Imagesearch.ahk
-
-#Include *i %A_ScriptDir%\Include\Gdip_Extra.ahk
-#Include *i %A_ScriptDir%\Include\StringCompare.ahk
-#Include *i %A_ScriptDir%\Include\OCR.ahk
-
-#Include %A_ScriptDir%\Include\Utils.ahk
-#Include %A_ScriptDir%\Include\Database.ahk
-#Include %A_ScriptDir%\Include\CardDetection.ahk
-#Include %A_ScriptDir%\Include\AccountManager.ahk
-#Include %A_ScriptDir%\Include\FriendManager.ahk
-#Include %A_ScriptDir%\Include\Dictionary.ahk
-
 #SingleInstance on
-;SetKeyDelay, -1, -1
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0
-;SetWinDelay, -1
-;SetControlDelay, -1
 SetBatchLines, -1
 SetTitleMatchMode, 3
 CoordMode, Pixel, Screen
+
+#Include %A_ScriptDir%\Include\
+#Include Config.ahk
+#Include Session.ahk
+#Include Data.ahk
+#Include ExtraConfig.ahk
+
+#Include Logging.ahk
+#Include ADB.ahk
+#Include Gdip_All.ahk
+#Include Gdip_Imagesearch.ahk
+
+#Include Gdip_Extra.ahk
+#Include StringCompare.ahk
+#Include OCR.ahk
+#Include Database.ahk
+#Include CardDetection.ahk
+#Include AccountManager.ahk
+#Include FriendManager.ahk
+#Include Dictionary.ahk
+
+#Include Coords.ahk
+#Include Error.ahk
+
+#Include Utils.ahk
+#Include Crinity_UnofficialPatch.ahk
 
 ; Allocate and hide the console window to reduce flashing
 DllCall("AllocConsole")
 WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
 
-global winTitle, changeDate, failSafe, openPack, Delay, failSafeTime, StartSkipTime, Columns, failSafe, scriptName, GPTest, StatusText, defaultLanguage, setSpeed, jsonFileName, pauseToggle, SelectedMonitorIndex, swipeSpeed, godPack, scaleParam, skipInvalidGP, deleteXML, packs, FriendID, AddFriend, Instances, showStatus, stopToggle
-global triggerTestNeeded, testStartTime, firstRun, minStars, minStarsA2b, vipIdsURL
-global autoUseGPTest, autotest, autotest_time, A_gptest, TestTime, stopAfterGPTest, groupRerollEnabled, gpTestFirstRun, hasUnopenedPack
-global friendOpsCount, friendOpsWindowStart, gpTestWaitTime, rateLimitAction
-global gptest_nonFriends, gptest_alreadyFavourited
-global vipListTrimMode, vipListTrimCount, vipListTrimApplied, vipTrimDialogDone
-global MuMuv5, titleHeight
-MuMuv5 := isMuMuv5()
+pToken := Gdip_Startup()
 
-; Initialize titleHeight based on MuMuv5
-if (MuMuv5) {
-    titleHeight := 50
-} else {
-    titleHeight := 45
-}
+global session := new Session()
+global botConfig := new BotConfig()
+botConfig.loadSettingsToConfig("ALL")
 
-deleteAccount := false
-scriptName := StrReplace(A_ScriptName, ".ahk")
-winTitle := scriptName
-pauseToggle := false
-stopToggle := false
-showStatus := true
-jsonFileName := A_ScriptDir . "\..\json\Packs.json"
-IniRead, FriendID, %A_ScriptDir%\..\Settings.ini, UserSettings, FriendID
-IniRead, Instances, %A_ScriptDir%\..\Settings.ini, UserSettings, Instances
-IniRead, Delay, %A_ScriptDir%\..\Settings.ini, UserSettings, Delay, 250
-IniRead, folderPath, %A_ScriptDir%\..\Settings.ini, UserSettings, folderPath, C:\Program Files\Netease
-IniRead, Variation, %A_ScriptDir%\..\Settings.ini, UserSettings, Variation, 20
-IniRead, Columns, %A_ScriptDir%\..\Settings.ini, UserSettings, Columns, 5
-IniRead, openPack, %A_ScriptDir%\..\Settings.ini, UserSettings, openPack, 1
-IniRead, setSpeed, %A_ScriptDir%\..\Settings.ini, UserSettings, setSpeed, 2x
-IniRead, defaultLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, defaultLanguage, Scale125
-IniRead, defaultBotLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, defaultBotLanguage, 1
-global stopDictionary := CreateGUITextByLanguage(defaultBotLanguage, "")
-IniRead, SelectedMonitorIndex, %A_ScriptDir%\..\Settings.ini, UserSettings, SelectedMonitorIndex, 1:
-IniRead, swipeSpeed, %A_ScriptDir%\..\Settings.ini, UserSettings, swipeSpeed, 350
-IniRead, skipInvalidGP, %A_ScriptDir%\..\Settings.ini, UserSettings, skipInvalidGP, No
-IniRead, godPack, %A_ScriptDir%\..\Settings.ini, UserSettings, godPack, Continue
-IniRead, deleteMethod, %A_ScriptDir%\..\Settings.ini, UserSettings, deleteMethod, Hoard
-IniRead, sendXML, %A_ScriptDir%\..\Settings.ini, UserSettings, sendXML, 0
-IniRead, heartBeat, %A_ScriptDir%\..\Settings.ini, UserSettings, heartBeat, 1
-if(heartBeat)
+session.set("scriptName", StrReplace(A_ScriptName, ".ahk"))
+session.set("winTitle", StrReplace(A_ScriptName, ".ahk"))
+session.set("scriptIniFile", A_ScriptDir . "\" . session.get("scriptName") . ".ini")
+session.set("autoUseGPTest", botConfig.get("autoUseGPTest"))
+session.set("TestTime", botConfig.get("TestTime"))
+session.set("hasUnopenedPack", botConfig.get("hasUnopenedPack"))
+
+session.set("firstRun", true)
+session.set("autotest", A_TickCount)
+session.set("A_gptest", 0)
+session.set("stopAfterGPTest", false)
+session.set("gpTestFirstRun", true)
+session.set("friendOpsCount", 0)
+session.set("friendOpsWindowStart", A_TickCount)
+session.set("rateLimitAction", "")
+
+session.set("gptest_nonFriends", {})
+
+if(botConfig.get("heartBeat"))
     IniWrite, 1, %A_ScriptDir%\..\HeartBeat.ini, HeartBeat, Main
-IniRead, vipIdsURL, %A_ScriptDir%\..\Settings.ini, UserSettings, vipIdsURL
-IniRead, ocrLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, ocrLanguage, en
-IniRead, clientLanguage, %A_ScriptDir%\..\Settings.ini, UserSettings, clientLanguage, en
-IniRead, minStars, %A_ScriptDir%\..\Settings.ini, UserSettings, minStars, 0
-IniRead, minStarsA2b, %A_ScriptDir%\..\Settings.ini, UserSettings, minStarsA2b, 0
 
-IniRead, groupRerollEnabled, %A_ScriptDir%\..\Settings.ini, UserSettings, groupRerollEnabled, 0
-IniRead, autoUseGPTest, %A_ScriptDir%\..\Settings.ini, UserSettings, autoUseGPTest, 0
-IniRead, TestTime, %A_ScriptDir%\..\Settings.ini, UserSettings, TestTime, 3600
-IniRead, gpTestWaitTime, %A_ScriptDir%\..\Settings.ini, UserSettings, gpTestWaitTime, 150
-if (gpTestWaitTime = "" || gpTestWaitTime <= 0)
-    gpTestWaitTime := 150
-IniRead, hasUnopenedPack, %A_ScriptDir%\..\Settings.ini, UserSettings, hasUnopenedPack, 0
-if (hasUnopenedPack = "")
-    hasUnopenedPack := 0
-IniRead, vipListTrimMode, %A_ScriptDir%\..\Settings.ini, UserSettings, vipListTrimMode, bottom
-IniRead, vipListTrimCount, %A_ScriptDir%\..\Settings.ini, UserSettings, vipListTrimCount, 60
-if (vipListTrimCount = "" || vipListTrimCount < 1)
-    vipListTrimCount := 60
-global MuMuv5
-MuMuv5 := isMuMuv5()
-instanceSleep := scriptName * 1000
-Sleep, %instanceSleep%
+IniRead, isDeadValue, % session.get("scriptIniFile"), Metrics, isDead, 0
+session.set("isDead", isDeadValue)
 
-if (InStr(defaultLanguage, "100")) {
-    scaleParam := 287
-} else {
-     	if (MuMuv5) {
-			scaleParam := 283
-		} else {
-			scaleParam := 277
-		}
+(botConfig.get("gpTestWaitTime") = "" || botConfig.get("gpTestWaitTime") <= 0) ? session.set("gpTestWaitTime", 150) : session.set("gpTestWaitTime", botConfig.get("gpTestWaitTime"))
+(session.get("hasUnopenedPack") = "") ? session.set("hasUnopenedPack", 0)
+
+if (!botConfig.get("groupRerollEnabled")) {
+    session.set("autoUseGPTest", 0)
+    session.set("TestTime", 3600)
+    session.set("hasUnopenedPack", 0)
 }
+
+session.set("vipListTrimMode", (!botConfig.get("vipListTrimMode")) ? "bottom" : botConfig.get("vipListTrimMode"))
+session.set("vipListTrimCount", (!botConfig.get("vipListTrimCount")) ? 60 : botConfig.get("vipListTrimCount"))
+(session.get("vipListTrimCount") = "" || session.get("vipListTrimCount") < 1) ? session.set("vipListTrimCount", 60)
 
 DirectlyPositionWindow()
 Sleep, 1000
 
-ConnectAdb(folderPath)
-Sleep, 2000
+setADBBaseInfo()
+
+ConnectAdb()
+Sleep, 1000
+
 CreateStatusMessage("Disabling background services...")
 DisableBackgroundServices()
-Sleep, 5000
 
 resetWindows()
 MaxRetries := 10
 RetryCount := 0
 Loop {
     try {
-        WinGetPos, x, y, Width, Height, %winTitle%
+        WinGetPos, x, y, Width, Height, % session.get("winTitle")
         sleep, 2000
-        ;Winset, Alwaysontop, On, %winTitle%
-        OwnerWND := WinExist(winTitle)
+        OwnerWND := getMuMuHwnd(session.get("winTitle"))
         x4 := x + 4
         y4 := y + Height - 4 + 2
-        buttonWidth := 45
+        buttonWidth := 50
 
         Gui, ToolBar:New, +Owner%OwnerWND% -AlwaysOnTop +ToolWindow -Caption +LastFound -DPIScale 
         Gui, ToolBar:Default
@@ -134,9 +108,8 @@ Loop {
         Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 0) . " y0 w" . buttonWidth . " h25 gReloadScript", Reload  (Shift+F5)
         Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 1) . " y0 w" . buttonWidth . " h25 gPauseScript", Pause (Shift+F6)
         Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 2) . " y0 w" . buttonWidth . " h25 gResumeScript", Resume (Shift+F6)
-        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 3) . " y0 w" . buttonWidth . " h25 gStopScript", Stop (Shift+F7)
-        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 4) . " y0 w" . buttonWidth . " h25 gShowStatusMessages", Status (Shift+F8)
-        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 5) . " y0 w" . buttonWidth . " h25 gTestScript", GP Test (Shift+F9)
+        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 3) . " y0 w" . buttonWidth . " h25 gStopScript", Stop (Shift+F10)
+        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 4) . " y0 w" . buttonWidth . " h25 gTestScript", GP Test (Shift+F9)
         DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1  ; HWND_BOTTOM
                 , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
         Gui, ToolBar:Show, NoActivate x%x4% y%y4%  w275 h30
@@ -150,28 +123,23 @@ Loop {
         }
         Sleep, 1000
     }
-    Sleep, %Delay%
+    Delay(1)
     CreateStatusMessage("Creating button GUI...",,,, false)
 }
 
-rerollTime := A_TickCount
-autotest := A_TickCount
-A_gptest := 0
-stopAfterGPTest := false
-gpTestFirstRun := true
-friendOpsCount := 0
-friendOpsWindowStart := A_TickCount
-rateLimitAction := ""
-
 initializeAdbShell()
 CreateStatusMessage("Initializing bot...",,,, false)
-restartGameInstance("Initializing bot...", false)
-pToken := Gdip_Startup()
+if(session.get("isDead")){
+    closePTCGPApp()
+    session.set("isDead", false)
+    IniWrite, 0, % session.get("scriptIniFile"), Metrics, isDead
+}
+startPTCGPApp()
+waitUntilActivatePTCGPApp()
 
-if(heartBeat)
+if(botConfig.get("heartBeat"))
     IniWrite, 1, %A_ScriptDir%\..\HeartBeat.ini, HeartBeat, Main
-FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 1000, 150)
-firstRun := true
+FindImageAndClick("Common_ActivatedSocialInMainMenu", 143, 518, , 1000, 150)
 
 global 99Configs := {}
 99Configs["en"] := {leftx: 123, rightx: 162}
@@ -184,38 +152,38 @@ global 99Configs := {}
 99Configs["ko"] := {leftx: 65, rightx: 100}
 99Configs["cn"] := {leftx: 63, rightx: 102}
 
-99Path := "99" . clientLanguage
-99Leftx := 99Configs[clientLanguage].leftx
-99Rightx := 99Configs[clientLanguage].rightx
+99Path := "99" . botConfig.get("clientLanguage")
+99Leftx := 99Configs[botConfig.get("clientLanguage")].leftx
+99Rightx := 99Configs[botConfig.get("clientLanguage")].rightx
 
 Loop {
-    if (autoUseGPTest) {
-        autotest_time := (A_TickCount - autotest) // 1000
-        CreateStatusMessage("Auto GP Test Timer : " . autotest_time .  "/ " . TestTime . " seconds", "AutoGPTest", 0, 605, false, true)
-        if (autotest_time >= TestTime) {
-            A_gptest := 1
-            autotest := A_TickCount
+    if (session.get("autoUseGPTest") && botConfig.get("groupRerollEnabled")) {
+        session.set("autotest_time", (A_TickCount - session.get("autotest")) // 1000)
+        CreateStatusMessage("Auto GP Test Timer : " . session.get("autotest_time") .  "/ " . session.get("TestTime") . " seconds", "AutoGPTest", 0, 605, false, true)
+        if (session.get("autotest_time") >= session.get("TestTime")) {
+            session.set("A_gptest", 1)
+            session.set("autotest", A_TickCount)
             ToggleTestScript()
         }        
     }
 
-    if (GPTest) {
-        if (triggerTestNeeded)
+    if (session.get("GPTest")) {
+        if (session.get("triggerTestNeeded"))
             GPTestScript()
-        if (stopAfterGPTest)
+        if (session.get("stopAfterGPTest"))
             ExitApp
         Sleep, 1000
-        if (heartBeat && (Mod(A_Index, 60) = 0))
+        if (botConfig.get("heartBeat") && (Mod(A_Index, 60) = 0))
             IniWrite, 1, %A_ScriptDir%\..\HeartBeat.ini, HeartBeat, Main
         Continue
     }
 
-    if(heartBeat)
+    if(botConfig.get("heartBeat"))
         IniWrite, 1, %A_ScriptDir%\..\HeartBeat.ini, HeartBeat, Main
-    Sleep, %Delay%
-    FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 1000, 30)
-    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
-    FindImageAndClick(170, 450, 195, 480, , "Approve", 228, 464)
+    Delay(1)
+    FindImageAndClick("Common_ActivatedSocialInMainMenu", 143, 518, , 1000, 30)
+    FindImageAndClick("Friend_AddButtonInFriendList", 38, 460, , 500)
+    FindImageAndClick("Friend_BlankFriendSlotAreaInApproveSubmenu", 228, 464)
     /* ; Deny all option
     if(firstRun) {
         Sleep, 1000
@@ -227,110 +195,108 @@ Loop {
     */
     done := false
     Loop 3 {
-        Sleep, %Delay%
-        if(FindOrLoseImage(225, 195, 250, 215, , "Pending", 0)) {
-            failSafe := A_TickCount
+        Delay(1)
+        if(FindOrLoseImage("Friend_AcceptButtonInApproveSubmenu", 0)) {
+            session.set("failSafe", A_TickCount)
             failSafeTime := 0
             Loop {
-                Sleep, %Delay%
-                clickButton := FindOrLoseImage(75, 340, 195, 530, 80, "Button", 0, failSafeTime) ;looking for ok button in case an invite is withdrawn
-                if(FindOrLoseImage(99Leftx, 110, 99Rightx, 127, , 99Path, 0, failSafeTime)) {
+                Delay(1)
+                clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, failSafeTime, 80)
+                requestAlreadyClosed := FindOrLoseImage("Friend_RequestAlreadyClosedInApproveSubmenu", 0, failSafeTime)
+                if(FindOrLoseImage(99Path, 0, failSafeTime)) {
                     done := true
                     break
-                } else if(FindOrLoseImage(225, 195, 250, 220, , "Pending", 0, failSafeTime)) {
-                    if (GPTest)
-                        break
-                    adbClick(245, 210)
-                } else if(FindOrLoseImage(186, 496, 206, 518, , "Accept", 0, failSafeTime)) {
-                    done := true
-                    break
-                } else if(FindOrLoseImage(120, 187, 155, 210, , "Error", 0, failSafeTime)) {
+                } else if(FindOrLoseImage("Common_Error", 0, failSafeTime)) {
                     ; Handle communication error
                     CreateStatusMessage("Error message detected. Clicking retry...",,,, false)
-                    LogToFile("Error message in Main " . scriptName . ". Clicking retry...")
+                    LogToFile("Error message in Main " . session.get("scriptName") . ". Clicking retry...")
                     Sleep, 1000
                     adbClick(82, 389)  ; Click retry button
                     Sleep, 1000
                     adbClick(139, 386) ; Click OK/confirm
                     Sleep, 1000
                     SafeReload()
-                } else if(FindOrLoseImage(124, 423, 155, 455, , "StartupErrorX", 0, failSafeTime)) {
+                } else if(FindOrLoseImage("StartupErrorX", 0, failSafeTime)) {
                     ; Handle startup error with X button
                     CreateStatusMessage("Start-up error detected. Clearing and reloading...",,,, false)
-                    LogToFile("Start-up error in Main " . scriptName . ". Reloading...")
+                    LogToFile("Start-up error in Main " . session.get("scriptName") . ". Reloading...")
                     Sleep, 2000
                     adbClick(139, 440)  ; Click X to close error
                     Sleep, 4000
                     SafeReload()
-                } else if(clickButton) {
-                    ; Invite was withdrawn — click OK and return to requests tab.
-                    ; No delete needed (avoids rate limit): the request disappears on its own.
-                    StringSplit, pos, clickButton, `,  ; Split at ", "
-                    if (scaleParam = 287) {
-                        pos2 += 5
-                    }
-                    Loop, 5 {
+                } else if(requestAlreadyClosed || clickButton) {
+                    okClickSpacing := botConfig.get("Delay") * 2
+                    if (okClickSpacing < 700)
+                        okClickSpacing := 700
+                    coords := clickButton ? clickButton : requestAlreadyClosed
+                    if (InStr(coords, ",")) {
+                        StringSplit, pos, coords, `,
                         adbClick_wbb(pos1, pos2)
-                        Sleep, 500
-                        if (!FindOrLoseImage(75, 340, 195, 530, 80, "Button", 0))
+                    } else
+                        adbClick(137, 365)
+                    Sleep, %okClickSpacing%
+                    Loop {
+                        btnPos := FindOrLoseImage("Common_ColorChangeButton", 0, 0, 80, 1)
+                        if (!btnPos)
                             break
+                        if (InStr(btnPos, ",")) {
+                            StringSplit, pos, btnPos, `,
+                            adbClick_wbb(pos1, pos2)
+                        } else
+                            adbClick(137, 365)
+                        Sleep, %okClickSpacing%
                     }
                     adbInputEvent("4")
                     Sleep, 500
-                    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
-                    FindImageAndClick(170, 450, 195, 480, , "Approve", 228, 464)
+                    Break, 2  ; inner loop + Loop 3 (else Pending re-taps)
+                } else if(FindOrLoseImage("Friend_AcceptButtonInApproveSubmenu", 0, failSafeTime)) {
+                    if (session.get("GPTest"))
+                        break
+                    adbClick(245, 210)
+                } else if(FindOrLoseImage("Friend_DisabledDenyAllRequestButtonInApproveSubmenu", 0, failSafeTime)) {
+                    done := true
                     break
                 }
-                if (GPTest)
+                if (session.get("GPTest"))
                     break
-                failSafeTime := (A_TickCount - failSafe) // 1000
+                failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
                 CreateStatusMessage("Failsafe " . failSafeTime . "/180 seconds")
             }
         }
-        if(done || fullList|| GPTest)
+        if(done || session.get("GPTest"))
             break
     }
 }
 return
 
-FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", EL := 1, safeTime := 0) {
-    global winTitle, Variation, failSafe
-    if(searchVariation = "")
-        searchVariation := Variation
-    imagePath := A_ScriptDir . "\" . defaultLanguage . "\"
+FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation := 20, notShowFinding := 0) {
+    global session, needlesDict
+    static lastStatusTime := 0
+
+    needleObj := needlesDict.Get(needleName)
+    imageName := needleObj.imageName
+
+    imagePath := A_ScriptDir . "\Needles\"
     confirmed := false
 
-    ; MuMuv5 image search Y offset adjustment
-    yBias := titleHeight - 45
-    Y1 += yBias
-    Y2 += yBias
+    if(A_TickCount - lastStatusTime > 500 and !notShowFinding) {
+        lastStatusTime := A_TickCount
+        CreateStatusMessage("Finding " . imageName . "...")
+    }
 
-    CreateStatusMessage("Finding " . imageName . "...")
-    pBitmap := from_window(WinExist(winTitle))
+    pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
     Path = %imagePath%%imageName%.png
     pNeedle := GetNeedle(Path)
+    X1 := needleObj.coords.startX
+    Y1 := needleObj.coords.startY
+    X2 := needleObj.coords.endX
+    Y2 := needleObj.coords.endY
 
-    ; 100% scale changes
-    if (scaleParam = 287) {
-        Y1 -= 8 ; offset, should be 44-36 i think?
-        Y2 -= 8
-        if (Y1 < 0) {
-            Y1 := 0
-        }
-        if (imageName = "Bulba") { ; too much to the left? idk how that happens
-            X1 := 200
-            Y1 := 220
-            X2 := 230
-            Y2 := 260
-        }else if (imageName = 99Path) { ; 100% full of friend list
-            Y1 := 103
-            Y2 := 118
-        }
-    }
     ;bboxAndPause(X1, Y1, X2, Y2)
 
     ; ImageSearch within the region
     vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, X1, Y1, X2, Y2, searchVariation)
+    ErrorCheckInScreen(pBitmap)
     Gdip_DisposeImage(pBitmap)
     if(EL = 0)
         GDEL := 1
@@ -341,18 +307,6 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     } else if(!confirmed && vRet = GDEL && GDEL = 0) {
         confirmed := true
     }
-    pBitmap := from_window(WinExist(winTitle))
-    Path = %imagePath%App.png
-    if (MuMuv5)
-        Path = %imagePath%App2.png
-    pNeedle := GetNeedle(Path)
-    ; ImageSearch within the region
-    vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, 15, 155, 270, 420, searchVariation)
-    Gdip_DisposeImage(pBitmap)
-    if (vRet = 1) {
-        LogToFile("Stuck at home while looking for " . imageName . "...")
-        restartGameInstance("Stuck at " . imageName . "...")
-    }
     if(imageName = "Country" || imageName = "Social")
         FSTime := 90
     else if(imageName = "Button")
@@ -360,54 +314,31 @@ FindOrLoseImage(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", E
     else
         FSTime := 180
     if (safeTime >= FSTime) {
-        LogToFile("Instance " . scriptName . " has been stuck at " . imageName . " for 90s. (EL: " . EL . ", sT: " . safeTime . ") Killing it...")
+        LogToFile("Instance " . session.get("scriptName") . " has been stuck at " . imageName . " for 90s. (EL: " . EL . ", sT: " . safeTime . ") Killing it...")
         restartGameInstance("Stuck at " . imageName . "...")
-        failSafe := A_TickCount
+        session.set("failSafe", A_TickCount)
     }
     return confirmed
 }
 
-FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT", clickx := 0, clicky := 0, sleepTime := "", skip := false, safeTime := 0) {
-    global winTitle, Variation, failSafe, confirmed
-    if(searchVariation = "")
-        searchVariation := Variation
+FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVariation := 20, sleepTime := "", skip := false, safeTime := 0) {
+    global botConfig, session, needlesDict
+
+    needleObj := needlesDict.Get(needleName)
+    imageName := needleObj.imageName
+
     if (sleepTime = "") {
-        global Delay
-        sleepTime := Delay
+        sleepTime := botConfig.get("Delay")
     }
-    imagePath := A_ScriptDir . "\" defaultLanguage "\"
+    imagePath := A_ScriptDir . "\Needles\"
     click := false
     if(clickx > 0 and clicky > 0)
         click := true
     x := 0
     y := 0
-    StartSkipTime := A_TickCount
+    session.set("StartSkipTime", A_TickCount)
 
     confirmed := false
-
-    ; MuMuv5 image search Y offset adjustment
-    yBias := titleHeight - 45
-    Y1 += yBias
-    Y2 += yBias
-
-    ; 100% scale changes
-    if (scaleParam = 287) {
-        Y1 -= 8 ; offset, should be 44-36 i think?
-        Y2 -= 8
-        if (Y1 < 0) {
-            Y1 := 0
-        }
-
-        if (imageName = "Platin") { ; can't do text so purple box
-            X1 := 141
-            Y1 := 189
-            X2 := 208
-            Y2 := 224
-        } else if (imageName = "Opening") { ; Opening click (to skip cards) can't click on the immersive skip with 239, 497
-            clickx := 250
-            clicky := 505
-        }
-    }
 
     if(click) {
         adbClick(clickx, clicky)
@@ -430,57 +361,50 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
             continue
         }
 
-        pBitmap := from_window(WinExist(winTitle))
+        pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
         Path = %imagePath%%imageName%.png
         pNeedle := GetNeedle(Path)
+        X1 := needleObj.coords.startX
+        Y1 := needleObj.coords.startY
+        X2 := needleObj.coords.endX
+        Y2 := needleObj.coords.endY
         ;bboxAndPause(X1, Y1, X2, Y2)
         ; ImageSearch within the region
         vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, X1, Y1, X2, Y2, searchVariation)
+        ErrorCheckInScreen(pBitmap)
         Gdip_DisposeImage(pBitmap)
         if (!confirmed && vRet = 1) {
             confirmed := vPosXY
         } else {
             if(skip < 45) {
-                ElapsedTime := (A_TickCount - StartSkipTime) // 1000
+                ElapsedTime := (A_TickCount - session.get("StartSkipTime")) // 1000
                 FSTime := 45
                 if (ElapsedTime >= FSTime || safeTime >= FSTime) {
-                    LogToFile("Instance " . scriptName . " has been stuck at " . imageName . " for 90s. (EL: " . ElapsedTime . ", sT: " . safeTime . ") Killing it...")
+                    LogToFile("Instance " . session.get("scriptName") . " has been stuck at " . imageName . " for 90s. (EL: " . ElapsedTime . ", sT: " . safeTime . ") Killing it...")
                     restartGameInstance("Stuck at " . imageName . "...") ; change to reset the instance and delete data then reload script
-                    StartSkipTime := A_TickCount
-                    failSafe := A_TickCount
+                    session.set("StartSkipTime", A_TickCount)
+                    session.set("failSafe", A_TickCount)
                 }
             }
         }
 
-        pBitmap := from_window(WinExist(winTitle))
+        pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
         Path = %imagePath%Error1.png
         pNeedle := GetNeedle(Path)
         ; ImageSearch within the region
         vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, 15, 155, 270, 420, searchVariation)
         Gdip_DisposeImage(pBitmap)
         if (vRet = 1) {
-            CreateStatusMessage("Error message in " . scriptName . ". Clicking retry...")
-            LogToFile("Error message in " . scriptName . ". Clicking retry...")
+            CreateStatusMessage("Error message in " . session.get("scriptName") . ". Clicking retry...")
+            LogToFile("Error message in " . session.get("scriptName") . ". Clicking retry...")
             adbClick(82, 389)
-            Sleep, %Delay%
+            Delay(1)
             adbClick(139, 386)
             Sleep, 1000
         }
-        pBitmap := from_window(WinExist(winTitle))
-        Path = %imagePath%App.png
-        if (MuMuv5)
-        Path = %imagePath%App2.png
-        pNeedle := GetNeedle(Path)
-        ; ImageSearch within the region
-        vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, 15, 155, 270, 420, searchVariation)
-        Gdip_DisposeImage(pBitmap)
-        if (vRet = 1) {
-            LogToFile("At the home page while looking for " . imageName . "...")
-            restartGameInstance("At the home page while looking for " . imageName . "...")
-        }
 
         if(skip) {
-            ElapsedTime := (A_TickCount - StartSkipTime) // 1000
+            ElapsedTime := (A_TickCount - session.get("StartSkipTime")) // 1000
             if (ElapsedTime >= skip) {
                 return false
                 ElapsedTime := ElapsedTime/2
@@ -496,38 +420,28 @@ FindImageAndClick(X1, Y1, X2, Y2, searchVariation := "", imageName := "DEFAULT",
 }
 
 resetWindows(){
-    global Columns, winTitle, SelectedMonitorIndex, scaleParam, titleHeight, MuMuv5
+    global botConfig
+
+    scaleParam := 283
     CreateStatusMessage("Arranging window positions and sizes")
     RetryCount := 0
     MaxRetries := 10
     Loop {
         try {
-            SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+            SelectedMonitorIndex := RegExReplace(botConfig.get("SelectedMonitorIndex"), ":.*$")
             SysGet, Monitor, Monitor, %SelectedMonitorIndex%
-            Title := winTitle
+            Title := session.get("winTitle")
 
             instanceIndex := StrReplace(Title, "Main", "")
             if (instanceIndex = "")
                 instanceIndex := 1
 
-                    
-            if (MuMuv5) {
-                titleHeight := 50
-            } else {
-                titleHeight := 45
-            }
-            
             borderWidth := 4 - 1
-            rowHeight := titleHeight + 489 + 4
-            currentRow := Floor((instanceIndex - 1) / Columns)
+            rowHeight := 40 + 492
+            currentRow := Floor((instanceIndex - 1) / botConfig.get("Columns"))
 
-            y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-            ;x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
-            if (MuMuv5) {
-                x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2)) ; - borderWidth
-            } else {
-                x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
-            }
+            y := MonitorTop + (currentRow * rowHeight) + (currentRow * botConfig.get("rowGap"))
+            x := MonitorLeft + (Mod((instanceIndex - 1), botConfig.get("Columns")) * (scaleParam - borderWidth * 2))
             
             WinSet, Style, -0xC00000, %Title%
             WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
@@ -536,9 +450,11 @@ resetWindows(){
             break
         }
         catch {
-            if (RetryCount > MaxRetries)
-                CreateStatusMessage("Pausing. Can't find window " . winTitle . ".",,,, false)
-            Pause
+            RetryCount++
+            if (RetryCount > MaxRetries) {
+                CreateStatusMessage("Pausing. Can't find window " . session.get("winTitle") . ".",,,, false)
+                Pause
+            }
         }
         Sleep, 1000
     }
@@ -546,7 +462,11 @@ resetWindows(){
 }
 
 restartGameInstance(reason, RL := true){
-    global Delay, scriptName, adbShell, adbPath, adbPort
+    global botConfig, session
+
+    if(botConfig.get("heartBeatOwnerWebHookURL") != "")
+        LogToDiscord(A_ScriptName . " instance has begin restart. Please verify that GodPack has not disappeared upon entering the main screen.\nReasion: " . reason,, true,,, botConfig.get("heartBeatOwnerWebHookURL"))
+    
     initializeAdbShell()
 
     if (Debug)
@@ -555,20 +475,21 @@ restartGameInstance(reason, RL := true){
         CreateStatusMessage("Restarting game...",,,, false)
 
     adbWriteRaw("am force-stop jp.pokemon.pokemontcgp")
-    ;adbShell.StdIn.WriteLine("rm -rf /data/data/jp.pokemon.pokemontcgp/cache/*") ; clear cache
     Sleep, 3000
     adbWriteRaw("am start -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity")
-
-    Sleep, 3000
+    ;startPTCGPApp()
     if(RL) {
         LogToFile("Restarted game. Reason: " reason)
+        session.set("isDead", true)
+        IniWrite, 1, % session.get("scriptIniFile"), Metrics, isDead
         SafeReload()
     }
 }
 
 ControlClick(X, Y) {
-    global winTitle
-    ControlClick, x%X% y%Y%, %winTitle%
+    global session
+
+    ControlClick, x%X% y%Y%, % session.get("winTitle")
 }
 
 RandomUsername() {
@@ -584,7 +505,7 @@ RandomUsername() {
 }
 
 Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
-    global adbShell, adbPath, packs, winTitle, titleHeight, scaleParam, packsInPool
+    global session
     SetWorkingDir %A_ScriptDir%  ; Ensures the working directory is the script's directory
 
     ; Define folder and file paths
@@ -603,19 +524,16 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
 	}
 
     ; File path for saving the screenshot locally
-    fileName := A_Now . "_" . winTitle . "_" . fileType . "_" . packsInPool . "_packs.png"
+    fileName := A_Now . "_" . session.get("scriptName") . "_" . fileType . "_" . session.get("packsInPool") . "_packs.png"
     if (fileType = "PACKSTATS")
         fileName := "packstats_temp.png"
     filePath := fileDir "\" . fileName
 
-    yBias := titleHeight - 45
-    pBitmapW := from_window(WinExist(winTitle))
+    yBias := 40 - 45
+    pBitmapW := from_window(getMuMuHwnd(session.get("winTitle")))
     pBitmap := Gdip_CloneBitmapArea(pBitmapW, 18, 175+yBias, 240, 227)
 
     ;scale 100%
-    if (scaleParam = 287) {
-        pBitmap := Gdip_CloneBitmapArea(pBitmapW, 17, 168, 245, 230)
-    }
     Gdip_DisposeImage(pBitmapW)
     Gdip_SaveBitmapToFile(pBitmap, filePath)
 
@@ -639,12 +557,13 @@ return
 ResumeScript:
     CreateStatusMessage("Resuming...",,,, false)
     Pause, Off
-    StartSkipTime := A_TickCount ;reset stuck timers
-    failSafe := A_TickCount
+    session.set("StartSkipTime", A_TickCount) ;reset stuck timers
+    session.set("failSafe", A_TickCount)
 return
 
+; Stop Script - Main.ahk always exits immediately (no "end of run" concept)
 StopScript:
-    if (!groupRerollEnabled) {
+    if (!botConfig.get("groupRerollEnabled")) {
         CreateStatusMessage("Stopping script...",,,, false)
         ExitApp
     }
@@ -661,13 +580,14 @@ StopScript:
         Gui, StopMain:Add, Text, x20 y15 w220 Center, What would you like to do?
         Gui, StopMain:Add, Button, x20 y45 w220 h30 gStopMainImmediately, Stop Immediately
         Gui, StopMain:Add, Button, x20 y80 w220 h30 gStopMainAfterGPTestButton, Run GP Test then Stop
-            Gui, StopMain:Add, Checkbox, x20 y120 w220 vRememberStopPreferenceMain, Remember my choice
-            Gui, StopMain:Show, w260 h150, Stop Main Instance
+        Gui, StopMain:Add, Checkbox, x20 y120 w220 vui_RememberStopPreferenceMain, Remember my choice
+        Gui, StopMain:Show, w260 h150, Stop Main Instance
     }
 return
 
 StopMainImmediately:
     Gui, StopMain:Submit, NoHide
+    GuiControlGet, RememberStopPreferenceMain, , ui_RememberStopPreferenceMain
     if (RememberStopPreferenceMain) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
         IniWrite, immediate, %settingsPath%, UserSettings, stopPreferenceMain
@@ -680,17 +600,18 @@ return
 StopMainAfterGPTestButton:
     Gui, StopMain:Submit, NoHide
     Gui, StopMain:Destroy
+    GuiControlGet, RememberStopPreferenceMain, , ui_RememberStopPreferenceMain
     if (RememberStopPreferenceMain) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
         IniWrite, gp_test, %settingsPath%, UserSettings, stopPreferenceMain
     }
 
 StopMainAfterGPTest:
-    stopAfterGPTest := true
-    if (!GPTest) {
-        GPTest := true
-        triggerTestNeeded := true
-        testStartTime := A_TickCount
+    session.set("stopAfterGPTest", true)
+    if (!session.get("GPTest")) {
+        session.set("GPTest", true)
+        session.set("triggerTestNeeded", true)
+        session.set("testStartTime", A_TickCount)
         CreateStatusMessage("Running GP Test then stopping...",,,, false)
     } else {
         CreateStatusMessage("Will stop after current GP Test completes...",,,, false)
@@ -703,59 +624,61 @@ StopMainGuiEscape:
 return
 
 RateLimitSleep:
-    rateLimitAction := "sleep"
+    session.set("rateLimitAction", "sleep")
     Gui, RateLimit:Destroy
 return
 
 RateLimitContinue:
 RateLimitGuiClose:
 RateLimitGuiEscape:
-    rateLimitAction := "continue"
+    session.set("rateLimitAction", "continue")
     Gui, RateLimit:Destroy
 return
 
 VipTrimModeChanged:
     Gui, VipTrim:Submit, NoHide
     isCustom := VipTrimCustom
-    GuiControl, % (isCustom ? "Enable" : "Disable"), VipCustomCount
-    GuiControl, % (isCustom ? "Enable" : "Disable"), VipCustomDirTop
-    GuiControl, % (isCustom ? "Enable" : "Disable"), VipCustomDirBottom
+    GuiControl, % (isCustom ? "Enable" : "Disable"), ui_VipCustomCount
+    GuiControl, % (isCustom ? "Enable" : "Disable"), ui_VipCustomDirTop
+    GuiControl, % (isCustom ? "Enable" : "Disable"), ui_VipCustomDirBottom
 return
 
 VipTrimStart:
-    global vipListTrimMode, vipListTrimCount, vipListTrimApplied, vipTrimDialogDone
     Gui, VipTrim:Submit, NoHide
-    if (VipTrimTop) {
-        vipListTrimMode := "top"
-        vipListTrimCount := 60
-    } else if (VipTrimBottom) {
-        vipListTrimMode := "bottom"
-        vipListTrimCount := 60
+
+    GuiControlGet, VipTrimTopValue, , ui_VipTrimTop
+    GuiControlGet, VipTrimBottomValue, , ui_VipTrimBottom
+    GuiControlGet, VipCustomCountValue, , ui_VipCustomCount
+    GuiControlGet, VipCustomDirTopValue, , ui_VipCustomDirTop
+    GuiControlGet, VipCustomDirBottomValue, , ui_VipCustomDirBottom
+
+    if (VipTrimTopValue) {
+        session.set("vipListTrimMode", "top")
+        session.set("vipListTrimCount", 60)
+    } else if (VipTrimBottomValue) {
+        session.set("vipListTrimMode", "bottom")
+        session.set("vipListTrimCount", 60)
     } else {
-        customCount := VipCustomCount + 0
+        customCount := VipCustomCountValue + 0
         if (customCount < 1 || customCount > 99) {
             MsgBox, 48, Invalid Count, Please enter a number between 1 and 99.
             return
         }
-        vipListTrimMode := VipCustomDirTop ? "top" : "bottom"
-        vipListTrimCount := customCount
+        session.set("vipListTrimMode", ((VipCustomDirTopValue) ? "top" : "bottom"))
+        session.set("vipListTrimCount", customCount)
     }
-    vipListTrimApplied := true
+    session.set("vipListTrimApplied", true)
     settingsPath := A_ScriptDir . "\..\Settings.ini"
-    IniWrite, %vipListTrimMode%, %settingsPath%, UserSettings, vipListTrimMode
-    IniWrite, %vipListTrimCount%, %settingsPath%, UserSettings, vipListTrimCount
+    IniWrite, % session.get("vipListTrimMode"), %settingsPath%, UserSettings, vipListTrimMode
+    IniWrite, % session.get("vipListTrimCount"), %settingsPath%, UserSettings, vipListTrimCount
     Gui, VipTrim:Destroy
-    vipTrimDialogDone := true
+    session.set("vipTrimDialogDone", true)
 return
 
 VipTrimGuiClose:
 VipTrimGuiEscape:
     Gui, VipTrim:Destroy
-    vipTrimDialogDone := true
-return
-
-ShowStatusMessages:
-    ToggleStatusMessages()
+    session.set("vipTrimDialogDone", true)
 return
 
 ReloadScript:
@@ -767,136 +690,34 @@ TestScript:
 return
 
 ToggleTestScript() {
-    global GPTest, triggerTestNeeded, testStartTime, firstRun
-    if(!GPTest) {
-        GPTest := true
-        triggerTestNeeded := true
-        testStartTime := A_TickCount
+    global session
+    if(!session.get("GPTest")) {
+        session.set("GPTest", true)
+        session.set("triggerTestNeeded", true)
+        session.set("testStartTime", A_TickCount)
         CreateStatusMessage("In GP Test Mode",,,, false)
-        StartSkipTime := A_TickCount ;reset stuck timers
-        failSafe := A_TickCount
+        session.set("StartSkipTime", A_TickCount) ;reset stuck timers
+        session.set("failSafe", A_TickCount)
     }
     else {
-        GPTest := false
-        triggerTestNeeded := false
-        totalTestTime := (A_TickCount - testStartTime) // 1000
-        if (testStartTime != "" && (totalTestTime >= 180))
+        session.set("GPTest", false)
+        session.set("triggerTestNeeded", false)
+        totalTestTime := (A_TickCount - session.get("testStartTime")) // 1000
+        if (session.get("testStartTime") != "" && (totalTestTime >= 180))
         {
-            firstRun := True
-            testStartTime := ""
+            session.set("firstRun", True)
+            session.set("testStartTime", "")
         }
         CreateStatusMessage("Exiting GP Test Mode",,,, false)
     }
 }
 
-FriendAdded() {
-    global AddFriend
-    AddFriend++
-}
-
-; Function to create or select the JSON file
-InitializeJsonFile() {
-    global jsonFileName
-    fileName := A_ScriptDir . "\..\json\Packs.json"
-    if !FileExist(fileName) {
-        ; Create a new file with an empty JSON array
-        FileAppend, [], %fileName%  ; Write an empty JSON array
-        jsonFileName := fileName
-        return
-    }
-}
-
-; Function to sum all variable values in the JSON file
-SumVariablesInJsonFile() {
-    global jsonFileName
-    if (jsonFileName = "") {
-        return 0
-    }
-
-    ; Read the file content
-    FileRead, jsonContent, %jsonFileName%
-    if (jsonContent = "") {
-        return 0
-    }
-
-    ; Parse the JSON and calculate the sum
-    sum := 0
-    ; Clean and parse JSON content
-    jsonContent := StrReplace(jsonContent, "[", "") ; Remove starting bracket
-    jsonContent := StrReplace(jsonContent, "]", "") ; Remove ending bracket
-    Loop, Parse, jsonContent, {, }
-    {
-        ; Match each variable value
-        if (RegExMatch(A_LoopField, """variable"":\s*(-?\d+)", match)) {
-            sum += match1
-        }
-    }
-
-    ; Write the total sum to a file called "total.json"
-    totalFile := A_ScriptDir . "\json\total.json"
-    totalContent := "{""total_sum"": " sum "}"
-    FileDelete, %totalFile%
-    FileAppend, %totalContent%, %totalFile%
-
-    return sum
-}
-
-from_window(ByRef image) {
-    ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
-
-    ; Get the handle to the window.
-    image := (hwnd := WinExist(image)) ? hwnd : image
-
-    ; Restore the window if minimized! Must be visible for capture.
-    if DllCall("IsIconic", "ptr", image)
-        DllCall("ShowWindow", "ptr", image, "int", 4)
-
-    ; Get the width and height of the client window.
-    VarSetCapacity(Rect, 16) ; sizeof(RECT) = 16
-    DllCall("GetClientRect", "ptr", image, "ptr", &Rect)
-        , width  := NumGet(Rect, 8, "int")
-        , height := NumGet(Rect, 12, "int")
-
-    ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
-    hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-    VarSetCapacity(bi, 40, 0)                ; sizeof(bi) = 40
-        , NumPut(       40, bi,  0,   "uint") ; Size
-        , NumPut(    width, bi,  4,   "uint") ; Width
-        , NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-        , NumPut(        1, bi, 12, "ushort") ; Planes
-        , NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
-        , NumPut(        0, bi, 16,   "uint") ; Compression = BI_RGB
-        , NumPut(        3, bi, 20,   "uint") ; Quality setting (3 = low quality, no anti-aliasing)
-    hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
-    obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-
-    ; Print the window onto the hBitmap using an undocumented flag. https://stackoverflow.com/a/40042587
-    DllCall("PrintWindow", "ptr", image, "ptr", hdc, "uint", 0x3) ; PW_CLIENTONLY | PW_RENDERFULLCONTENT
-    ; Additional info on how this is implemented: https://www.reddit.com/r/windows/comments/8ffr56/altprintscreen/
-
-    ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
-    DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap:=0)
-
-    ; Cleanup the hBitmap and device contexts.
-    DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-    DllCall("DeleteObject", "ptr", hbm)
-    DllCall("DeleteDC",     "ptr", hdc)
-
-    return pBitmap
-}
-
 ~+F5::SafeReload()
 ~+F6::Pause
-~+F7::Gosub, StopScript
-~+F8::ToggleStatusMessages()
+~+F10::
+    Gosub, StopScript
+return
 ~+F9::ToggleTestScript() ; hoytdj Add
-
-ToggleStatusMessages() {
-    if(showStatus)
-        showStatus := False
-    else
-        showStatus := True
-}
 
 bboxAndPause(X1, Y1, X2, Y2, doPause := False) {
     BoxWidth := X2-X1
@@ -948,22 +769,22 @@ GetNeedle(Path) {
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GPTestScript() {
-    global triggerTestNeeded, GPTest, gpTestWaitTime, friendOpsCount, friendOpsWindowStart, rateLimitAction, vipListTrimApplied, gpTestFirstRun, hasUnopenedPack
-    triggerTestNeeded := false
-    rateLimitAction := ""
-    vipListTrimApplied := false
+    global session
+    session.set("triggerTestNeeded", false)
+    session.set("rateLimitAction", "")
+    session.set("vipListTrimApplied", false)
     FavoriteVipFriends()
-    if (!GPTest || rateLimitAction = "sleep")
+    if (!session.get("GPTest") || session.get("rateLimitAction") = "sleep")
         return
-    if (gpTestFirstRun) {
-        gpTestFirstRun := false
+    if (session.get("gpTestFirstRun")) {
+        session.set("gpTestFirstRun", false)
     }
-    if (!hasUnopenedPack) {
+    if (!session.get("hasUnopenedPack")) {
         gpTestWaitStart := A_TickCount
         Loop {
-            if (!GPTest)
+            if (!session.get("GPTest"))
                 return
-            remaining := gpTestWaitTime * 1000 - (A_TickCount - gpTestWaitStart)
+            remaining := session.get("gpTestWaitTime") * 1000 - (A_TickCount - gpTestWaitStart)
             if (remaining <= 0)
                 break
             CreateStatusMessage("Waiting for instances to remove friends (" . Ceil(remaining / 1000) . "s)...",,,, false)
@@ -974,30 +795,30 @@ GPTestScript() {
 }
 
 ; Returns true if a friend add/remove op can proceed (and increments the counter).
-; In auto GP Test mode, returns false when the rate limit is reached — caller should abort.
+; In auto GP Test mode, returns false when the rate limit is reached ? caller should abort.
 ; In manual GP Test mode, waits for the 5-minute window to reset and returns true.
 CheckFriendOpsRateLimit() {
-    global friendOpsCount, friendOpsWindowStart, A_gptest, GPTest, rateLimitAction, RateLimitText
-    if (friendOpsCount = 0) {
-        ; First operation of this window — start the clock now
-        friendOpsWindowStart := A_TickCount
+    global session
+    if (session.get("friendOpsCount") = 0) {
+        ; First operation of this window ? start the clock now
+        session.set("friendOpsWindowStart", A_TickCount)
     } else {
-        elapsed := A_TickCount - friendOpsWindowStart
+        elapsed := A_TickCount - session.get("friendOpsWindowStart")
         if (elapsed >= 300000) {
-            friendOpsCount := 0
-            friendOpsWindowStart := A_TickCount
+            session.set("friendOpsCount", 0)
+            session.set("friendOpsWindowStart", A_TickCount)
         }
     }
-    if (friendOpsCount >= 10) {
-        remaining := 300000 - (A_TickCount - friendOpsWindowStart)
+    if (session.get("friendOpsCount") >= 10) {
+        remaining := 300000 - (A_TickCount - session.get("friendOpsWindowStart"))
         if (remaining <= 0) {
-            friendOpsCount := 0
-            friendOpsWindowStart := A_TickCount
-        } else if (A_gptest) {
+            session.set("friendOpsCount", 0)
+            session.set("friendOpsWindowStart", A_TickCount)
+        } else if (session.get("A_gptest")) {
             return false
         } else {
             ; Manual mode: show countdown dialog with two cancel options
-            rateLimitAction := ""
+            session.set("rateLimitAction", "")
             Gui, RateLimit:Destroy
             Gui, RateLimit:New, +AlwaysOnTop, GP Test - Rate Limit
             countdownText := "Rate limit reached. Waiting " . Ceil(remaining / 1000) . "s..."
@@ -1007,39 +828,38 @@ CheckFriendOpsRateLimit() {
             Gui, RateLimit:Add, Button, x20 y107 w220 h30 gRateLimitContinue, Stop GP Test && Continue
             Gui, RateLimit:Show, w260 h150, GP Test - Rate Limit
             Loop {
-                remaining := 300000 - (A_TickCount - friendOpsWindowStart)
-                if (remaining <= 0 || rateLimitAction != "")
+                remaining := 300000 - (A_TickCount - session.get("friendOpsWindowStart"))
+                if (remaining <= 0 || session.get("rateLimitAction") != "")
                     break
                 countdownText := "Rate limit reached. Waiting " . Ceil(remaining / 1000) . "s..."
                 GuiControl, RateLimit:, RateLimitText, %countdownText%
                 Sleep, 1000
             }
             Gui, RateLimit:Destroy
-            if (rateLimitAction = "sleep") {
-                return false  ; GPTest stays true — main idles in "Ready to test" mode
-            } else if (rateLimitAction = "continue") {
-                GPTest := false
+            if (session.get("rateLimitAction") = "sleep") {
+                return false  ; "GPTest stays true ? main idles in "Ready to test" mode
+            } else if (session.get("rateLimitAction") = "continue") {
+                session.set("GPTest", false)
                 return false
             }
-            ; Timer expired — reset and continue
-            friendOpsCount := 0
-            friendOpsWindowStart := A_TickCount
+            ; Timer expired ? reset and continue
+            session.set("friendOpsCount", 0)
+            session.set("friendOpsWindowStart", A_TickCount)
         }
     }
-    friendOpsCount++
+    session.set("friendOpsCount", session.get("friendOpsCount") + 1)
     return true
 }
 
 ; FavoriteVipFriends - Mark all VIP friends as favourites 
 FavoriteVipFriends() {
-    global GPTest, vipIdsURL, failSafe, gptest_nonFriends, gptest_alreadyFavourited, scriptName, friendOpsCount, friendOpsWindowStart, hasUnopenedPack
-    global A_gptest, autoUseGPTest, vipListTrimMode, vipListTrimCount, vipListTrimApplied
+    global session, interceptProc
 
     ; Load persistent GP Test cache from disk.
     ; Always reload from file as it survives bot restarts.
-    gptest_nonFriends := {}
-    gptest_alreadyFavourited := {}
-    gptestedFile := A_ScriptDir . "\..\FriendsGPTested_" . scriptName . ".txt"
+    session.set("gptest_nonFriends", {})
+    session.set("gptest_alreadyFavourited", {})
+    gptestedFile := A_ScriptDir . "\..\FriendsGPTested_" . session.get("scriptName") . ".txt"
     if FileExist(gptestedFile) {
         Loop, Read, %gptestedFile%
         {
@@ -1048,17 +868,17 @@ FavoriteVipFriends() {
             ; F: prefix indicates code was tested and is already favourited.
             if (SubStr(line, 1, 2) = "N:") {
                 parts := StrSplit(SubStr(line, 3), "|")
-                gptest_nonFriends["_" . parts[1]] := {Name: parts[2], Time: parts[3]}
+                session.get("gptest_nonFriends")["_" . parts[1]] := {Name: parts[2], Time: parts[3]}
             } else if (SubStr(line, 1, 2) = "F:") {
                 parts := StrSplit(SubStr(line, 3), "|")
-                gptest_alreadyFavourited["_" . parts[1]] := {Name: parts[2], Time: parts[3]}
+                session.get("gptest_alreadyFavourited")["_" . parts[1]] := {Name: parts[2], Time: parts[3]}
             }
         }
     }
 
     ; Download and load VIP list
     CreateStatusMessage("Downloading vip_ids.txt.",,,, false)
-    if (vipIdsURL != "" && !DownloadFile(vipIdsURL, "vip_ids.txt")) {
+    if (botConfig.get("groupRerollEnabled") && botConfig.get("vipIdsURL") != "" && !DownloadFile(botConfig.get("vipIdsURL"), "vip_ids.txt")) {
         CreateStatusMessage("Failed to download vip_ids.txt. Aborting FavoriteVipFriends...",,,, false)
         return
     }
@@ -1074,15 +894,15 @@ FavoriteVipFriends() {
 
     ; If the remote list is large, trim it to a manageable subset (manual VIPs are never trimmed)
     if (vipFriendsArray.MaxIndex() > 60) {
-        if (A_gptest && autoUseGPTest) {
+        if (session.get("A_gptest") && session.get("autoUseGPTest")) {
             ; Auto mode: silently use the bottom 60 (most recently added accounts)
-            vipListTrimMode := "bottom"
-            vipListTrimCount := 60
-            vipListTrimApplied := true
+            session.set("vipListTrimMode", "bottom")
+            session.set("vipListTrimCount", 60)
+            session.set("vipListTrimApplied", true)
             vipFriendsArray := ApplyVipTrim(vipFriendsArray)
         } else {
             vipFriendsArray := PromptVipListTrim(vipFriendsArray)
-            if (!GPTest)
+            if (!session.get("GPTest"))
                 return
         }
     }
@@ -1102,18 +922,18 @@ FavoriteVipFriends() {
 
     ; Prune silently "N" entries not in VIP list: were never friends, no game action needed
     toDelete := []
-    for key, _ in gptest_nonFriends
+    for key, _ in session.get("gptest_nonFriends")
         if (!vipCodeSet.HasKey(SubStr(key, 2)))
             toDelete.Push(key)
     for _, key in toDelete
-        gptest_nonFriends.Delete(key)
+        session.get("gptest_nonFriends").Delete(key)
 
     ; Collect "F" entries not in VIP list for in-game de-star + removal (do NOT prune yet)
     ; This tries to catch VIP friends not removed manually by the user
     ; after they lost VIP status, as they would otherwise be missed and left as favourites
     ; in the case they're unfriended and befriended again in the same main session (game bug?)
     toRemove := []
-    for key, _ in gptest_alreadyFavourited
+    for key, _ in session.get("gptest_alreadyFavourited")
         if (!vipCodeSet.HasKey(SubStr(key, 2)))
             toRemove.Push(SubStr(key, 2))
     SaveGPTestedCache()
@@ -1123,7 +943,7 @@ FavoriteVipFriends() {
     allCached := true
     for _, vipFriend in vipFriendsArray {
         vipCode := vipFriend.Code
-        if (!gptest_nonFriends.HasKey("_" . vipCode) && !gptest_alreadyFavourited.HasKey("_" . vipCode)) {
+        if (!session.get("gptest_nonFriends").HasKey("_" . vipCode) && !session.get("gptest_alreadyFavourited").HasKey("_" . vipCode)) {
             allCached := false
             break
         }
@@ -1134,32 +954,33 @@ FavoriteVipFriends() {
     }
 
     ; Navigate to Social screen
-    failSafe := A_TickCount
+    session.set("failSafe", A_TickCount)
     failSafeTime := 0
     Loop {
         adbClick(143, 518)
-        if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime))
+        if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime))
             break
         Delay(5)
-        failSafeTime := (A_TickCount - failSafe) // 1000
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
         CreateStatusMessage("In failsafe for Social. " . failSafeTime "/90 seconds")
     }
-    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500) ; Friends tab
-    Delay(2)
-    FindImageAndClick(205, 430, 255, 475, , "Search", 240, 120, 1500)
-    FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
+    FindImageAndClick("Friend_AddButtonInFriendList", 38, 460, , 500) ; Friends tab
+    FindImageAndClick("Friend_SearchFriendButton", 240, 120)
+    Delay(1)
+    FindImageAndClick("Friend_SearchFriendWindowCancelButtonCorner", 75, 440)
+    FindImageAndClick("Friend_FriendIDInputReady", 138, 265)
 
     ; Build combined list: ex-VIP removals first, then uncached VIPs to star
     allVips := []
     for _, code in toRemove
-        allVips.Push({isRemoval: 1, Code: code, Name: gptest_alreadyFavourited["_" . code].Name})
+        allVips.Push({isRemoval: 1, Code: code, Name: session.get("gptest_alreadyFavourited")["_" . code].Name})
     for _, vipFriend in vipFriendsArray
-        if (!gptest_nonFriends.HasKey("_" . vipFriend.Code) && !gptest_alreadyFavourited.HasKey("_" . vipFriend.Code))
+        if (!session.get("gptest_nonFriends").HasKey("_" . vipFriend.Code) && !session.get("gptest_alreadyFavourited").HasKey("_" . vipFriend.Code))
             allVips.Push({isRemoval: 0, Code: vipFriend.Code, Friend: vipFriend})
 
     n := allVips.MaxIndex()
     for index, vip in allVips {
-        if (!GPTest) {
+        if (!session.get("GPTest")) {
             adbInputEvent("4") ; close keyboard
             Sleep, 300
             adbInputEvent("4") ; close search modal
@@ -1174,44 +995,20 @@ FavoriteVipFriends() {
         else
             CreateStatusMessage("Favouriting VIP " . index . "/" . n . "`n" . vip.Friend.ToString(),,,, false)
 
-        ; Type the code and wait for Search2 to appear
-        failSafe := A_TickCount
+        ; Click search and check result on the search results screen
+        session.set("failSafe", A_TickCount)
         failSafeTime := 0
-        search2Ready := false
         Loop {
             Delay(1)
             adbInput(vipCode)
             Delay(1)
-            if(FindOrLoseImage(205, 430, 255, 475, , "Search2", 0, failSafeTime)) {
-                search2Ready := true
-                break
-            }
-            failSafeTime := (A_TickCount - failSafe) // 1000
-            if (failSafeTime > 45) {
-                CreateStatusMessage("Search2 not found for: " . vipCode . ". Skipping.",,,, false)
-                break
-            }
-            CreateStatusMessage("Waiting for Search2`n(" . failSafeTime . "/45 seconds)")
-        }
-        if (!search2Ready) {
-            if (index < n) {
-                FindImageAndClick(205, 430, 255, 475, , "Search2", 143, 518)
-                EraseInput(index, n)
-            }
-            continue
-        }
-
-        ; Click search and check result on the search results screen
-        failSafe := A_TickCount
-        failSafeTime := 0
-        Loop {
-            adbClick_wbb(232, 453) ; confirm search
+            adbClick_wbb(187, 365)
             Delay(2)
-            if(FindOrLoseImage(172, 257, 185, 266, , "FavouriteFriend", 0, failSafeTime)) {
-                ; Friend — enter profile
+            if(FindOrLoseImage("GPTest_FriendedInSearcResult", 0, failSafeTime)) {
+                ; Friend ? enter profile
                 failSafe2 := A_TickCount
                 Loop {
-                    if (!FindOrLoseImage(172, 257, 185, 266, , "FavouriteFriend", 0))
+                    if (!FindOrLoseImage("GPTest_FriendedInSearcResult", 0))
                         break
                     if ((A_TickCount - failSafe2) // 1000 > 30)
                         break
@@ -1222,8 +1019,8 @@ FavoriteVipFriends() {
                 ; Wait for FavouriteN or FavouriteY to confirm profile has loaded
                 failSafe2 := A_TickCount
                 Loop {
-                    if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)
-                        || FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0))
+                    if (FindOrLoseImage("GPTest_NotFavouriteInDetails", 0)
+                        || FindOrLoseImage("GPTest_FavouritedInDetails", 0))
                         break
                     if ((A_TickCount - failSafe2) // 1000 > 30)
                         break
@@ -1232,47 +1029,50 @@ FavoriteVipFriends() {
                 }
                 if (vip.isRemoval) {
                     ; De-star if currently starred, then remove from friends
-                    if (FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0)) {
+                    if (FindOrLoseImage("GPTest_FavouritedInDetails", 0)) {
                         adbClick(252, 81)
                         Delay(1)
                     }
-                    if (!hasUnopenedPack && !CheckFriendOpsRateLimit()) {
+                    if (!session.get("hasUnopenedPack") && !CheckFriendOpsRateLimit()) {
                         ; Auto mode rate limit: navigate back to Social and abort
-                        FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+                        FindImageAndClick("Common_ActivatedSocialInMainMenu", 143, 518, , 500)
                         return
                     }
                     rateLimitHit := false
-                    FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
+                    FindImageAndClick("Friend_RemoveConfirmButtonInFriendDetails", 145, 407, , 500)
                     Loop {
                         adbClick_wbb(200, 372)
-                        if (FindOrLoseImage(70, 395, 100, 420, , "Send2", 0))
+                        if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0))
                             break
-                        if (hasUnopenedPack && FindOrLoseImage(100, 180, 170, 230, , "Error", 0)) {
+                        if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0)) {
                             CreateStatusMessage("Rate limit hit. Recovering...",,,, false)
+                            interceptProc := true
                             Loop, 5 {
                                 adbClick_wbb(139, 371)
                                 Sleep, 500
-                                if (!FindOrLoseImage(100, 180, 170, 230, , "Error", 0))
+                                if (!FindOrLoseImage("Common_Error", 0))
                                     break
                             }
-                            failSafe := A_TickCount
+                            interceptProc := false
+                            session.set("failSafe", A_TickCount)
                             Loop {
                                 adbClick_wbb(143, 518)
-                                if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0))
+                                if (FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0))
                                     break
-                                failSafeTime := (A_TickCount - failSafe) // 1000
+                                failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
                                 if (failSafeTime > 90) {
-                                    GPTest := false
+                                    session.set("GPTest", false)
                                     restartGameInstance("Stuck at Social after rate limit")
                                     break
                                 }
                                 CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
                                 Delay(3)
                             }
-                            FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
-                            Delay(2)
-                            FindImageAndClick(205, 430, 255, 475, , "Search", 240, 120, 1500)
-                            FindImageAndClick(0, 475, 25, 495, , "OK2", 138, 454)
+                            FindImageAndClick("Friend_AddButtonInFriendList", 38, 460, , 500)
+                            FindImageAndClick("Friend_SearchFriendButton", 240, 120)
+                            Delay(2)                        
+                            FindImageAndClick("Friend_SearchFriendWindowCancelButtonCorner", 75, 440)
+                            FindImageAndClick("Friend_FriendIDInputReady", 138, 265)
                             rateLimitHit := true
                             break
                         }
@@ -1281,10 +1081,10 @@ FavoriteVipFriends() {
                     if (rateLimitHit)
                         continue 2
                     Delay(1)
-                    gptest_alreadyFavourited.Delete("_" . vipCode)
+                    session.get("gptest_alreadyFavourited").Delete("_" . vipCode)
                 } else {
                     ; Star if not yet starred
-                    if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)) {
+                    if (FindOrLoseImage("GPTest_NotFavouriteInDetails", 0)) {
                         adbClick(252, 81)
                         Delay(1)
                         CreateStatusMessage("Favourited: " . vip.Friend.ToString(),,,, false)
@@ -1292,56 +1092,58 @@ FavoriteVipFriends() {
                         CreateStatusMessage("Already favourited: " . vip.Friend.ToString(),,,, false)
                     }
                     FormatTime, checkedAt, , yyyy-MM-dd HH:mm
-                    gptest_alreadyFavourited["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
+                    session.get("gptest_alreadyFavourited")["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
                 }
                 SaveGPTestedCache()
                 break
             }
-            else if(FindOrLoseImage(165, 245, 190, 270, , "Send", 0, failSafeTime)) {
+            else if(FindOrLoseImage("Friend_RequestButtonInSearchResult", 0, failSafeTime)) {
                 if (vip.isRemoval) {
                     CreateStatusMessage("Ex-VIP no longer a friend: " . vipCode . (vip.Name != "" ? " (" . vip.Name . ")" : "") . ". Skipping.",,,, false)
-                    gptest_alreadyFavourited.Delete("_" . vipCode)
+                    session.get("gptest_alreadyFavourited").Delete("_" . vipCode)
                 } else {
                     CreateStatusMessage("Not friends with VIP: " . vip.Friend.ToString() . ". Skipping.",,,, false)
                     FormatTime, checkedAt, , yyyy-MM-dd HH:mm
-                    gptest_nonFriends["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
+                    session.get("gptest_nonFriends")["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
                 }
                 SaveGPTestedCache()
                 break
             }
             ; Account doesn't exist: banned, deleted, or code never existed
-            else if(FindOrLoseImage(211, 320, 245, 344, , "GPTest_NotFound", 0, failSafeTime)) {
+            else if(FindOrLoseImage("GPTest_AccountNotFound", 0, failSafeTime)) {
                 adbClick_wbb(138, 380)
                 Sleep, 500
                 if (vip.isRemoval) {
                     CreateStatusMessage("Code not found (ex-VIP): " . vipCode . (vip.Name != "" ? " (" . vip.Name . ")" : "") . ". Removing from cache.",,,, false)
-                    gptest_alreadyFavourited.Delete("_" . vipCode)
+                    session.get("gptest_alreadyFavourited").Delete("_" . vipCode)
                 } else {
                     CreateStatusMessage("Code not found (VIP): " . vip.Friend.ToString() . ". Marking as N.",,,, false)
                     FormatTime, checkedAt, , yyyy-MM-dd HH:mm
-                    gptest_nonFriends["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
+                    session.get("gptest_nonFriends")["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
                 }
                 SaveGPTestedCache()
                 if (index < n)
+                    FindImageAndClick("Friend_SearchFriendWindowCancelButtonCorner", 143, 518, , 1000)
+                    FindImageAndClick("Friend_FriendIDInputReady", 138, 265, , 1000)
                     EraseInput(index, n)
-                continue 2 ; already back at search input — skip the nav block below
+                continue 2 ; already back at search input ? skip the nav block below
             }
             ; Pending friend request from the account: either VIP that we weren't able to befriend in time,
             ; or ex-VIP that alrerady sent us a request as we were GP Testing
-            else if(FindOrLoseImage(188, 243, 221, 274, , "PendingFriendRequest", 0, failSafeTime)) {
+            else if(FindOrLoseImage("GPTest_ReqeustCancelButtonInSearchResult", 0, failSafeTime)) {
                 if (vip.isRemoval) {
                     CreateStatusMessage("Pending request from ex-VIP: " . vipCode . (vip.Name != "" ? " (" . vip.Name . ")" : "") . ". Removing from cache.",,,, false)
-                    gptest_alreadyFavourited.Delete("_" . vipCode)
+                    session.get("gptest_alreadyFavourited").Delete("_" . vipCode)
                 } else {
                     CreateStatusMessage("Pending request from VIP: " . vip.Friend.ToString() . ". Marking as N.",,,, false)
                     FormatTime, checkedAt, , yyyy-MM-dd HH:mm
-                    gptest_nonFriends["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
+                    session.get("gptest_nonFriends")["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
                 }
                 SaveGPTestedCache()
                 break
             }
             Delay(1)
-            failSafeTime := (A_TickCount - failSafe) // 1000
+            failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
             if (failSafeTime > 20) {
                 CreateStatusMessage("Search result unrecognised for: " . vipCode . ". Skipping.",,,, false)
                 break
@@ -1351,37 +1153,47 @@ FavoriteVipFriends() {
 
         ; Return to search input for next item
         if (index < n) {
-            FindImageAndClick(205, 430, 255, 475, , "Search2", 143, 518)
+            FindImageAndClick("Friend_SearchFriendWindowCancelButtonCorner", 143, 518, , 1000)
+            FindImageAndClick("Friend_FriendIDInputReady", 138, 265, , 1000)
             EraseInput(index, n)
         }
     }
 
     ; Return to Social main screen
-    FindImageAndClick(120, 500, 155, 530, , "Social", 143, 518, 500)
+    session.set("failSafe", A_TickCount)
+    failSafeTime := 0
+    Loop, {
+        adbClick_wbb(143, 518)
+        Delay(3)
+        if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime))
+            break
+        else if(FindOrLoseImage("Friend_SearchFriendWindowCancelButtonCorner", 0, failSafeTime))
+            adbClick_wbb(80, 365)
+    }
 }
 
 ; Removes non-favourited friends starting from the bottom of the list.
 ; Stops when a favourited (VIP) friend is encountered.
 RemoveNonVipFriends() {
-    global GPTest, autoUseGPTest, A_gptest, autotest, failSafe, gptest_alreadyFavourited, friendOpsCount, friendOpsWindowStart, hasUnopenedPack, vipIdsURL, vipListTrimApplied
+    global session
 
     ; Navigate to Social screen
-    failSafe := A_TickCount
+    session.set("failSafe", A_TickCount)
     failSafeTime := 0
     Loop {
         adbClick(143, 518)
-        if(FindOrLoseImage(120, 500, 155, 530, , "Social", 0, failSafeTime))
+        if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime))
             break
         Delay(5)
-        failSafeTime := (A_TickCount - failSafe) // 1000
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
         CreateStatusMessage("In failsafe for Social. " . failSafeTime "/90 seconds")
     }
-    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
+    FindImageAndClick("Friend_AddButtonInFriendList", 38, 460, , 500)
     Delay(3)
 
-    ; Re-download VIP list — a GP may have been found during the wait, adding new VIPs
-    if (vipIdsURL != "")
-        DownloadFile(vipIdsURL, "vip_ids.txt")
+    ; Re-download VIP list ? a GP may have been found during the wait, adding new VIPs
+    if (botConfig.get("vipIdsURL") != "")
+        DownloadFile(botConfig.get("vipIdsURL"), "vip_ids.txt")
 
     ; Load VIP list from file
     ; Any VIPs missed during favouriting will be caught and handled here
@@ -1408,7 +1220,7 @@ RemoveNonVipFriends() {
     stoppedAtVip := false
     startY := 385 ; tracks the lowest position where a friend was last found
     Loop {
-        if (!GPTest)
+        if (!session.get("GPTest"))
             return
 
         ; Try to enter the bottommost visible friend's profile, starting from last known position
@@ -1422,28 +1234,28 @@ RemoveNonVipFriends() {
             Loop, 3 {
                 adbClick_wbb(138, friendClickY)
                 Sleep, 600
-                if (!FindOrLoseImage(226, 100, 270, 135, , "Add", 0))
+                if (!FindOrLoseImage("Friend_AddButtonInFriendList", 0))
                     break
             }
-            ; If still on list after all attempts, slot is empty — try next position
-            if (FindOrLoseImage(226, 100, 270, 135, , "Add", 0)) {
+            ; If still on list after all attempts, slot is empty ? try next position
+            if (FindOrLoseImage("Friend_AddButtonInFriendList", 0)) {
                 friendClickY -= 95
                 continue
             }
-            ; Wait for profile to fully load — any of the three states confirms it
+            ; Wait for profile to fully load ? any of the three states confirms it
             failSafe2 := A_TickCount
             Loop {
                 ; Might happen that a friend removed us while we were busy scrolling the list 
                 ; and we only realise it after clicking on their profile
-                if (FindOrLoseImage(84, 397, 98, 410, , "FavouriteFriend2", 0)) {
+                if (FindOrLoseImage("GPTest_FriendRequestButtonInUserDetails", 0)) {
                     CreateStatusMessage("Friend removed us. Skipping...",,,, false)
-                    FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+                    FindImageAndClick("Friend_AddButtonInFriendList", 143, 507, , 1500)
                     Delay(2)
                     friendRemovedUs := true
                     break
                 }
-                if (FindOrLoseImage(245, 73, 260, 89, , "FavouriteN", 0)
-                    || FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0)) {
+                if (FindOrLoseImage("GPTest_NotFavouriteInDetails", 0)
+                    || FindOrLoseImage("GPTest_FavouritedInDetails", 0)) {
                     enteredProfile := true
                     break
                 }
@@ -1467,15 +1279,15 @@ RemoveNonVipFriends() {
         ; Remember lowest position where a friend was found
         startY := friendClickY
 
-        ; Favourited friend reached — stop removal
-        if (FindOrLoseImage(244, 73, 262, 88, , "FavouriteY", 0)) {
+        ; Favourited friend reached ? stop removal
+        if (FindOrLoseImage("GPTest_FavouritedInDetails", 0)) {
             CreateStatusMessage("Reached favourited (VIP) friend. Stopping removal.",,,, false)
-            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            FindImageAndClick("Friend_AddButtonInFriendList", 143, 507, , 1500)
             stoppedAtVip := true
             break
         }
 
-        ; Not favourited — OCR check again VIP list in case we missed them during favouriting, 
+        ; Not favourited ? OCR check again VIP list in case we missed them during favouriting, 
         ; then remove if still not VIP
         parseFriendResult := ParseFriendInfo(friendCode, friendName, parseFriendCodeResult, parseFriendNameResult, includesIdsAndNames)
         friendAccount := new FriendAccount(friendCode, friendName)
@@ -1483,10 +1295,10 @@ RemoveNonVipFriends() {
         if (!parseFriendResult) {
             ocrFailStreak++
             CreateStatusMessage("Couldn't parse friend (streak: " . ocrFailStreak . "). Skipping...",,,, false)
-            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            FindImageAndClick("Friend_AddButtonInFriendList", 143, 507, , 1500)
             Delay(2)
             if (ocrFailStreak >= 3) {
-                ; Persistent OCR failure on the same position — move on to avoid infinite loop
+                ; Persistent OCR failure on the same position ? move on to avoid infinite loop
                 ocrFailStreak := 0
                 startY := friendClickY - 95
                 if (startY < 195)
@@ -1500,59 +1312,59 @@ RemoveNonVipFriends() {
         isVipResult := IsFriendAccountInList(friendAccount, vipFriendsArray, matchedFriend)
 
         if (isVipResult) {
-            ; VIP missed by FavoriteVipFriends() — favourite them instead of removing
+            ; VIP missed by FavoriteVipFriends() ? favourite them instead of removing
             CreateStatusMessage("VIP not favourited: " . friendAccount.ToString() . "`nFavouring...",,,, false)
             adbClick(252, 81) ; click favourite star
             Delay(1)
             FormatTime, checkedAt, , yyyy-MM-dd HH:mm
-            gptest_alreadyFavourited["_" . friendAccount.Code] := {Name: friendAccount.Name, Time: checkedAt}
+            session.get("gptest_alreadyFavourited")["_" . friendAccount.Code] := {Name: friendAccount.Name, Time: checkedAt}
             SaveGPTestedCache()
-            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            FindImageAndClick("Friend_AddButtonInFriendList", 143, 507, , 1500)
             Delay(2)
             startY := 385 ; re-check from bottom after VIP have moved to top
         } else {
-            ; Not VIP — remove
+            ; Not VIP ? remove
             CreateStatusMessage("Removing non-VIP friend: " . friendAccount.ToString(),,,, false)
-            if (!hasUnopenedPack && !CheckFriendOpsRateLimit()) {
+            if (!session.get("hasUnopenedPack") && !CheckFriendOpsRateLimit()) {
                 ; Auto mode rate limit: navigate back and stop removal
-                FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
-                if (A_gptest && autoUseGPTest) {
-                    A_gptest := 0
-                    autotest := A_TickCount
+                FindImageAndClick("Friend_AddButtonInFriendList", 143, 507, , 1500)
+                if (session.get("A_gptest") && session.get("autoUseGPTest")) {
+                    session.set("A_gptest", 0)
+                    session.set("autotest", A_TickCount)
                     ToggleTestScript()
                 }
                 CreateStatusMessage("Rate limit reached. Stopping removal.",,,, false)
                 return
             }
             rateLimitHit := false
-            FindImageAndClick(135, 355, 160, 385, , "Remove", 145, 407, 500)
+            FindImageAndClick("Friend_RemoveConfirmButtonInFriendDetails", 145, 407, , 500)
             Loop {
                 adbClick_wbb(200, 372)
-                if (FindOrLoseImage(70, 395, 100, 420, , "Send2", 0))
+                if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0))
                     break
-                if (hasUnopenedPack && FindOrLoseImage(100, 180, 170, 230, , "Error", 0)) {
+                if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0)) {
                     CreateStatusMessage("Rate limit hit. Recovering...",,,, false)
                     Loop, 5 {
                         adbClick_wbb(139, 371)
                         Sleep, 500
-                        if (!FindOrLoseImage(100, 180, 170, 230, , "Error", 0))
+                        if (!FindOrLoseImage("Common_Error", 0))
                             break
                     }
-                    failSafe := A_TickCount
+                    session.set("failSafe", A_TickCount)
                     Loop {
                         adbClick_wbb(143, 518)
-                        if (FindOrLoseImage(120, 500, 155, 530, , "Social", 0))
+                        if (FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0))
                             break
-                        failSafeTime := (A_TickCount - failSafe) // 1000
+                        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
                         if (failSafeTime > 90) {
-                            GPTest := false
+                            session.set("GPTest", false)
                             restartGameInstance("Stuck at Social after rate limit")
                             break
                         }
                         CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
                         Delay(3)
                     }
-                    FindImageAndClick(226, 100, 270, 135, , "Add", 38, 460, 500)
+                    FindImageAndClick("Friend_AddButtonInFriendList", 38, 460, , 500)
                     Delay(3)
                     Loop, 20 {
                         adbSwipe(143 . " " . 700 . " " . 143 . " " . 110 . " " . 300)
@@ -1567,39 +1379,39 @@ RemoveNonVipFriends() {
             }
             if (rateLimitHit)
                 continue
-            FindImageAndClick(226, 100, 270, 135, , "Add", 143, 507, 1500)
+            FindImageAndClick("Friend_AddButtonInFriendList", 143, 507, , 1500)
             Delay(2)
         }
     }
 
     if (stoppedAtVip) {
-        if (A_gptest && autoUseGPTest) {
-            A_gptest := 0
-            autotest := A_TickCount
+        if (session.get("A_gptest") && session.get("autoUseGPTest")) {
+            session.set("A_gptest", 0)
+            session.set("autotest", A_TickCount)
             ToggleTestScript()
         }
         CreateStatusMessage("Ready to test.",,,, false)
-    } else if (A_gptest && autoUseGPTest) {
-        A_gptest := 0
+    } else if (session.get("A_gptest") && session.get("autoUseGPTest")) {
+        session.set("A_gptest", 0)
         ToggleTestScript()
     }
 }
 
-; Writes gptest_nonFriends and gptest_alreadyFavourited to FriendsGPTested.txt.
+; Writes "gptest_nonFriends" and "gptest_alreadyFavourited" to FriendsGPTested.txt.
 ; Called after each status update so the cache survives bot restarts.
 ; Keys are stored with a "_" prefix to prevent AHK v1 from normalising numeric strings
 ; to integers (which would strip leading zeros). The prefix is stripped when writing to file.
 SaveGPTestedCache() {
-    global gptest_nonFriends, gptest_alreadyFavourited, scriptName
-    filePath := A_ScriptDir . "\..\FriendsGPTested_" . scriptName . ".txt"
+    global session
+    filePath := A_ScriptDir . "\..\FriendsGPTested_" . session.get("scriptName") . ".txt"
     FileDelete, %filePath%
     FileAppend, # F: = VIP already starred in-game | N: = not a friend / code not found`n# Format: TYPE:code|name|checked_at`n, %filePath%
-    for key, entry in gptest_nonFriends {
+    for key, entry in session.get("gptest_nonFriends") {
         code := SubStr(key, 2)
         line := code . "|" . entry.Name . "|" . entry.Time
         FileAppend, N:%line%`n, %filePath%
     }
-    for key, entry in gptest_alreadyFavourited {
+    for key, entry in session.get("gptest_alreadyFavourited") {
         code := SubStr(key, 2)
         line := code . "|" . entry.Name . "|" . entry.Time
         FileAppend, F:%line%`n, %filePath%
@@ -1608,54 +1420,53 @@ SaveGPTestedCache() {
 
 ; Shows a pop-up when the remote VIP list has > 60 accounts, letting the user choose
 ; Top 60, Bottom 60, or a custom count from either end.
-; Stores the choice in vipListTrimMode/Count globals so RemoveNonVipFriends can reuse it.
+; Stores the choice in "vipListTrimMode/Count" globals so RemoveNonVipFriends can reuse it.
 ; Closing the dialog without clicking Start proceeds with the full unmodified list.
 PromptVipListTrim(vipFriendsArray) {
-    global GPTest, vipListTrimMode, vipListTrimCount, vipListTrimApplied, vipTrimDialogDone
-    global VipTrimTop, VipTrimBottom, VipTrimCustom, VipCustomCount, VipCustomDirTop, VipCustomDirBottom
+    global session
     vipCount := vipFriendsArray.MaxIndex()
-    vipTrimDialogDone := false
+    session.set("vipTrimDialogDone", false)
 
     ; Determine initial dialog state from saved settings
-    savedIsCustom := (vipListTrimCount != 60 || (vipListTrimMode != "top" && vipListTrimMode != "bottom"))
+    savedIsCustom := (session.get("vipListTrimCount") != 60 || (session.get("vipListTrimMode") != "top" && session.get("vipListTrimMode") != "bottom"))
 
     Gui, VipTrim:Destroy
     Gui, VipTrim:New, +AlwaysOnTop, Large VIP List Detected
     Gui, VipTrim:Add, Text, x20 y15 w280 Center, %vipCount% accounts found in the remote VIP list.
     Gui, VipTrim:Add, Text, x20 y35 w280 Center, Select which accounts to GP Test against:
-    Gui, VipTrim:Add, Radio, x20 y65 w280 vVipTrimTop Group gVipTrimModeChanged, Top 60
-    Gui, VipTrim:Add, Radio, x20 y88 w280 vVipTrimBottom gVipTrimModeChanged, Bottom 60
-    Gui, VipTrim:Add, Radio, x20 y111 w280 vVipTrimCustom gVipTrimModeChanged, Custom
+    Gui, VipTrim:Add, Radio, x20 y65 w280 vui_VipTrimTop Group gVipTrimModeChanged, Top 60
+    Gui, VipTrim:Add, Radio, x20 y88 w280 vui_VipTrimBottom gVipTrimModeChanged, Bottom 60
+    Gui, VipTrim:Add, Radio, x20 y111 w280 vui_VipTrimCustom gVipTrimModeChanged, Custom
     Gui, VipTrim:Add, Text, x40 y138 w85, Count (1-99):
-    Gui, VipTrim:Add, Edit, x130 y135 w60 vVipCustomCount Number, %vipListTrimCount%
-    Gui, VipTrim:Add, Radio, x40 y162 w80 vVipCustomDirTop Group, Top
-    Gui, VipTrim:Add, Radio, x130 y162 w80 vVipCustomDirBottom, Bottom
+    Gui, VipTrim:Add, Edit, x130 y135 w60 vui_VipCustomCount Number, % session.get("vipListTrimCount")
+    Gui, VipTrim:Add, Radio, x40 y162 w80 vui_VipCustomDirTop Group, Top
+    Gui, VipTrim:Add, Radio, x130 y162 w80 vui_VipCustomDirBottom, Bottom
     Gui, VipTrim:Add, Button, x20 y195 w280 h30 gVipTrimStart, Start GP Test
     Gui, VipTrim:Show, w320 h242, Large VIP List Detected
 
     ; Apply saved state: select the right radio and enable/disable custom inputs
     if (savedIsCustom) {
-        GuiControl, , VipTrimCustom, 1
-        if (vipListTrimMode = "top")
-            GuiControl, , VipCustomDirTop, 1
+        GuiControl, , ui_VipTrimCustom, 1
+        if (session.get("vipListTrimMode") = "top")
+            GuiControl, , ui_VipCustomDirTop, 1
         else
-            GuiControl, , VipCustomDirBottom, 1
-    } else if (vipListTrimMode = "top") {
-        GuiControl, , VipTrimTop, 1
-        GuiControl, Disable, VipCustomCount
-        GuiControl, Disable, VipCustomDirTop
-        GuiControl, Disable, VipCustomDirBottom
+            GuiControl, , ui_VipCustomDirBottom, 1
+    } else if (session.get("vipListTrimMode") = "top") {
+        GuiControl, , ui_VipTrimTop, 1
+        GuiControl, Disable, ui_VipCustomCount
+        GuiControl, Disable, ui_VipCustomDirTop
+        GuiControl, Disable, ui_VipCustomDirBottom
     } else {
-        GuiControl, , VipTrimBottom, 1
-        GuiControl, Disable, VipCustomCount
-        GuiControl, Disable, VipCustomDirTop
-        GuiControl, Disable, VipCustomDirBottom
+        GuiControl, , ui_VipTrimBottom, 1
+        GuiControl, Disable, ui_VipCustomCount
+        GuiControl, Disable, ui_VipCustomDirTop
+        GuiControl, Disable, ui_VipCustomDirBottom
     }
 
     Loop {
-        if (vipTrimDialogDone)
+        if (session.get("vipTrimDialogDone"))
             break
-        if (!GPTest) {
+        if (!session.get("GPTest")) {
             Gui, VipTrim:Destroy
             return vipFriendsArray
         }
@@ -1664,17 +1475,17 @@ PromptVipListTrim(vipFriendsArray) {
     return ApplyVipTrim(vipFriendsArray)
 }
 
-; Applies the stored trim (vipListTrimMode/Count) to an array without showing a dialog.
+; Applies the stored trim ("vipListTrimMode/Count") to an array without showing a dialog.
 ; Returns the original array if no trim was selected this run.
 ApplyVipTrim(vipFriendsArray) {
-    global vipListTrimMode, vipListTrimCount, vipListTrimApplied
-    if (!vipListTrimApplied)
+    global session
+    if (!session.get("vipListTrimApplied"))
         return vipFriendsArray
 
     vipCount := vipFriendsArray.MaxIndex()
-    trimCount := (vipListTrimCount < vipCount) ? vipListTrimCount : vipCount
+    trimCount := (session.get("vipListTrimCount") < vipCount) ? session.get("vipListTrimCount") : vipCount
     trimmed := []
-    if (vipListTrimMode = "top") {
+    if (session.get("vipListTrimMode") = "top") {
         Loop, %trimCount%
             trimmed.Push(vipFriendsArray[A_Index])
     } else {
@@ -1682,7 +1493,7 @@ ApplyVipTrim(vipFriendsArray) {
         Loop, %trimCount%
             trimmed.Push(vipFriendsArray[startIdx + A_Index - 1])
     }
-    CreateStatusMessage("VIP list trimmed to " . trimCount . " accounts (" . vipListTrimMode . ").",,,, false)
+    CreateStatusMessage("VIP list trimmed to " . trimCount . " accounts (" . session.get("vipListTrimMode") . ").",,,, false)
     return trimmed
 }
 
@@ -1702,7 +1513,9 @@ ParseFriendInfo(ByRef friendCode, ByRef friendName, ByRef parseFriendCodeResult,
     ;   (Boolean) - True if EITHER the friend code OR name were successfully parsed, false otherwise.
     ; ------------------------------------------------------------------------------
     ; Initialize variables
-    failSafe := A_TickCount
+    global session
+
+    session.set("failSafe", A_TickCount)
     failSafeTime := 0
     friendCode := ""
     friendName := ""
@@ -1711,7 +1524,7 @@ ParseFriendInfo(ByRef friendCode, ByRef friendName, ByRef parseFriendCodeResult,
 
     Loop {
         ; Grab screenshot via Adb
-        fullScreenshotFile := GetTempDirectory() . "\" .  winTitle . "_FriendProfile.png"
+        fullScreenshotFile := GetTempDirectory() . "\" .  session.get("scriptName") . "_FriendProfile.png"
         adbTakeScreenshot(fullScreenshotFile)
 
         ; Parse friend identifiers
@@ -1723,7 +1536,7 @@ ParseFriendInfo(ByRef friendCode, ByRef friendName, ByRef parseFriendCodeResult,
             break
 
         ; Break and fail if this take more than 5 seconds
-        failSafeTime := (A_TickCount - failSafe) // 1000
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
         if (failSafeTime > 5)
             break
     }
@@ -1812,7 +1625,7 @@ GetFriendAccountsFromFile(filePath, ByRef includesIdsAndNames) {
     ; Returns:
     ;   (Array) - An array of FriendAccount objects, parsed from the file.
     ; ------------------------------------------------------------------------------
-    global minStars, minStarsA2b
+    global botConfig
     friendList := []  ; Create an empty array
     includesIdsAndNames := false
 
@@ -1858,9 +1671,8 @@ GetFriendAccountsFromFile(filePath, ByRef includesIdsAndNames) {
 
         ; Trim spaces and create a FriendAccount object
         if (twoStarCount == ""
-            || (packName != "Shining" && twoStarCount >= minStars)
-            || (packName == "Shining" && twoStarCount >= minStarsA2b)
-            || (packName == "" && (twoStarCount >= minStars || twoStarCount >= minStarsA2b)) ) {
+            || (packName != "Shining" && twoStarCount >= botConfig.get("minStars"))
+            || (packName == "" && (twoStarCount >= botConfig.get("minStars"))) ) {
             friend := new FriendAccount(friendCode, friendName)
             friendList.Push(friend)  ; Add to array
         }
@@ -1959,14 +1771,10 @@ LevelUp() {
     ; Returns:
     ;   None - Function executes actions and returns
     ; ------------------------------------------------------------------------------
-    global scaleParam
-    Leveled := FindOrLoseImage(100, 86, 167, 116, , "LevelUp", 0)
+    Leveled := FindOrLoseImage("Common_LevelUpBackground", 0)
     if(Leveled) {
-        clickButton := FindOrLoseImage(75, 340, 195, 530, 80, "Button", 0)
+        clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, , 80)
         StringSplit, pos, clickButton, `,  ; Split at ", "
-        if (scaleParam = 287) {
-            pos2 += 5
-        }
         adbClick(pos1, pos2)
     }
     Delay(1)
@@ -1993,9 +1801,9 @@ adbClick_wbb(X,Y)  {
     ;
     ; If dbg_bbox global is enabled, shows a bounding box before clicking.
     ; ------------------------------------------------------------------------------
-    global dbg_bbox, dbg_bboxNpause
-    if(dbg_bbox)
-        bboxAndPause_click(X, Y, dbg_bboxNpause)
+    global session
+    if(session.get("dbg_bbox"))
+        bboxAndPause_click(X, Y, session.get("dbg_bboxNpause"))
     adbClick(X,Y)
 }
 
@@ -2009,7 +1817,7 @@ bboxAndPause_click(X, Y, doPause := False) {
     ;
     ; Shows a small box around the click point and optionally pauses for debugging.
     ; ------------------------------------------------------------------------------
-    global winTitle
+    global session
     CreateStatusMessage("Clicking X " . X . " Y " . Y,,,, false)
 
     color := "BackgroundBlue"
@@ -2023,7 +1831,8 @@ bboxAndPause_click(X, Y, doPause := False) {
     if GetKeyState("F4", "P") {
         Pause
     }
-    Gui, BoundingBox%winTitle%:Destroy
+    guiSuffix := session.get("winTitle")
+    Gui, BoundingBox%winTguiSuffixitle%:Destroy
 }
 
 ; Draws a rectangular bounding box overlay on the screen for debugging.
@@ -2038,25 +1847,27 @@ bboxDraw(X1, Y1, X2, Y2, color) {
     ;
     ; Creates a transparent GUI overlay with colored borders to show a region.
     ; ------------------------------------------------------------------------------
-    global winTitle
-    WinGetPos, xwin, ywin, Width, Height, %winTitle%
+    global session
+
+    guiSuffix := session.get("winTitle")
+    WinGetPos, xwin, ywin, Width, Height, %guiSuffix%
     BoxWidth := X2-X1
     BoxHeight := Y2-Y1
     ; Create a GUI
-    Gui, BoundingBox%winTitle%:+AlwaysOnTop +ToolWindow -Caption +E0x20
-    Gui, BoundingBox%winTitle%:Color, 123456
-    Gui, BoundingBox%winTitle%:+LastFound  ; Make the GUI window the last found window for use by the line below. (straght from documentation)
+    Gui, BoundingBox%guiSuffix%:+AlwaysOnTop +ToolWindow -Caption +E0x20
+    Gui, BoundingBox%guiSuffix%:Color, 123456
+    Gui, BoundingBox%guiSuffix%:+LastFound  ; Make the GUI window the last found window for use by the line below. (straght from documentation)
     WinSet, TransColor, 123456 ; Makes that specific color transparent in the gui
 
     ; Create the borders and show
-    Gui, BoundingBox%winTitle%:Add, Progress, x0 y0 w%BoxWidth% h2 %color%
-    Gui, BoundingBox%winTitle%:Add, Progress, x0 y0 w2 h%BoxHeight% %color%
-    Gui, BoundingBox%winTitle%:Add, Progress, x%BoxWidth% y0 w2 h%BoxHeight% %color%
-    Gui, BoundingBox%winTitle%:Add, Progress, x0 y%BoxHeight% w%BoxWidth% h2 %color%
+    Gui, BoundingBox%guiSuffix%:Add, Progress, x0 y0 w%BoxWidth% h2 %color%
+    Gui, BoundingBox%guiSuffix%:Add, Progress, x0 y0 w2 h%BoxHeight% %color%
+    Gui, BoundingBox%guiSuffix%:Add, Progress, x%BoxWidth% y0 w2 h%BoxHeight% %color%
+    Gui, BoundingBox%guiSuffix%:Add, Progress, x0 y%BoxHeight% w%BoxWidth% h2 %color%
 
     xshow := X1+xwin
     yshow := Y1+ywin
-    Gui, BoundingBox%winTitle%:Show, x%xshow% y%yshow% NoActivate
+    Gui, BoundingBox%guiSuffix%:Show, x%xshow% y%yshow% NoActivate
     Sleep, 100
 }
 
@@ -2074,7 +1885,9 @@ bboxAndPause_immage(X1, Y1, X2, Y2, pNeedleObj, vret := False, doPause := False)
     ;
     ; Shows green box if image found, red if not found.
     ; ------------------------------------------------------------------------------
-    global winTitle
+    global session
+
+    guiSuffix := session.get("winTitle")
     CreateStatusMessage("Searching " . pNeedleObj.Name . " returns " . vret,,,, false)
 
     if(vret>0) {
@@ -2092,7 +1905,7 @@ bboxAndPause_immage(X1, Y1, X2, Y2, pNeedleObj, vret := False, doPause := False)
     if GetKeyState("F4", "P") {
         Pause
     }
-    Gui, BoundingBox%winTitle%:Destroy
+    Gui, BoundingBox%guiSuffix%:Destroy
 }
 
 ; Wrapper for Gdip_ImageSearch with bounding box debugging and title bar offset adjustment.
@@ -2107,48 +1920,39 @@ Gdip_ImageSearch_wbb(pBitmapHaystack,pNeedle,ByRef OutputList=""
     ; Parameters: Same as Gdip_ImageSearch
     ; Returns: Result from Gdip_ImageSearch
     ; ------------------------------------------------------------------------------
-    global titleHeight, dbg_bbox, dbg_bboxNpause
-    yBias := titleHeight - 45
+    global session
+    yBias := 40 - 45
     vret := Gdip_ImageSearch(pBitmapHaystack,pNeedle.needle,OutputList,OuterX1,OuterY1+yBias,OuterX2,OuterY2+yBias,Variation,Trans,SearchDirection,Instances,LineDelim,CoordDelim)
-    if(dbg_bbox)
-        bboxAndPause_immage(OuterX1, OuterY1+yBias, OuterX2, OuterY2+yBias, pNeedle, vret, dbg_bboxNpause)
+    if(session.get("dbg_bbox"))
+        bboxAndPause_immage(OuterX1, OuterY1+yBias, OuterX2, OuterY2+yBias, pNeedle, vret, session.get("dbg_bboxNpause"))
     return vret
 }
 
 DirectlyPositionWindow() {
-    global Columns, winTitle, SelectedMonitorIndex, scaleParam, rowGap, titleHeight, MuMuv5
-
-    ; Make sure rowGap is defined
-    if (!rowGap)
-        rowGap := 100
+    global botConfig, session
+    
+    scaleParam := 283
+    rowGap := botConfig.get("RowGap")
 
     ; Get monitor information
-    SelectedMonitorIndex := RegExReplace(SelectedMonitorIndex, ":.*$")
+    SelectedMonitorIndex := RegExReplace(botConfig.get("SelectedMonitorIndex"), ":.*$")
     SysGet, Monitor, Monitor, %SelectedMonitorIndex%
 
     ; Calculate position based on instance number
-    Title := winTitle
+    Title := session.get("winTitle")
 
     instanceIndex := StrReplace(Title, "Main", "")
     if (instanceIndex = "")
         instanceIndex := 1
 
-    if (MuMuv5) {
-        titleHeight := 50
-    } else {
-        titleHeight := 45
-    }
+    titleHeight := 40
 
     borderWidth := 4 - 1
-    rowHeight := titleHeight + 489 + 4
-    currentRow := Floor((instanceIndex - 1) / Columns)
+    rowHeight := titleHeight + 492
+    currentRow := Floor((instanceIndex - 1) / botConfig.get("Columns"))
 
     y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
-    if (MuMuv5) {
-        x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * (scaleParam - borderWidth * 2))
-    } else {
-        x := MonitorLeft + (Mod((instanceIndex - 1), Columns) * scaleParam)
-    }
+    x := MonitorLeft + (Mod((instanceIndex - 1), botConfig.get("Columns")) * (scaleParam - borderWidth * 2))
 
     WinSet, Style, -0xC00000, %Title%
     WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%

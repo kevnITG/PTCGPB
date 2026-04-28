@@ -518,7 +518,7 @@ Local
 
 ChooseColors_HueSelect2(Glob, hCtrl, GuiEvent, EventInfo) {
 Local
-    Glob.Func.CoordMode.Call("Save")
+    Glob.Func.CoordMode.Call("Create_BeginNewAccountButton")
     MouseGetPos, X, Y
     PixelGetColor, Color, %X%, %Y%, RGB
     Color := SubStr(Color, 3)
@@ -536,7 +536,7 @@ Local
 
 ChooseColors_HueSelect(Glob, hCtrl, GuiEvent, EventInfo) {
 Local
-    Glob.Func.Settings.Call("Save")
+    Glob.Func.Settings.Call("Create_BeginNewAccountButton")
     Glob.Func.GuiControl.Call("Focus", Glob.Edit0.Hwnd)
 
     Glob.Func.GetWindowRect.Call(hCtrl, RECT, x1, y1, x2, y2)
@@ -583,7 +583,7 @@ Local
 
 ChooseColors_Slider(Glob, hCtrl, GuiEvent, EventInfo) {
 Local
-    Glob.Func.Settings.Call("Save")
+    Glob.Func.Settings.Call("Create_BeginNewAccountButton")
 
     Glob.Func.GuiControlGet.Call("", hCtrl, hUpDown:=0)
     DllCall("SendMessage", "Ptr",hUpDown, "Int",UDM_GETRANGE32 := 0x470, "PtrP",Min:=0, "PtrP",Max:=0)
@@ -635,7 +635,7 @@ Local
 
 ChooseColors_PickScr(Glob, hCtrl, GuiEvent, EventInfo) {
 Local
-    Glob.Func.Settings.Call("Save")
+    Glob.Func.Settings.Call("Create_BeginNewAccountButton")
 
     TW            := Glob.Hue.W
     Glob.Func.GetWindowRect.Call(hCtrl, RECT, x1, y1, x2, y2)
@@ -736,7 +736,7 @@ ChooseColors_Settings(Glob, Mode) {
 Local
     If ( Mode="Save" )
     {
-         Glob.Func.CoordMode.Call("Save")
+         Glob.Func.CoordMode.Call("Create_BeginNewAccountButton")
          Glob.Func.GetImage.Call(Glob.Gradient.Hwnd, Obm)
          Glob.Func.GuiControlGet.Call("", Glob.ColorName.Hwnd, ColorName)
          Glob.Func.GetHexColor.Call(CurrentColor)
@@ -859,7 +859,7 @@ Local
 
 ChooseColors_HistoryMenu(Glob) {
 Local
-    Glob.Func.CoordMode.Call("Save")
+    Glob.Func.CoordMode.Call("Create_BeginNewAccountButton")
     MouseGetPos, X, Y
     PixelGetColor, Color, %X%, %Y%, RGB
     Color := SubStr(Color, 3)
@@ -907,7 +907,7 @@ Local
 
 ChooseColors_PaletteMenu(Glob, hCtrl) {
 Local
-    Glob.Func.CoordMode.Call("Save")
+    Glob.Func.CoordMode.Call("Create_BeginNewAccountButton")
     MouseGetPos, X, Y
     PixelGetColor, Color, %X%, %Y%, RGB
     Color := SubStr(Color, 3)

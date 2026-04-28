@@ -1,0 +1,224 @@
+﻿fail_fetch:Failed to fetch release info.
+fail_url:Failed to find the ZIP download URL in the release.
+fail_version:Failed to retrieve version info.
+update_title:Update Available
+confirm_dl:Do you want to download the latest version?
+downloading:Downloading the latest version...
+dl_failed:Failed to download update.
+dl_complete:Download complete. Extracting...
+extract_failed:Failed to extract the update.
+installed:Update installed. Restarting...
+missing_files:Failed to find the extracted contents.
+cancel:The update was canceled.
+up_to_date:You are running the latest version
+
+title_set:You can modify settings here.
+btn_reroll:Reroll Settings
+btn_system:System Settings
+btn_pack:Pack Settings
+btn_save:Save for Trade
+btn_discord:Discord Settings
+btn_download:Download Settings
+btn_main:Main Page
+
+title_main:Arturo's PTCGP BOT
+btn_arrange:Arrange
+btn_coffee:Buy Me a Coffee
+btn_join:Join Discord
+btn_mumu:Launch all Mumu
+btn_balance:Balance XMLs
+btn_start:Start Bot
+btn_update:Check for Update
+btn_setting:Settings Page
+btn_return:↩️ Return
+
+btn_ToolTip:Help
+btn_Language:Language
+languageNotice:PTCGPB.ahk needs to reload in order to switch the language. Click 'Yes' to reload, or 'No' to return to the settings.
+btn_reload:Reload
+btn_bg_Off:Background Off
+btn_bg_On:Background On
+btn_theme_Dark:Dark
+btn_theme_Light:Light
+
+FriendIDLabel:Your Friend ID
+InstanceSettings:Instance Settings
+BotSettings:Bot Settings
+TimeSettings:Time Settings
+PackHeading:Pack Selection
+CardDetection:InjectWP Card Detection
+SaveForTrade:Save for Trade
+GroupSettings:Group Settings
+DiscordSettingsHeading:Discord Settings
+btn_OK:OK
+btn_Cancel:Cancel
+HeartbeatSettingsSubHeading:Heartbeat Settings
+
+Txt_Instances:Instances:
+Txt_InstanceStartDelay:Start Delay (s):
+Txt_Columns:Columns:
+Txt_runMain:Run Main:
+Txt_AccountName:New Bot Names:
+Txt_autoUseGPTest:Auto GPTest ():
+Txt_Delay:Global Delay (ms):
+Txt_WaitTime:Wait for Main (s):
+Txt_SwipeSpeed:Swipe Speed (ms):
+Txt_slowMotion:Base Game Compatibility
+
+Txt_Monitor:Monitor:
+Txt_Scale:Scale:
+Txt_RowGap:Row Gap:
+Txt_FolderPath:MuMuPlayer12 Folder Path:
+Txt_OcrLanguage:OCR:
+Txt_ClientLanguage:Client
+Txt_InstanceLaunchDelay:Launch MuMu Delay:
+Txt_autoLaunchMonitor:Auto-open Monitor
+ExtraSettingsHeading:Extra Settings
+Txt_applyRoleFilters:Role-Based Filters
+Msg_UnopenedPackTitle:GP Test: Unopened Pack mode
+Msg_UnopenedPack_p1:Only use Unopened Pack mode if this account still has at least one booster pack that you haven't opened.
+Msg_UnopenedPack_p2:Friend removal will trigger the rate limit
+Msg_UnopenedPack_p3:If the account still has that booster pack, you land on the booster packs screen instead of Home. If it does not, you land on Home and Wonderpicks refresh.
+Msg_UnopenedPack_p4:Tap OK to confirm.
+Txt_debugMode:Debug
+Txt_tesseractOption:Tesseract
+Txt_statusMessage:Status Messages
+Txt_TesseractPath:Tesseract Path:
+Txt_SystemSettings:System Settings
+
+Txt_MinStars:Min. 2★:
+Txt_ShinyMinStars:Min. 2★ (Shiny Packs):
+Txt_minStarsEnabled:Set all Min. 2★
+Txt_DeleteMethod:Method:
+Txt_InjectMaxValue:Max:
+Txt_InjectMinValue:Min:
+Txt_InjectRange:Range:
+Txt_packMethod:1 Pack Method
+Txt_nukeAccount:Menu Delete
+Txt_spendHourGlass:Spend All Hourglass
+Txt_openExtraPack:Open Extra Pack
+Txt_claimSpecialMissions:Claim Special Missions
+SortByText:Sort By:
+
+Txt_MegaShine:Mega Shine
+Txt_PaldeanWonders:Paldean Wonders
+Txt_Parade:Parade
+Txt_CrimsonBlaze:Crimson Blaze
+Txt_MegaGyarados:Mega Gyarados
+Txt_MegaBlaziken:Mega Blaziken
+Txt_MegaAltaria:Mega Altaria
+Txt_Deluxe:Deluxe
+Txt_Springs:Springs
+Txt_HoOh:Ho-Oh
+Txt_Lugia:Lugia
+Txt_Eevee:Eevee
+Txt_Buzzwole:Extradimensional Crisis
+Txt_Solgaleo:Solgaleo
+Txt_Lunala:Lunala
+Txt_Shining:Shining
+Txt_Arceus:Arceus
+Txt_Palkia:Palkia
+Txt_Dialga:Dialga
+Txt_Pikachu:Pikachu
+Txt_Charizard:Charizard
+Txt_Mewtwo:Mewtwo
+Txt_Mew:Mew
+AllPack:🔎Show all packs
+
+Txt_FullArtCheck:Single Full Art 2★
+Txt_TrainerCheck:Single Trainer 2★
+Txt_RainbowCheck:Single Rainbow 2★
+Txt_PseudoGodPack:Double 2★
+Txt_CheckShinyPackOnly:Only for Shiny Packs
+Txt_CrownCheck:Save Crowns
+Txt_ShinyCheck:Save Shiny
+Txt_ImmersiveCheck:Save Immersives
+Txt_InvalidCheck:Ignore Invalid Packs
+
+Txt_s4tEnabled:Enable Save for Trade
+Txt_S4TEnabled:S4T: Enabled
+Txt_S4TDisabled:Disabled
+Txt_s4tSilent:Silent (No Discord Msg)
+Txt_s4tWP:Wonder Pick
+Txt_s4tWPMinCards:Min. Cards:
+S4TDiscordSettingsSubHeading:S4T Discord Settings
+Txt_s4tSendAccountXml:Send Account XML
+
+Txt_sendAccountXml:Send Account XML
+Txt_heartBeat:Discord Heartbeat
+hbName:Name:
+hbDelay:Heartbeat Delay (min):
+
+Txt_showcaseEnabled:Collect 5 Daily Shop Tickets
+Txt_Disabled:Disabled
+
+stop_confirm_title:Stop Scripts
+stop_immediately:Stop immediately
+stop_wait_end:Wait for end of this run
+stop_kill_mumu:Stop and Kill MuMu
+stop_remember_preference:Remember my preference and don't ask me again
+
+RecommandSwipeSpeedNoModMenu:→ 650 is recommended if the 'No Speedmod Menu' checkbox is checked.
+RecommandSwipeSpeedUseModMenu:→ 250 is recommended if the 'No Speedmod Menu' checkbox is unchecked.
+HideSwipeToolTip:(This message disappears when you click outside the input field.)
+
+Title:The project is now licensed under CC BY-NC 4.0
+Content:The original intention of this project was not for it 
+to be used for paid services even those disguised as 'donations.' 
+I hope people respect my wishes and those of the community.
+`nThe project is now licensed under CC BY-NC 4.0, which allows you to use, modify, 
+and share the software only for non-commercial purposes. Commercial use, 
+including using the software to provide paid services 
+or selling it (even if donations are involved), is not allowed under this license. 
+The new license applies to this and all future releases.
+
+Notice:Proxy detected. Switched to proxy version.
+
+Error_BotPathTooLong:The bot folder path is too long 
+or contains white spaces. 
+Try moving it to C:\PTCGPB or D:\PTCGPB
+Confirm_SelectedMethod:Selected Method: 
+Confirm_RangeValue:Range Value: 
+Confirm_MaxPackCount:Maximum Pack Count: 
+Confirm_MinPackCount:Minimum Pack Count: 
+Confirm_SelectedPacks:Selected Packs: 
+Confirm_AdditionalSettings:Additional settings: 
+Confirm_1PackMethod:• 1 Pack Method
+Confirm_MenuDelete:• Menu Delete
+Confirm_openExtraPack:• Open Extra Pack
+Confirm_SpendHourGlass:• Spend Hourglass
+Confirm_ClaimMissions:• Claim Special Missions
+Confirm_SortBy:• Sort By:
+Confirm_None:None
+Confirm_CardDetection:Card Detection: 
+Confirm_SingleFullArt:• Single Full Art
+Confirm_SingleTrainer:• Single Trainer
+Confirm_SingleRainbow:• Single Rainbow
+Confirm_Double2Star:• Double 2 ★
+Confirm_SaveCrowns:• Save Crowns
+Confirm_SaveShiny:• Save Shiny
+Confirm_SaveImmersives:• Save Immersives
+Confirm_IgnoreInvalid:• Ignore Invalid Packs
+Confirm_RowGap:Row Gap: 
+Confirm_SaveForTrade:Save for Trade
+Confirm_Enabled:Enabled
+Confirm_Disabled:Disabled
+Confirm_SilentPings:Silent Pings
+Confirm_Gholdengo:Gholdengo
+Confirm_WonderPick:Wonder Pick
+Confirm_MinCards:cards minimum
+Confirm_XMLWarning:⚠️ WARNING: Send Account XML is enabled. This setting is only recommended to be used solo. Do not use it in groups as your accounts will be shared to other members of your group.
+Confirm_StartBot:Click 'Yes' to START THE BOT with these settings.
+Click 'No' to CHANGE settings.
+
+Help_Shortcuts:Keyboard Shortcuts: 
+Help_FunctionKeys:Function Keys: 
+Help_F4:Show This Help Menu
+Help_ShiftF7:Send All Offline Status & Exit
+Help_Interface:Interface Settings: 
+Help_CurrentTheme:Current Theme: 
+Help_BackgroundImage:Background Image: 
+Help_Enabled:Enabled
+Help_Disabled:Disabled
+Help_ToggleTheme:Toggle theme with the button at the top of the window.
+Help_ToggleBG:Toggle background image with the BG button.

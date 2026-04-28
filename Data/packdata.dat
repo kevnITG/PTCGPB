@@ -1,0 +1,37 @@
+# Pack list in Home screen
+Home:Left|Parade,Middle|MegaShine,Right|PaldeanWonders
+
+# Pack data(Structure)
+# PackID, Series Type, Number of packs in the set, Location of extension window, y Pos, Scroll Type
+# A Series
+Pack:Mewtwo|A|3|Col-First-Middle|405|1
+Pack:Charizard|A|3|Col-First-Left|405|1
+Pack:Pikachu|A|3|Col-First-Right|405|1
+Pack:Mew|A|1|Col-Second|238|1
+Pack:Dialga|A|2|Col-First-Left|238|1
+Pack:Palkia|A|2|Col-First-Right|238|1
+Pack:Arceus|A|1|Col-Second|107|1
+Pack:Shining|A|1|Col-First|107|1
+Pack:Solgaleo|A|2|Col-Second-Left|440|2
+Pack:Lunala|A|2|Col-Second-Right|440|2
+Pack:Buzzwole|A|1|Col-First|440|2
+Pack:Eevee|A|1|Col-Second|434|0
+Pack:HoOh|A|2|Col-First-Left|434|0
+Pack:Lugia|A|2|Col-First-Right|434|0
+Pack:Springs|A|1|Col-Second|298|0
+Pack:Deluxe|A|1|Col-First|298|0
+
+# B Series
+Pack:MegaGyarados|B|3|Col-First-Left|405|1
+Pack:MegaBlaziken|B|3|Col-First-Middle|405|1
+Pack:MegaAltaria|B|3|Col-First-Right|405|1
+Pack:CrimsonBlaze|B|1|Col-Second|434|0
+Pack:Parade|B|1|Col-First|434|0
+Pack:PaldeanWonders|B|1|Col-Second|298|0
+Pack:MegaShine|B|1|Col-First|298|0
+
+# Modify PulsingAura
+#Pack:PulsingAura|B|1|Col-First|298|0
+
+# DO NOT Delete End
+---END---
