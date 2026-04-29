@@ -118,7 +118,7 @@ AnalysisBorder(totalCardsInPack) {
 
             if(isExistLoadingBox = 0){
                 if(isDevelopment){
-                    getDevelopmentScreenShot(totalCardsInPack, pBitmap)
+                    ;getDevelopmentScreenShot(totalCardsInPack, pBitmap)
                 }
                 break
             }
@@ -136,8 +136,6 @@ AnalysisBorder(totalCardsInPack) {
             cardRarityName := Checker.RarityName
 
             isFound := Checker.Search(pBitmap, totalCardsInPack, cardIndex)
-            ;if(cardRarityName = "fullart")
-                ;LogToFile(A_ScriptName . " Fullart check - Pos: " . cardIndex . ", Found: " . isFound, "Development.txt")
             
             if (isFound) {
                 if(currentPackInfo["TypeCount"][cardRarityName] = "")

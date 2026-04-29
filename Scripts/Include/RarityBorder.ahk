@@ -34,7 +34,6 @@ class RarityBorder {
         Loop, Files, %maskFolder%\Mask_%prefix%*.png, F
         {
             pMask := Gdip_CreateBitmapFromFile(A_LoopFileFullPath)
-            ;LogToFile(A_ScriptName . " File check: " . A_LoopFileFullPath . "Result: " . pMask, "Development.txt")
             if (!pMask)
                 continue
 
@@ -55,7 +54,6 @@ class RarityBorder {
                     }
                 }
             }
-            ;LogToFile(A_ScriptName . " Pixel check(" . pMask . ") - MaxIndex: " . pixels.MaxIndex(), "Development.txt")
             Gdip_DisposeImage(pMask)
             
             if (pixels.MaxIndex() > 0)
@@ -166,7 +164,6 @@ class RarityBorder {
             LockX := cardX
             LockY := cardY
         }
-        ;LogToFile(A_ScriptName . " Mask check(" . pBitmap . ") - " . LockX . ", " . LockY, "Development.txt")
 
         Gdip_LockBits(pBitmap, LockX, LockY, 76, 105, Stride, Scan0, BitmapData)
 
@@ -222,7 +219,6 @@ border3Diamond := new RarityBorder("3diamond", "3diamond")
 border1Star := new RarityBorder("1star", "1star")
 borderTrainer := new RarityBorder("trainer", "trainer")
 borderRainbow := new RarityBorder("rainbow", "rainbow")
-;borderFullArt := new RarityBorder("fullart", "fullart", "ANY")
 borderFullArt := new RarityBorder("fullart", "fullart", "MASK")
 borderFullArt.LoadMaskReferences(A_ScriptDir . "\Mask")
 borderImmersive := new RarityBorder("immersive", "immersive")
