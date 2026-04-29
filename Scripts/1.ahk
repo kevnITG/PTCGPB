@@ -536,10 +536,6 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             if(session.get("cantOpenMorePacks"))
                 Goto, EndOfRun
             PackOpening() ;8
-            if(cantOpesession.get("cantOpenMorePacks")nMorePacks || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
-                Goto, EndOfRun
-
-            HourglassOpening(true) ;9
             if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
 
