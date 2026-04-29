@@ -336,7 +336,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
                 if(botConfig.get("waitForEligibleAccounts") = 1) {
                     ; Wait for eligible accounts to become available
                     ; Simple approach - just show wait message and sleep
-                    CreateStatusMessage("No eligible accounts available for " . botConfig.get("deleteMethod") . ".`nWaiting 1 minute before checking again...", "", 0, 0, false)
+                    CreateStatusMessage("No eligible accounts available for " . botConfig.get("deleteMethod") . ".`nWaiting 1 minute before checking again...", "NoEligibleAccount", 0, 0, false)
                     LogToFile("No eligible accounts available for " . botConfig.get("deleteMethod") . ". Waiting 1 minute...")
 
                     ; Check stopToggle immediately, then wait 1 minute before checking again
@@ -354,6 +354,10 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
 
             ; If we reach here, we have a valid loaded account for injection
             LogToFile("Successfully loaded account for injection: " . session.get("accountFileName"))
+            guiName := "NoEligibleAccount" . session.get("scriptName")
+            Gui, %guiName%:+LastFoundExist
+            if WinExist()
+                Gui, %guiName%:Destroy
         }
 
         ; Download friend IDs for injection methods when group reroll is enabled
@@ -516,9 +520,6 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
                 Goto, EndOfRun
 
             SelectPack("HGPack")
-            if(session.get("cantOpenMorePacks"))
-                Goto, EndOfRun
-
             PackOpening() ;6
             if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
@@ -533,30 +534,28 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
                 Goto, EndOfRun
 
             SelectPack("HGPack")
-            if(session.get("cantOpenMorePacks"))
-                Goto, EndOfRun
             PackOpening() ;8
-            if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
+            if(session.get("cantOpenMorePacks")nMorePacks || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
 
             HourglassOpening(true) ;9
             if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
+            
             HourglassOpening(true) ;10
             if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
+
             HourglassOpening(true) ;11
             if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
+
             HourglassOpening(true) ;12
             if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
+
             GoToMain()
-            if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
-                Goto, EndOfRun
             SelectPack("HGPack")
-            if(session.get("cantOpenMorePacks"))
-                Goto, EndOfRun
             PackOpening() ;13
             if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
@@ -1793,7 +1792,7 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
     cropW := 240
     cropH := 227
 
-    if (fileName = "FRIENDCODE"){
+    if (fileType = "FRIENDCODE"){
         cropX := 18
         cropY := 66
         cropW := 240
@@ -1853,8 +1852,8 @@ ToggleStop() {
     global botConfig, session, dictionaryData
 
     ; Check if user has a saved preference for single instance stop
-    settingsPath := A_ScriptDir . "\..\Settings.ini"
-    IniRead, savedStopPreferenceSingle, %settingsPath%, UserSettings, stopPreferenceSingle, none
+    botConfig.loadIniSectionFromSettingsFile("Extra")
+    savedStopPreferenceSingle := (botConfig.get("stopPreferenceSingle") = "") ? "none" : botConfig.get("stopPreferenceSingle")
 
     if (savedStopPreferenceSingle != "none" && savedStopPreferenceSingle != "ERROR" && savedStopPreferenceSingle != "") {
         ; Execute the saved preference directly without showing popup
@@ -1892,8 +1891,8 @@ ToggleStopAll() {
     global botConfig, session, dictionaryData
 
     ; Check if user has a saved preference
-    settingsPath := A_ScriptDir . "\..\Settings.ini"
-    IniRead, savedStopPreference, %settingsPath%, UserSettings, stopPreference, none
+    botConfig.loadIniSectionFromSettingsFile("Extra")
+    savedStopPreference := (botConfig.get("stopPreference") = "") ? "none" : botConfig.get("stopPreference")
 
     if (savedStopPreference != "none" && savedStopPreference != "ERROR" && savedStopPreference != "") {
         ; Execute the saved preference directly without showing popup
@@ -1939,8 +1938,8 @@ StopImmediatelySingle:
     targetHwnd := session.get("RememberStopPreferenceSingleHwnd")    
     GuiControlGet, RememberStopPreferenceSingle, , %targetHwnd%
     if (RememberStopPreferenceSingle) {
-        settingsPath := A_ScriptDir . "\..\Settings.ini"
-        IniWrite, immediate, %settingsPath%, Extra, stopPreferenceSingle
+        botConfig.set("stopPreferenceSingle", "immediate", "Extra")
+        botConfig.saveConfigToSettings("Extra")
     }
     Gui, StopConfirm:Destroy
     CleanupBeforeExit()
@@ -1951,8 +1950,8 @@ StopWaitEndSingle:
     targetHwnd := session.get("RememberStopPreferenceSingleHwnd")    
     GuiControlGet, RememberStopPreferenceSingle, , %targetHwnd%
     if (RememberStopPreferenceSingle) {
-        settingsPath := A_ScriptDir . "\..\Settings.ini"
-        IniWrite, wait_end, %settingsPath%, Extra, stopPreferenceSingle
+        botConfig.set("stopPreferenceSingle", "wait_end", "Extra")
+        botConfig.saveConfigToSettings("Extra")
     }
     Gui, StopConfirm:Destroy
     session.set("stopToggle", true)
@@ -1969,8 +1968,8 @@ StopImmediatelyAll:
     targetHwnd := session.get("RememberStopPreferenceHwnd")    
     GuiControlGet, RememberStopPreference, , %targetHwnd%
     if (RememberStopPreference) {
-        settingsPath := A_ScriptDir . "\..\Settings.ini"
-        IniWrite, immediate, %settingsPath%, Extra, stopPreference
+        botConfig.set("stopPreference", "immediate", "Extra")
+        botConfig.saveConfigToSettings("Extra")
     }
     Gui, StopConfirmAll:Destroy
     StopAllInstances()
@@ -1980,8 +1979,8 @@ StopWaitEndAll:
     targetHwnd := session.get("RememberStopPreferenceHwnd")    
     GuiControlGet, RememberStopPreference, , %targetHwnd%
     if (RememberStopPreference) {
-        settingsPath := A_ScriptDir . "\..\Settings.ini"
-        IniWrite, wait_end, %settingsPath%, Extra, stopPreference
+        botConfig.set("stopPreference", "wait_end", "Extra")
+        botConfig.saveConfigToSettings("Extra")
     }
     Gui, StopConfirmAll:Destroy
     ; Signal all other instances to stop after their current run

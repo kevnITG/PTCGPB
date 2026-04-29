@@ -42,8 +42,8 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.6.2"
-   ,modVersion := "v5.4"
+   ,localVersion := "v9.6.3"
+   ,modVersion := "v5.5"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -1541,7 +1541,7 @@ BalanceXMLs:
         }
         
         Tooltip
-        MsgBox, 0x40000, % "XML Balance,Done balancing XMLs between " botConfig.get("Instances") " instances`n" counter " XMLs past 24 hours per instance"
+        MsgBox, 0x40000, XML Balance, % "Done balancing XMLs between " botConfig.get("Instances") " instances`n" counter " XMLs past 24 hours per instance"
     }
 return
 
