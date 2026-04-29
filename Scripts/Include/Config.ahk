@@ -100,10 +100,11 @@
             this.set(configItemName, value)
         }
 
-        return value
+        return Trim(value)
     }
 
     set(configItemName, configValue, sectionName := "UserSettings"){
+        configValue := Trim(configValue)
         if(sectionName != "UserSettings"){
             this.botConfigs[sectionName][configItemName] := configValue
             return
