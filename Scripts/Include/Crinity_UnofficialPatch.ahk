@@ -1,4 +1,4 @@
-; FindOrLoseImage EL = 0, Found Mode, Found image - Return xy pos / Not Found image - Return 0
+﻿; FindOrLoseImage EL = 0, Found Mode, Found image - Return xy pos / Not Found image - Return 0
 ; FindOrLoseImage EL = 1, Loose Mode, Found image - Return 0 / Not Found image - Return 1
 ; ====================================================================
 ; #Include %A_ScriptDir%\Include\Crinity_UnofficialPatch.ahk
@@ -174,12 +174,24 @@ startPreProcess(methodType){
 
             ;processPrivacyAgreement()
         }
+
+        Path = %imagePath%Button.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 95, 350, 195, 530, 80)
+        if(vRet = 1){
+            if (InStr(vPosXY, ",")) {
+                StringSplit, pos, vPosXY, `,
+                adbClick_wbb(pos1, pos2)
+            } else
+                adbClick(137, 365)
+        }
+
         DelayH(20)
     
         Gdip_DisposeImage(pBitmap)
 
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-        CreateStatusMessage("Pre-processing...(" . failSafeTime "/90 seconds)`nFinding: " . findImageName)
+        CreateStatusMessage("Entering...(" . failSafeTime "/90 seconds)`nFinding: " . findImageName)
     }
 }
 

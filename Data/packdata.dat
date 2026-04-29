@@ -1,5 +1,5 @@
-# Pack list in Home screen
-Home:Left|PaldeanWonders,Middle|PulsingAura,Right|MegaShine
+﻿# Pack list in Home screen
+Home:Left|Mewtwo,Middle|PulsingAura,Right|MegaShine
 
 # Pack data(Structure)
 # PackID, Series Type, Number of packs in the set, Location of extension window, y Pos, Scroll Type
@@ -27,7 +27,7 @@ Pack:MegaBlaziken|B|3|Col-Second-Middle|405|2
 Pack:MegaAltaria|B|3|Col-Second-Right|405|2
 Pack:CrimsonBlaze|B|1|Col-First|434|2
 Pack:Parade|B|1|Col-Second|434|0
-Pack:PaldeanWonders|B|1|Col-First|298|0
+Pack:PaldeanWonders|B|1|Col-First|434|0
 Pack:MegaShine|B|1|Col-Second|298|0
 Pack:PulsingAura|B|1|Col-First|298|0
 

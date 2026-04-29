@@ -1,4 +1,4 @@
-global ScriptDir := RegExReplace(A_LineFile, "\\[^\\]+$"), LogsDir := ScriptDir . "\..\..\Logs"
+﻿global ScriptDir := RegExReplace(A_LineFile, "\\[^\\]+$"), LogsDir := ScriptDir . "\..\..\Logs"
 global Debug, discordWebhookURL, discordUserId, sendAccountXml
 global DEFAULT_STATUS_MESSAGE := "..."
 
@@ -6,8 +6,18 @@ global DEFAULT_STATUS_MESSAGE := "..."
 settingsPath := ScriptDir . "\..\..\Settings.ini"
 
 IniRead, discordWebhookURL, %settingsPath%, UserSettings, discordWebhookURL
+if (discordWebhookURL = "ERROR" || discordWebhookURL = "")
+    IniRead, discordWebhookURL, %settingsPath%, Wonderpick, discordWebhookURL
+if (discordWebhookURL = "ERROR")
+    discordWebhookURL := ""
 IniRead, discordUserId, %settingsPath%, UserSettings, discordUserId
+if (discordUserId = "ERROR" || discordUserId = "")
+    IniRead, discordUserId, %settingsPath%, Wonderpick, discordUserId
+if (discordUserId = "ERROR")
+    discordUserId := ""
 IniRead, sendAccountXml, %settingsPath%, UserSettings, sendAccountXml, 0
+if (sendAccountXml = "ERROR" || sendAccountXml = "")
+    IniRead, sendAccountXml, %settingsPath%, Wonderpick, sendAccountXml, 0
 IniRead, Debug, %settingsPath%, UserSettings, debugMode, 0
 
 ; Enable debugging to get more status messages and logging.

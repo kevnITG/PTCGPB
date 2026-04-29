@@ -1,4 +1,4 @@
-;===============================================================================
+﻿;===============================================================================
 ; FriendManager.ahk - Friend Management Functions
 ;===============================================================================
 ; This file contains functions for managing in-game friends.
@@ -70,13 +70,30 @@ AddFriends(renew := false, getFC := false) {
         CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
     }
     
-    GoToFriendsList(true)
+    GoToFriendsList(true, false)
 
     if(getFC) {
         Delay(3)
-        adbClick_wbb(210, 342)
-        Delay(3)
-        session.set("friendCode", Clipboard)
+
+        Clipboard := ""
+
+        friendCode := ""
+        Loop, 3 {
+            adbClick_wbb(214, 200)
+            ClipWait, 2
+            copiedValue := RegExReplace(Clipboard, "\D", "")
+
+            if (RegExMatch(copiedValue, "^\d{14,17}$")) {
+                friendCode := copiedValue
+                break
+            }
+
+            Clipboard := ""
+            Delay(1)
+        }
+        Delay(1)
+
+        session.set("friendCode", friendCode)
         return session.get("friendCode")
     }
     else {
@@ -287,7 +304,7 @@ RemoveFriends() {
         CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
     }
 
-    GoToFriendsList()
+    GoToFriendsList(false, true)
     Delay(2)
     FindImageAndClick("Friend_FriendRequestsSubMenu", 167, 467, , 10)
     Delay(2)
@@ -424,16 +441,16 @@ ReEnterSocial(prevAction){
     }
 
     if(prevAction = "ADD"){
-        GoToFriendsList(true)
+        GoToFriendsList(true, true)
         FindImageAndClick("Friend_SearchFriendWindowCancelButtonCorner", 75, 440)
         FindImageAndClick("Friend_FriendIDInputReady", 138, 265)
     }
     else if(prevAction = "CLEARALL"){
-        GoToFriendsList()
+        GoToFriendsList(false, true)
         FindImageAndClick("Friend_FriendRequestsSubMenu", 167, 467, , 10)
     }
     else if(prevAction = "REMOVE"){
-        GoToFriendsList()
+        GoToFriendsList(false, true)
     }
 }
 ;-------------------------------------------------------------------------------
@@ -505,7 +522,7 @@ EraseInput(num := 0, total := 0) {
     }
 }
 
-GoToFriendsList(isKeepSearch := false) {
+GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
     global session
 
     session.set("failSafe", A_TickCount)
@@ -542,7 +559,8 @@ GoToFriendsList(isKeepSearch := false) {
         }
         else{
             ; For Tutorial Window
-            adbClick_wbb(170, 438)
+            if(!skipTutorialProc)
+                adbClick_wbb(170, 438)
         }
         Delay(0.25)
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000

@@ -1,4 +1,4 @@
-#SingleInstance on
+﻿#SingleInstance on
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0
 SetBatchLines, -1
@@ -11,11 +11,15 @@ CoordMode, Pixel, Screen
 #Include Session.ahk
 #Include Data.ahk
 #Include ExtraConfig.ahk
+
+#Include Gdip_All.ahk
+#Include Gdip_Imagesearch.ahk
+
+pToken := Gdip_Startup()
+
 #Include Utils.ahk
 #Include Logging.ahk
 #Include ADB.ahk
-#Include Gdip_All.ahk
-#Include Gdip_Imagesearch.ahk
 #Include OCR.ahk
 #Include Gdip_Extra.ahk
 #Include Database.ahk
@@ -29,8 +33,6 @@ CoordMode, Pixel, Screen
 #Include RarityBorder.ahk
 #Include SpecialEvent.ahk
 #Include Crinity_UnofficialPatch.ahk
-
-pToken := Gdip_Startup()
 
 ; Allocate and hide the console window to reduce flashing
 DllCall("AllocConsole")
@@ -223,11 +225,11 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
     CreateStatusMessage("Account is stuck! Restarting and unfriending...")
     session.set("friended", true)
     CreateStatusMessage("Stuck account still has friends. Unfriending accounts...")
-    FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000) 
+    FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000)
     if(session.get("setSpeed") = 3)
         FindImageAndClick("Common_SpeedMod3x", 187, 172)
     else
-        FindImageAndClick("Common_SpeedMod2x", 106, 173) 
+        FindImageAndClick("Common_SpeedMod2x", 106, 173)
     adbClick_wbb(51, 297)
     Delay(1)
     startPreProcess(botConfig.get("deleteMethod"))
@@ -310,8 +312,10 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             session.set("loadedAccount", false)
         }
 
-        if(session.get("dateChange"))
+        if(session.get("dateChange")){
             botConfig.set("showcaseLikes", 5, "Extra")
+            botConfig.saveConfigToSettings("Extra")
+        }
 
         ; Only refresh account lists if we're not in injection mode or if no account is loaded
         ; This prevents constant list regeneration during injection
@@ -332,13 +336,14 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
                 if(botConfig.get("waitForEligibleAccounts") = 1) {
                     ; Wait for eligible accounts to become available
                     ; Simple approach - just show wait message and sleep
-                    CreateStatusMessage("No eligible accounts available for " . botConfig.get("deleteMethod") . ". Waiting 1 minute before checking again...", "", 0, 0, false)
+                    CreateStatusMessage("No eligible accounts available for " . botConfig.get("deleteMethod") . ".`nWaiting 1 minute before checking again...", "", 0, 0, false)
                     LogToFile("No eligible accounts available for " . botConfig.get("deleteMethod") . ". Waiting 1 minute...")
 
                     ; Check stopToggle immediately, then wait 1 minute before checking again
-                    if (session.get("stopToggle"))
+                    if (session.get("stopToggle")){
                         CleanupBeforeExit()
                         ExitApp
+                    }
                     Sleep, 60000  ; 1 minute
                     continue  ; Go back to start of loop to check again
                 } else {
@@ -361,12 +366,11 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             }
         }
 
-        
-        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000) 
+        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000)
         if(session.get("setSpeed") = 3)
             FindImageAndClick("Common_SpeedMod3x", 187, 172)
         else
-            FindImageAndClick("Common_SpeedMod2x", 106, 173) 
+            FindImageAndClick("Common_SpeedMod2x", 106, 173)
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -397,6 +401,19 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
         session.set("friendsAdded", AddFriends())
 
         if(botConfig.get("deleteMethod") = "Inject Wonderpick 96P+"){
+            if(session.get("friendsAdded") == false){
+                Loop {
+                    if(FindOrLoseImage("Friend_BottomDarkHomeIcon", 0))
+                        break
+                    else{
+                        adbClick_wbb(40, 516)
+                        Delay(0.1)
+                        adbClick_wbb(175, 445)
+                        DelayH(500)
+                    }
+                }
+            }
+
             if(!session.get("isReloadAfterAddFriends"))
                 GoToMain()
             else{
@@ -405,7 +422,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             }
 
         }
-        
+
         SelectPack("First")
         if(session.get("cantOpenMorePacks"))
             Goto, MidOfRun
@@ -526,52 +543,21 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
 
-            GoToMain()
-            HomeAndMission()
-            if(session.get("missionDoneList")["beginnerMissionsDone"])
-                Goto, EndOfRun
-
-            SelectPack("HGPack")
-            if(session.get("cantOpenMorePacks"))
-                Goto, EndOfRun
-            PackOpening() ;10
+            HourglassOpening(true) ;9
             if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
-
+            HourglassOpening(true) ;10
+            if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
+                Goto, EndOfRun
             HourglassOpening(true) ;11
             if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
-
-            ; Extended mission handling for Inject Missions
-            if(session.get("injectMethod") && session.get("loadedAccount") && botConfig.get("deleteMethod") = "Inject Missions") {
-                GoToMain()
-                HomeAndMission()
-                if(session.get("missionDoneList")["beginnerMissionsDone"])
-                    Goto, EndOfRun
-
-                SelectPack("HGPack")
-                if(session.get("cantOpenMorePacks"))
-                    Goto, EndOfRun
-                PackOpening() ;12
-                if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
-                    Goto, EndOfRun
-
-                HourglassOpening(true) ;13
-                if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
-                    Goto, EndOfRun
-            }
-
-            GoToMain()
-            HomeAndMission(1)
-            SelectPack("HGPack")
-            if(session.get("cantOpenMorePacks"))
-                Goto, EndOfRun
-            PackOpening() ;12
+            HourglassOpening(true) ;12
             if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
                 Goto, EndOfRun
-
             GoToMain()
-            HomeAndMission(1)
+            if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
+                Goto, EndOfRun
             SelectPack("HGPack")
             if(session.get("cantOpenMorePacks"))
                 Goto, EndOfRun
@@ -591,7 +577,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             ReceiveGift()
 
             session.get("missionDoneList")["receivedGiftDone"] := 0
-            
+
             if (session.get("injectMethod") && session.get("loadedAccount"))
                 setMetaData()
         }
@@ -630,11 +616,13 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
         if (session.get("injectMethod") && session.get("friended") && !session.get("keepAccount")) {
             RemoveFriends()
         }
-        
+
         ; Showcase likes
+        botConfig.loadIniSectionFromSettingsFile("Extra")
         if (botConfig.get("showcaseLikes") > 0 && botConfig.get("showcaseEnabled") = 1) {
             showcaseNumber := botConfig.get("showcaseLikes") - 1
             botConfig.set("showcaseLikes", showcaseNumber, "Extra")
+            botConfig.saveConfigToSettings("Extra")
 
             FindImageAndClick("Common_ActivatedSocialInMainMenu", 143, 518, , 500)
             showcaseLikes()
@@ -659,13 +647,13 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
         totalSeconds_local := Round((A_TickCount - session.get("rerollStartTime_local")) / 1000) ; Total time in seconds
         session.set("avgtotalSeconds", Round(totalSeconds_local / session.get("rerolls_local"))) ; Total time in seconds
         session.set("aminutes", Floor(session.get("avgtotalSeconds") / 60)) ; Average minutes
-+       session.set("aseconds", Mod(session.get("avgtotalSeconds"), 60)) ; Average remaining seconds
+        session.set("aseconds", Mod(session.get("avgtotalSeconds"), 60)) ; Average remaining seconds
         updateTotalTime()
 
         session.set("VRAMUsage", GetVRAMByScriptName(session.get("scriptName")))
 
         ; Add total time, Logging.ahk #31: guiheight := 30
-        
+
         ; Display the times
         CreateStatusMessage(generateStatusText(), "AvgRuns", 0, 605, false, true)
 
@@ -822,7 +810,7 @@ HomeAndMission(homeonly := 0, completeSecondMisson=false) {
 
                 if(FindOrLoseImage("Create_SoloBattleMissionIconInDetail", 0, failSafeTime)) {
                     session.get("missionDoneList")["beginnerMissionsDone"] := 1
-                    
+
                     if(session.get("injectMethod") && session.get("loadedAccount"))
                         setMetaData()
                     return
@@ -943,11 +931,6 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
             Delay(1)
         }
     }
-    /*
-    if(imageName = "CommunityShowcase") {
-        TradeTutorialForShowcase()
-    }
-    */
 
     ErrorCheckInScreen(pBitmap)
 
@@ -1071,7 +1054,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
         }
 
         ErrorCheckInScreen(pBitmap)
-        
+
         if (imageName = "CommunityShowcase" || imageName = "Add" || imageName = "Search") {
             Path = %imagePath%Tutorial.png
             pNeedle := GetNeedle(Path)
@@ -1140,12 +1123,6 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
         }
 
         Gdip_DisposeImage(pBitmap)
-        /*
-        if(imageName = "CommunityShowcase") {
-            TradeTutorialForShowcase()
-        }
-        */
-        
         if(skip) {
             ElapsedTime := (A_TickCount - session.get("StartSkipTime")) // 1000
             if(ElapsedTime - messageTime > 0.5 || firstTime) {
@@ -1391,11 +1368,11 @@ menuDeleteStart() {
         return session.get("keepAccount")
     }
     if(session.get("friended")) {
-        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000) 
+        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000)
         if(session.get("setSpeed") = 3)
             FindImageAndClick("Common_SpeedMod3x", 187, 172)
         else
-            FindImageAndClick("Common_SpeedMod2x", 106, 173) 
+            FindImageAndClick("Common_SpeedMod2x", 106, 173)
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -1815,8 +1792,20 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
     filePath := fileDir "\" . fileName
 
     yBias := 40
+    cropX := 18
+    cropY := 170
+    cropW := 240
+    cropH := 227
+
+    if (fileName = "FRIENDCODE"){
+        cropX := 18
+        cropY := 66
+        cropW := 240
+        cropH := 165
+    }
+    
     pBitmapW := from_window(getMuMuHwnd(session.get("winTitle")))
-    pBitmap := Gdip_CloneBitmapArea(pBitmapW, 18, 170, 240, 227)
+    pBitmap := Gdip_CloneBitmapArea(pBitmapW, cropX, cropY, cropW, cropH)
 
     Gdip_DisposeImage(pBitmapW)
     Gdip_SaveBitmapToFile(pBitmap, filePath)
@@ -1865,7 +1854,6 @@ return
 
 ; ToggleStop - For GUI button clicks (stops only THIS instance)
 ToggleStop() {
-    static ui_RememberStopPreferenceSingle
     global botConfig, session, dictionaryData
 
     ; Check if user has a saved preference for single instance stop
@@ -1895,8 +1883,10 @@ ToggleStop() {
     Gui, StopConfirm:Add, Text, x20 y15 w260 Center, % title
     Gui, StopConfirm:Add, Button, x20 y45 w130 h30 gStopImmediatelySingle, % btnImmediate
     Gui, StopConfirm:Add, Button, x160 y45 w130 h30 gStopWaitEndSingle, % btnWaitEnd
-    Gui, StopConfirm:Add, Checkbox, x20 y85 w260 vui_RememberStopPreferenceSingle, % chkRemember
+    Gui, StopConfirm:Add, Checkbox, x20 y85 w260 hwndhRememberStopPreferenceSingle, % chkRemember
     Gui, StopConfirm:Show, w310 h115, % title
+
+    session.set("RememberStopPreferenceSingleHwnd", hRememberStopPreferenceSingle)
     return
 }
 
@@ -1941,18 +1931,20 @@ ToggleStopAll() {
     Gui, StopConfirmAll:Add, Button, x20 y45 w130 h30 gStopImmediatelyAll, % btnImmediate
     Gui, StopConfirmAll:Add, Button, x160 y45 w130 h30 gStopWaitEndAll, % btnWaitEnd
     Gui, StopConfirmAll:Add, Button, x300 y45 w130 h30 gStopAndKillMuMuAll, % btnKillMumu
-    Gui, StopConfirmAll:Add, Checkbox, x20 y85 w400 vui_RememberStopPreference, % chkRemember
+    Gui, StopConfirmAll:Add, Checkbox, x20 y85 w400 hwndhRememberStopPreference, % chkRemember
     Gui, StopConfirmAll:Show, w450 h115, % title
+
+    session.set("RememberStopPreferenceHwnd", hRememberStopPreference)
     return
 }
 
 ; === Single instance stop handlers (GUI button) ===
 StopImmediatelySingle:
-    Gui, StopConfirm:Submit, NoHide
-    GuiControlGet, RememberStopPreferenceSingle, , ui_RememberStopPreferenceSingle
+    targetHwnd := session.get("RememberStopPreferenceSingleHwnd")    
+    GuiControlGet, RememberStopPreferenceSingle, , %targetHwnd%
     if (RememberStopPreferenceSingle) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
-        IniWrite, immediate, %settingsPath%, UserSettings, stopPreferenceSingle
+        IniWrite, immediate, %settingsPath%, Extra, stopPreferenceSingle
     }
     Gui, StopConfirm:Destroy
     CleanupBeforeExit()
@@ -1960,11 +1952,11 @@ StopImmediatelySingle:
 return
 
 StopWaitEndSingle:
-    Gui, StopConfirm:Submit, NoHide
-    GuiControlGet, RememberStopPreferenceSingle, , ui_RememberStopPreferenceSingle
+    targetHwnd := session.get("RememberStopPreferenceSingleHwnd")    
+    GuiControlGet, RememberStopPreferenceSingle, , %targetHwnd%
     if (RememberStopPreferenceSingle) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
-        IniWrite, wait_end, %settingsPath%, UserSettings, stopPreferenceSingle
+        IniWrite, wait_end, %settingsPath%, Extra, stopPreferenceSingle
     }
     Gui, StopConfirm:Destroy
     session.set("stopToggle", true)
@@ -1978,22 +1970,22 @@ return
 
 ; === All instances stop handlers (Shift+F7 from instance 1) ===
 StopImmediatelyAll:
-    GuiControlGet, RememberStopPreference, , ui_RememberStopPreference
-    Gui, StopConfirmAll:Submit, NoHide
+    targetHwnd := session.get("RememberStopPreferenceHwnd")    
+    GuiControlGet, RememberStopPreference, , %targetHwnd%
     if (RememberStopPreference) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
-        IniWrite, immediate, %settingsPath%, UserSettings, stopPreference
+        IniWrite, immediate, %settingsPath%, Extra, stopPreference
     }
     Gui, StopConfirmAll:Destroy
     StopAllInstances()
 return
 
 StopWaitEndAll:
-    GuiControlGet, RememberStopPreference, , ui_RememberStopPreference
-    Gui, StopConfirmAll:Submit, NoHide
+    targetHwnd := session.get("RememberStopPreferenceHwnd")    
+    GuiControlGet, RememberStopPreference, , %targetHwnd%
     if (RememberStopPreference) {
         settingsPath := A_ScriptDir . "\..\Settings.ini"
-        IniWrite, wait_end, %settingsPath%, UserSettings, stopPreference
+        IniWrite, wait_end, %settingsPath%, Extra, stopPreference
     }
     Gui, StopConfirmAll:Destroy
     ; Signal all other instances to stop after their current run
@@ -2250,9 +2242,9 @@ screenshotscript:
 return
 
 Logout:
-     closePTCGPApp()
-     adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
-     startPTCGPApp()
+    closePTCGPApp()
+    adbWriteRaw("rm /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
+    startPTCGPApp()
 return
 
 bboxScript:
@@ -2340,7 +2332,7 @@ bboxDraw2(X1, Y1, X2, Y2, color) {
 
 adbSwipe_wbb(params) {
     global session
-    
+
     if(session.get("dbg_bbox"))
         bboxAndPause_swipe(params, session.get("dbg_bboxNpause"))
     adbSwipe(params)
@@ -2385,7 +2377,7 @@ adbClick_wbb(X,Y)  {
 
 bboxAndPause_click(X, Y, doPause := False) {
     global session
-    
+
     guiSuffix := session.get("winTitle")
     CreateStatusMessage("Clicking X " . X . " Y " . Y,,,, false)
 
@@ -2405,7 +2397,7 @@ bboxAndPause_click(X, Y, doPause := False) {
 
 bboxAndPause_immage(X1, Y1, X2, Y2, pNeedleObj, vret := False, doPause := False) {
     global session
-    
+
     guiSuffix := session.get("winTitle")
     CreateStatusMessage("Searching " . pNeedleObj.Name . " returns " . vret,,,, false)
 
@@ -2581,7 +2573,7 @@ DoTutorial() {
     }
 
     if(session.get("setSpeed") = 3){
-        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000) 
+        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000)
         FindImageAndClick("Common_SpeedMod1x", 21, 172)
         Delay(1)
         adbClick_wbb(51, 297)
@@ -2591,7 +2583,7 @@ DoTutorial() {
     FindImageAndClick("Create_WelcomePopup", 253, 506, , 110) ;click through cutscene until welcome page
 
     if(session.get("setSpeed") = 3){
-        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000) 
+        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000)
         FindImageAndClick("Common_SpeedMod3x", 187, 172)
         Delay(1)
         adbClick_wbb(51, 297)
@@ -2646,8 +2638,8 @@ DoTutorial() {
 
     FindImageAndClick("Pack_ReadyForOpenPack", 140, 424) ;wait for pack to be ready  to trace
     if(session.get("setSpeed") > 1) {
-        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000) 
-        FindImageAndClick("Common_SpeedMod1x", 21, 172) 
+        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000)
+        FindImageAndClick("Common_SpeedMod1x", 21, 172)
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -2673,7 +2665,7 @@ DoTutorial() {
 
     FindImageAndClick("Create_SwipeForRegisterDexIcon", 140, 375) ;click through cards until needing to swipe up
     if(session.get("setSpeed") > 1) {
-        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000) 
+        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000)
         FindImageAndClick("Common_SpeedMod1x", 21, 172)
         Delay(1)
         adbClick_wbb(51, 297)
@@ -2686,11 +2678,11 @@ DoTutorial() {
         Sleep, 100
         if(FindOrLoseImage("Create_ConfirmRegisteredCard", 0, failSafeTime)){
             if(session.get("setSpeed") > 1) {
-                FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000) 
+                FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000)
                 if(session.get("setSpeed") = 3)
                     FindImageAndClick("Common_SpeedMod3x", 187, 172)
                 else
-                    FindImageAndClick("Common_SpeedMod2x", 106, 173) 
+                    FindImageAndClick("Common_SpeedMod2x", 106, 173)
             }
             adbClick_wbb(51, 297)
             break
@@ -2720,21 +2712,20 @@ DoTutorial() {
     Delay(1)
     adbClick_wbb(247, 472)
 
-    FindImageAndClick("Create_TutorialDexMission", 247, 472, , 5000) ; click through missions until missions is open
-
-    Delay(1)
-    adbClick_wbb(141, 294)
-    Delay(1)
-    adbClick_wbb(141, 294)
-    Delay(1)
-    FindImageAndClick("Create_TutorialDexMissionComplete", 141, 294, , 1000) ; wait for register screen
-    Delay(6)
-    adbClick_wbb(140, 500)
-
-    FindImageAndClick("Create_ConfirmDexMissionComplete") ; wait for mission complete screen
-
-    FindImageAndClick("Create_MustClickMissionBackground", 143, 360) ;wait for for missions to be clickable
-
+    session.set("failSafe", A_TickCount)
+    failSafeTime := 0
+    Loop {
+        if(FindOrLoseImage("Create_TutorialPackOpenNotifyIcon", 0, failSafeTime)) {
+            break
+        }
+        adbClick_wbb(90, 260)
+        adbClick_wbb(140, 400)
+        adbClick_wbb(137, 340)
+        Delay(3)
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+        CreateStatusMessage("Waiting for pack notification " . failSafeTime . "/45 seconds")
+    }
+    
     FindImageAndClick("Create_TutorialPackOpenNotifyIcon", 145, 194) ;click on packs. stop at booster pack tutorial
 
     Delay(3)
@@ -2748,8 +2739,8 @@ DoTutorial() {
 
     FindImageAndClick("Pack_ReadyForOpenPack", 239, 497) ;wait for pack to be ready  to Trace
     if(session.get("setSpeed") > 1) {
-        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000) 
-        FindImageAndClick("Common_SpeedMod1x", 21, 172) 
+        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000)
+        FindImageAndClick("Common_SpeedMod1x", 21, 172)
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -2866,7 +2857,7 @@ SelectPack(HG := false) {
 
     packx := getPackCoordXInHome()
     packy := HomeScreenAllPackY
-    
+
     if(HG = "First" && session.get("injectMethod") && session.get("loadedAccount") ){
         session.set("failSafe", A_TickCount)
         failSafeTime := 0
@@ -2902,9 +2893,9 @@ SelectPack(HG := false) {
             CreateStatusMessage("Waiting for Points`n(" . failSafeTime . "/90 seconds)")
         }
     }
-    
+
     FindImageAndClick("Pack_PackPointButton", packx, packy, , 1000)
-    
+
     if(!session.get("isSkipSelectExpansion")) {
         FindImageAndClick("Pack_ScrollInSelectExpansion", 248, 459, , 300)
 
@@ -2982,7 +2973,7 @@ SelectPack(HG := false) {
             failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
             CreateStatusMessage("Waiting for HourglassPack4`n(" . failSafeTime . "/45 seconds)")
         }
-    } else { 
+    } else {
         session.set("failSafe", A_TickCount)
         failSafeTime := 0
         Loop{
@@ -3078,8 +3069,8 @@ PackOpening() {
     }
 
     if(session.get("setSpeed") > 1) {
-        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000) 
-        FindImageAndClick("Common_SpeedMod1x", 21, 172) 
+        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000)
+        FindImageAndClick("Common_SpeedMod1x", 21, 172)
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -3104,7 +3095,7 @@ PackOpening() {
         Delay(1)
     }
 
-    FindImageAndClick("Pack_ResultAfterOpenPack", 252, 505, 5, 100) ;skip through cards until results opening screen
+    FindImageAndClick("Pack_ResultAfterOpenPack", 252, 505, 5, 25) ;skip through cards until results opening screen
 
     CheckPack()
 
@@ -3239,8 +3230,8 @@ HourglassOpening(HG := false, NEIRestart := true) {
     }
 
     if(session.get("setSpeed") > 1) {
-        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000) 
-        FindImageAndClick("Common_SpeedMod1x", 21, 172) 
+        FindImageAndClick("Common_SpeedModMenuButton", 18, 109, , 2000)
+        FindImageAndClick("Common_SpeedMod1x", 21, 172)
         Delay(1)
         adbClick_wbb(51, 297)
         Delay(1)
@@ -3265,7 +3256,7 @@ HourglassOpening(HG := false, NEIRestart := true) {
         Delay(1)
     }
 
-    FindImageAndClick("Pack_ResultAfterOpenPack", 252, 505, 5, 100) ;skip through cards until results opening screen
+    FindImageAndClick("Pack_ResultAfterOpenPack", 252, 505, 5, 25) ;skip through cards until results opening screen
 
     CheckPack()
 
@@ -3561,7 +3552,7 @@ GetEventRewards(frommain := true){
 
                 redBoxCoords := specialEventObj.redBoxCoords
                 blueBoxCoords := specialEventObj.redBoxCoords
-                
+
                 if (specialEventObj.isExistNeedleInScreen(session.get("winTitle")) = 2){
                     Loop{
                         adbClick_wbb(175, 422)

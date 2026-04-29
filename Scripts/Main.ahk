@@ -1,4 +1,4 @@
-#SingleInstance on
+﻿#SingleInstance on
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0
 SetBatchLines, -1
@@ -531,7 +531,7 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
 
     yBias := 40 - 45
     pBitmapW := from_window(getMuMuHwnd(session.get("winTitle")))
-    pBitmap := Gdip_CloneBitmapArea(pBitmapW, 18, 175+yBias, 240, 227)
+    pBitmap := Gdip_CloneBitmapArea(pBitmapW, 18, 71+yBias, 240, 165)
 
     ;scale 100%
     Gdip_DisposeImage(pBitmapW)
@@ -798,6 +798,7 @@ GPTestScript() {
 ; In auto GP Test mode, returns false when the rate limit is reached ? caller should abort.
 ; In manual GP Test mode, waits for the 5-minute window to reset and returns true.
 CheckFriendOpsRateLimit() {
+    static RateLimitText
     global session
     if (session.get("friendOpsCount") = 0) {
         ; First operation of this window ? start the clock now
@@ -822,7 +823,7 @@ CheckFriendOpsRateLimit() {
             Gui, RateLimit:Destroy
             Gui, RateLimit:New, +AlwaysOnTop, GP Test - Rate Limit
             countdownText := "Rate limit reached. Waiting " . Ceil(remaining / 1000) . "s..."
-            Gui, RateLimit:Add, Text, x20 y15 w220 Center vRateLimitText, %countdownText%
+            Gui, RateLimit:Add, Text, x20 y15 w220 Center hwndhRateLimitText, %countdownText%
             Gui, RateLimit:Add, Text, x20 y42 w220 Center, The next removal may trigger a network error. Please wait.
             Gui, RateLimit:Add, Button, x20 y72 w220 h30 gRateLimitSleep, Stop GP Test && Sleep
             Gui, RateLimit:Add, Button, x20 y107 w220 h30 gRateLimitContinue, Stop GP Test && Continue
@@ -832,7 +833,7 @@ CheckFriendOpsRateLimit() {
                 if (remaining <= 0 || session.get("rateLimitAction") != "")
                     break
                 countdownText := "Rate limit reached. Waiting " . Ceil(remaining / 1000) . "s..."
-                GuiControl, RateLimit:, RateLimitText, %countdownText%
+                GuiControl, RateLimit:, %hRateLimitText%, %countdownText%
                 Sleep, 1000
             }
             Gui, RateLimit:Destroy
