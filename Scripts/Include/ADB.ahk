@@ -1,4 +1,4 @@
-#Include *i %A_LineFile%\..\Gdip_All.ahk
+﻿#Include *i %A_LineFile%\..\Gdip_All.ahk
 
 setADBBaseInfo(){
     mumuFolder := getMuMuFolder()

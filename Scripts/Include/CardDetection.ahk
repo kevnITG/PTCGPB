@@ -1,4 +1,4 @@
-;===============================================================================
+﻿;===============================================================================
 ; CardDetection.ahk - Card Detection Functions
 ;===============================================================================
 ; This file contains functions for detecting and processing cards in packs.
@@ -102,10 +102,10 @@ CheckCardLoading(totalCardsInPack){
 ; AnalysisBorder - Find card borders of specific type in pack
 ;-------------------------------------------------------------------------------
 AnalysisBorder(totalCardsInPack) {
-    global session, currentPackInfo, isDevelopment, rarityCheckers
+    global session, isDevelopment, rarityCheckers
 
     currentPackInfo := {"isVerified": false, "CardSlot": [], "TypeCount": {}}
-    loadingBorderCoords := [[121, 269, 154, 272], [121, 297, 154, 300]]    
+    loadingBorderCoords := [[121, 269, 154, 272], [121, 297, 154, 300]]
     pBitmap := 0
     Loop, {
         pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
@@ -136,6 +136,7 @@ AnalysisBorder(totalCardsInPack) {
             cardRarityName := Checker.RarityName
 
             isFound := Checker.Search(pBitmap, totalCardsInPack, cardIndex)
+            
             if (isFound) {
                 if(currentPackInfo["TypeCount"][cardRarityName] = "")
                     currentPackInfo["TypeCount"][cardRarityName] := 0
@@ -234,7 +235,6 @@ FindGodPack(invalidPack := false) {
 ;-------------------------------------------------------------------------------
 FoundStars(star) {
     global botConfig, session, DeadCheck
-    global sendAccountXml
 
     IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
     session.set("keepAccount", true)
@@ -263,12 +263,12 @@ FoundStars(star) {
     else {
         ; OCR username
         try {
-            if (session.get("injectMethod") && IsFunc("ocr")) {
+            if (IsFunc("ocr")) {
                 playerName := ""
                 allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+_"
                 usernamePattern := "[\w-_]+"
 
-                if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
+                if(RefinedOCRText(usernameScreenshotFile, 145, 235, 250, 35, allowedUsernameChars, usernamePattern, playerName)) {
                     username := playerName
                 }
             }
@@ -298,7 +298,7 @@ FoundStars(star) {
     logMessage := statusMessage . " in instance: " . session.get("scriptName")
     logMessage .= " (" . session.get("packsInPool") . " packs, " . session.get("openPack") . ")\n"
     logMessage .= "File name: " . accountFile . "\nBacking up to the Accounts\\SpecificCards folder and continuing..."
-    LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""), fcScreenshot)
+    LogToDiscord(logMessage, screenShot, true, (botConfig.get("sendAccountXml") ? accountFullPath : ""), fcScreenshot)
     LogToFile(StrReplace(logMessage, "\n", " "), "GPlog.txt")
 }
 
@@ -307,7 +307,6 @@ FoundStars(star) {
 ;-------------------------------------------------------------------------------
 GodPackFound(validity) {
     global botConfig, session, DeadCheck
-    global sendAccountXml
 
     currentPackInfo := session.get("currentPackInfo")
     username := ""
@@ -347,12 +346,12 @@ GodPackFound(validity) {
     Sleep, 100
 
     try {
-        if (session.get("injectMethod") && IsFunc("ocr")) {
+        if (IsFunc("ocr")) {
             playerName := ""
             allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+_"
             usernamePattern := "[\w-_]+"
 
-            if(RefinedOCRText(usernameScreenshotFile, 125, 490, 290, 50, allowedUsernameChars, usernamePattern, playerName)) {
+            if(RefinedOCRText(usernameScreenshotFile, 145, 235, 250, 35, allowedUsernameChars, usernamePattern, playerName)) {
                 username := playerName
             }
         }
@@ -383,9 +382,9 @@ GodPackFound(validity) {
     LogToFile(StrReplace(logMessage, "\n", " "), "GPlog.txt")
 
     if (validity = "Valid") {
-        LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""), fcScreenshot)
+        LogToDiscord(logMessage, screenShot, true, (botConfig.get("sendAccountXml") ? accountFullPath : ""), fcScreenshot)
     } else if (!botConfig.get("InvalidCheck")) {
-        LogToDiscord(logMessage, screenShot, true, (sendAccountXml ? accountFullPath : ""))
+        LogToDiscord(logMessage, screenShot, true, (botConfig.get("sendAccountXml") ? accountFullPath : ""))
     }
 }
 

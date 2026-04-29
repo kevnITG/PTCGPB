@@ -42,8 +42,8 @@ OnError("ErrorHandler")
 
 githubUser := "kevnITG"
    ,repoName := "PTCGPB"
-   ,localVersion := "v9.6.0"
-   ,modVersion := "v5.3"
+   ,localVersion := "v9.6.1"
+   ,modVersion := "v5.4"
    ,scriptFolder := A_ScriptDir
    ,zipPath := A_Temp . "\update.zip"
    ,extractPath := A_Temp . "\update"
@@ -873,8 +873,8 @@ return
 
 saveGroupReroll:
     botConfig.set("groupRerollEnabled", (ui_groupRerollEnabled_Popup == "" ? botConfig.get("groupRerollEnabled") : ui_groupRerollEnabled_Popup), "GroupReroll")
-    botConfig.set("mainIdsURL", (ui_mainIdsURL_Popup == "" ? botConfig.get("mainIdsURL") : ui_mainIdsURL_Popup), "GroupReroll")
-    botConfig.set("vipIdsURL", (ui_vipIdsURL_Popup == "" ? botConfig.get("vipIdsURL") : ui_vipIdsURL_Popup), "GroupReroll")
+    botConfig.set("mainIdsURL", ui_mainIdsURL_Popup, "GroupReroll")
+    botConfig.set("vipIdsURL", ui_vipIdsURL_Popup, "GroupReroll")
     botConfig.set("autoUseGPTest", (ui_autoUseGPTest_Popup == "" ? botConfig.get("autoUseGPTest") : ui_autoUseGPTest_Popup), "GroupReroll")
     botConfig.set("TestTime", (ui_TestTime_Popup == "" ? botConfig.get("TestTime") : ui_TestTime_Popup), "GroupReroll")
     botConfig.set("gpTestWaitTime", (ui_gpTestWaitTime_Popup == "" ? botConfig.get("gpTestWaitTime") : ui_gpTestWaitTime_Popup), "GroupReroll")
@@ -1229,6 +1229,9 @@ saveToolsAndSystemSettings:
     botConfig.set("autoLaunchMonitor", (ui_autoLaunchMonitor_Popup == "" ? botConfig.get("autoLaunchMonitor") : ui_autoLaunchMonitor_Popup), "ToolsAndSystem")
     botConfig.set("saveToGit", (ui_saveToGit_Popup == "" ? botConfig.get("saveToGit") : ui_saveToGit_Popup), "ToolsAndSystem")
     botConfig.set("receiveGift", (ui_receiveGift_Popup == "" ? botConfig.get("receiveGift") : ui_receiveGift_Popup), "ToolsAndSystem")
+    
+    if(botConfig.get("SelectedMonitorIndex") = "")
+        botConfig.set("SelectedMonitorIndex", "1:", "ToolsAndSystem")
 return
 
 CancelToolsAndSystemSettings:
@@ -1575,6 +1578,9 @@ ArrangeWindows:
     windowsPositioned := 0
     titleHeight := 40
 
+    if(botConfig.get("SelectedMonitorIndex") = "")
+        botConfig.set("SelectedMonitorIndex", "1:", "ToolsAndSystem")
+
     if (botConfig.get("runMain") && botConfig.get("Mains") > 0) {
         Loop % botConfig.get("Mains") {
             mainInstanceName := "Main" . (A_Index > 1 ? A_Index : "")  . " ahk_class Qt5156QWindowIcon"
@@ -1751,7 +1757,7 @@ ResetAccountLists() {
 
 ; =================== Logic - Start bot function ===================
 StartBot() {
-    global botConfig, localVersion, githubUser, rerollTime, PackGuiBuild, botMetadata, typeMsg
+    global botConfig, dict, localVersion, githubUser, rerollTime, PackGuiBuild, botMetadata, typeMsg
     
     PackGuiBuild := 0
     rerollTime := A_TickCount
@@ -1870,7 +1876,7 @@ StartBot() {
         if (value) {
             if (index > 1)
                 selectMsg .= ", "
-            selectMsg .= value
+            selectMsg .= dict["Txt_" . value]
         }
     }
     
@@ -1949,7 +1955,7 @@ StartBot() {
                 
                 if(botConfig.get("heartBeatOwnerWebHookURL")){
                     FormatTime, currentTime, , yyyy-MM-dd HH:mm:ss
-                    messageHeader := "\n\n[Instance status - " . currentTime . " (Elasped time: " . mminutes . "m)]"
+                    messageHeader := "\n\n[Instance status - " . currentTime . " (Elapsed time: " . mminutes . "m)]"
                     
                     instanceStatusMessage := ""
 

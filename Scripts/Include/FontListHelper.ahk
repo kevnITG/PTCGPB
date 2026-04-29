@@ -1,4 +1,4 @@
-GetAllFontNames() {
+﻿GetAllFontNames() {
     fontNames := "Segoe UI||Arial|Calibri|Times New Roman|"
     fontNames .= "Microsoft JhengHei|Microsoft YaHei|"
     fontNames .= "SimSun|Tahoma|Verdana|Courier New|"
