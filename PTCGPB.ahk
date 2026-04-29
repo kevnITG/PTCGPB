@@ -144,7 +144,7 @@ NextStep:
     }
     
     KillADBProcesses()
-    ;CheckForUpdate()
+    CheckForUpdate()
     
     scriptName := StrReplace(A_ScriptName, ".ahk")
     winTitle := scriptName
