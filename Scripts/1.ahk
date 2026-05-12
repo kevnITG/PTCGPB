@@ -1251,6 +1251,22 @@ PersistStopAfterRunIfNeeded() {
         IniWrite, 1, % session.get("scriptIniFile"), UserSettings, stopAfterRunPending
 }
 
+FinalizeInjectedGodPackAccount() {
+    global botConfig, session, DeadCheck
+
+    if (!session.get("injectMethod") || !session.get("loadedAccount"))
+        return
+
+    session.get("missionDoneList")["accountHasPackInTesting"] := 1
+    setMetaData()
+    IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
+
+    if (botConfig.get("deleteMethod") = "Inject 13P+" || botConfig.get("deleteMethod") = "Inject Wonderpick 96P+") {
+        MarkAccountAsUsed()
+        session.set("loadedAccount", false)
+    }
+}
+
 restartGameInstance(reason, RL := true) {
     global botConfig, session, DeadCheck
     isStuck := InStr(reason, "Stuck")
@@ -1893,11 +1909,7 @@ CheckPack(stopEarly := false) {
     session.set("foundGP", FindGodPack(false, cards))
 
     if (session.get("foundGP")) {
-        if (session.get("loadedAccount")) {
-            session.get("missionDoneList")["accountHasPackInTesting"] := 1  ; T flag ONLY for godpacks
-            setMetaData()
-            IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
-        }
+        FinalizeInjectedGodPackAccount()
 
         restartGameInstance("God Pack found. Continuing...", "GodPack")
         return
@@ -2104,11 +2116,7 @@ CheckPackFallback() {
     session.set("foundGP", FindGodPack())
 
     if (session.get("foundGP")) {
-        if (session.get("loadedAccount")) {
-            session.get("missionDoneList")["accountHasPackInTesting"] := 1  ; T flag ONLY for godpacks
-            setMetaData()
-            IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
-        }
+        FinalizeInjectedGodPackAccount()
 
         restartGameInstance("God Pack found. Continuing...", "GodPack")
         return

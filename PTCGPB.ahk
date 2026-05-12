@@ -44,7 +44,7 @@ OnError("ErrorHandler")
 githubUser := "kevnITG"
     ,repoName := "PTCGPB"
     ,localVersion := "v9.6.4"
-    ,modVersion := "v0.9.0"
+    ,modVersion := "v0.9.1"
     ,scriptFolder := A_ScriptDir
     ,zipPath := A_Temp . "\update.zip"
     ,extractPath := A_Temp . "\update"
