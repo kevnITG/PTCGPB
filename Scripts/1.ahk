@@ -60,6 +60,7 @@ parseDictionaryData("jp")
 parseDictionaryData("cn")
 
 session.set("s4tPendingTradeables", [])
+session.set("s4tFoundTradeable", false)
 session.set("deviceAccountXmlMap", {})
 session.set("scriptName", StrReplace(A_ScriptName, ".ahk"))
 AccountMetadata_CloseTempForInstance(session.get("scriptName"))
@@ -394,6 +395,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
         session.set("packsThisRun", 0)
         session.set("cantOpenMorePacks", 0)
         session.set("keepAccount", false)
+        session.set("s4tFoundTradeable", false)
 
         ; BallCity 2025.02.21 - Track monitor
         now := A_NowUTC
@@ -701,7 +703,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
         ; Check for 40 first to quit
         if (botConfig.get("deleteMethod") = "Inject 13P+" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")) {
             if (session.get("injectMethod") && session.get("loadedAccount")) {
-                if (!session.get("keepAccount")) {
+                if (!session.get("keepAccount") || session.get("s4tFoundTradeable")) {
                     MarkAccountAsUsed()
                 }
                 session.set("loadedAccount", false)
@@ -711,8 +713,8 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
 
         if (session.get("injectMethod") && session.get("loadedAccount")) {
             ; For injection methods, mark the account as used
-            if (!session.get("keepAccount")) {
-                if (botConfig.get("deleteMethod") = "Inject Rewards") {
+            if (!session.get("keepAccount") || session.get("s4tFoundTradeable")) {
+                if (botConfig.get("deleteMethod") = "Inject Rewards" && !session.get("s4tFoundTradeable")) {
                     MarkAccountAsClaimed()  ; No 24h lock � account stays available for pack-opening
                     if(botConfig.get("verboseLogging"))
                         LogToFile("Marked injected account as claimed: " . session.get("accountFileName"))
@@ -972,18 +974,6 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
         }
     }
 
-    ; Handle 7/2025 trade news update popup, remove later patch
-    if(imageName = "Points" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll" || imageName = "inHamburgerMenu" || imageName = "Trade") {
-        Path = %imagePath%Update.png
-        pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 15, 180, 53, 228, searchVariation)
-        if (vRet = 1) {
-            adbClick_wbb(137, 485)
-            Gdip_DisposeImage(pBitmap)
-            return confirmed
-        }
-    }
-
     stateResult := isTerminatePTCGPAppByADBShell()
     if(stateResult){
         restartGameInstance("Stuck at " . imageName . "... (found App3.png)")
@@ -1134,18 +1124,6 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
             vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 111, 115, 167, 121, searchVariation)
             if (vRet = 1) {
                 adbClick_wbb(145, 451)
-            }
-        }
-
-        ; Search for 7/2025 trade news update popup; can be removed later patch
-        if(imageName = "Points" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll" || imageName = "inHamburgerMenu" || imageName = "Trade") {
-            Path = %imagePath%Update.png
-            pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 20, 191, 36, 211, searchVariation)
-            if (vRet = 1) {
-                adbClick_wbb(137, 485)
-                Gdip_DisposeImage(pBitmap)
-                continue
             }
         }
 

@@ -465,6 +465,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         session.set("keepAccount", false)
         return
     }
+    session.set("s4tFoundTradeable", true)
 
     cardTypes := []
     cardCounts := []
@@ -679,6 +680,9 @@ CheckCardsSimple(result) {
     }
 
     if (foundTradeable > 0) {
+        session.set("keepAccount", true)
+        session.set("s4tFoundTradeable", true)
+
         scriptName := session.get("scriptName")
         winTitle := session.get("winTitle")
         loadDir := session.get("loadDir")
@@ -862,6 +866,7 @@ FoundTradeableNew(foundCards, pack := "", cards := "") {
         session.set("keepAccount", false)
         return
     }
+    session.set("s4tFoundTradeable", true)
 
     deviceAccount := GetDeviceAccountFromXML()
     savedXmlPath := ""
