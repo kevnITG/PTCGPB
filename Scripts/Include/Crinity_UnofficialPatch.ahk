@@ -181,6 +181,30 @@ startPreProcess(methodType){
             ;processPrivacyAgreement()
         }
 
+        Path = %imagePath%Privacy.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 473, 145, 488, searchVariation)
+        if(vRet = 1){
+            adbClick_wbb(137, 480)
+            Sleep, 10000
+        }
+
+        Path = %imagePath%LevelUp.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 100, 86, 167, 116, searchVariation)
+        if(vRet = 1){
+            adbInputEvent("111") ;send ESC
+            Sleep, 10000
+        }
+
+        Path = %imagePath%LanguageBox.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 8, 374, 30, 398, searchVariation)
+        if(vRet = 1){
+            adbInputEvent("111") ;send ESC
+            Sleep, 10000
+        }
+
         Path = %imagePath%Button.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 95, 350, 195, 530, 80)
