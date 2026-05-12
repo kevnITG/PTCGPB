@@ -629,11 +629,16 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             if (isTerminatePTCGPHelperApp()) {
                 InitPackOpening(true)
             }
+            session.set("openedGiftPack", false)
             giftClaimed := ReceiveGiftExtended()
-            CheckPack(true)
-            if(giftClaimed)
+            if(giftClaimed) {
                 HandleGiftedPacksAfterReceiveGift()
-
+            }
+            if (session.get("openedGiftPack") = true) {
+                CheckPack(true)
+            } else {
+                TerminateHelper()
+            }
             session.get("missionDoneList")["receivedGiftDone"] := 1
 
             if (session.get("injectMethod") && session.get("loadedAccount"))
@@ -1602,7 +1607,7 @@ PullPackOpeningMissionUserPrefsSnapshot(kind, failedDir, uniquePrefix) {
 
     remotePath := PackOpeningMissionUserPrefsSnapshotPath(kind)
     sdcardPath := "/sdcard/" . uniquePrefix . "_" . kind . "_MissionUserPrefs"
-    localPath := failedDir . "\" . uniquePrefix . "_" . kind . "_MissionUserPrefs"
+    localPath := failedDir . "\" . uniquePrefix . "_" . kind
 
     if (FileExist(localPath))
         FileDelete, %localPath%
@@ -1649,6 +1654,10 @@ GetStdout(cmd) {
     shell := ComObjCreate("WScript.Shell")
     exec := shell.Exec(cmd)
     return exec.StdOut.ReadAll()
+}
+
+TerminateHelper() {
+    adbWriteRaw("pkill -f /data/ptcgp/ptcgpb")
 }
 
 EvaluatePack() {
@@ -4025,6 +4034,8 @@ SetOpenGiftSpeedByButtons(targetSpeed) {
 
 HandleSingleGiftPackOpening() {
     global session, adbSwipeParams
+
+    session.set("openedGiftPack", true)
 
     if(session.get("setSpeed") > 1) {
         SetOpenGiftSpeed(1)
