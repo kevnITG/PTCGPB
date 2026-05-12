@@ -1,4 +1,4 @@
-﻿#Include %A_ScriptDir%\Config.ahk
+#Include %A_ScriptDir%\Config.ahk
 #Include %A_ScriptDir%\Logging.ahk
 #Include %A_ScriptDir%\GitManager.ahk
 #Include %A_ScriptDir%\Utils.ahk
@@ -45,7 +45,7 @@ Loop %Instances% {
 Loop {
     ; Loop through each instance, check if it's started, and start it if it's not
     launched := 0
-    
+
     Loop %Instances% {
         ; Recalculate epoch each iteration so it stays fresh after restart sleeps
         nowEpoch := A_NowUTC
@@ -81,27 +81,27 @@ Loop {
             ; msgbox, Killing Instance %instanceNum%! Last Run Completed %secondsSinceLastEnd% Seconds Ago
             msg := "Killing Instance " . instanceNum . "! Last Run Completed " . secondsSinceLastEnd . " Seconds Ago"
             LogToFile(msg, "Monitor.txt")
-            
+
             scriptName := instanceNum . ".ahk"
-            
+
             killedAHK := killAHK(scriptName)
             killedInstance := killInstance(instanceNum)
             Sleep, 3000
-            
+
             cntAHK := checkAHK(scriptName)
             pID := checkInstance(instanceNum)
             if not pID && not cntAHK {
                 ; Change the last end date to now so that we don't keep trying to restart this beast
                 IniWrite, %nowEpoch%, %A_ScriptDir%\..\%instanceNum%.ini, Metrics, LastEndEpoch
-                
+
                 launchInstance(instanceNum)
-                
+
                 sleepTime := instanceLaunchDelay * 1000
                 Sleep, % sleepTime
                 launched := launched + 1
-                
+
                 Sleep, %waitAfterBulkLaunch%
-                
+
                 ;Command := "Scripts\" . scriptName
                 ;Run, %Command%
                 scriptPath := A_ScriptDir "\.." "\" scriptName
@@ -116,14 +116,12 @@ Loop {
         paths := []
         paths.Push({path: "Accounts/Saved", suffix: ".xml"})
         paths.Push({path: "Screenshots", suffix: ".png"})
-        paths.Push({path: "Accounts/Trades/Trades_Database.csv", suffix: ""})
-        paths.Push({path: "Accounts/Trades/Trades_Index.json", suffix: ""})
         isCommit := CommitAndPushGit(gitRoot, "Monitor.txt", paths)
         if (isCommit) {
             lastGitCommit := A_TickCount
         }
     }
-    
+
     ; Check for dead instances every 30 seconds
     Sleep, 30000
 }
@@ -135,17 +133,17 @@ ReduceVMMemory(){
     for process in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process Where Name = '" TargetProcess "'")
     {
         PID := process.ProcessId
-        
+
         hProcess := DllCall("OpenProcess", "UInt", 0x0400 | 0x0100 | 0x0010, "Int", false, "UInt", PID)
-        
+
         if (hProcess)
         {
             MemBefore := GetProcessMemory(hProcess)
             Success := DllCall("psapi.dll\EmptyWorkingSet", "Ptr", hProcess)
             MemAfter := GetProcessMemory(hProcess)
-            
+
             DllCall("CloseHandle", "Ptr", hProcess)
-            
+
             if (Success) {
                 ;ResultLine := "PID: " . PID . " | Before: " . Round(MemBefore, 1) . "KB | After: " . Round(MemAfter, 1) . "KB | Reduced size: " . Round(MemBefore-MemAfter, 1) . "KB`n"
                 ;LogToFile(ResultLine, "Development.txt")
@@ -162,7 +160,7 @@ GetProcessMemory(hProcess) {
     if (DllCall("psapi.dll\GetProcessMemoryInfo", "Ptr", hProcess, "Ptr", &PMC, "UInt", 72)) {
         addrOffset := (A_PtrSize = 8) ? 16 : 12
         bytes := NumGet(PMC, addrOffset, "UPtr")
-        return bytes / 1024 
+        return bytes / 1024
     }
     return 0
 }
@@ -170,7 +168,7 @@ GetProcessMemory(hProcess) {
 killAHK(scriptName := "")
 {
     killed := 0
-    
+
     if(scriptName != "") {
         DetectHiddenWindows, On
         WinGet, IDList, List, ahk_class AutoHotkey
@@ -187,14 +185,14 @@ killAHK(scriptName := "")
             }
         }
     }
-    
+
     return killed
 }
 
 checkAHK(scriptName := "")
 {
     cnt := 0
-    
+
     if(scriptName != "") {
         DetectHiddenWindows, On
         WinGet, IDList, List, ahk_class AutoHotkey
@@ -207,7 +205,7 @@ checkAHK(scriptName := "")
             }
         }
     }
-    
+
     return cnt
 }
 

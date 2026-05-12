@@ -1,6 +1,4 @@
 !Accounts/*.ahk
-Accounts/Trades/Trades_Database.csv
-Accounts/Trades/Trades_Index.json
 json/*
 Logs/*
 Screenshots/*
@@ -16,9 +14,20 @@ Scripts/*.ini
 *.bak
 !.gitkeep
 Accounts/Saved/**/*.xml
-Accounts/Trades/*.csv
-Accounts/Trades/*.json
+Accounts/Saved/metadata.json
+Accounts/Saved/**/metadata.json
+Accounts/Cards/metadata.json
 Lab
+tmp.ahk
+*.bak
+Scripts/temp
+Card_Database.csv
+CardImageCache
+cardmaster.json
+Helper/*.txt
+Helper/*.json
+Helper/*_src/target/
+Accounts/Cards/accounts/
 
 # macOS metadata files
 ._*
@@ -30,3 +39,4 @@ Lab
 .claude/
 
 .REFACTORING_SUMMARY.md
+*.py

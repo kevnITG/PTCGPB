@@ -1,10 +1,10 @@
-﻿; SOURCE: https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
+; SOURCE: https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
 
 HBitmapToRandomAccessStream(hBitmap) {
     static IID_IRandomAccessStream := "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}"
-          , IID_IPicture            := "{7BF80980-BF32-101A-8BBB-00AA00300CAB}"
-          , PICTYPE_BITMAP := 1
-          , BSOS_DEFAULT   := 0
+        , IID_IPicture            := "{7BF80980-BF32-101A-8BBB-00AA00300CAB}"
+        , PICTYPE_BITMAP := 1
+        , BSOS_DEFAULT   := 0
 
     DllCall("Ole32\CreateStreamOnHGlobal", "Ptr", 0, "UInt", true, "PtrP", pIStream, "UInt")
 
@@ -166,7 +166,7 @@ CreateClass(string, interface, ByRef Class)
 
 CreateHString(string, ByRef hString)
 {
-     DllCall("Combase.dll\WindowsCreateString", "wstr", string, "uint", StrLen(string), "ptr*", hString)
+    DllCall("Combase.dll\WindowsCreateString", "wstr", string, "uint", StrLen(string), "ptr*", hString)
 }
 
 DeleteHString(hString)
@@ -217,8 +217,8 @@ WaitForAsync(ByRef Object)
 FindPackStats() {
     global session
 
-	session.set("failSafe", A_TickCount)
-	failSafeTime := 0
+    session.set("failSafe", A_TickCount)
+    failSafeTime := 0
     ; Click for hamburger menu and wait for profile
     Loop {
         adbClick(240, 494)
@@ -229,77 +229,77 @@ FindPackStats() {
             if(clickButton) {
                 StringSplit, pos, clickButton, `,  ; Split at ", "
                 adbClick(pos1, pos2)
-			}
-		}
+            }
+        }
         Delay(1)
-		failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
     }
 
-	FindImageAndClick("Profile_EditNameButtonIcon", 210, 140, , 200) ; Open profile/stats page and wait
+    FindImageAndClick("Profile_EditNameButtonIcon", 210, 140, , 200) ; Open profile/stats page and wait
 
     ; Swipe until you get to trophy
-	session.set("failSafe", A_TickCount)
-	failSafeTime := 0
+    session.set("failSafe", A_TickCount)
+    failSafeTime := 0
     Loop {
         adbSwipe("266 770 266 555 300")
         trophyPos := FindOrLoseImage("Profile_TrophyStandIconInProfile", 0, failSafeTime)
-		if(trophyPos){
+        if(trophyPos){
             StringSplit, pos, trophyPos, `,  ; Split at ", "
-	        FindImageAndClick("Profile_ShinedustIconInTrophyDetails", (pos1+18), pos2, 30, 200) ; Open pack trophy page and wait
-			break
+            FindImageAndClick("Profile_ShinedustIconInTrophyDetails", (pos1+18), pos2, 30, 200) ; Open pack trophy page and wait
+            break
         }
-		failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
 
     }
 
     ; Take screenshot and prepare for OCR
     Sleep, 100
 
-	tempDir := A_ScriptDir . "\temp"
+    tempDir := A_ScriptDir . "\temp"
     if !FileExist(tempDir)
         FileCreateDir, %tempDir%
 
-	fullScreenshotFile := tempDir . "\" .  session.get("scriptName") . "_AccountPacks.png"
-	adbTakeScreenshot(fullScreenshotFile)
+    fullScreenshotFile := tempDir . "\" .  session.get("scriptName") . "_AccountPacks.png"
+    adbTakeScreenshot(fullScreenshotFile)
 
-	Sleep, 100
+    Sleep, 100
 
     packValue := 0
-	trophyOCR := ""
+    trophyOCR := ""
 
-	;214, 438, 111x30
-	;214, 434, 111x38
-	;214, 441, 111x24
-	session.set("ocrSuccess", 0)
+    ;214, 438, 111x30
+    ;214, 434, 111x38
+    ;214, 441, 111x24
+    session.set("ocrSuccess", 0)
     if(RefinedOCRText(fullScreenshotFile, 214, 438, 111, 30, "0123456789,/", "^\d{1,3}(,\d{3})?\/\d{1,3}(,\d{3})?$", trophyOCR)) {
-		;MsgBox, %trophyOCR%
-		ocrParts := StrSplit(trophyOCR, "/")
-		session.set("accountOpenPacks", ocrParts[1])
-		;MsgBox, %accountOpenPacks%
-		session.get("ocrSuccess", 1)
+        ;MsgBox, %trophyOCR%
+        ocrParts := StrSplit(trophyOCR, "/")
+        session.set("accountOpenPacks", ocrParts[1])
+        ;MsgBox, %accountOpenPacks%
+        session.get("ocrSuccess", 1)
 
-		UpdateAccount()
-	}
+        UpdateAccount()
+    }
 
-	if (FileExist(fullScreenshotFile))
-		FileDelete, %fullScreenshotFile%
+    if (FileExist(fullScreenshotFile))
+        FileDelete, %fullScreenshotFile%
 
-	FindImageAndClick("Profile_UserNameArrowInSettingMenu", 140, 496, , 200) ; go back to hamburger menu
+    FindImageAndClick("Profile_UserNameArrowInSettingMenu", 140, 496, , 200) ; go back to hamburger menu
 
     Loop {
         adbClick(34,65)
-			Delay(1)
+        Delay(1)
         adbClick(34,65)
-			Delay(1)
+        Delay(1)
         adbClick(34,65)
-			Delay(1)
+        Delay(1)
         if(FindOrLoseImage("Pack_PackPointButton", 0, failSafeTime)) {
             break
         } else {
-			adbClick_wbb(141, 480)
-			Delay(1)
-		}
-		failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+            adbClick_wbb(141, 480)
+            Delay(1)
+        }
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
     }
 }
 
@@ -339,11 +339,11 @@ CropAndFormatForOcr(inputFile, x := 0, y := 0, width := 200, height := 200, scal
     ; Crop to region, Scale up the image, Convert to greyscale, Increase contrast
     pBitmapFormatted := Gdip_CropResizeGreyscaleContrast(pBitmapOrignal, x, y, width, height, scaleUpPercent, 75)
 
-	; Dev-only debug dump (disabled for runtime performance):
-	; filePath := A_ScriptDir . "\temp\" .  session.get("winTitle") . "_AccountPacks_crop.png"
+    ; Dev-only debug dump (disabled for runtime performance):
+    ; filePath := A_ScriptDir . "\temp\" .  session.get("winTitle") . "_AccountPacks_crop.png"
     ; Gdip_SaveBitmapToFile(pBitmapFormatted, filePath)
 
-	; Cleanup references
+    ; Cleanup references
     Gdip_DisposeImage(pBitmapOrignal)
     return pBitmapFormatted
 }

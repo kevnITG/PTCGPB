@@ -65,9 +65,9 @@ BtnRefresh:
         Gdip_DisposeImage(pBgBitmap)
     if (pScaledBgBitmap)
         Gdip_DisposeImage(pScaledBgBitmap)
-    
+
     GuiControlGet, curInstance,, instanceList
-    
+
     winTitleWithClass := curInstance . " ahk_class Qt5156QWindowIcon"
     scaleParam := "283"
     titleHeight := 40
@@ -76,7 +76,7 @@ BtnRefresh:
     WinMove, %winTitleWithClass%, , , , %scaleParam%, %rowHeight%
 
     pBgBitmap := from_window(curInstance)
-    
+
     RedBox.exists := 0
     BlueBox.exists := 0
     UpdateDisplay()
@@ -84,7 +84,7 @@ return
 
 BtnSave:
     Gui, Submit, NoHide
-    
+
     if !RegExMatch(InputExpDate, "^\d{4}-\d{2}-\d{2}$") {
         MsgBox, 48, Format Error, Invalid Expiry Date format. (yyyy-mm-dd)`nExample: 2024-12-31
         return
@@ -106,11 +106,11 @@ BtnSave:
 
     ; 2. 최종 확인 창 (Yes/No)
     ConfirmMsg := "Are you sure you want to save the following details?`n`n"
-                . "Event Name: " . InputName . "`n"
-                . "Expiry Date: " . InputExpDate . "`n"
-                . "Expiry Time: " . InputExpTime . "`n"
-                . "Box Coordinates: Set"
-    
+        . "Event Name: " . InputName . "`n"
+        . "Expiry Date: " . InputExpDate . "`n"
+        . "Expiry Time: " . InputExpTime . "`n"
+        . "Box Coordinates: Set"
+
     MsgBox, 4, Final Confirmation, %ConfirmMsg%
     IfMsgBox, No
         return
@@ -125,7 +125,7 @@ BtnSave:
     pCroppedRed := Gdip_CloneBitmapArea(pBgBitmap, rx1, ry1, rw, rh)
     RedBase64 := BitmapToBase64(pCroppedRed)
     Gdip_DisposeImage(pCroppedRed)
-    
+
     bx1 := Min(BlueBox.x1, BlueBox.x2), by1 := Min(BlueBox.y1, BlueBox.y2)
     bx2 := Max(BlueBox.x1, BlueBox.x2), by2 := Max(BlueBox.y1, BlueBox.y2)
     bw := bx2 - bx1, bh := by2 - by1
@@ -135,27 +135,27 @@ BtnSave:
 
     convExpDate := StrReplace(InputExpDate, "-")
     convExpTime := StrReplace(InputExpTime, ":")
-    
-    SaveContent = 
+
+    SaveContent =
     (LTrim
-    [TargetInfo]
-    EventName=%InputName%
-    ExpiryDate=%convExpDate%
-    ExpiryTime=%convExpTime%
+        [TargetInfo]
+        EventName=%InputName%
+        ExpiryDate=%convExpDate%
+        ExpiryTime=%convExpTime%
 
-    [RedBox]
-    Coords=%rx1%, %ry1%, %rx2%, %ry2%
-    ImageData=%RedBase64%
+        [RedBox]
+        Coords=%rx1%, %ry1%, %rx2%, %ry2%
+        ImageData=%RedBase64%
 
-    [BlueBox]
-    Coords=%bx1%, %by1%, %bx2%, %by2%
-    ImageData=%BlueBase64%
+        [BlueBox]
+        Coords=%bx1%, %by1%, %bx2%, %by2%
+        ImageData=%BlueBase64%
     )
-    
+
     FileName := EventFolder . "\" . InputName . ".sevt"
     FileDelete, %FileName%
     FileAppend, %SaveContent%, %FileName%
-    
+
     MsgBox, 64, Success, The file %InputName%.sevt has been successfully saved in the Events folder.
 return
 
@@ -166,14 +166,53 @@ GuiClose:
     if (pDisplayBitmap)
         Gdip_DisposeImage(pDisplayBitmap)
     Gdip_Shutdown(pToken)
-    ExitApp
+ExitApp
+
+ResolveMuMuFolder(){
+    mumuFolder := getMuMuFolderInConfig()
+    if (!IsNumeric(mumuFolder))
+        return mumuFolder
+
+    settingsPath := A_ScriptDir . "\..\ Settings.ini"
+    IniRead, configuredFolder, %settingsPath%, UserSettings, folderPath, C:\Program Files\Netease
+    configuredFolder := Trim(configuredFolder)
+
+    resolvedFolder := TryResolveMuMuFolder(configuredFolder)
+    if (resolvedFolder != "")
+        return resolvedFolder
+
+    MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
+    return ""
+}
+
+TryResolveMuMuFolder(baseFolder){
+    subFolderList := ["MuMuPlayerGlobal-12.0", "MuMu Player 12", "MuMuPlayer-12.0", "MuMuPlayer", "MuMuPlayer-12", "MuMuPlayer12"]
+
+    if (!InStr(FileExist(baseFolder), "D"))
+        return ""
+
+    if (InStr(FileExist(baseFolder . "\vms"), "D") || InStr(FileExist(baseFolder . "\shell"), "D"))
+        return baseFolder
+
+    For idx, value in subFolderList {
+        mumuFolder := baseFolder . "\" . value
+        if (InStr(FileExist(mumuFolder), "D"))
+            return mumuFolder
+    }
+
+    return ""
+}
 
 LoadInstanceList(){
     instanceListStr := ""
     mumuBaseFolder := ""
     GuiControlGet, mumuBaseFolder,, MyText
 
-    mumuFolder := getMuMuFolder()
+    mumuFolder := ResolveMuMuFolder()
+    if (mumuFolder = "") {
+        GuiControl,, instanceList, |
+        return
+    }
     ; Loop through all VM directories
     Loop, Files, %mumuFolder%\vms\*, D
     {
@@ -245,12 +284,12 @@ WM_MOUSEMOVE(wParam, lParam, msg, hwnd) {
     if (hwnd = hScreenPic) {
         if (RedBox.drawing || BlueBox.drawing) {
             GetMousePosInCtrl(hScreenPic, x, y)
-            
+
             if (x == LastMouseX && y == LastMouseY)
                 return
-                
+
             LastMouseX := x, LastMouseY := y
-            
+
             if (RedBox.drawing)
                 RedBox.x2 := x, RedBox.y2 := y
             if (BlueBox.drawing)
@@ -271,15 +310,15 @@ GetMousePosInCtrl(hwnd, ByRef x, ByRef y) {
 UpdateDisplay() {
     global pBgBitmap, hScreenPic, PicWidth, PicHeight
     global RedBox, BlueBox
-    
+
     if (!pBgBitmap || pBgBitmap <= 0)
         return
-        
+
     pDisplayBitmap := Gdip_CreateBitmap(PicWidth, PicHeight)
     pGraphics := Gdip_GraphicsFromImage(pDisplayBitmap)
-    
+
     Gdip_DrawImage(pGraphics, pBgBitmap, 0, 0, PicWidth, PicHeight, 0, 0, PicWidth, PicHeight)
-    
+
     if (RedBox.exists || RedBox.drawing) {
         pPenRed := Gdip_CreatePen(0xFFFF0000, 2)
         x := Min(RedBox.x1, RedBox.x2), y := Min(RedBox.y1, RedBox.y2)
@@ -287,7 +326,7 @@ UpdateDisplay() {
         Gdip_DrawRectangle(pGraphics, pPenRed, x, y, w, h)
         Gdip_DeletePen(pPenRed)
     }
-    
+
     if (BlueBox.exists || BlueBox.drawing) {
         pPenBlue := Gdip_CreatePen(0xFF0000FF, 2)
         x := Min(BlueBox.x1, BlueBox.x2), y := Min(BlueBox.y1, BlueBox.y2)
@@ -295,12 +334,12 @@ UpdateDisplay() {
         Gdip_DrawRectangle(pGraphics, pPenBlue, x, y, w, h)
         Gdip_DeletePen(pPenBlue)
     }
-    
+
     hBitmap := Gdip_CreateHBITMAPFromBitmap(pDisplayBitmap)
-    
+
     Gdip_DeleteGraphics(pGraphics)
     Gdip_DisposeImage(pDisplayBitmap)
-    
+
     SendMessage, 0x172, 0x0, %hBitmap%, , ahk_id %hScreenPic%
     if (ErrorLevel)
         DeleteObject(ErrorLevel)
@@ -316,46 +355,46 @@ Min(a, b) {
 
 BitmapToBase64(pBitmap) {
     DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", true, "ptr*", pStream)
-    
+
     DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", nCount, "uint*", nSize)
     VarSetCapacity(ci, nSize)
     DllCall("gdiplus\GdipGetImageEncoders", "uint", nCount, "uint", nSize, "ptr", &ci)
-    
+
     cb := (A_PtrSize = 8) ? 104 : 76
     offset := (A_PtrSize = 8) ? 64 : 48
-    
+
     pCodec := 0
     Loop, % nCount {
         pCurrentCodec := &ci + (A_Index - 1) * cb
-        
+
         pMimeType := NumGet(pCurrentCodec + 0, offset, "ptr")
         sString := StrGet(pMimeType, "UTF-16")
-        
+
         if (sString = "image/png") {
             pCodec := pCurrentCodec
             break
         }
     }
-    
+
     if (!pCodec) {
         ObjRelease(pStream)
         MsgBox, 16, Error, Could not find PNG encoder.
         return ""
     }
-    
+
     DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "uint", 0)
-    
+
     DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData)
     pData := DllCall("GlobalLock", "ptr", hData)
     nSize := DllCall("GlobalSize", "uint", pData)
-    
+
     DllCall("Crypt32.dll\CryptBinaryToString", "ptr", pData, "uint", nSize, "uint", 0x01, "ptr", 0, "uint*", nReq)
     VarSetCapacity(sBase64, nReq * (A_IsUnicode ? 2 : 1), 0)
     DllCall("Crypt32.dll\CryptBinaryToString", "ptr", pData, "uint", nSize, "uint", 0x01, "str", sBase64, "uint*", nReq)
-    
+
     DllCall("GlobalUnlock", "ptr", hData)
     ObjRelease(pStream)
-    
+
     sBase64 := RegExReplace(sBase64, "\s+", "")
     return sBase64
 }

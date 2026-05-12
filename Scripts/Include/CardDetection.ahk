@@ -1,4 +1,4 @@
-﻿;===============================================================================
+;===============================================================================
 ; CardDetection.ahk - Card Detection Functions
 ;===============================================================================
 ; This file contains functions for detecting and processing cards in packs.
@@ -136,7 +136,6 @@ AnalysisBorder(totalCardsInPack) {
             cardRarityName := Checker.RarityName
 
             isFound := Checker.Search(pBitmap, totalCardsInPack, cardIndex)
-            
             if (isFound) {
                 if(currentPackInfo["TypeCount"][cardRarityName] = "")
                     currentPackInfo["TypeCount"][cardRarityName] := 0
@@ -191,13 +190,15 @@ FindCard(prefix) {
 ;-------------------------------------------------------------------------------
 ; FindGodPack - Detect if current pack is a god pack
 ;-------------------------------------------------------------------------------
-FindGodPack(invalidPack := false) {
+FindGodPack(invalidPack := false, cards := "") {
     global botConfig, session
 
     currentPackInfo := session.get("currentPackInfo")
     ; Check for normal borders.
     normalBorders := currentPackInfo["TypeCount"]["normal"]
     if (normalBorders) {
+        logMessage := "Instance: " . session.get("scriptName") " | Not a GP"
+        LogToFile(logMessage, "debug_cards.txt")
         CreateStatusMessage("Not a God Pack...",,,, false)
         return false
     }
@@ -213,18 +214,25 @@ FindGodPack(invalidPack := false) {
         ; Calculate tempStarCount by counting only valid 2-star cards for minimum check
         tempStarCount := currentPackInfo["TypeCount"]["fullart"] + currentPackInfo["TypeCount"]["rainbow"] + currentPackInfo["TypeCount"]["trainer"]
 
+        logMessage := "Instance: " . session.get("scriptName") " | tempStarCount " . tempStarCount
+        LogToFile(logMessage, "debug_cards.txt")
+
         if (requiredStars > 0 && tempStarCount < requiredStars) {
+            logMessage := "Instance: " . session.get("scriptName") " | passed check"
+            LogToFile(logMessage, "debug_cards.txt")
             CreateStatusMessage("Pack doesn't contain enough 2 stars...",,,, false)
             invalidPack := true
         }
     }
 
     if (invalidPack) {
-        GodPackFound("Invalid")
+        GodPackFound("Invalid", cards)
         RemoveFriends()
         IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
     } else {
-        GodPackFound("Valid")
+        logMessage := "Instance: " . session.get("scriptName") " | passed check"
+        LogToFile(logMessage, "debug_cards.txt")
+        GodPackFound("Valid", cards)
     }
 
     return session.get("keepAccount")
@@ -305,7 +313,7 @@ FoundStars(star) {
 ;-------------------------------------------------------------------------------
 ; GodPackFound - Process found god pack
 ;-------------------------------------------------------------------------------
-GodPackFound(validity) {
+GodPackFound(validity, cards := "") {
     global botConfig, session, DeadCheck, dictionaryData
 
     currentPackInfo := session.get("currentPackInfo")
@@ -326,7 +334,25 @@ GodPackFound(validity) {
 
     starCount := currentPackInfo["TypeCount"]["fullart"] + currentPackInfo["TypeCount"]["rainbow"] + currentPackInfo["TypeCount"]["trainer"]
 
-    screenShot := Screenshot(validity)
+    ; Try synthetic image from card IDs, fallback to real screenshot
+    isSyntheticGP := false
+    screenShot := ""
+    if (IsObject(cards) && cards.MaxIndex() > 0) {
+        synthGPPath := ""
+        if (GenerateSyntheticPackImage(cards, synthGPPath)) {
+            persistedGPPath := PersistSyntheticScreenshot(synthGPPath, validity)
+            if (persistedGPPath != "") {
+                screenShot := persistedGPPath
+                if (FileExist(synthGPPath))
+                    FileDelete, %synthGPPath%
+            } else {
+                screenShot := synthGPPath
+            }
+            isSyntheticGP := true
+        }
+    }
+    if (!isSyntheticGP)
+        screenShot := Screenshot(validity)
     accountFullPath := ""
 
     accountFile := saveAccount(validity, accountFullPath, "")
@@ -369,6 +395,12 @@ GodPackFound(validity) {
     if (friendCode = "" || !friendCode)
         friendCode := "Unknown"
 
+    openPack := session.get("openPack")
+    packDisplayName := ""
+    try packDisplayName := dictionaryData[botConfig.get("defaultBotLanguage")][openPack]
+    if (packDisplayName = "")
+        packDisplayName := (openPack != "" ? openPack : "Unknown Pack")
+
     CreateStatusMessage(Interjection . (invalid ? " " . invalid : "") . " God Pack found!",,,, false)
 
     logMessage := Interjection . "\n"
@@ -376,7 +408,7 @@ GodPackFound(validity) {
         logMessage .= username
     if (friendCode && friendCode != "Unknown")
         logMessage .= " (" . friendCode . ")"
-    logMessage .= "\n[" . starCount . "/5][" . session.get("packsInPool") . "P][" . dictionaryData[botConfig.get("defaultBotLanguage")][session.get("openPack")] . "] "
+    logMessage .= "\n[" . starCount . "/5][" . session.get("packsInPool") . "P][" . packDisplayName . "] "
     logMessage .= invalid . " God Pack found in instance: " . session.get("scriptName") . "\nFile name: " . accountFile . "\nBacking up to the Accounts\\GodPacks folder and continuing..."
 
     LogToFile(StrReplace(logMessage, "\n", " "), "GPlog.txt")
@@ -386,8 +418,35 @@ GodPackFound(validity) {
     } else if (!botConfig.get("InvalidCheck")) {
         LogToDiscord(logMessage, screenShot, true, (botConfig.get("sendAccountXml") ? accountFullPath : ""))
     }
+    ; Delete synthetic image after sending
+    ; GP screenshots are always kept on disk, matching fallback persistence behavior.
 }
 
+PersistSyntheticScreenshot(sourcePath, fileType := "Valid", subDir := "") {
+    global session
+
+    if (!sourcePath || !FileExist(sourcePath))
+        return ""
+
+    fileDir := A_ScriptDir "\..\Screenshots"
+    if !FileExist(fileDir)
+        FileCreateDir, %fileDir%
+
+    if (subDir) {
+        fileDir .= "\\" . subDir
+        if !FileExist(fileDir)
+            FileCreateDir, %fileDir%
+    }
+
+    fileName := A_Now . "_" . session.get("scriptName") . "_" . fileType . "_" . session.get("packsInPool") . "_packs_synth.png"
+    targetPath := fileDir "\\" . fileName
+
+    FileCopy, %sourcePath%, %targetPath%, 1
+    if (ErrorLevel)
+        return ""
+
+    return targetPath
+}
 ;-------------------------------------------------------------------------------
 ; FoundTradeable - Process found tradeable cards
 ;-------------------------------------------------------------------------------
@@ -456,7 +515,6 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
     }
 
     deviceAccount := GetDeviceAccountFromXML()
-
     savedXmlPath := ""
 
     if (!session.get("loadDir")) {
@@ -529,9 +587,9 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
 
     statusMessage := "Tradeable cards found"
 
-    CreateStatusMessage("Tradeable cards found! Logged to database and continuing...",,,, false)
+    CreateStatusMessage("Tradeable cards found! Continuing...",,,, false)
 
-    logMessage := statusMessage . " in instance: " . session.get("scriptName") . " (" . session.get("packsInPool") . " packs, " . dictionaryData[botConfig.get("defaultBotLanguage")][session.get("openPack")] . ") Logged to Trades Database. Screenshot file: " . screenShotFileName
+    logMessage := statusMessage . " in instance: " . session.get("scriptName") . " (" . session.get("packsInPool") . " packs, " . dictionaryData[botConfig.get("defaultBotLanguage")][session.get("openPack")] . ") Screenshot file: " . screenShotFileName
     LogToFile(logMessage, "S4T.txt")
 
     if (!botConfig.get("s4tSilent") && botConfig.get("s4tDiscordWebhookURL")) {
@@ -564,7 +622,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         discordMessage := statusMessage . " in instance: " . session.get("scriptName")
         discordMessage .= " (" . session.get("packsInPool") . " packs, " . session.get("openPack") . ")\n"
         discordMessage .= "Found: " . packDetailsMessage . "\n"
-        discordMessage .= "Screenshot File name: " . session.get("accountFileName") . "\nLogged to Trades Database and continuing..."
+        discordMessage .= "Screenshot File name: " . session.get("accountFileName") . "\nContinuing..."
 
         ; Prepare XML file path for attachment
         xmlFileToSend := ""
@@ -576,6 +634,418 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         LogToDiscord(discordMessage, screenShot, true, xmlFileToSend,, botConfig.get("s4tDiscordWebhookURL"), botConfig.get("s4tDiscordUserId"))
     }
     return
+}
+
+CheckCardsSimple(result) {
+    global botConfig, session
+
+    cards := result.cards
+    pack := result.pack
+    rarity := result.rarity
+
+    found1Dmnd       := CountOccurances(cards, rarity, 1)
+    found2Dmnd       := CountOccurances(cards, rarity, 2)
+    found3Dmnd       := CountOccurances(cards, rarity, 3)
+    found4Dmnd       := CountOccurances(cards, rarity, 4)
+    found1Star       := CountOccurances(cards, rarity, 7)
+    foundTrainer     := CountOccurances(cards, rarity, 5, "TR_")
+    foundFullArt     := CountOccurances(cards, rarity, 5, "PK_")
+    foundRainbow     := CountOccurances(cards, rarity, 8)
+    foundImmersive   := CountOccurances(cards, rarity, 9)
+    foundCrown       := CountOccurances(cards, rarity, 10)
+    foundShiny1Star  := CountOccurances(cards, rarity, 11)
+    foundShiny2Star  := CountOccurances(cards, rarity, 12)
+
+    tradeableList := []
+    tradeableList.Push({key: "3Diamond",  flag: botConfig.get("s4t3Dmnd"),      count: found3Dmnd})
+    tradeableList.Push({key: "4Diamond",  flag: botConfig.get("s4t4Dmnd"),      count: found4Dmnd})
+    tradeableList.Push({key: "1Star",     flag: botConfig.get("s4t1Star"),      count: found1Star})
+    tradeableList.Push({key: "Trainer",   flag: botConfig.get("s4tTrainer"),    count: foundTrainer})
+    tradeableList.Push({key: "FullArt",   flag: botConfig.get("s4tFullArt"),    count: foundFullArt})
+    tradeableList.Push({key: "Rainbow",   flag: botConfig.get("s4tRainbow"),    count: foundRainbow})
+    tradeableList.Push({key: "Immersive", flag: botConfig.get("s4tImmersive"),  count: foundImmersive})
+    tradeableList.Push({key: "Crown",     flag: botConfig.get("s4tCrown"),      count: foundCrown})
+    tradeableList.Push({key: "Shiny1Star",flag: botConfig.get("s4tShiny1Star"), count: foundShiny1Star})
+    tradeableList.Push({key: "Shiny2Star",flag: botConfig.get("s4tShiny2Star"), count: foundShiny2Star})
+
+    foundCards := {}
+    foundTradeable := 0
+    for _, item in tradeableList {
+        foundCards[item.key] := 0
+        if (item.flag) {
+            foundTradeable += item.count
+            foundCards[item.key] := item.count
+        }
+    }
+
+    if (foundTradeable > 0) {
+        scriptName := session.get("scriptName")
+        winTitle := session.get("winTitle")
+        loadDir := session.get("loadDir")
+        accountFileName := session.get("accountFileName")
+
+        order := ["1Diamond", "2Diamond", "3Diamond", "4Diamond", "1Star", "FullArt", "Rainbow", "Trainer", "Immersive", "Crown", "Shiny1Star", "Shiny2Star"]
+        out := ""
+        for key, value in foundCards
+            out .= key ": " value "`n"
+
+        displayNames := {}
+        displayNames["1Diamond"]   := "One Diamond"
+        displayNames["2Diamond"]   := "Two Diamond"
+        displayNames["3Diamond"]   := "Three Diamond"
+        displayNames["4Diamond"]   := "Four Diamond EX"
+        displayNames["1Star"]      := "One Star"
+        displayNames["Crown"]      := "Crown"
+        displayNames["Immersive"]  := "Immersive"
+        displayNames["Shiny1Star"] := "Shiny 1-Star"
+        displayNames["Shiny2Star"] := "Shiny 2-Star"
+        displayNames["Trainer"]    := "Trainer"
+        displayNames["Rainbow"]    := "Rainbow"
+        displayNames["FullArt"]    := "Full Art"
+
+        foundTradeable := 0
+        cardTypes := []
+        cardCounts := []
+        packDetailsMessage := ""
+
+        for _, type in order {
+            count := foundCards.HasKey(type) ? foundCards[type] : 0
+            foundTradeable += count
+
+            if (count > 0) {
+                cardTypes.Push(type)
+                cardCounts.Push(count)
+
+                if (packDetailsMessage != "")
+                    packDetailsMessage .= ", "
+                packDetailsMessage .= displayNames[type] . " (x" . count . ")"
+            }
+        }
+        deviceAccount := GetDeviceAccountFromXML()
+        savedXmlPath := ""
+
+        if (!loadDir) {
+            if (session.get("deviceAccountXmlMap").HasKey(deviceAccount) && FileExist(session.get("deviceAccountXmlMap")[deviceAccount])) {
+                savedXmlPath := session.get("deviceAccountXmlMap")[deviceAccount]
+                UpdateSavedXml(savedXmlPath)
+
+                SplitPath, savedXmlPath, xmlFileName
+                accountFileName := xmlFileName
+                session.set("accountFileName", accountFileName)
+            } else {
+                saveAccount("All", savedXmlPath)
+
+                if (savedXmlPath) {
+                    SplitPath, savedXmlPath, xmlFileName
+                    accountFileName := xmlFileName
+                    session.set("accountFileName", accountFileName)
+                    session.get("deviceAccountXmlMap")[deviceAccount] := savedXmlPath
+                }
+            }
+
+            tradeableData := {}
+            tradeableData.xmlPath := savedXmlPath
+            tradeableData.deviceAccount := deviceAccount
+            session.get("s4tPendingTradeables").Push(tradeableData)
+        } else {
+            saveDir := A_ScriptDir "\..\Accounts\Saved\" . scriptName
+            savedXmlPath := saveDir . "\" . accountFileName
+
+            if (!FileExist(savedXmlPath)) {
+                if (InStr(accountFileName, "_")) {
+                    parts := StrSplit(accountFileName, "_")
+                    if (parts.Length() >= 2) {
+                        timestampPattern := parts[2]
+                        Loop, Files, %saveDir%\*%timestampPattern%*.xml
+                        {
+                            savedXmlPath := A_LoopFileFullPath
+                            accountFileName := A_LoopFileName
+                            session.set("accountFileName", accountFileName)
+                            break
+                        }
+                    }
+                }
+            }
+
+            if (!FileExist(savedXmlPath)) {
+                CreateStatusMessage("Warning: Could not find account XML file for attachment", "", 0, 0, false)
+                LogToFile("FoundTradeable: Could not find XML file. accountFileName=" . accountFileName . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
+                savedXmlPath := ""
+            }
+        }
+
+        statusMessage := "Giftpack cards found"
+        ; Build filtered card list: only cards whose rarity is enabled in S4T settings
+        filteredCards := FilterCardsByS4T(cards, rarity)
+        ; Try to generate a synthetic image from card IDs
+        synthScreenShot := ""
+        if (filteredCards.MaxIndex() > 0) {
+            if (GenerateSyntheticPackImage(filteredCards, synthScreenShot) && botConfig.get("s4tKeepSyntheticScreenshots")) {
+                persistedGiftPath := PersistSyntheticScreenshot(synthScreenShot, "Tradeable", "Trades")
+                if (persistedGiftPath != "") {
+                    if (FileExist(synthScreenShot))
+                        FileDelete, %synthScreenShot%
+                    synthScreenShot := persistedGiftPath
+                }
+            }
+        }
+
+        if (!botConfig.get("s4tSilent") && botConfig.get("s4tDiscordWebhookURL")) {
+            discordMessage := statusMessage . " in instance: " . scriptName . "\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\n"
+
+            xmlFileToSend := ""
+            if (botConfig.get("s4tSendAccountXml") && savedXmlPath && FileExist(savedXmlPath))
+                xmlFileToSend := savedXmlPath
+
+            LogToDiscord(discordMessage, synthScreenShot, true, xmlFileToSend,, botConfig.get("s4tDiscordWebhookURL"), botConfig.get("s4tDiscordUserId"))
+        }
+        ; Delete synthetic image after sending
+        if (synthScreenShot && !botConfig.get("s4tKeepSyntheticScreenshots") && FileExist(synthScreenShot))
+            FileDelete, %synthScreenShot%
+    }
+}
+
+FoundTradeableNew(foundCards, pack := "", cards := "") {
+    global botConfig, session
+    global screenShotFileName
+
+    IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
+    session.set("keepAccount", true)
+
+    scriptName := session.get("scriptName")
+    winTitle := session.get("winTitle")
+    packsInPool := session.get("packsInPool")
+    openPack := session.get("openPack")
+    loadDir := session.get("loadDir")
+    accountFileName := session.get("accountFileName")
+
+    order := ["1Diamond", "2Diamond", "3Diamond", "4Diamond", "1Star", "FullArt", "Rainbow", "Trainer", "Immersive", "Crown", "Shiny1Star", "Shiny2Star"]
+    out := ""
+    for key, value in foundCards
+        out .= key ": " value "`n"
+
+    displayNames := {}
+    displayNames["1Diamond"]   := "One Diamond"
+    displayNames["2Diamond"]   := "Two Diamond"
+    displayNames["3Diamond"]   := "Three Diamond"
+    displayNames["4Diamond"]   := "Four Diamond EX"
+    displayNames["1Star"]      := "One Star"
+    displayNames["Crown"]      := "Crown"
+    displayNames["Immersive"]  := "Immersive"
+    displayNames["Shiny1Star"] := "Shiny 1-Star"
+    displayNames["Shiny2Star"] := "Shiny 2-Star"
+    displayNames["Trainer"]    := "Trainer"
+    displayNames["Rainbow"]    := "Rainbow"
+    displayNames["FullArt"]    := "Full Art"
+
+    foundTradeable := 0
+    cardTypes := []
+    cardCounts := []
+    packDetailsMessage := ""
+
+    for _, type in order {
+        count := foundCards.HasKey(type) ? foundCards[type] : 0
+        foundTradeable += count
+
+        if (count > 0) {
+            cardTypes.Push(type)
+            cardCounts.Push(count)
+
+            if (packDetailsMessage != "")
+                packDetailsMessage .= ", "
+            packDetailsMessage .= displayNames[type] . " (x" . count . ")"
+        }
+    }
+
+    if (botConfig.get("s4tWP") && botConfig.get("s4tWPMinCards") = 2 && foundTradeable < 2) {
+        CreateStatusMessage("s4t: insufficient cards (" . foundTradeable . "/2)",,,, false)
+        session.set("keepAccount", false)
+        return
+    }
+
+    deviceAccount := GetDeviceAccountFromXML()
+    savedXmlPath := ""
+
+    if (!loadDir) {
+        if (session.get("deviceAccountXmlMap").HasKey(deviceAccount) && FileExist(session.get("deviceAccountXmlMap")[deviceAccount])) {
+            savedXmlPath := session.get("deviceAccountXmlMap")[deviceAccount]
+            UpdateSavedXml(savedXmlPath)
+
+            SplitPath, savedXmlPath, xmlFileName
+            accountFileName := xmlFileName
+            session.set("accountFileName", accountFileName)
+        } else {
+            saveAccount("All", savedXmlPath)
+
+            if (savedXmlPath) {
+                SplitPath, savedXmlPath, xmlFileName
+                accountFileName := xmlFileName
+                session.set("accountFileName", accountFileName)
+                session.get("deviceAccountXmlMap")[deviceAccount] := savedXmlPath
+            }
+        }
+
+        tradeableData := {}
+        tradeableData.xmlPath := savedXmlPath
+        tradeableData.deviceAccount := deviceAccount
+        session.get("s4tPendingTradeables").Push(tradeableData)
+    } else {
+        saveDir := A_ScriptDir "\..\Accounts\Saved\" . scriptName
+        savedXmlPath := saveDir . "\" . accountFileName
+
+        if (!FileExist(savedXmlPath)) {
+            if (InStr(accountFileName, "_")) {
+                parts := StrSplit(accountFileName, "_")
+                if (parts.Length() >= 2) {
+                    timestampPattern := parts[2]
+                    Loop, Files, %saveDir%\*%timestampPattern%*.xml
+                    {
+                        savedXmlPath := A_LoopFileFullPath
+                        accountFileName := A_LoopFileName
+                        session.set("accountFileName", accountFileName)
+                        break
+                    }
+                }
+            }
+        }
+
+        if (!FileExist(savedXmlPath)) {
+            CreateStatusMessage("Warning: Could not find account XML file for attachment", "", 0, 0, false)
+            LogToFile("FoundTradeable: Could not find XML file. accountFileName=" . accountFileName . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
+            savedXmlPath := ""
+        }
+    }
+
+    screenShotFileName := ""
+    isSyntheticImage := false
+    ; Try to generate a synthetic image from card IDs (avoids storing real screenshots on disk)
+    if (IsObject(cards) && cards.MaxIndex() > 0) {
+        synthPath := ""
+        if (GenerateSyntheticPackImage(cards, synthPath)) {
+            if (botConfig.get("s4tKeepSyntheticScreenshots")) {
+                persistedTradePath := PersistSyntheticScreenshot(synthPath, "Tradeable", "Trades")
+                if (persistedTradePath != "") {
+                    if (FileExist(synthPath))
+                        FileDelete, %synthPath%
+                    synthPath := persistedTradePath
+                }
+            }
+
+            screenShot := synthPath
+            SplitPath, synthPath, screenShotFileName
+            isSyntheticImage := true
+        }
+    }
+    ; Fallback: real screenshot from emulator window
+    if (!isSyntheticImage)
+        screenShot := Screenshot("Tradeable", "Trades", screenShotFileName)
+
+    LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName)
+
+    statusMessage := "Tradeable cards found"
+    packName := (openPack != "") ? openPack : pack
+
+    CreateStatusMessage("Tradeable cards found! Continuing...",,,, false)
+
+    logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . packName . ") Screenshot file: " . screenShotFileName
+    LogToFile(logMessage, "S4T.txt")
+
+    if (!botConfig.get("s4tSilent") && botConfig.get("s4tDiscordWebhookURL")) {
+        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . packName . ")\nFound: " . packDetailsMessage . "\nFile name: " . accountFileName . "\nContinuing..."
+
+        xmlFileToSend := ""
+        if (botConfig.get("s4tSendAccountXml") && savedXmlPath && FileExist(savedXmlPath))
+            xmlFileToSend := savedXmlPath
+
+        LogToDiscord(discordMessage, screenShot, true, xmlFileToSend,, botConfig.get("s4tDiscordWebhookURL"), botConfig.get("s4tDiscordUserId"))
+    }
+
+    ; Delete synthetic image after sending (avoids accumulating screenshots on disk)
+    if (isSyntheticImage && !botConfig.get("s4tKeepSyntheticScreenshots") && screenShot && FileExist(screenShot))
+        FileDelete, %screenShot%
+
+    return
+}
+
+;-------------------------------------------------------------------------------
+; FilterCardsByS4T - Return only cards matching enabled S4T rarity settings
+;-------------------------------------------------------------------------------
+FilterCardsByS4T(cards, rarity) {
+    global botConfig
+
+    filteredCards := []
+    if (!IsObject(cards) || !IsObject(rarity))
+        return filteredCards
+
+    total := cards.MaxIndex()
+    Loop, % total {
+        i := A_Index
+        r := rarity[i] + 0
+        c := cards[i]
+
+        ; 1/2-diamond are never tradeable, always exclude from synthetic S4T images
+        if (r = 1 || r = 2)
+            continue
+
+        if (r = 3) {
+            if (botConfig.get("s4t3Dmnd") = 1)
+                filteredCards.Push(c)
+            continue
+        }
+
+        if (r = 4) {
+            if (botConfig.get("s4t4Dmnd") = 1)
+                filteredCards.Push(c)
+            continue
+        }
+
+        if (r = 5) {
+            prefix := SubStr(c, 1, 3)
+            if (prefix = "TR_" && botConfig.get("s4tTrainer") = 1)
+                filteredCards.Push(c)
+            else if (prefix = "PK_" && botConfig.get("s4tFullArt") = 1)
+                filteredCards.Push(c)
+            continue
+        }
+
+        if (r = 7) {
+            if (botConfig.get("s4t1Star") = 1)
+                filteredCards.Push(c)
+            continue
+        }
+
+        if (r = 8) {
+            if (botConfig.get("s4tRainbow") = 1)
+                filteredCards.Push(c)
+            continue
+        }
+
+        if (r = 9) {
+            if (botConfig.get("s4tImmersive") = 1)
+                filteredCards.Push(c)
+            continue
+        }
+
+        if (r = 10) {
+            if (botConfig.get("s4tCrown") = 1)
+                filteredCards.Push(c)
+            continue
+        }
+
+        if (r = 11) {
+            if (botConfig.get("s4tShiny1Star") = 1)
+                filteredCards.Push(c)
+            continue
+        }
+
+        if (r = 12) {
+            if (botConfig.get("s4tShiny2Star") = 1)
+                filteredCards.Push(c)
+            continue
+        }
+    }
+
+    return filteredCards
 }
 
 ;-------------------------------------------------------------------------------
@@ -595,4 +1065,95 @@ ProcessPendingTradeables() {
     }
 
     session.set("s4tPendingTradeables", [])
+}
+
+CountOccurances(cards, rarity, value, prefix := "") {
+    count := 0
+    total := cards.MaxIndex()
+
+    Loop, % total {
+        i := A_Index
+        if (rarity[i] = value && (prefix = "" || SubStr(cards[i], 1, StrLen(prefix)) = prefix))
+            count++
+    }
+
+    return count
+}
+
+WriteListToFile(list, filePath) {
+    output := ""
+
+    for index, value in list {
+        if (index > 1)
+            output .= ","
+        output .= value
+    }
+
+    FileDelete, %filePath%      ; overwrite existing file
+    FileAppend, %output%, %filePath%
+}
+
+AcquireCardImageLock(timeoutMs := 300000) {
+    lockName := "Global\PTCGPB_CardImage"
+    hMutex := DllCall("CreateMutex", "Ptr", 0, "Int", false, "Str", lockName, "Ptr")
+    if (!hMutex)
+        return 0
+
+    waitResult := DllCall("WaitForSingleObject", "Ptr", hMutex, "UInt", timeoutMs, "UInt")
+    ; WAIT_OBJECT_0 = 0, WAIT_ABANDONED = 0x80, WAIT_TIMEOUT = 0x102
+    if (waitResult != 0 && waitResult != 0x80) {
+        DllCall("CloseHandle", "Ptr", hMutex)
+        return 0
+    }
+    return hMutex
+}
+
+ReleaseCardImageLock(hMutex) {
+    if (!hMutex)
+        return
+    DllCall("ReleaseMutex", "Ptr", hMutex)
+    DllCall("CloseHandle", "Ptr", hMutex)
+}
+
+GenerateSyntheticPackImage(cards, ByRef outputPath) {
+    global session
+
+    outputPath := ""
+    if (!IsObject(cards) || cards.MaxIndex() = 0)
+        return false
+
+    scriptInst       := session.get("scriptName")
+    helperDir        := A_ScriptDir "\..\Helper"
+    helperTool       := helperDir "\cardimage.exe"
+    tmpFile          := helperDir "\" scriptInst ".txt"
+    tempDir          := A_ScriptDir . "\..\Screenshots\temp"
+
+    if (!FileExist(helperTool))
+        return false
+
+    if !FileExist(tempDir)
+        FileCreateDir, %tempDir%
+
+    WriteListToFile(cards, tmpFile)
+
+    outputPath := tempDir . "\synth_" . scriptInst . "_" . A_Now . ".png"
+
+    hCardImageLock := AcquireCardImageLock()
+    if (!hCardImageLock) {
+        outputPath := ""
+        return false
+    }
+
+    RunWait, "%helperTool%" "%tmpFile%" "%outputPath%", %helperDir%, Hide
+    ReleaseCardImageLock(hCardImageLock)
+    if (ErrorLevel) {
+        outputPath := ""
+        return false
+    }
+
+    if (!FileExist(outputPath)) {
+        outputPath := ""
+        return false
+    }
+    return true
 }

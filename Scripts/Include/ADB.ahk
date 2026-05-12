@@ -1,4 +1,4 @@
-﻿#Include *i %A_LineFile%\..\Gdip_All.ahk
+#Include *i %A_LineFile%\..\Gdip_All.ahk
 
 setADBBaseInfo(){
     mumuFolder := getMuMuFolder()
@@ -35,7 +35,7 @@ findAdbPorts() {
         MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
         ExitApp
     }
-    
+
     mumuFolder = %mumuFolder%\vms\*
 
     ; Loop through all directories in the base folder
@@ -137,7 +137,7 @@ DisableBackgroundServices() {
 
 initializeAdbShell() {
     global botConfig, session, Debug
-    
+
     RetryCount := 1
     MaxRetries := 5
     BackoffTime := 1000  ; Initial backoff time in milliseconds
@@ -226,14 +226,23 @@ waitUntilActivatePTCGPApp(){
     return true
 }
 
+doesMissionUserPrefsExist() {
+    global session
+
+    adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
+    result := Trim(CmdRet(adbCommand . " shell su -c '""test -f /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs && echo 1 || echo 0""'"), "`r`n`t ")
+    return (result = "1")
+}
+
 startPTCGPApp(){
     maxRetry := 5
     retryCount := 0
 
     stateResult := isCurrentScreenHome()
-    if(stateResult)
+    if(stateResult) {
+        adbWriteRaw("rm -f /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs")
         adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
-
+    }
     Loop, {
         stateResult := waitUntilActivatePTCGPApp()
         if(!stateResult)
@@ -255,9 +264,10 @@ closePTCGPApp(){
     stateResult := false
 
     stateResult := isCurrentScreenHome()
-    if(!stateResult)
+    if(!stateResult) {
+        adbWriteRaw("rm -f /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs")
         adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
-    
+    }
     Loop, {
         stateResult := isCurrentScreenHome()
         if(!stateResult)
@@ -267,7 +277,7 @@ closePTCGPApp(){
 
         if(retryCount > maxRetry)
             break
-        
+
         Sleep, 50
     }
     DelayH(100)
@@ -288,6 +298,18 @@ isCurrentScreenHome(){
 
 isTerminatePTCGPAppByADBShell(){
     result := adbWriteRaw("pidof jp.pokemon.pokemontcgp", true)
+    if (RegExMatch(result, "\d+")) {
+        return false
+    }
+    else
+        return true
+}
+
+isTerminatePTCGPHelperApp(){
+    global session
+
+    adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
+    result := CmdRet(adbCommand . " shell pidof ptcgpb")
     if (RegExMatch(result, "\d+")) {
         return false
     }
@@ -341,7 +363,7 @@ adbWriteRaw(command, isReturnning := false) {
                     initializeAdbShell()
                     break
                 }
-                
+
                 line := session.get("adbShell").StdOut.ReadLine()
                 if (line = "done"){
                     if(isReturnning)
@@ -361,7 +383,7 @@ adbWriteRaw(command, isReturnning := false) {
             }
             else
                 loopCount++
-            
+
         } catch e {
             errorMessage := IsObject(e) ? e.Message : e
             retries++
@@ -428,12 +450,12 @@ adbGesture(params) {
 adbTakeScreenshot(outputFile) {
     ; Percroy Optimization
     global session
-    
+
     static pTokenLocal := 0
     if (!pTokenLocal) {
         pTokenLocal := Gdip_Startup()
     }
-    
+
     deviceAddress := "127.0.0.1:" . session.get("adbPort")
     baseCommand := """" . session.get("adbPath") . """ -s " . deviceAddress
 
@@ -457,11 +479,11 @@ adbTakeScreenshot(outputFile) {
     if (outputDir && !FileExist(outputDir)) {
         FileCreateDir, %outputDir%
     }
-    
+
     result := Gdip_SaveBitmapToFile(pBitmap, outputFile)
-    
+
     Gdip_DisposeImage(pBitmap)
-    
+
     if (!result || result = -1) {
         deviceAddress := "127.0.0.1:" . session.get("adbPort")
         command := baseCommand . " exec-out screencap -p > """ .  outputFile . """"

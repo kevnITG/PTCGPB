@@ -1,4 +1,4 @@
-﻿;===============================================================================
+;===============================================================================
 ; AccountManager.ahk - Account Management Functions
 ;===============================================================================
 ; This file contains functions for managing game accounts.
@@ -22,8 +22,6 @@ loadAccount() {
     global botConfig, session
 
     session.get("missionDoneList")["beginnerMissionsDone"] := 0
-    session.get("missionDoneList")["soloBattleMissionDone"] := 0
-    session.get("missionDoneList")["intermediateMissionsDone"] := 0
     session.get("missionDoneList")["specialMissionsDone"] := 0
     session.get("missionDoneList")["accountHasPackInTesting"] := 0
     session.get("missionDoneList")["receivedGiftDone"] := 0
@@ -77,18 +75,6 @@ loadAccount() {
                     break
                 }
 
-				if(InStr(fileLines[1], "T")) {
-					; account has a pack under test
-
-				}
-				if (accountModifiedTimeDiff >= 24){
-					if(!InStr(fileLines[1], "T") || accountModifiedTimeDiff >= 5*24) {
-						; otherwise account has a pack under test
-						session.set("accountFileName", fileLines[1])
-						break
-					}
-				}
-
                 if (foundValidAccount)
                     break
 
@@ -124,8 +110,13 @@ loadAccount() {
     Sleep, 100
     ; Reliably restart the app: Wait for launch, and start in a clean, new task without animation.
     startPTCGPApp()
-    ; Parse account filename for pack info (unchanged)
-    if (InStr(session.get("accountFileName"), "P")) {
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
+    loadedAccountPath := saveDir . "\" . session.get("accountFileName")
+    loadedAccountMeta := AccountMetadata_Get(session.get("scriptName"), session.get("accountFileName"), loadedAccountPath)
+    if (loadedAccountMeta["packCount"] != "") {
+        session.set("accountOpenPacks", loadedAccountMeta["packCount"] + 0)
+        session.set("accountHasPackInfo", 1)
+    } else if (InStr(session.get("accountFileName"), "P")) {
         accountFileNameParts := StrSplit(session.get("accountFileName"), "P")
         session.set("accountOpenPacks", accountFileNameParts[1])
         session.set("accountHasPackInfo", 1)
@@ -137,6 +128,7 @@ loadAccount() {
     currentAccountInfo .= "Account: " . session.get("accountFileName") . "`nDeviceAccount: " . session.get("deviceAccount")
     CreateStatusMessage(currentAccountInfo, "AccountInfo", 0, 46, false)
     SetTimer, DestoryAccountInfoUI, -15000
+
     getMetaData()
 
     return loadFile
@@ -187,6 +179,43 @@ MarkAccountAsUsed() {
 }
 
 ;-------------------------------------------------------------------------------
+; MarkAccountAsClaimed - Mark account as claimed (Inject Rewards) without 24h lock
+;-------------------------------------------------------------------------------
+MarkAccountAsClaimed() {
+    global session
+
+    if (!session.get("currentLoadedAccountIndex") || !session.get("accountFileName")) {
+        LogToFile("Warning: MarkAccountAsClaimed called but no current account tracked")
+        return
+    }
+
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
+    outputTxt := saveDir . "\list_current.txt"
+
+    ; Remove the account from list_current.txt (so this session doesn't reprocess it)
+    if FileExist(outputTxt) {
+        FileRead, fileContent, %outputTxt%
+        fileLines := StrSplit(fileContent, "`n", "`r")
+
+        newListContent := ""
+        Loop, % fileLines.MaxIndex() {
+            if (A_Index != session.get("currentLoadedAccountIndex"))
+                newListContent .= fileLines[A_Index] "`r`n"
+        }
+
+        FileDelete, %outputTxt%
+        FileAppend, %newListContent%, %outputTxt%
+    }
+
+    ; Do NOT call TrackUsedAccount - account stays available for pack-opening immediately
+    if(botConfig.get("verboseLogging"))
+        LogToFile("Marked account as claimed (no 24h lock): " . session.get("accountFileName"))
+
+    ; Reset tracking
+    session.set("currentLoadedAccountIndex", 0)
+}
+
+;-------------------------------------------------------------------------------
 ; saveAccount - Save current account from game to XML file
 ;-------------------------------------------------------------------------------
 saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag := false) {
@@ -196,25 +225,19 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag :
     xmlFile := ""  ; Initialize xmlFile for all branches
 
     if (file = "All") {
-        metadata := ""
-        if(session.get("missionDoneList")["beginnerMissionsDone"])
-            metadata .= "B"
-        if(session.get("missionDoneList")["soloBattleMissionDone"])
-            metadata .= "S"
-        if(session.get("missionDoneList")["intermediateMissionsDone"])
-            metadata .= "I"
-        if(session.get("missionDoneList")["specialMissionsDone"])
-            metadata .= "X"
-        if(session.get("missionDoneList")["accountHasPackInTesting"])
-            metadata .= "T"
-        if(session.get("missionDoneList")["receivedGiftDone"])
-            metadata .= "R"
-
         saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
 
-        ; Create filename components
-        timestamp := A_Now
-        xmlFile := session.get("accountOpenPacks") . "P_" . timestamp . "_" . session.get("scriptName") . "(" . metadata . ").xml"
+        deviceAccountForFile := session.get("deviceAccount")
+        if (deviceAccountForFile = "")
+            deviceAccountForFile := GetDeviceAccountFromXML()
+        if (deviceAccountForFile != "")
+            session.set("deviceAccount", deviceAccountForFile)
+        if (deviceAccountForFile != "") {
+            safeDeviceAccount := RegExReplace(deviceAccountForFile, "[\\/:*?""<>|]", "_")
+            xmlFile := safeDeviceAccount . ".xml"
+        } else {
+            xmlFile := A_Now . "_" . session.get("scriptName") . ".xml"
+        }
         filePath := saveDir . "\" . xmlFile
 
     } else if (file = "Valid" || file = "Invalid") {
@@ -273,6 +296,39 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag :
     IniWrite, %now%, % session.get("scriptIniFile"), Metrics, LastEndTimeUTC
     EnvSub, now, 1970, seconds
     IniWrite, %now%, % session.get("scriptIniFile"), Metrics, LastEndEpoch
+
+    if (xmlFile != "" && filePath != "") {
+        FileGetTime, savedModTime, %filePath%, M
+        accountMeta := AccountMetadata_Get(session.get("scriptName"), xmlFile, filePath)
+        if (file = "All")
+            accountMeta["packCount"] := session.get("accountOpenPacks")
+        else
+            accountMeta["packCount"] := AccountMetadata_ExtractPackCount(xmlFile)
+        accountMeta["lastModified"] := savedModTime
+
+        if (file = "All") {
+            flags := {"B": session.get("missionDoneList")["beginnerMissionsDone"]
+                , "X": session.get("missionDoneList")["specialMissionsDone"]
+                , "T": session.get("missionDoneList")["accountHasPackInTesting"]
+                , "R": session.get("missionDoneList")["receivedGiftDone"]}
+
+            for flag, value in flags {
+                if (!accountMeta["flags"].HasKey(flag))
+                    accountMeta["flags"][flag] := AccountMetadata_NewFlag(0)
+                accountMeta["flags"][flag]["value"] := value ? 1 : 0
+                accountMeta["flags"][flag]["setAt"] := value ? AccountMetadata_Now() : ""
+                if (flag = "T" && value) {
+                    validUntil := savedModTime
+                    validUntil += 5, Days
+                    accountMeta["flags"][flag]["validUntil"] := validUntil
+                } else if (!value) {
+                    accountMeta["flags"][flag]["validUntil"] := ""
+                }
+            }
+        }
+
+        AccountMetadata_SaveAccount(session.get("scriptName"), xmlFile, accountMeta)
+    }
 
     return xmlFile  ; Now returns the filename for all branches
 }
@@ -362,172 +418,300 @@ CleanupUsedAccounts() {
 }
 
 ;-------------------------------------------------------------------------------
-; UpdateAccount - Update account filename with pack count
+; UpdateAccount - Update account metadata with pack count
 ;-------------------------------------------------------------------------------
 UpdateAccount() {
     global session
 
-    accountOpenPacksStr := session.get("accountOpenPacks")
-    if(session.get("accountOpenPacks") < 10)
-        accountOpenPacksStr := "0" . session.get("accountOpenPacks") ; add a trailing 0 for sorting
-
-    if(InStr(session.get("accountFileName"), "P")){
-        accountFileNameParts := StrSplit(session.get("accountFileName"), "P")  ; Split at P
-        AccountNewName := accountOpenPacksStr . "P" . accountFileNameParts[2]
-    } else if (session.get("ocrSuccess"))
-        AccountNewName := accountOpenPacksStr . "P_" . session.get("accountFileNameOrig")
-    else
-        return ; if OCR is not successful, don't modify account file
-
-    if(!InStr(session.get("accountFileName"), "P") || session.get("accountOpenPacks") > 0) {
-        saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
-        session.set("accountFile", saveDir . "\" . session.get("accountFileName"))
-        accountNewFile := saveDir . "\" . AccountNewName
-        FileMove, % session.get("accountFile"), %accountNewFile% ;TODO enable
-        FileSetTime,, %accountNewFile%
-        session.set("accountFileName", AccountNewName)
+    if (session.get("accountFileName") != "" && session.get("accountOpenPacks") > 0) {
+        accountMeta := AccountMetadata_NewAccount(session.get("scriptName"), session.get("accountFileName"))
+        accountMeta["deviceAccount"] := session.get("deviceAccount")
+        accountMeta["packCount"] := session.get("accountOpenPacks") + 0
+        AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
     }
 
     updateTotalTime()
-    
+
     session.set("VRAMUsage", GetVRAMByScriptName(session.get("scriptName")))
     ; Direct display of metrics rather than calling function
     CreateStatusMessage(generateStatusText(), "AvgRuns", 0, 605, false, true)
 }
 
 ;-------------------------------------------------------------------------------
-; getMetaData - Read metadata flags from account filename
+; getMetaData - Read metadata flags
 ;-------------------------------------------------------------------------------
 getMetaData() {
     global session
 
     session.get("missionDoneList")["beginnerMissionsDone"] := 0
-    session.get("missionDoneList")["soloBattleMissionDone"] := 0
-    
-    session.get("missionDoneList")["intermediateMissionsDone"] := 0
+
     session.get("missionDoneList")["specialMissionsDone"] := 0
     session.get("missionDoneList")["accountHasPackInTesting"] := 0
     session.get("missionDoneList")["receivedGiftDone"] := 0
 
-    ; check if account file has metadata information
-    if(InStr(session.get("accountFileName"), "(")) {
-        accountFileNameParts1 := StrSplit(session.get("accountFileName"), "(")  ; Split at (
-        if(InStr(accountFileNameParts1[2], ")")) {
-            ; has metadata information
-            accountFileNameParts2 := StrSplit(accountFileNameParts1[2], ")")  ; Split at )
-            metadata := accountFileNameParts2[1]
-            if(InStr(metadata, "R"))
-                session.get("missionDoneList")["receivedGiftDone"] := 1
-            if(InStr(metadata, "B"))
-                session.get("missionDoneList")["beginnerMissionsDone"] := 1
-            if(InStr(metadata, "S"))
-                session.get("missionDoneList")["soloBattleMissionDone"] := 1
-            if(InStr(metadata, "I"))
-                session.get("missionDoneList")["intermediateMissionsDone"] := 1
-            if(InStr(metadata, "X"))
-                session.get("missionDoneList")["specialMissionsDone"] := 1
-            if(InStr(metadata, "T")) {
-                saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
-                session.set("accountFile", saveDir . "\" . session.get("accountFileName"))
-                FileGetTime, fileTime, % session.get("accountFile"), M  ; M for modification time
-                EnvSub, fileTime, %A_Now%, hours
-                hoursDiff := Abs(fileTime)
-                if(hoursDiff >= 5*24) {
-                    session.get("missionDoneList")["accountHasPackInTesting"] := 0
-                    setMetaData()
-                } else {
-                    session.get("missionDoneList")["accountHasPackInTesting"] := 1
-                }
-            }
+    saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
+    accountPath := saveDir . "\" . session.get("accountFileName")
+    accountMeta := AccountMetadata_Get(session.get("scriptName"), session.get("accountFileName"), accountPath)
+
+    if (IsObject(accountMeta["flags"])) {
+        if(accountMeta["flags"]["R"]["value"])
+            session.get("missionDoneList")["receivedGiftDone"] := 1
+        if(accountMeta["flags"]["B"]["value"])
+            session.get("missionDoneList")["beginnerMissionsDone"] := 1
+        if(accountMeta["flags"]["X"]["value"])
+            session.get("missionDoneList")["specialMissionsDone"] := 1
+        if(accountMeta["flags"]["T"]["value"])
+            session.get("missionDoneList")["accountHasPackInTesting"] := 1
+    }
+
+    if (session.get("missionDoneList")["accountHasPackInTesting"]) {
+        modTime := AccountMetadata_GetLastModified(session.get("scriptName"), session.get("accountFileName"), accountPath)
+        if (modTime = "")
+            return
+
+        hoursDiff := A_Now
+        EnvSub, hoursDiff, %modTime%, Hours
+        if(hoursDiff >= 5*24) {
+            session.get("missionDoneList")["accountHasPackInTesting"] := 0
+            setMetaData()
         }
     }
 }
 
 ;-------------------------------------------------------------------------------
-; setMetaData - Write metadata flags to account filename
+; setMetaData - Write metadata flags
 ;-------------------------------------------------------------------------------
 setMetaData() {
     global session
 
-    hasMetaData := 0
-    NamePartRightOfMeta := ""
-    NamePartLeftOfMeta := ""
-
-    ; check if account file has metadata information
-    if(InStr(session.get("accountFileName"), "(")) {
-        accountFileNameParts1 := StrSplit(session.get("accountFileName"), "(")  ; Split at (
-        NamePartLeftOfMeta := accountFileNameParts1[1]
-        if(InStr(accountFileNameParts1[2], ")")) {
-            ; has metadata information
-            accountFileNameParts2 := StrSplit(accountFileNameParts1[2], ")")  ; Split at )
-            NamePartRightOfMeta := accountFileNameParts2[2]
-            ;metadata := accountFileNameParts2[1]
-
-            hasMetaData := 1
-        }
-    }
-
-    metadata := ""
-    if(session.get("missionDoneList")["beginnerMissionsDone"])
-        metadata .= "B"
-    if(session.get("missionDoneList")["soloBattleMissionDone"])
-        metadata .= "S"
-    if(session.get("missionDoneList")["intermediateMissionsDone"])
-        metadata .= "I"
-    if(session.get("missionDoneList")["specialMissionsDone"])
-        metadata .= "X"
-    if(session.get("missionDoneList")["accountHasPackInTesting"])
-        metadata .= "T"
-    if(session.get("missionDoneList")["receivedGiftDone"])
-        metadata .= "R"
-
-    ; Remove parentheses if no flags remain, helpful if there is only a T flag or manual removal of X flag
-    if(hasMetaData) {
-        if (metadata = "") {
-            AccountNewName := NamePartLeftOfMeta . NamePartRightOfMeta
-        } else {
-            AccountNewName := NamePartLeftOfMeta . "(" . metadata . ")" . NamePartRightOfMeta
-        }
-    } else {
-        if (metadata = "") {
-            NameAndExtension := StrSplit(session.get("accountFileName"), ".")
-            AccountNewName := NameAndExtension[1] . ".xml"
-        } else {
-            NameAndExtension := StrSplit(session.get("accountFileName"), ".")
-            AccountNewName := NameAndExtension[1] . "(" . metadata . ").xml"
-        }
-    }
-
     saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
-    session.set("accountFile", saveDir . "\" . session.get("accountFileName"))
-    accountNewFile := saveDir . "\" . AccountNewName
-    FileMove, % session.get("accountFile"), %accountNewFile%
-    session.set("accountFileName", AccountNewName)
-}
+    accountFileName := session.get("accountFileName")
+    if (accountFileName = "")
+        return
 
-;-------------------------------------------------------------------------------
-; ExtractMetadata - Extract metadata string from filename
-;-------------------------------------------------------------------------------
-ExtractMetadata(fileName) {
-    if (!InStr(fileName, "(")) {
-        return ""  ; No parentheses, no metadata
+    accountPath := saveDir . "\" . accountFileName
+    originalModTime := ""
+    if (FileExist(accountPath))
+        FileGetTime, originalModTime, %accountPath%, M
+
+    accountMeta := AccountMetadata_Get(session.get("scriptName"), accountFileName, accountPath)
+    flags := {"B": session.get("missionDoneList")["beginnerMissionsDone"]
+        , "X": session.get("missionDoneList")["specialMissionsDone"]
+        , "T": session.get("missionDoneList")["accountHasPackInTesting"]
+        , "R": session.get("missionDoneList")["receivedGiftDone"]}
+
+    for flag, value in flags {
+        if (!accountMeta["flags"].HasKey(flag))
+            accountMeta["flags"][flag] := AccountMetadata_NewFlag(0)
+        oldValue := accountMeta["flags"][flag]["value"]
+        accountMeta["flags"][flag]["value"] := value ? 1 : 0
+        if (oldValue != accountMeta["flags"][flag]["value"])
+            accountMeta["flags"][flag]["setAt"] := value ? AccountMetadata_Now() : ""
+        if (flag = "T" && value && originalModTime != "") {
+            validUntil := originalModTime
+            validUntil += 5, Days
+            accountMeta["flags"][flag]["validUntil"] := validUntil
+        } else if (!value) {
+            accountMeta["flags"][flag]["validUntil"] := ""
+        }
     }
 
-    parts1 := StrSplit(fileName, "(")
-    if (!InStr(parts1[2], ")")) {
-        return ""  ; No closing parenthesis
+    if (originalModTime != "") {
+        accountMeta["lastModified"] := originalModTime
     }
 
-    parts2 := StrSplit(parts1[2], ")")
-    return parts2[1]  ; Return just the metadata between ( and )
+    AccountMetadata_SaveAccount(session.get("scriptName"), accountFileName, accountMeta)
 }
 
 ;-------------------------------------------------------------------------------
 ; HasFlagInMetadata - Check if a specific flag exists in metadata
 ;-------------------------------------------------------------------------------
 HasFlagInMetadata(fileName, flag) {
-    metadata := ExtractMetadata(fileName)
-    return InStr(metadata, flag) > 0
+    global session
+
+    if (IsObject(session) && session.get("scriptName") != "") {
+        metadataFound := false
+        metadataValue := AccountMetadata_GetFlag(session.get("scriptName"), fileName, flag, metadataFound)
+        if (metadataFound)
+            return metadataValue
+    }
+
+    return false
+}
+
+AccountEligibility_HoursSince(timestamp) {
+    if (timestamp = "" || timestamp = "0")
+        return 999999
+
+    hoursDiff := A_Now
+    EnvSub, hoursDiff, %timestamp%, Hours
+    return hoursDiff
+}
+
+AccountEligibility_ToUTC(timestamp) {
+    if (timestamp = "" || timestamp = "0")
+        return "0"
+
+    offsetSeconds := A_NowUTC
+    nowLocal := A_Now
+    EnvSub, offsetSeconds, %nowLocal%, Seconds
+
+    utcTimestamp := timestamp
+    utcTimestamp += %offsetSeconds%, Seconds
+    return utcTimestamp
+}
+
+AccountEligibility_CurrentDailyResetUTC() {
+    nowUTC := A_NowUTC
+    resetUTC := SubStr(nowUTC, 1, 8) . "060000"
+    if (nowUTC < resetUTC)
+        resetUTC += -1, Days
+    return resetUTC
+}
+
+AccountEligibility_WasAfterDailyReset(timestamp) {
+    if (timestamp = "" || timestamp = "0")
+        return false
+
+    return AccountEligibility_ToUTC(timestamp) >= AccountEligibility_CurrentDailyResetUTC()
+}
+
+AccountEligibility_GetFlag(accountMeta, flag) {
+    if (!IsObject(accountMeta["flags"]))
+        return AccountMetadata_NewFlag(0)
+    if (!accountMeta["flags"].HasKey(flag))
+        return AccountMetadata_NewFlag(0)
+    if (!IsObject(accountMeta["flags"][flag]))
+        return AccountMetadata_NewFlag(0)
+    return accountMeta["flags"][flag]
+}
+
+AccountEligibility_FlagIsSet(accountMeta, flag) {
+    flagObj := AccountEligibility_GetFlag(accountMeta, flag)
+    return flagObj["value"] ? true : false
+}
+
+AccountEligibility_FlagIsExpired(accountMeta, flag, hoursValid) {
+    flagObj := AccountEligibility_GetFlag(accountMeta, flag)
+    if (!flagObj["value"])
+        return true
+
+    if (flagObj["validUntil"] != "")
+        return A_Now >= flagObj["validUntil"]
+
+    if (flagObj["setAt"] = "")
+        return false
+
+    return AccountEligibility_HoursSince(flagObj["setAt"]) >= hoursValid
+}
+
+AccountEligibility_TFlagBlocks(accountMeta) {
+    if (!AccountEligibility_FlagIsSet(accountMeta, "T"))
+        return false
+
+    return !AccountEligibility_FlagIsExpired(accountMeta, "T", 5 * 24)
+}
+
+AccountEligibility_AddTimestamp(ByRef timestamps, timestamp) {
+    if (timestamp != "" && timestamp != "0")
+        timestamps.Push(timestamp)
+}
+
+AccountEligibility_AddFlagTimestamp(ByRef timestamps, accountMeta, flag) {
+    flagObj := AccountEligibility_GetFlag(accountMeta, flag)
+    if (flagObj["value"])
+        AccountEligibility_AddTimestamp(timestamps, flagObj["setAt"])
+}
+
+AccountEligibility_GetEarliestTimestamp(timestamps) {
+    earliest := ""
+    maxIndex := timestamps.MaxIndex()
+    if (!maxIndex)
+        return ""
+    Loop, % maxIndex {
+        timestamp := timestamps[A_Index]
+        if (timestamp = "" || timestamp = "0")
+            continue
+        if (earliest = "" || timestamp < earliest)
+            earliest := timestamp
+    }
+    return earliest
+}
+
+AccountEligibility_GetShinedustLastUpdatedAt(accountMeta) {
+    shinedust := AccountMetadata_NormalizeShinedust(accountMeta["shinedust"])
+    return shinedust["lastUpdatedAt"]
+}
+
+AccountEligibility_InjectRewardsEligible(accountMeta) {
+    global botConfig
+
+    doWonderpick := botConfig.get("wonderpickForEventMissions")
+    doSpecialMissions := botConfig.get("claimSpecialMissions")
+    doGift := botConfig.get("receiveGift")
+    doShinedust := botConfig.get("ocrShinedust") && botConfig.get("s4tEnabled")
+
+    if (!doWonderpick && !doSpecialMissions && !doGift && !doShinedust)
+        return !AccountEligibility_WasAfterDailyReset(accountMeta["lastLoggedIn"])
+
+    if (doWonderpick && AccountEligibility_FlagIsExpired(accountMeta, "W", 24))
+        return true
+    if (doSpecialMissions && !AccountEligibility_FlagIsSet(accountMeta, "X"))
+        return true
+    if (doGift && !AccountEligibility_FlagIsSet(accountMeta, "R"))
+        return true
+    if (doShinedust && AccountEligibility_HoursSince(AccountEligibility_GetShinedustLastUpdatedAt(accountMeta)) >= 24)
+        return true
+
+    return false
+}
+
+AccountEligibility_InjectPackEligible(accountMeta, method) {
+    if (method = "Inject Wonderpick 96P+" && AccountEligibility_TFlagBlocks(accountMeta))
+        return false
+
+    timestamps := []
+    AccountEligibility_AddFlagTimestamp(timestamps, accountMeta, "W")
+    AccountEligibility_AddFlagTimestamp(timestamps, accountMeta, "X")
+    AccountEligibility_AddFlagTimestamp(timestamps, accountMeta, "R")
+    AccountEligibility_AddTimestamp(timestamps, AccountEligibility_GetShinedustLastUpdatedAt(accountMeta))
+    AccountEligibility_AddTimestamp(timestamps, accountMeta["lastPackPulled"])
+
+    earliest := AccountEligibility_GetEarliestTimestamp(timestamps)
+    if (earliest = "")
+        return true
+
+    return AccountEligibility_HoursSince(earliest) >= 24
+}
+
+AccountEligibility_IsEligible(instance, fileName, filePath, accountMeta := "") {
+    global botConfig
+
+    method := botConfig.get("deleteMethod")
+    if (method = "Create Bots (13P)")
+        return true
+
+    if (!IsObject(accountMeta))
+        accountMeta := AccountMetadata_Get(instance, fileName, filePath)
+
+    if (method = "Inject Rewards")
+        return AccountEligibility_InjectRewardsEligible(accountMeta)
+
+    if (method = "Inject 13P+" || method = "Inject Wonderpick 96P+")
+        return AccountEligibility_InjectPackEligible(accountMeta, method)
+
+    return true
+}
+
+AccountEligibility_GetSortTimestamp(instance, fileName, filePath, accountMeta) {
+    sortTime := ""
+    if (IsObject(accountMeta))
+        sortTime := accountMeta["lastModified"]
+    if (sortTime != "")
+        return sortTime
+
+    FileGetTime, sortTime, %filePath%, M
+    return sortTime
 }
 
 ;-------------------------------------------------------------------------------
@@ -566,6 +750,12 @@ UpdateSavedXml(xmlPath) {
         if(count > 5)
             break
         count++
+    }
+
+    if (OutputVar > 0) {
+        SplitPath, xmlPath, xmlFileName
+        FileGetTime, updatedModTime, %xmlPath%, M
+        AccountMetadata_SetLastModified(session.get("scriptName"), xmlFileName, updatedModTime)
     }
 }
 
@@ -633,175 +823,31 @@ CreateAccountList(instance) {
         return
     }
 
-    ; If we're forcing regeneration due to empty lists, clear used accounts log
-    if (forceRegeneration) {
-        usedAccountsLog := saveDir . "\used_accounts.txt"
-        LogToFile("Forcing regeneration - clearing used accounts log to recover all accounts")
-
-        ; Backup the used accounts log before clearing
-        if (FileExist(usedAccountsLog)) {
-            backupLog := saveDir . "\used_accounts_backup_" . A_Now . ".txt"
-            FileCopy, %usedAccountsLog%, %backupLog%
-            LogToFile("Backed up used accounts log to: " . backupLog)
-        }
-
-        ; Clear the used accounts log
-        FileDelete, %usedAccountsLog%
-        LogToFile("Cleared used accounts log - all accounts now available again")
+    helperPath := AccountMetadata_HelperPath()
+    if (!FileExist(helperPath)) {
+        LogToFile("carddb.exe not found; cannot generate account schedule")
+        return
     }
 
-    parseInjectType := "Inject 13P+"  ; Default
+    root := getScriptBaseFolder()
+    command := """" . helperPath . """ --root """ . root . """ schedule-accounts"
+    command .= " --instance """ . instance . """"
+    command .= " --delete-method """ . botConfig.get("deleteMethod") . """"
+    command .= " --sort-method """ . botConfig.get("injectSortMethod") . """"
+    if (botConfig.get("wonderpickForEventMissions"))
+        command .= " --wonderpick-for-event-missions"
+    if (botConfig.get("claimSpecialMissions"))
+        command .= " --claim-special-missions"
+    if (botConfig.get("receiveGift"))
+        command .= " --receive-gift"
+    if (botConfig.get("ocrShinedust"))
+        command .= " --ocr-shinedust"
+    if (botConfig.get("s4tEnabled"))
+        command .= " --s4t-enabled"
+    if (forceRegeneration)
+        command .= " --force-clear-used"
 
-    ; Determine injection type and pack ranges
-    if (botConfig.get("deleteMethod") = "Inject 13P+") {
-        parseInjectType := "Inject 13P+"
-        minPacks := 0
-        maxPacks := 9999
-    }
-    else if (botConfig.get("deleteMethod") = "Inject Missions") {
-        parseInjectType := "Inject Missions"
-        minPacks := 0
-        maxPacks := 38
-    }
-    else if (botConfig.get("deleteMethod") = "Inject Wonderpick 96P+") {
-        parseInjectType := "Inject Wonderpick 96P+"
-        minPacks := 96
-        maxPacks := 9999
-    }
-
-    ; Load used accounts from cleaned up log (will be empty if we just cleared it)
-    usedAccountsLog := saveDir . "\used_accounts.txt"
-    usedAccounts := {}
-    if (FileExist(usedAccountsLog)) {
-        FileRead, usedAccountsContent, %usedAccountsLog%
-        Loop, Parse, usedAccountsContent, `n, `r
-        {
-            if (A_LoopField) {
-                parts := StrSplit(A_LoopField, "|")
-                if (parts.Length() >= 1) {
-                    usedAccounts[parts[1]] := 1
-                }
-            }
-        }
-    }
-
-    ; Delete existing list files before regenerating
-    if FileExist(outputTxt)
-        FileDelete, %outputTxt%
-    if FileExist(outputTxt_current)
-        FileDelete, %outputTxt_current%
-
-    ; Create arrays to store files with their timestamps
-    fileNames := []
-    fileTimes := []
-    packCounts := []
-
-    ; Gather all eligible files with their timestamps
-    Loop, %saveDir%\*.xml {
-        xml := saveDir . "\" . A_LoopFileName
-
-        ; Skip if this account was recently used (unless we just cleared the log)
-        if (usedAccounts.HasKey(A_LoopFileName)) {
-            if (botConfig.get("verboseLogging"))
-                LogToFile("Skipping recently used account: " . A_LoopFileName)
-            continue
-        }
-
-        ; Get file modification time
-        modTime := ""
-        FileGetTime, modTime, %xml%, M
-
-        ; Calculate hours difference properly
-        hoursDiff := A_Now
-        timeVar := modTime
-        EnvSub, hoursDiff, %timeVar%, Hours
-
-        ; Always maintain strict age requirements - never relax them
-        if (hoursDiff < 24) {
-            if (botConfig.get("verboseLogging"))
-                LogToFile("Skipping account less than 24 hours old: " . A_LoopFileName . " (age: " . hoursDiff . " hours)")
-            continue
-        }
-
-        ; Check if account has "T" flag and needs more time (always 5 days)
-        if(HasFlagInMetadata(A_LoopFileName, "T")) {
-            if(hoursDiff < 5*24) {  ; Always 5 days for T-flagged accounts
-                ; if (verboseLogging)
-                    ; LogToFile("Skipping account with T flag (testing): " . A_LoopFileName . " (age: " . hoursDiff . " hours, needs 5 days)")
-                continue
-            }
-        }
-
-        ; Extract pack count from filename
-        packCount := 0
-
-        ; Extract the number before P
-        if (RegExMatch(A_LoopFileName, "^(\d+)P", packMatch)) {
-            packCount := packMatch1 + 0  ; Force numeric conversion
-        } else {
-            packCount := 10  ; Default for unrecognized formats
-            ; if (verboseLogging)
-                ; LogToFile("Unknown filename format: " . A_LoopFileName . ", assigned default pack count: 10")
-        }
-
-        ; Check if pack count fits the current injection range
-        if (packCount < minPacks || packCount > maxPacks) {
-            ; if (verboseLogging)
-                ; LogToFile("  - SKIPPING: " . A_LoopFileName . " - Pack count " . packCount . " outside range " . minPacks . "-" . maxPacks)
-            continue
-        }
-
-        ; Store filename, modification time, and pack count
-        fileNames.Push(A_LoopFileName)
-        fileTimes.Push(modTime)
-        packCounts.Push(packCount)
-        ; if (verboseLogging)
-            ; LogToFile("  - KEEPING: " . A_LoopFileName . " - Pack count " . packCount . " inside range " . minPacks . "-" . maxPacks . " (age: " . hoursDiff . " hours)")
-    }
-
-    ; Log counts
-    totalEligible := (fileNames.MaxIndex() ? fileNames.MaxIndex() : 0)
-
-    if (forceRegeneration) {
-        LogToFile("FORCED REGENERATION: Found " . totalEligible . " eligible files (cleared used accounts, maintained strict age requirements)")
-    } else {
-        LogToFile("Found " . totalEligible . " eligible files (>= 24 hours old, not recently used, packs: " . minPacks . "-" . maxPacks . ")")
-    }
-
-    ; Sort regular files based on selected method
-    if (fileNames.MaxIndex() > 0) {
-        sortMethod := botConfig.get("injectSortMethod")
-
-        if (sortMethod == "ModifiedAsc") {
-            SortArraysByProperty(fileNames, fileTimes, packCounts, "time", 1)
-        } else if (sortMethod == "ModifiedDesc") {
-            SortArraysByProperty(fileNames, fileTimes, packCounts, "time", 0)
-        } else if (sortMethod == "PacksAsc") {
-            SortArraysByProperty(fileNames, fileTimes, packCounts, "packs", 1)
-        } else if (sortMethod == "PacksDesc") {
-            SortArraysByProperty(fileNames, fileTimes, packCounts, "packs", 0)
-        } else {
-            ; Default to ModifiedAsc if unknown sort method
-            SortArraysByProperty(fileNames, fileTimes, packCounts, "time", 1)
-        }
-    }
-
-    ; Write sorted files to list.txt and list_current.txt
-    listContent := ""
-
-    ; Add files to list
-    Loop, % fileNames.MaxIndex() {
-        listContent .= fileNames[A_Index] . "`r`n"
-    }
-
-    ; Write to both files
-    if (listContent != "") {
-        FileAppend, %listContent%, %outputTxt%
-        FileAppend, %listContent%, %outputTxt_current%
-    }
-
-    ; Record generation timestamp
-    currentTime := A_Now
-    FileDelete, %lastGeneratedFile%
-    FileAppend, %currentTime%, %lastGeneratedFile%
+    RunWait, %command%,, Hide
+    if (ErrorLevel)
+        LogToFile("carddb schedule-accounts failed for instance " . instance)
 }

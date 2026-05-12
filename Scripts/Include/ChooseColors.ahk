@@ -1,4 +1,4 @@
-﻿ChooseColors(GuiOptions:="", Colors*) { ;                 ChooseColors() v0.97 by SKAN, on D46L/D47K @ tiny.cc/choosecolors
+ChooseColors(GuiOptions:="", Colors*) { ;                 ChooseColors() v0.97 by SKAN, on D46L/D47K @ tiny.cc/choosecolors
 Local
   _Batchlines:= A_BatchLines
   SetBatchLines -1

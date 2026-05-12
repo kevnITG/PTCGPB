@@ -34,6 +34,7 @@ DllCall("ntdll\ZwDelayExecution","Int",0,"Int64*",-5000)
 #Include DropDownColor.ahk
 #Include SpecialEvent.ahk
 #Include Utils.ahk
+#Include AccountMetadata.ahk
 #Include GitManager.ahk
 
 version = Arturos PTCGP Bot
@@ -41,12 +42,13 @@ version = Arturos PTCGP Bot
 OnError("ErrorHandler")
 
 githubUser := "kevnITG"
-   ,repoName := "PTCGPB"
-   ,localVersion := "v9.6.4"
-   ,modVersion := "v5.6"
-   ,scriptFolder := A_ScriptDir
-   ,zipPath := A_Temp . "\update.zip"
-   ,extractPath := A_Temp . "\update"
+    ,repoName := "PTCGPB"
+    ,localVersion := "v9.6.4"
+    ,modVersion := "v0.9.0"
+    ,scriptFolder := A_ScriptDir
+    ,zipPath := A_Temp . "\update.zip"
+    ,extractPath := A_Temp . "\update"
+    ,modRepoUser := "Leanny"
 
 global GUI_WIDTH := 790
 global GUI_HEIGHT := 370
@@ -82,7 +84,6 @@ botConfig.loadSettingsToConfig("ALL")
 SetTimer, ShowSwipeSpeedToolTip, 50
 
 hasInvalidScale := false
-
 monitorScaleList := GetAllMonitorScales()
 For idx, scaleValue in monitorScaleList {
     if(scaleValue != 100){
@@ -94,13 +95,13 @@ For idx, scaleValue in monitorScaleList {
 if (hasInvalidScale) {
     msgTitle := "Display Scale Warning"
     msgText := "WARNING: Display scale issue detected!`n`n"
-             . "To ensure the program works correctly, ALL monitors must be set to 100% scale in Windows settings.`n`n"
-             . "Please change your display scale to 100% and restart the program.`n`n"
-             . "[!] If you are ABSOLUTELY SURE all your monitors are already at 100% (script detection error), you can choose to ignore this warning.`n`n"
-             . "Do you want to ignore this warning and continue anyway?"
-    
+        . "To ensure the program works correctly, ALL monitors must be set to 100% scale in Windows settings.`n`n"
+        . "Please change your display scale to 100% and restart the program.`n`n"
+        . "[!] If you are ABSOLUTELY SURE all your monitors are already at 100% (script detection error), you can choose to ignore this warning.`n`n"
+        . "Do you want to ignore this warning and continue anyway?"
+
     MsgBox, 308, %msgTitle%, %msgText%
-    
+
     IfMsgBox, No
     {
         ExitApp
@@ -135,7 +136,7 @@ NextStep:
     botLang := botConfig.get("defaultBotLanguage")
     dict := dictionaryData[botLang]
     Gui, Destroy
-    
+
     RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
     if (!botConfig.get("debugMode") && !botConfig.get("shownLicense")) {
         MsgBox, 64, % dict["Title"], % dict["Content"]
@@ -143,13 +144,13 @@ NextStep:
         if (proxyEnabled)
             MsgBox, 64,, % dict["Notice"]
     }
-    
+
     KillADBProcesses()
-    CheckForUpdate()
-    
+    ;CheckForUpdate()
+
     scriptName := StrReplace(A_ScriptName, ".ahk")
     winTitle := scriptName
-    
+
     ; Reset InjectionCycleCount in all Scripts/*.ini files on startup
     Loop, Files, %A_ScriptDir%\Scripts\*.ini
     {
@@ -199,11 +200,13 @@ NextStep:
         defaultDelete := 2
     else if (botMethod = "Inject Wonderpick 96P+")
         defaultDelete := 3
-    Gui, Add, DropDownList, vui_deleteMethod gdeleteSettings choose%defaultDelete% x20 y210 w200 Background2A2A2A cWhite, Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+
+    else if (botMethod = "Inject Rewards")
+        defaultDelete := 4
+    Gui, Add, DropDownList, vui_deleteMethod gdeleteSettings choose%defaultDelete% x20 y210 w200 Background2A2A2A cWhite, Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+|Inject Rewards
 
     Gui, Add, Checkbox, % (botConfig.get("packMethod") ? "Checked" : "") " vui_packMethod x20 y240 " . sectionColor . ((botMethod = "Inject Wonderpick 96P+") ? "" : " Hidden"), % dict["Txt_packMethod"]
     Gui, Add, Checkbox, % (botConfig.get("openExtraPack") ? "Checked" : "") " vui_openExtraPack gopenExtraPackSettings x20 y260 " . sectionColor . ((botMethod = "Inject Wonderpick 96P+" || botMethod = "Inject 13P+") ? "" : " Hidden"), % dict["Txt_openExtraPack"]
-    Gui, Add, Checkbox, % (botConfig.get("spendHourGlass") ? "Checked" : "") " vui_spendHourGlass gspendHourGlassSettings x20 y280 " . sectionColor . ((botMethod = "Create Bots (13P)")? " Hidden":""), % dict["Txt_spendHourGlass"]
+    Gui, Add, Checkbox, % (botConfig.get("spendHourGlass") ? "Checked" : "") " vui_spendHourGlass gspendHourGlassSettings x20 y280 " . sectionColor . ((botMethod = "Create Bots (13P)" || botMethod = "Inject Rewards")? " Hidden":""), % dict["Txt_spendHourGlass"]
 
     Gui, Add, Text, x20 y305 %sectionColor% vui_SortByText, % dict["SortByText"]
     sortOption := 1
@@ -240,21 +243,21 @@ NextStep:
     sectionColor := "cFF4500"
     Gui, Font, s10 cWhite, Segoe UI
     Gui, Add, GroupBox, x255 y55 w180 h50 %sectionColor%, % dict["CardDetection"]
-    
+
     Gui, Add, Button, x275 y75 w140 h25 gShowCardDetection vui_CardDetectionButton BackgroundTrans, Loading...
-    
+
     UpdateCardDetectionButtonText()
 
     ; =================== UI - Save for Trade ===================
     sectionColor := "c4169E1"
     Gui, Font, s10 cWhite, Segoe UI
     Gui, Add, GroupBox, x255 y110 w180 h70 %sectionColor%, % dict["SaveForTrade"]
-    
+
     Gui, Add, Button, x275 y130 w140 h25 gShowS4TSettings vui_S4TButton BackgroundTrans, Loading...
-    
+
     Gui, Font, s6 cWhite, Segoe UI
-    Gui, Add, Button, x295 y160 w100 h15 gOpenTradesDashboard BackgroundTrans, Open Trades Dashboard
-    
+    Gui, Add, Button, x292 y160 w106 h15 gOpenCardDatabase BackgroundTrans, Open Card Database
+
     UpdateS4TButtonText()
 
     ; =================== UI - Group Settings ===================
@@ -312,7 +315,7 @@ NextStep:
     Gui, Font, s12 cWhite Bold
     Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % dict["title_main"]
     Gui, Font, s10 cWhite Bold
-    Gui, Add, Text, x621 y20 w155 h150 Left BackgroundTrans cWhite, % "`n" localVersion "`n(for Scale 100%)`n`nModder: Crinity " modVersion 
+    Gui, Add, Text, x621 y20 w155 h150 Left BackgroundTrans cWhite, % "`n" localVersion "`n(improve Card Detection)`n`nModder: Lean & xedranort " modVersion
 
     Gui, Add, Picture, gBuyMeCoffee x625 y130 w150, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -377,6 +380,26 @@ deleteSettings:
         GuiControl, Hide, ui_AccountName
         GuiControl, Hide, ui_WaitTime
         ; FriendID kept stored but only used when deleteMethod = "Inject Wonderpick 96P+"
+    } else if (curDeleteMethod = "Inject Rewards") {
+        GuiControl, Hide, ui_FriendID
+        GuiControl, Hide, ui_spendHourGlass
+        GuiControl, Hide, ui_packMethod
+        GuiControl, Hide, ui_openExtraPack
+        GuiControl, Show, ui_SortByText
+        GuiControl, Show, ui_SortByDropdown
+        GuiControl, Hide, ui_AccountNameText
+        GuiControl, Hide, ui_AccountName
+        GuiControl, Hide, ui_WaitTime
+        GuiControl,, ui_runMain, 0
+        GuiControl, Hide, ui_runMain
+        GuiControl, Hide, ui_Mains
+    }
+
+    if (curDeleteMethod != "Inject Rewards") {
+        GuiControl, Show, ui_runMain
+        GuiControlGet, isMainChecked, , ui_runMain
+        visible := isMainChecked ? "Show" : "Hide"
+        GuiControl, %visible%, ui_Mains
     }
 return
 
@@ -472,7 +495,7 @@ UpdatePackSelectionButtonText() {
         buttonText := selectedPacks[1] . " +" . (packCount - 1) . " more"
         fontSize := 7
     }
-    
+
     Gui, Font, s%fontSize% cWhite, Segoe UI
     GuiControl,, ui_PackSelectionButton, %buttonText%
     GuiControl, Font, ui_PackSelectionButton
@@ -480,15 +503,15 @@ UpdatePackSelectionButtonText() {
 
 ShowPackSelection:
     WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
-    
-    popupX := mainWinX + 275 + 140 + 10 
+
+    popupX := mainWinX + 275 + 140 + 10
     popupY := mainWinY - 50
-    
+
     Gui, PackSelect:Destroy
     Gui, PackSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Pack Selection
     Gui, PackSelect:Color, 1E1E1E, 333333
     Gui, PackSelect:Font, s10 cWhite, Segoe UI
-    
+
     windowWidth := 10
     seriesColumnSize := 170
     yInitSeries := 35
@@ -511,7 +534,7 @@ ShowPackSelection:
         seriesXPos := xInitSeries + ((seriesLoopIdx - 1) * seriesColumnSize)
         packYPos := yInitSeries
         Gui, PackSelect:Add, Text, % "x" . seriesXPos . " y10 cWhite", % seriesValue . "-Series"
-        
+
         For idx, packInfo in session.get("pokemonPackObj") {
             if(packInfo["Series"] != seriesValue)
                 continue
@@ -550,7 +573,7 @@ ShowPackSelection:
         For idx, packID in uncategorizedList {
             viewPackName := dict["Txt_" . packID] ? dict["Txt_" . packID] : packID
             isChecked := BotConfig.get(packID) ? "Checked" : ""
-            
+
             Gui, PackSelect:Add, Checkbox, vui_Select_%packID% %isChecked% x%xUncategorized% y%yUncategorized% cWhite, %viewPackName%
             yUncategorized += 25
         }
@@ -568,9 +591,9 @@ ApplyPackSelection:
     Gui, PackSelect:Submit, NoHide
     GoSub, savePackSelection
     Gui, PackSelect:Destroy
-    
+
     Gui, 1:Default
-    
+
     UpdatePackSelectionButtonText()
 return
 
@@ -595,7 +618,7 @@ ClearCardDetectionSettings() {
     botConfig.set("PseudoGodPack", 0, "Wonderpick")
     botConfig.set("InvalidCheck", 0, "Wonderpick")
     botConfig.set("minStars", 0, "Wonderpick")
-    
+
     ; Update GUI controls if they exist
     GuiControl,, ui_FullArtCheck_Popup, 0
     GuiControl,, ui_TrainerCheck_Popup, 0
@@ -603,15 +626,15 @@ ClearCardDetectionSettings() {
     GuiControl,, ui_PseudoGodPack_Popup, 0
     GuiControl,, ui_InvalidCheck_Popup, 0
     GuiControl,, ui_minStars_Popup, 0
-    
+
     UpdateCardDetectionButtonText()
 }
 
 UpdateCardDetectionButtonText() {
     global botConfig
-    
+
     enabledOptions := []
-    
+
     if (botConfig.get("FullArtCheck"))
         enabledOptions.Push("Single Full Art")
     if (botConfig.get("TrainerCheck"))
@@ -622,12 +645,12 @@ UpdateCardDetectionButtonText() {
         enabledOptions.Push("Double 2★")
     if (botConfig.get("InvalidCheck"))
         enabledOptions.Push("Ignore Invalid")
-    
+
     statusText := ""
     if (botConfig.get("minStars") > 0) {
         statusText .= "Min GP 2★: " . botConfig.get("minStars")
     }
-    
+
     if (enabledOptions.Length() > 0) {
         if (statusText != "")
             statusText .= "`n"
@@ -639,11 +662,11 @@ UpdateCardDetectionButtonText() {
             statusText .= "`n"
         statusText .= "No options selected"
     }
-    
+
     if (statusText = "No options selected" && (botConfig.get("minStars") = 0 || botConfig.get("minStars") = "")) {
         statusText := "Configure settings..."
     }
-    
+
     Gui, Font, s8 cWhite, Segoe UI
     GuiControl, Font, ui_CardDetectionButton
     GuiControl,, ui_CardDetectionButton, %statusText%
@@ -651,29 +674,29 @@ UpdateCardDetectionButtonText() {
 
 ShowCardDetection:
     Gui, Submit, NoHide
-    
+
     GuiControlGet, curMethod, , ui_deleteMethod
-    if (curMethod = "Create Bots (13P)" || curMethod = "Inject 13P+") {
+    if (curMethod = "Create Bots (13P)" || curMethod = "Inject 13P+"  || curMethod = "Inject Rewards") {
         MsgBox, 64, InjectWP Card Detection, Wonderpick Card Detection is for 'Inject Wonderpick 96P+' mode.`n`nTo find cards to trade, use 'Save for Trade' settings instead.
         return
     }
-    
+
     WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
-    
+
     popupX := mainWinX + 275 + 140 + 10
     popupY := mainWinY + 73 + 30
-    
+
     Gui, CardDetect:Destroy
     Gui, CardDetect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Wonderpick Card Detection Settings
     Gui, CardDetect:Color, 1E1E1E, 333333
     Gui, CardDetect:Font, s10 cWhite, Segoe UI
-    
+
     yPos := 15
-    
+
     Gui, CardDetect:Add, Text, x15 y%yPos% cWhite, Min GP 2★:
     Gui, CardDetect:Add, Edit, vui_minStars_Popup w20 x140 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, % (botConfig.get("minStars") ? botConfig.get("minStars") : 0)
     yPos += 25
-      
+
     Gui, CardDetect:Add, Checkbox, % (botConfig.get("FullArtCheck") ? "Checked" : "") " vui_FullArtCheck_Popup x15 y" . yPos . " cWhite", Single Full Art 2★
     yPos += 25
     Gui, CardDetect:Add, Checkbox, % (botConfig.get("TrainerCheck") ? "Checked" : "") " vui_TrainerCheck_Popup x15 y" . yPos . " cWhite", Single Trainer 2★
@@ -717,13 +740,13 @@ return
 
 ApplyCardDetection:
     Gui, CardDetect:Submit, NoHide
-    
+
     GoSub, saveCardDetection
-    
+
     Gui, CardDetect:Destroy
-    
+
     Gui, 1:Default
-    
+
     UpdateCardDetectionButtonText()
 return
 
@@ -746,7 +769,7 @@ return
 ; =================== UI - Group Settings(New Window, Details) ===================
 UpdateGroupRerollButtonText() {
     global botConfig, dict
-    
+
     if (!botConfig.get("groupRerollEnabled")) {
         Gui, Font, s8 cRed, Segoe UI
         GuiControl, Font, ui_GroupRerollButton
@@ -758,15 +781,15 @@ UpdateGroupRerollButtonText() {
 
     idsStatus := (botConfig.get("mainIdsURL") != "" && StrLen(botConfig.get("mainIdsURL")) > 5) ? "✓" : "✗"
     vipStatus := (botConfig.get("vipIdsURL") != "" && StrLen(botConfig.get("vipIdsURL")) > 5) ? "✓" : "✗"
-    
+
     statusText .= "`n" . idsStatus . " ids API " . vipStatus . " vip_ids API"
-    
+
     if (botConfig.get("autoUseGPTest"))
         statusText .= "`n• Auto GP Test"
     statusText .= "`n• GP test: " . (botConfig.get("hasUnopenedPack") ? "Unopened Pack" : "Standard")
     if (botConfig.get("applyRoleFilters"))
         statusText .= "`n• Role-Based filters"
-    
+
     Gui, Font, s7 cLime, Segoe UI
     GuiControl, Font, ui_GroupRerollButton
     GuiControl,, ui_GroupRerollButton, %statusText%
@@ -774,34 +797,34 @@ UpdateGroupRerollButtonText() {
 
 ShowGroupRerollSettings:
     WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
-    
+
     buttonCenterX := 345
     popupWidth := 250
     popupX := mainWinX + buttonCenterX - (popupWidth / 2)
     popupY := mainWinY + 183 + 30
-    
+
     Gui, GroupRerollSelect:Destroy
     Gui, GroupRerollSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Group Reroll Settings
     Gui, GroupRerollSelect:Color, 1E1E1E, 333333
     Gui, GroupRerollSelect:Font, s10 cWhite, Segoe UI
-    
+
     if (botConfig.get("gpTestWaitTime") = "" || (botConfig.get("gpTestWaitTime") + 0) <= 0)
         botConfig.set("gpTestWaitTime", 150, "GroupReroll")
-    
+
     yPos := 15
     Gui, GroupRerollSelect:Add, Checkbox, % (botConfig.get("groupRerollEnabled") ? "Checked" : "") " vui_groupRerollEnabled_Popup x15 y" . yPos . " cWhite", Enable Group Reroll
     yPos += 35
-    
+
     Gui, GroupRerollSelect:Add, Text, x15 y%yPos% cWhite, ids.txt API URL:
     yPos += 20
     Gui, GroupRerollSelect:Add, Edit, vui_mainIdsURL_Popup w220 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, % botConfig.get("mainIdsURL")
     yPos += 35
-    
+
     Gui, GroupRerollSelect:Add, Text, x15 y%yPos% cWhite, vip_ids.txt API URL:
-    yPos += 20  
+    yPos += 20
     Gui, GroupRerollSelect:Add, Edit, vui_vipIdsURL_Popup w220 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, % botConfig.get("vipIdsURL")
     yPos += 35
-    
+
     Gui, GroupRerollSelect:Add, Checkbox, % (botConfig.get("autoUseGPTest") ? "Checked" : "") " vui_autoUseGPTest_Popup x15 y" . yPos . " cWhite", Auto GPTest (s)
     yPos += 20
     Gui, GroupRerollSelect:Add, Edit, vui_TestTime_Popup w50 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite Center, % botConfig.get("TestTime")
@@ -824,7 +847,7 @@ ShowGroupRerollSettings:
     GroupReroll_yBtnExpanded := yPos
     GroupReroll_yBtnCollapsed := GroupReroll_yBtnExpanded - 50
     yPos += 40
-    
+
     Gui, GroupRerollSelect:Default
     if (botConfig.get("hasUnopenedPack")) {
         GuiControl, Hide, ui_gpTestWaitLabel
@@ -862,13 +885,13 @@ return
 
 ApplyGroupRerollSettings:
     Gui, GroupRerollSelect:Submit, NoHide
-    
+
     GoSub, saveGroupReroll
-    
+
     Gui, GroupRerollSelect:Destroy
-    
+
     Gui, 1:Default
-    
+
     UpdateGroupRerollButtonText()
 return
 
@@ -931,14 +954,14 @@ UpdateS4TButtonText() {
         enabledOptions.Push("Shiny1★")
     if (botConfig.get("s4tShiny2Star"))
         enabledOptions.Push("Shiny2★")
-    
+
     statusText := dict["Txt_S4TEnabled"]
     if (enabledOptions.Length() > 0) {
         statusText .= "`n" . enabledOptions[1]
         if (enabledOptions.Length() > 1)
             statusText .= " +" . (enabledOptions.Length() - 1) . " more"
     }
-    
+
     Gui, Font, s8 cLime, Segoe UI
     GuiControl, Font, ui_S4TButton
     GuiControl,, ui_S4TButton, %statusText%
@@ -946,23 +969,23 @@ UpdateS4TButtonText() {
 
 ShowS4TSettings:
     WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
-    
+
     buttonCenterX := 375
     popupWidth := 200
     popupX := mainWinX + buttonCenterX - (popupWidth / 2)
     popupY := mainWinY + 0
-    
+
     Gui, S4TSettingsSelect:Destroy
     Gui, S4TSettingsSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Save for Trade Settings
     Gui, S4TSettingsSelect:Color, 1E1E1E, 333333
     Gui, S4TSettingsSelect:Font, s10 cWhite, Segoe UI
-    
+
     sectionColor := "c4169E1"
-    
+
     yPos := 15
     Gui, S4TSettingsSelect:Add, Checkbox, % (botConfig.get("s4tEnabled") ? "Checked" : "") " vui_s4tEnabled_Popup x15 y" . yPos . " cWhite", Enable S4T
     yPos += 25
-    
+
     Gui, S4TSettingsSelect:Add, Checkbox, % (botConfig.get("s4t3Dmnd") ? "Checked" : "") " vui_s4t3Dmnd_Popup x15 y" . yPos . " " . sectionColor, ◆◆◆
     yPos += 18
     Gui, S4TSettingsSelect:Add, Checkbox, % (botConfig.get("s4t4Dmnd") ? "Checked" : "") " vui_s4t4Dmnd_Popup x15 y" . yPos . " " . sectionColor, ◆◆◆◆
@@ -983,7 +1006,7 @@ ShowS4TSettings:
     yPos += 18
     Gui, S4TSettingsSelect:Add, Checkbox, % (botConfig.get("s4tCrown") ? "Checked" : "") " vui_s4tCrown_Popup x15 y" . yPos . " " . sectionColor, ♚ Crown Rare
     yPos += 25
-    
+
     ; Wonderpick section
     Gui, S4TSettingsSelect:Add, Checkbox, % (botConfig.get("s4tWP") ? "Checked" : "") " vui_s4tWP_Popup x15 y" . yPos . " cWhite", % dict["Txt_s4tWP"]
     yPos += 20
@@ -996,45 +1019,48 @@ ShowS4TSettings:
         GuiControl, S4TSettingsSelect:Hide, ui_s4tWPMinCards_Popup
         yPos -= 50  ; Adjust yPos since we're hiding these controls
     }
-    
+
     ; Discord settings
     if(StrLen(botConfig.get("s4tDiscordUserId")) < 3)
         botConfig.set("s4tDiscordUserId", "", "SaveForTrade")
     if(StrLen(botConfig.get("s4tDiscordWebhookURL")) < 3)
         botConfig.set("s4tDiscordWebhookURL", "", "SaveForTrade")
-    
+
     Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, S4T Discord ID:
     yPos += 20
     Gui, S4TSettingsSelect:Add, Edit, vui_s4tDiscordUserId_Popup w170 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, % botConfig.get("s4tDiscordUserId")
     yPos += 25
-    
+
     Gui, S4TSettingsSelect:Add, Text, x15 y%yPos% %sectionColor%, Webhook URL:
     yPos += 20
     Gui, S4TSettingsSelect:Add, Edit, vui_s4tDiscordWebhookURL_Popup w170 x15 y%yPos% h20 -E0x200 Background2A2A2A cWhite, % botConfig.get("s4tDiscordWebhookURL")
     yPos += 25
-    
+
     Gui, S4TSettingsSelect:Add, Checkbox, % (botConfig.get("s4tSendAccountXml") ? "Checked" : "") " vui_s4tSendAccountXml_Popup x15 y" . yPos . " " . sectionColor, % dict["Txt_s4tSendAccountXml"]
     yPos += 20
-    
+
+    Gui, S4TSettingsSelect:Add, Checkbox, % (botConfig.get("s4tKeepSyntheticScreenshots") ? "Checked" : "") " vui_s4tKeepSyntheticScreenshots_Popup x15 y" . yPos . " " . sectionColor, Save Screenshots
+    yPos += 20
+
     Gui, S4TSettingsSelect:Add, Checkbox, % (botConfig.get("ocrShinedust") ? "Checked" : "") " vui_ocrShinedust_Popup x15 y" . yPos . " " . sectionColor, Track Shinedust
     yPos += 25
-    
+
     Gui, S4TSettingsSelect:Add, Button, x15 y%yPos% w70 h30 gApplyS4TSettings, Apply
     Gui, S4TSettingsSelect:Add, Button, x95 y%yPos% w70 h30 gCancelS4TSettings, Cancel
     yPos += 40
-    
+
     Gui, S4TSettingsSelect:Show, x%popupX% y%popupY% w200 h%yPos%
 return
 
 ApplyS4TSettings:
     Gui, S4TSettingsSelect:Submit, NoHide
-    
+
     GoSub, saveS4T
-    
+
     Gui, S4TSettingsSelect:Destroy
-    
+
     Gui, 1:Default
-    
+
     UpdateS4TButtonText()
 return
 
@@ -1057,6 +1083,7 @@ saveS4T:
     botConfig.set("s4tDiscordUserId", ui_s4tDiscordUserId_Popup, "SaveForTrade")
     botConfig.set("s4tDiscordWebhookURL", ui_s4tDiscordWebhookURL_Popup, "SaveForTrade")
     botConfig.set("s4tSendAccountXml", ui_s4tSendAccountXml_Popup, "SaveForTrade")
+    botConfig.set("s4tKeepSyntheticScreenshots", ui_s4tKeepSyntheticScreenshots_Popup, "SaveForTrade")
     botConfig.set("ocrShinedust", ui_ocrShinedust_Popup, "SaveForTrade")
 
     if (ui_s4tWPMinCards_Popup < 1)
@@ -1072,19 +1099,19 @@ return
 ; =================== UI - Tools and System Settings(New Window, Details) ===================
 ShowToolsAndSystemSettings:
     WinGetPos, mainWinX, mainWinY, mainWinW, mainWinH, A
-    
+
     popupX := mainWinX + 555
     popupY := mainWinY - 25
-    
+
     Gui, ToolsAndSystemSelect:Destroy
     Gui, ToolsAndSystemSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Tools & System Settings
     Gui, ToolsAndSystemSelect:Color, 1E1E1E, 333333
     Gui, ToolsAndSystemSelect:Font, s10 cWhite, Segoe UI
-    
+
     col1X := 15
     col1W := 190
     yPos := 15
-    
+
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (botConfig.get("showcaseEnabled") ? "Checked" : "") " vui_showcaseEnabled_Popup x" . col1X . " y" . yPos . " cWhite", 5x Showcase Likes
     yPos += 20
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (botConfig.get("claimDailyMission") ? "Checked" : "") " vui_claimDailyMission_Popup x" . col1X . " y" . yPos . " cWhite", Claim Daily 4 Hourglasses
@@ -1095,22 +1122,24 @@ ShowToolsAndSystemSettings:
     yPos += 20
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (botConfig.get("useSoloIdsFile") ? "Checked" : "") " vui_UseSoloIdsFile_Popup x" . col1X . " y" . yPos . " cWhite", Use ids file in Solo Reroll
     yPos += 35
-    
+
     sectionColor := "cWhite"
-    eventMissionBoxH := 90
+    eventMissionBoxH := 115
     Gui, ToolsAndSystemSelect:Add, GroupBox, x%col1X% y%yPos% w%col1W% h%eventMissionBoxH% %sectionColor%, Special Event Missions
     yPos += 20
     Gui, ToolsAndSystemSelect:Add, Button, x25 y%yPos% w170 h20 gClearSpecialMissionHistory BackgroundTrans, Reset Claim Status
     yPos += 25
+    Gui, ToolsAndSystemSelect:Add, Button, x25 y%yPos% w170 h20 gClearReceiveGiftHistory BackgroundTrans, Reset Receive Gift Status
+    yPos += 25
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (botConfig.get("claimSpecialMissions") ? "Checked" : "") " vui_claimSpecialMissions_Popup x25 y" . yPos . " cWhite", Claim Rewards
     yPos += 20
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (botConfig.get("wonderpickForEventMissions") ? "Checked" : "") " vui_wonderpickForEventMissions_Popup x40 y" . yPos . " cWhite", Wonderpick
-    
+
     col2X := 220
     col2W := 190
     yPos2 := 15
     sectionColor := "cWhite"
-    
+
     Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%yPos2% %sectionColor%, % dict["Txt_Monitor"]
     yPos2 += 20
     SysGet, MonitorCount, MonitorCount
@@ -1123,12 +1152,12 @@ ShowToolsAndSystemSettings:
     SelectedMonitorIndex := RegExReplace(botConfig.get("SelectedMonitorIndex"), ":.*$")
     Gui, ToolsAndSystemSelect:Add, DropDownList, x%col2X% y%yPos2% w100 vui_SelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     yPos2 += 25
-    
+
     rowGapY := yPos2 + 2
     Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%rowGapY% %sectionColor%, % dict["Txt_RowGap"]
     Gui, ToolsAndSystemSelect:Add, Edit, vui_RowGap_Popup w25 x300 y%rowGapY% h20 -E0x200 Background2A2A2A cWhite Center, % botConfig.get("RowGap")
     yPos2 += 25
-    
+
     Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%yPos2% %sectionColor%, % dict["Txt_FolderPath"]
     yPos2 += 20
     mumuFolderPath := botConfig.get("folderPath")
@@ -1138,7 +1167,7 @@ ShowToolsAndSystemSettings:
     }
     Gui, ToolsAndSystemSelect:Add, Edit, vui_folderPath_Popup w170 x%col2X% y%yPos2% h20 -E0x200 Background2A2A2A cWhite, % mumuFolderPath
     yPos2 += 25
-    
+
     ocrTextY := yPos2 + 2
     Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%ocrTextY% %sectionColor%, OCR:
     ocrLanguageList := "en|zh|es|de|fr|ja|ru|pt|ko|it|tr|pl|nl|sv|ar|uk|id|vi|th|he|cs|no|da|fi|hu|el|zh-TW"
@@ -1155,7 +1184,7 @@ ShowToolsAndSystemSettings:
         }
     }
     Gui, ToolsAndSystemSelect:Add, DropDownList, vui_ocrLanguage_Popup choose%defaultOcrLang% x255 y%yPos2% w40 Background2A2A2A cWhite, %ocrLanguageList%
-    
+
     clientTextY := yPos2 + 2
     Gui, ToolsAndSystemSelect:Add, Text, x305 y%clientTextY% %sectionColor%, Client:
     clientLanguageList := "en|es|fr|de|it|pt|jp|ko|cn"
@@ -1173,11 +1202,11 @@ ShowToolsAndSystemSettings:
     }
     Gui, ToolsAndSystemSelect:Add, DropDownList, vui_clientLanguage_Popup choose%defaultClientLang% x345 y%yPos2% w40 Background2A2A2A cWhite, %clientLanguageList%
     yPos2 += 25
-    
+
     Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%yPos2% %sectionColor%, % dict["Txt_InstanceLaunchDelay"]
     Gui, ToolsAndSystemSelect:Add, Edit, vui_instanceLaunchDelay_Popup w30 x355 y%yPos2% h20 -E0x200 Background2A2A2A cWhite Center, % botConfig.get("instanceLaunchDelay")
     yPos2 += 25
-    
+
     autoMonitorY := yPos2 - 5
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (botConfig.get("autoLaunchMonitor") ? "Checked" : "") " vui_autoLaunchMonitor_Popup x" . col2X . " y" . autoMonitorY . " " . sectionColor, % dict["Txt_autoLaunchMonitor"]
     yPos2 += 20
@@ -1191,15 +1220,15 @@ ShowToolsAndSystemSettings:
     xmlDupY := yPos2 - 5
     Gui, ToolsAndSystemSelect:Add, Button, x%col2X% y%xmlDupY% w170 h20 gRunXMLDuplicateTool BackgroundTrans, XML Duplicate Remover
     yPos2 += 25
-    
+
     Gui, ToolsAndSystemSelect:Font, s10 cWhite, Segoe UI
-    
+
     finalY := yPos2
     buttonY := finalY - 5
     Gui, ToolsAndSystemSelect:Add, Button, x140 y%buttonY% w70 h30 gApplyToolsAndSystemSettings, Apply
     Gui, ToolsAndSystemSelect:Add, Button, x220 y%buttonY% w70 h30 gCancelToolsAndSystemSettings, Cancel
     finalY += 35
-    
+
     Gui, ToolsAndSystemSelect:Show, x%popupX% y%popupY% w410 h%finalY%
 return
 
@@ -1207,7 +1236,7 @@ ApplyToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Submit, NoHide
 
     GoSub, saveToolsAndSystemSettings
-    
+
     Gui, ToolsAndSystemSelect:Destroy
 
     Gui, 1:Default
@@ -1220,7 +1249,7 @@ saveToolsAndSystemSettings:
     botConfig.set("useSoloIdsFile", ui_UseSoloIdsFile_Popup, "ToolsAndSystem")
     botConfig.set("claimSpecialMissions", ui_claimSpecialMissions_Popup, "ToolsAndSystem")
     botConfig.set("wonderpickForEventMissions", ui_wonderpickForEventMissions_Popup, "ToolsAndSystem")
-    
+
     botConfig.set("SelectedMonitorIndex", ui_SelectedMonitorIndex_Popup, "ToolsAndSystem")
     botConfig.set("RowGap", ui_RowGap_Popup, "ToolsAndSystem")
     botConfig.set("folderPath", ui_folderPath_Popup, "ToolsAndSystem")
@@ -1230,7 +1259,7 @@ saveToolsAndSystemSettings:
     botConfig.set("autoLaunchMonitor", ui_autoLaunchMonitor_Popup, "ToolsAndSystem")
     botConfig.set("saveToGit", ui_saveToGit_Popup, "ToolsAndSystem")
     botConfig.set("receiveGift", ui_receiveGift_Popup, "ToolsAndSystem")
-    
+
     if(botConfig.get("SelectedMonitorIndex") = "")
         botConfig.set("SelectedMonitorIndex", "1:", "ToolsAndSystem")
 return
@@ -1251,39 +1280,22 @@ saveToGit_Click:
 return
 
 ClearSpecialMissionHistory:
-    MsgBox, 4, Clear Special Mission History, Reset ALL /Accounts/Saved/ .xml files Special Mission completion history? This will remove the 'X' suffix from all filenames so that PTCGPB will try collecting Special Missions again on all accounts.
+    MsgBox, 4, Clear Special Mission History, Reset Special Mission completion history for the current account metadata files? This will clear the X flag in Accounts\Cards\accounts so that PTCGPB will try collecting Special Missions again for those accounts.
     IfMsgBox, Yes
     {
-        baseDir := A_ScriptDir . "\Accounts\Saved"
-        
-        filesProcessed := 0
-        
-        ; Process all XML files in base directory and subdirectories
-        Loop, Files, %baseDir%\*.xml, R
-        {
-            filePath := A_LoopFileFullPath
-            fileName := A_LoopFileName
-            fileDir := A_LoopFileDir
-            
-            ; Check if filename contains (X) or ends with X before .xml
-            if (InStr(fileName, "(") && InStr(fileName, "X") && InStr(fileName, ")"))
-            {
-                ; Remove X from metadata in parentheses
-                newFileName := RegExReplace(fileName, "\(([^X)]*)?X([^)]*)?\)", "($1$2)")
-                ; Clean up empty parentheses
-                newFileName := RegExReplace(newFileName, "\(\)", "")
-                
-                if (newFileName != fileName)
-                {
-                    newFilePath := fileDir . "\" . newFileName
-                    FileMove, %filePath%, %newFilePath%
-                    if (!ErrorLevel)
-                        filesProcessed++
-                }
-            }
-        }
-        
-        MsgBox, 64, Clear Special Mission History Complete, Done
+        changed := AccountMetadata_ClearFlagEverywhere("X")
+
+        MsgBox, 64, Clear Special Mission History Complete, % "Done`nAccounts changed: " changed
+    }
+return
+
+ClearReceiveGiftHistory:
+    MsgBox, 4, Clear Receive Gift History, Reset Receive Gift history for the current account metadata files? This will clear the R flag in Accounts\Cards\accounts so that PTCGPB will try Receive Gift again for those accounts.
+    IfMsgBox, Yes
+    {
+        changed := AccountMetadata_ClearFlagEverywhere("R")
+
+        MsgBox, 64, Clear Receive Gift History Complete, % "Done`nAccounts changed: " changed
     }
 return
 
@@ -1292,22 +1304,22 @@ Save:
     Gui, Submit, NoHide
 
     ;Deluxe := 0 ; Turn off Deluxe for all users now that pack is removed
-    
+
     SaveAllSettings()
-    
+
     if(StrLen(A_ScriptDir) > 200 || InStr(A_ScriptDir, " ")) {
         MsgBox, 0x40000,, % dict["Error_BotPathTooLong"]
         return
     }
 
     confirmMsg := dict["Confirm_SelectedMethod"] . botConfig.get("deleteMethod") . "`n"
-    
+
     confirmMsg .= "Instances: " . botConfig.get("Instances")
     if (botConfig.get("runMain")) {
         confirmMsg .= " + " . botConfig.get("Mains") . " Main"
     }
     confirmMsg .= "`n"
-    
+
     confirmMsg .= "`n" . dict["Confirm_SelectedPacks"] . "`n"
 
     For idx, value in botConfig.packSettings {
@@ -1316,7 +1328,7 @@ Save:
         if value
             confirmMsg .= "• " . viewPackName . "`n"
     }
-    
+
     additionalSettings := ""
     if (botConfig.get("deleteMethod") == "Inject Wonderpick 96P+" && botConfig.get("packMethod"))
         additionalSettings .= dict["Confirm_1PackMethod"] . "`n"
@@ -1331,19 +1343,19 @@ Save:
     if (InStr(botConfig.get("deleteMethod"), "Inject")) {
         additionalSettings .= dict["Confirm_SortBy"] . " "
         if (botConfig.get("injectSortMethod") = "ModifiedAsc")
-        additionalSettings .= "Oldest First`n"
+            additionalSettings .= "Oldest First`n"
         else if (botConfig.get("injectSortMethod") = "ModifiedDesc")
-        additionalSettings .= "Newest First`n"
+            additionalSettings .= "Newest First`n"
         else if (botConfig.get("injectSortMethod") = "PacksAsc")
-        additionalSettings .= "Fewest Packs First`n"
+            additionalSettings .= "Fewest Packs First`n"
         else if (botConfig.get("injectSortMethod") = "PacksDesc")
-        additionalSettings .= "Most Packs First`n"
+            additionalSettings .= "Most Packs First`n"
     }
-    
+
     if (additionalSettings != "") {
         confirmMsg .= "`n" . dict["Confirm_AdditionalSettings"] . "`n" . additionalSettings
     }
-    
+
     cardDetection := ""
     if (botConfig.get("deleteMethod") = "Inject Wonderpick 96P+") {
         if (botConfig.get("FullArtCheck"))
@@ -1362,12 +1374,12 @@ Save:
             cardDetection .= dict["Confirm_SaveImmersives"] . "`n"
         if (botConfig.get("InvalidCheck"))
             cardDetection .= dict["Confirm_IgnoreInvalid"] . "`n"
-            
+
         if (cardDetection != "") {
             confirmMsg .= "`n" . dict["Confirm_CardDetection"] . "`n" . cardDetection
         }
     }
-    
+
     if (botConfig.get("s4tEnabled")) {
         confirmMsg .= "`n" . dict["Confirm_SaveForTrade"] . ": " . dict["Confirm_Enabled"] . "`n"
         s4tSettings := ""
@@ -1396,7 +1408,7 @@ Save:
 
         confirmMsg .= s4tSettings
     }
-    
+
     if (botConfig.get("s4tSendAccountXml") && botConfig.get("s4tEnabled")) {
         confirmMsg .= "`n" . dict["Confirm_XMLWarning"] . "`n"
     }
@@ -1406,19 +1418,40 @@ Save:
     if (botConfig.get("sendAccountXml")) {
         confirmMsg .= "`n" . dict["Confirm_XMLWarning"] . "`n"
     }
-    
-    confirmMsg .= "`n" . dict["Confirm_StartBot"]
-    
-    MsgBox, 4, Confirm Bot Settings, %confirmMsg%
-    IfMsgBox, No
-        return
+
+    if (botConfig.get("deleteMethod") != "Inject Rewards") {
+        confirmMsg .= "`n" . dict["Confirm_StartBot"]
+
+        MsgBox, 4, Confirm Bot Settings, %confirmMsg%
+        IfMsgBox, No
+            return
+    }
+    if (botConfig.get("deleteMethod") = "Inject Rewards") {
+        if (!botConfig.get("claimSpecialMissions") && !botConfig.get("receiveGift") && !botConfig.get("wonderpickForEventMissions") && !(botConfig.get("ocrShinedust") && botConfig.get("s4tEnabled"))) {
+            g_irDialogResult := "cancel"
+            Gui, InjectReqDlg:New, +AlwaysOnTop +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Setting Warning
+            Gui, InjectReqDlg:Font, s9, Segoe UI
+            Gui, InjectReqDlg:Add, Text, x12 y12 w285, No actions are enabled for 'Inject Rewards'. Select actions here, or continue with none selected to only log in and out.
+            Gui, InjectReqDlg:Add, Checkbox, x12 y60 vui_irClaim, Claim Special Missions
+            Gui, InjectReqDlg:Add, Checkbox, x12 y82 vui_irGift, Receive Gift
+            Gui, InjectReqDlg:Add, Checkbox, x12 y104 vui_irWP, Wonderpick
+            Gui, InjectReqDlg:Add, Checkbox, x12 y126 vui_irShinedust, Track Shinedust
+            Gui, InjectReqDlg:Add, Button, x12 y160 w80 h26 gInjectReqDlgOK Default, OK
+            Gui, InjectReqDlg:Add, Button, x102 y160 w80 h26 gInjectReqDlgCancel, Cancel
+            Gui, InjectReqDlg:Show, w310 h200
+            irDlgHwnd := WinExist()
+            WinWaitClose, ahk_id %irDlgHwnd%
+            if (g_irDialogResult = "cancel")
+                return
+        }
+    }
 
     isIncorrectEventSetting := false
     if(isSevtFileExist() && !botConfig.get("claimSpecialMissions")){
         isIncorrectEventSetting := true
         MsgBox, 4, Setting Recommendation, A .sevt file was found, but the 'Claim Special Mission' setting is currently disabled.`n`nWould you like to enable and apply this setting now?
         IfMsgBox, Yes
-        botConfig.set("claimSpecialMissions", 1, "ToolsAndSystem")
+            botConfig.set("claimSpecialMissions", 1, "ToolsAndSystem")
     }
     else if(!isSevtFileExist() && botConfig.get("claimSpecialMissions")){
         isIncorrectEventSetting := true
@@ -1426,8 +1459,13 @@ Save:
         botConfig.set("claimSpecialMissions", 0, "ToolsAndSystem")
     }
 
+    if (botConfig.get("deleteMethod") = "Inject Rewards" && !botConfig.get("claimSpecialMissions") && !botConfig.get("receiveGift") && !botConfig.get("wonderpickForEventMissions") && !(botConfig.get("ocrShinedust") && botConfig.get("s4tEnabled"))) {
+        MsgBox, 48, Setting Warning, No actions are enabled for 'Inject Rewards'. The game will only log in and out for each account.
+    }
+
     Gui, 1:Destroy
-    
+
+    AccountMetadata_Ensure()
     StartBot()
 return
 
@@ -1435,27 +1473,69 @@ return
 BalanceXMLs:
     Gui, Submit, NoHide
     SaveAllSettings()
-    
+
     if(botConfig.get("Instances")>0) {
+        helperPath := AccountMetadata_HelperPath()
+        if (FileExist(helperPath)) {
+            root := A_ScriptDir
+            command := """" . helperPath . """ --root """ . root . """ balance-xmls"
+            command .= " --instances """ . botConfig.get("Instances") . """"
+            command .= " --delete-method """ . botConfig.get("deleteMethod") . """"
+            command .= " --sort-method """ . botConfig.get("injectSortMethod") . """"
+            if (botConfig.get("wonderpickForEventMissions"))
+                command .= " --wonderpick-for-event-missions"
+            if (botConfig.get("claimSpecialMissions"))
+                command .= " --claim-special-missions"
+            if (botConfig.get("receiveGift"))
+                command .= " --receive-gift"
+            if (botConfig.get("ocrShinedust"))
+                command .= " --ocr-shinedust"
+            if (botConfig.get("s4tEnabled"))
+                command .= " --s4t-enabled"
+            balanceOk := BalanceXMLs_RunWithProgress(command)
+            resultPath := A_ScriptDir . "\Accounts\Saved\balance_result.txt"
+            counter := 0
+            if (FileExist(resultPath)) {
+                FileRead, counter, %resultPath%
+                counter := Trim(counter)
+            }
+            Tooltip
+            errorPath := A_ScriptDir . "\Accounts\Saved\carddb_error.txt"
+            if (!balanceOk || FileExist(errorPath)) {
+                errorText := ""
+                if (FileExist(errorPath))
+                    FileRead, errorText, %errorPath%
+                MsgBox, 0x40000, XML Balance, % "carddb balance-xmls failed.`n`n" . errorText
+            } else {
+                MsgBox, 0x40000, XML Balance, % "Done balancing XMLs between " botConfig.get("Instances") " instances.`nEligible for injection now: " counter
+            }
+            return
+        }
+
+        AccountMetadata_MergeAllTemp()
+        AccountMetadata_Ensure()
+
         saveDir := A_ScriptDir "\Accounts\Saved\"
         if !FileExist(saveDir)
             FileCreateDir, %saveDir%
-        
+
         tmpDir := A_ScriptDir "\Accounts\Saved\tmp"
         if !FileExist(tmpDir)
             FileCreateDir, %tmpDir%
-        
+
         Tooltip, Moving Files and Folders to tmp
-        Loop, Files, %saveDir%*, D 
+        Loop, Files, %saveDir%*, D
         {
             if (A_LoopFilePath == tmpDir)
                 continue
             dest := tmpDir . "\" . A_LoopFileName
-            
+
             FileMoveDir, %A_LoopFilePath%, %dest%, 1
         }
         Loop, Files, %saveDir%\*, F
         {
+            if (A_LoopFileName = "metadata.json")
+                continue
             dest := tmpDir . "\" . A_LoopFileName
             FileMove, %A_LoopFilePath%, %dest%, 1
         }
@@ -1468,103 +1548,185 @@ BalanceXMLs:
             if FileExist(listfile)
                 FileDelete, %listfile%
         }
-        
+
         ToolTip, Checking for Duplicate names
         fileList := ""
         seenFiles := {}
+        packCountMap := AccountMetadata_GetPackCountMap()
         Loop, Files, %tmpDir%\*.xml, R
         {
             fileName := A_LoopFileName
             fileTime := A_LoopFileTimeModified
             fileTime := A_LoopFileTimeCreated
             filePath := A_LoopFileFullPath
-            
+
             if seenFiles.HasKey(fileName)
             {
                 prevTime := seenFiles[fileName].Time
                 prevPath := seenFiles[fileName].Path
-                
+
                 if (fileTime > prevTime)
                 {
-                FileDelete, %prevPath%
-                seenFiles[fileName] := {Time: fileTime, Path: filePath}
+                    FileDelete, %prevPath%
+                    seenFiles[fileName] := {Time: fileTime, Path: filePath}
                 }
                 else
                 {
-                FileDelete, %filePath%
+                    FileDelete, %filePath%
                 }
                 continue
             }
-            
+
             ; Uncomment below version to sort by file last modified dates
             ; seenFiles[fileName] := {Time: fileTime, Path: filePath}
             ; fileList .= fileTime "`t" filePath "`n"
 
-            ; Below version is to sort by pack count instead (evenly distribute higher pack counts amongst instances)
-            RegExMatch(fileName, "(\d+)P_", packMatch)
-            packCount := packMatch1 ? packMatch1 : 0
+            ; Sort by metadata pack count instead of filename pack count.
+            packCount := ""
+            if (IsObject(packCountMap) && packCountMap.HasKey(fileName))
+                packCount := packCountMap[fileName]
+            if (packCount = "") {
+                RegExMatch(fileName, "(\d+)P_", packMatch)
+                packCount := packMatch1 ? packMatch1 : 0
+            }
 
             seenFiles[fileName] := {Time: fileTime, Path: filePath}
             fileList .= packCount "`t" filePath "`n"
         }
-        
+
         ToolTip, Sorting by pack count
         Sort, fileList, R
-        
+
         ToolTip, Distributing XMLs between folders...please wait
         instance := 1
+        metadataMoves := []
         Loop, Parse, fileList, `n
         {
             if (A_LoopField = "")
                 continue
-            
+
             StringSplit, parts, A_LoopField, %A_Tab%
             tmpFile := parts2
             toDir := saveDir . "\" . instance
-            
+
             FileMove, %tmpFile%, %toDir%, 1
-            
+            SplitPath, tmpFile, movedFileName
+            metadataMoves.Push({"fileName": movedFileName, "instance": instance})
+
             instance++
             if (instance > botConfig.get("Instances"))
                 instance := 1
         }
-        
+
+        ToolTip, Updating metadata indexes...please wait
+        AccountMetadata_BulkMoveToInstances(metadataMoves)
+
         instanceOneDir := saveDir . "1"
         counter := 0
-        counter2 := 0
+        ToolTip, Counting XMLs older than 24 hours...
         Loop, Files, %instanceOneDir%\*.xml
         {
-            fileModifiedTimeDiff := A_Now
             FileGetTime, fileModifiedTime, %A_LoopFileFullPath%, M
+            if (fileModifiedTime = "")
+                continue
+            fileModifiedTimeDiff := A_Now
             EnvSub, fileModifiedTimeDiff, %fileModifiedTime%, Hours
             if (fileModifiedTimeDiff >= 24)
                 counter++
         }
-        
+
         Tooltip
-        MsgBox, 0x40000, XML Balance, % "Done balancing XMLs between " botConfig.get("Instances") " instances`n" counter " XMLs past 24 hours per instance"
+        MsgBox, 0x40000, XML Balance, % "Done balancing XMLs between " botConfig.get("Instances") " instances.`nEligible for injection now: " counter
     }
 return
+
+BalanceXMLs_RunWithProgress(command) {
+    resultPath := A_ScriptDir . "\Accounts\Saved\balance_result.txt"
+    errorPath := A_ScriptDir . "\Accounts\Saved\carddb_error.txt"
+    progressPath := A_ScriptDir . "\Accounts\Saved\balance_progress.txt"
+    logPath := A_ScriptDir . "\Accounts\Saved\carddb_balance.log"
+    FileDelete, %resultPath%
+    FileDelete, %errorPath%
+    FileDelete, %progressPath%
+    FormatTime, balanceStartTime,, yyyy-MM-dd HH:mm:ss
+    FileAppend, [%balanceStartTime%] AHK BalanceXMLs starting command: %command%`n, %logPath%
+
+    Progress, M B1 FS10 ZH0 FM10 WM700 W480, Starting XML balance..., XML Balance, XML Balance
+    Run, %command%,, Hide, helperPid
+    if (ErrorLevel) {
+        FormatTime, balanceErrorTime,, yyyy-MM-dd HH:mm:ss
+        errorText := "AHK failed to launch carddb balance-xmls. ErrorLevel=" . ErrorLevel . "`nCommand=" . command . "`n"
+        FileAppend, %errorText%, %errorPath%
+        FileAppend, [%balanceErrorTime%] %errorText%, %logPath%
+        Progress, Off
+        return false
+    }
+    FormatTime, balanceLaunchTime,, yyyy-MM-dd HH:mm:ss
+    FileAppend, [%balanceLaunchTime%] AHK launched carddb pid=%helperPid%`n, %logPath%
+
+    lastPercent := 0
+    lastMessage := "Starting XML balance..."
+
+    Loop {
+        if (FileExist(progressPath)) {
+            FileRead, progressText, %progressPath%
+            progressText := Trim(progressText, "`r`n ")
+            if (progressText != "") {
+                parts := StrSplit(progressText, "|")
+                if (parts.MaxIndex() >= 1)
+                    lastPercent := parts[1] + 0
+                if (parts.MaxIndex() >= 2 && parts[2] != "")
+                    lastMessage := parts[2]
+                Progress, %lastPercent%, %lastMessage%, XML Balance, XML Balance
+            }
+        } else {
+            if (lastPercent < 5)
+                Progress, 5, Preparing XML balance..., XML Balance, XML Balance
+        }
+
+        Process, Exist, %helperPid%
+        if (!ErrorLevel)
+            break
+        Sleep, 250
+    }
+
+    Progress, 100, XML balance complete, XML Balance, XML Balance
+    Sleep, 300
+    Progress, Off
+
+    Process, WaitClose, %helperPid%, 1
+    FormatTime, balanceEndTime,, yyyy-MM-dd HH:mm:ss
+    FileAppend, [%balanceEndTime%] AHK observed carddb pid=%helperPid% closed. Last progress=%lastPercent% %lastMessage%`n, %logPath%
+    if (FileExist(errorPath))
+        return false
+    if (!FileExist(resultPath)) {
+        errorText := "carddb balance-xmls ended without writing balance_result.txt.`nLast progress: " . lastPercent . " " . lastMessage . "`nCommand=" . command . "`n"
+        FileAppend, %errorText%, %errorPath%
+        FileAppend, [%balanceEndTime%] %errorText%, %logPath%
+        return false
+    }
+    return true
+}
 
 ; =================== Logic - Launch All Mumu Button Action ===================
 LaunchAllMumu:
     Gui, Submit, NoHide
     SaveAllSettings()
-    
+
     if(StrLen(A_ScriptDir) > 200 || InStr(A_ScriptDir, " ")) {
         MsgBox, 0x40000,, ERROR: bot folder path is too long or contains blank spaces. Move to a shorter path without spaces such as C:\PTCGPB
         return
     }
-    
+
     launchAllFile := A_ScriptDir . "\Scripts\Include\LaunchAllMumu.ahk"
     if(FileExist(launchAllFile)) {
         Run, %launchAllFile%
 
         totalInstances := botConfig.get("Instances") + (botConfig.get("runMain") ? botConfig.get("Mains") : 0)
         estimatedLaunchTime := (botConfig.get("instanceLaunchDelay") * totalInstances * 1000) + 500
-        
+
         Sleep, %estimatedLaunchTime%
-        
+
         Gosub, ArrangeWindows
     }
 return
@@ -1645,7 +1807,7 @@ ArrangeWindows:
     if (botConfig.get("debugMode") && windowsPositioned == 0)
         MsgBox, 0x40000,, No windows found to arrange
 
- return
+return
 
 DiscordLink:
     Run, https://discord.com/invite/C9Nyf7P4sT
@@ -1663,9 +1825,17 @@ OpenDiscord:
     Run, https://discord.gg/C9Nyf7P4sT
 return
 
-OpenTradesDashboard:
-    TradesFile := A_ScriptDir . "\Accounts\Trades\Trades_Dashboard.html"
-    Run, %TradesFile%
+OpenCardDatabase:
+    cardDbStartScript := A_ScriptDir . "\Accounts\Cards\start_card_dashboard.bat"
+    cardDbHtml := A_ScriptDir . "\Accounts\Cards\card_database.html"
+
+    if (FileExist(cardDbStartScript)) {
+        Run, %cardDbStartScript%
+    } else if (FileExist(cardDbHtml)) {
+        Run, %cardDbHtml%
+    } else {
+        MsgBox, 48, Card Database, Could not find Card Database launcher.`nChecked:`n%cardDbStartScript%
+    }
 return
 
 RunXMLSortTool:
@@ -1678,13 +1848,34 @@ RunXMLDuplicateTool:
     RunWait, %Tool%
 Return
 
+InjectReqDlgOK:
+    Gui, InjectReqDlg:Submit, NoHide
+    if (ui_irClaim)
+        botConfig.set("claimSpecialMissions", 1, "ToolsAndSystem")
+    if (ui_irGift)
+        botConfig.set("receiveGift", 1, "ToolsAndSystem")
+    if (ui_irWP)
+        botConfig.set("wonderpickForEventMissions", 1, "ToolsAndSystem")
+    if (ui_irShinedust)
+        botConfig.set("ocrShinedust", 1, "SaveForTrade")
+    botConfig.saveConfigToSettings("ALL")
+    g_irDialogResult := "ok"
+    Gui, InjectReqDlg:Destroy
+return
+
+InjectReqDlgCancel:
+InjectReqDlgGuiClose:
+    g_irDialogResult := "cancel"
+    Gui, InjectReqDlg:Destroy
+return
+
 GuiClose:
     Gui, Submit, NoHide
     SaveAllSettings()
-    
+
     KillAllScripts()
 
-    ExitApp
+ExitApp
 return
 
 CheckForUpdates:
@@ -1694,12 +1885,12 @@ return
 ; =================== Logic - Show recommand swipe speed ===================
 ShowSwipeSpeedToolTip:
     GuiControlGet, currentFocus, FocusV
-    
+
     if (currentFocus == "ui_swipeSpeed") {
         MouseGetPos, mouseX, mouseY
         message := dict["RecommandSwipeSpeedNoModMenu"] . "`n" . dict["RecommandSwipeSpeedUseModMenu"] . "`n" . dict["HideSwipeToolTip"]
         ShowCustomToolTip(message, (mouseX + 15), (mouseY + 20))
-    } 
+    }
     else {
         HideCustomToolTip()
     }
@@ -1717,15 +1908,16 @@ SaveAllSettings() {
 
     if(botConfig.get("debugMode") = 0)
         botConfig.set("debugMode", 0, "Extra")
-    
+
     botConfig.set("showcaseLikes", 5, "Extra")
     botConfig.set("waitForEligibleAccounts", 1, "Extra")
+    botConfig.loadIniSectionFromSettingsFile("Extra")
     botConfig.set("stopPreference", botConfig.get("stopPreference"), "Extra")
     botConfig.set("stopPreferenceSingle", botConfig.get("stopPreferenceSingle"), "Extra")
     botConfig.set("stopPreferenceMain", botConfig.get("stopPreferenceMain"), "Extra")
 
     botConfig.saveConfigToSettings("ALL")
-    
+
     if (botConfig.get("debugMode")) {
         FileAppend, % A_Now . " - Settings saved. DeleteMethod: " . botConfig.get("deleteMethod") . "`n", %A_ScriptDir%\debug_settings.log
     }
@@ -1734,7 +1926,7 @@ SaveAllSettings() {
 ; =================== Logic - Reset account lists ===================
 ResetAccountLists() {
     resetListsPath := A_ScriptDir . "\Scripts\Include\ResetLists.ahk"
-    
+
     if (FileExist(resetListsPath)) {
         Run, %resetListsPath%,, Hide UseErrorLevel
         Sleep, 50
@@ -1742,7 +1934,7 @@ ResetAccountLists() {
         CreateStatusMessage("Account lists reset. New lists will use current method settings.",,,, false)
     } else {
         LogToFile("ERROR: ResetLists.ahk not found at: " . resetListsPath)
-        
+
         if (botConfig.get("debugMode")) {
             MsgBox, 0x40000, Reset list issue, ResetLists.ahk not found at:`n%resetListsPath%
         }
@@ -1751,35 +1943,35 @@ ResetAccountLists() {
 
 ; =================== Logic - Start bot function ===================
 StartBot() {
-    global botConfig, dict, localVersion, githubUser, rerollTime, PackGuiBuild, botMetadata, typeMsg
-    
+    global botConfig, dict, localVersion, githubUser, modVersion, modRepoUser, rerollTime, PackGuiBuild, botMetadata, typeMsg
+
     PackGuiBuild := 0
     rerollTime := A_TickCount
-    
+
     if(StrLen(A_ScriptDir) > 200 || InStr(A_ScriptDir, " ")) {
         MsgBox, 0x40000,, ERROR: bot folder path is too long or contains blank spaces. Move to a shorter path without spaces such as C:\PTCGPB
         return
     }
-    
+
     ResetAccountLists()
-    
+
     if (inStr(botConfig.get("FriendID"), "http")) {
         MsgBox,To provide a URL for friend IDs, please use the ids.txt API field and leave the Friend ID field empty.
-        
+
         if (botConfig.get("mainIdsURL") = "") {
             botConfig.set("FriendID", "")
             botConfig.set("mainIdsURL", botConfig.get("FriendID"))
         }
-        
+
         Reload
     }
-    
+
     if (botConfig.get("showcaseEnabled")) {
         if (!FileExist("showcase_ids.txt")) {
             MsgBox, 48, Showcase Warning, Showcase is enabled but showcase_ids.txt does not exist.`nPlease create this file in the same directory as the script.
         }
     }
-    
+
     if (botConfig.get("runMain")) {
         Loop, % botConfig.get("Mains")
         {
@@ -1790,18 +1982,18 @@ StartBot() {
                 FileDelete, %TargetFile%
                 FileCopy, %SourceFile%, %TargetFile%, 1
                 if (ErrorLevel)
-                MsgBox, Failed to create %TargetFile%. Ensure permissions and paths are correct.
+                    MsgBox, Failed to create %TargetFile%. Ensure permissions and paths are correct.
             }
-            
+
             mainInstanceName := "Main" . (A_Index > 1 ? A_Index : "")
             FileName := "Scripts\" . mainInstanceName . ".ahk"
             Command := FileName
-            
+
             if (A_Index > 1 && botConfig.get("instanceStartDelay") > 0) {
                 instanceStartDelayMS := botConfig.get("instanceStartDelay") * 1000
                 Sleep, instanceStartDelayMS
             }
-            
+
             Run, %Command%
         }
     }
@@ -1819,15 +2011,15 @@ StartBot() {
             if (ErrorLevel)
                 MsgBox, Failed to create %TargetFile%. Ensure permissions and paths are correct.
         }
-        
+
         FileName := "Scripts\" . A_Index . ".ahk"
         Command := FileName
-        
+
         if ((botConfig.get("Mains") > 1 || A_Index > 1) && botConfig.get("instanceStartDelay") > 0) {
             instanceStartDelayMS := botConfig.get("instanceStartDelay") * 1000
             Sleep, instanceStartDelayMS
         }
-        
+
         metricFile := A_ScriptDir . "\Scripts\" . A_Index . ".ini"
         if (FileExist(metricFile)) {
             IniWrite, 0, %metricFile%, Metrics, LastEndEpoch
@@ -1836,28 +2028,28 @@ StartBot() {
             now := A_TickCount
             IniWrite, %now%, %metricFile%, Metrics, rerollStartTime
         }
-        
+
         Run, %Command%
     }
-    
+
     if(botConfig.get("autoLaunchMonitor")) {
         monitorFile := A_ScriptDir . "\Scripts\Include\Monitor.ahk"
         if(FileExist(monitorFile)) {
             Run, %monitorFile%
         }
     }
-    
+
     SelectedMonitorIndex := RegExReplace(botConfig.get("SelectedMonitorIndex"), ":.*$")
     SysGet, Monitor, Monitor, %SelectedMonitorIndex%
     rerollTime := A_TickCount
-    
+
     typeMsg := "\nType: " . botConfig.get("deleteMethod")
     injectMethod := false
     if(InStr(botConfig.get("deleteMethod"), "Inject"))
         injectMethod := true
     if(botConfig.get("packMethod") && botConfig.get("deleteMethod") == "Inject Wonderpick 96P+")
         typeMsg .= " (1P Method)"
-    
+
     Selected := []
     selectMsg := "\nOpening: "
 
@@ -1873,25 +2065,25 @@ StartBot() {
             selectMsg .= dict["Txt_" . value]
         }
     }
-    
+
     Loop {
         Sleep, 30000
-        
+
         total := getTotalOpenPacks()
         totalSeconds := Round((A_TickCount - rerollTime) / 1000)
         mminutes := Floor(totalSeconds / 60)
-        
+
         packStatus := "Time: " . mminutes . "m Packs: " . total
         packStatus .= " | Avg: " . Round(total / mminutes, 2) . " packs/min"
-        
+
         if(botConfig.get("heartBeat")) {
             heartbeatIterations := botConfig.get("heartBeatDelay") * 2
-            
+
             if (A_Index = 1 || Mod(A_Index, heartbeatIterations) = 0) {
                 onlineAHK := ""
                 offlineAHK := ""
                 Online := []
-                
+
                 Loop % botConfig.get("Instances") {
                     IniRead, value, HeartBeat.ini, HeartBeat, Instance%A_Index%
                     if(value)
@@ -1900,7 +2092,7 @@ StartBot() {
                         Online.Push(0)
                     IniWrite, 0, HeartBeat.ini, HeartBeat, Instance%A_Index%
                 }
-                
+
                 for index, value in Online {
                     if(index = Online.MaxIndex())
                         commaSeparate := ""
@@ -1911,7 +2103,7 @@ StartBot() {
                     else
                         offlineAHK .= A_Index . commaSeparate
                 }
-                
+
                 if(botConfig.get("runMain")) {
                     IniRead, value, HeartBeat.ini, HeartBeat, Main
                     if(value) {
@@ -1928,7 +2120,7 @@ StartBot() {
                     }
                     IniWrite, 0, HeartBeat.ini, HeartBeat, Main
                 }
-                
+
                 if(offlineAHK = "")
                     offlineAHK := "Offline: none"
                 else
@@ -1937,20 +2129,20 @@ StartBot() {
                     onlineAHK := "Online: none"
                 else
                     onlineAHK := "Online: " . RTrim(onlineAHK, ", ")
-                
+
                 discMessage := botConfig.get("heartBeatName") ? "\n" . botConfig.get("heartBeatName") : ""
-                
-                discMessage .= "\n" . onlineAHK . "\n" . offlineAHK . "\n" . packStatus . "\nVersion: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion
+
+                discMessage .= "\n" . onlineAHK . "\n" . offlineAHK . "\n" . packStatus . "\n" . VersionStatusText()
                 discMessage .= typeMsg
                 discMessage .= selectMsg
-                
+
                 if(botConfig.get("groupRerollEnabled") || (!botConfig.get("groupRerollEnabled") && botConfig.get("heartBeatOwnerWebHookURL") = ""))
                     LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatWebhookURL"))
-                
+
                 if(botConfig.get("heartBeatOwnerWebHookURL")){
                     FormatTime, currentTime, , yyyy-MM-dd HH:mm:ss
                     messageHeader := "\n\n[Instance status - " . currentTime . " (Elapsed time: " . mminutes . "m)]"
-                    
+
                     instanceStatusMessage := ""
 
                     for instanceNo, dataObject in botMetadata {
@@ -1990,7 +2182,7 @@ StartBot() {
 }
 
 SendAllInstancesOfflineStatus() {
-    global localVersion, githubUser, typeMsg, selectMsg, rerollTime
+    global localVersion, githubUser, modVersion, modRepoUser, typeMsg, selectMsg, rerollTime
 
     offlineInstances := ""
     if (botConfig.get("runMain")) {
@@ -2002,28 +2194,28 @@ SendAllInstancesOfflineStatus() {
         if (botConfig.get("Instances") > 0)
             offlineInstances .= ", "
     }
-    
+
     Loop, % botConfig.get("Instances") {
         offlineInstances .= A_Index
         if (A_Index < botConfig.get("Instances"))
             offlineInstances .= ", "
     }
-    
+
     discMessage := botConfig.get("heartBeatName") ? "\n" . botConfig.get("heartBeatName") : ""
     discMessage .= "\nOnline: none"
     discMessage .= "\nOffline: " . offlineInstances
-    
+
     total := getTotalOpenPacks()
     totalSeconds := Round((A_TickCount - rerollTime) / 1000)
     mminutes := Floor(totalSeconds / 60)
     packStatus := "Time: " . mminutes . "m | Packs: " . total
     packStatus .= " | Avg: " . Round(total / mminutes, 2) . " packs/min"
-    
-    discMessage .= "\n" . packStatus . "\nVersion: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion
+
+    discMessage .= "\n" . packStatus . "\n" . VersionStatusText()
     discMessage .= typeMsg
     discMessage .= selectMsg
     discMessage .= "\n\n All instances marked as OFFLINE"
-    
+
     LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatWebhookURL"))
 }
 
@@ -2046,7 +2238,7 @@ ReceiveData(wParam, lParam) {
 
     if (!botMetadata.HasKey(subID)) {
         botMetadata[subID] := {}
-        botMetadata[subID].TotalValue := 0 
+        botMetadata[subID].TotalValue := 0
     }
 
     botMetadata[subID].StartTime := rerollStartTime
@@ -2068,84 +2260,110 @@ getTotalOpenPacks() {
 }
 
 CheckForUpdate() {
-    global githubUser, repoName, localVersion, zipPath, extractPath, scriptFolder, currentDictionary
-    url := "https://api.github.com/repos/" githubUser "/" repoName "/releases/latest"
-    
+    global githubUser, repoName, localVersion, modVersion, modRepoUser
+
+    if (FetchLatestRelease(githubUser, repoName, latestVersion, latestReleaseBody, zipDownloadURL)) {
+        if (VersionCompare(latestVersion, localVersion) > 0) {
+            DownloadAndInstallUpdate("Version", latestVersion, latestReleaseBody, zipDownloadURL)
+            return
+        }
+    } else {
+        return
+    }
+
+    if (FetchLatestRelease(modRepoUser, repoName, latestVersion, latestReleaseBody, zipDownloadURL)) {
+        if (VersionCompare(latestVersion, modVersion) > 0) {
+            DownloadAndInstallUpdate("Mod Version", latestVersion, latestReleaseBody, zipDownloadURL)
+            return
+        }
+    }
+}
+
+VersionStatusText() {
+    global githubUser, localVersion, modRepoUser, modVersion
+    return "Version: " . RegExReplace(githubUser, "-.*$") . "-" . localVersion . "\nMod Version: " . RegExReplace(modRepoUser, "-.*$") . "-" . modVersion
+}
+
+FetchLatestRelease(repoUser, repoName, ByRef latestVersion, ByRef latestReleaseBody, ByRef zipDownloadURL) {
+    url := "https://api.github.com/repos/" repoUser "/" repoName "/releases/latest"
+
     response := HttpGet(url)
     if !response
     {
         MsgBox, 0x40000, Check for Update, Failed to fetch latest version info
-        return
+        return false
     }
+
     latestReleaseBody := FixFormat(ExtractJSONValue(response, "body"))
     latestVersion := ExtractJSONValue(response, "tag_name")
     zipDownloadURL := ExtractJSONValue(response, "zipball_url")
+
     if (zipDownloadURL = "" || !InStr(zipDownloadURL, "http"))
     {
         MsgBox, 0x40000, Check for Update, Failed to get download URL
-        return
+        return false
     }
-    
+
     if (latestVersion = "")
     {
         MsgBox, 0x40000, Check for Update, Failed to get version info
-        return
+        return false
     }
-    
-    if (VersionCompare(latestVersion, localVersion) > 0)
+
+    return true
+}
+
+DownloadAndInstallUpdate(updateLabel, latestVersion, releaseNotes, zipDownloadURL) {
+    global zipPath, scriptFolder
+
+    updateAvailable := updateLabel . " Update Available: "
+    MsgBox, 262148, %updateAvailable% %latestVersion%, %releaseNotes%`n`nDo you want to download the latest version?
+
+    IfMsgBox, Yes
     {
-        releaseNotes := latestReleaseBody
-        
-        updateAvailable := "Update Available: "
-        latestDownloaad := "Download Latest Version?"
-        MsgBox, 262148, %updateAvailable% %latestVersion%, %releaseNotes%`n`nDo you want to download the latest version?
-        
-        IfMsgBox, Yes
+        MsgBox, 262208, Downloading..., Downloading update...
+
+        URLDownloadToFile, %zipDownloadURL%, %zipPath%
+        if ErrorLevel
         {
-            MsgBox, 262208, Downloading..., Downloading update...
-            
-            URLDownloadToFile, %zipDownloadURL%, %zipPath%
-            if ErrorLevel
-            {
-                MsgBox, 0x40000, Check for Update, Download failed
-                return
-            }
-            else {
-                MsgBox, 0x40000, Check for Update, Download complete
-                
-                tempExtractPath := A_Temp "\PTCGPB_Temp"
-                FileCreateDir, %tempExtractPath%
-                
-                RunWait, powershell -Command "Expand-Archive -Path '%zipPath%' -DestinationPath '%tempExtractPath%' -Force",, Hide
-                
-                if !FileExist(tempExtractPath)
-                {
-                    MsgBox, 0x40000, Check for Update, Extraction failed
-                    return
-                }
-                
-                Loop, Files, %tempExtractPath%\*, D
-                {
-                    extractedFolder := A_LoopFileFullPath
-                    break
-                }
-                
-                if (extractedFolder)
-                {
-                    MoveFilesRecursively(extractedFolder, scriptFolder)
-                    
-                    FileRemoveDir, %tempExtractPath%, 1
-                    MsgBox, 0x40000, Check for Update, Update installed successfully
-                    Reload
-                } else {
-                    MsgBox, 0x40000, Check for Update, Update files not found
-                    return
-                }
-            }
-        } else {
-            MsgBox, 0x40000, Check for Update, Update cancelled
+            MsgBox, 0x40000, Check for Update, Download failed
             return
         }
+        else {
+            MsgBox, 0x40000, Check for Update, Download complete
+
+            tempExtractPath := A_Temp "\PTCGPB_Temp"
+            FileCreateDir, %tempExtractPath%
+
+            RunWait, powershell -Command "Expand-Archive -Path '%zipPath%' -DestinationPath '%tempExtractPath%' -Force",, Hide
+
+            if !FileExist(tempExtractPath)
+            {
+                MsgBox, 0x40000, Check for Update, Extraction failed
+                return
+            }
+
+            Loop, Files, %tempExtractPath%\*, D
+            {
+                extractedFolder := A_LoopFileFullPath
+                break
+            }
+
+            if (extractedFolder)
+            {
+                MoveFilesRecursively(extractedFolder, scriptFolder)
+
+                FileRemoveDir, %tempExtractPath%, 1
+                MsgBox, 0x40000, Check for Update, Update installed successfully
+                Reload
+            } else {
+                MsgBox, 0x40000, Check for Update, Update files not found
+                return
+            }
+        }
+    } else {
+        MsgBox, 0x40000, Check for Update, Update cancelled
+        return
     }
 }
 
@@ -2153,9 +2371,9 @@ MoveFilesRecursively(srcFolder, destFolder) {
     Loop, Files, % srcFolder . "\*", R
     {
         relativePath := SubStr(A_LoopFileFullPath, StrLen(srcFolder) + 2)
-        
+
         destPath := destFolder . "\" . relativePath
-        
+
         if (A_LoopIsDir)
             FileCreateDir, % destPath
         else {
@@ -2174,13 +2392,13 @@ MoveFilesRecursively(srcFolder, destFolder) {
 FixFormat(text) {
     text := StrReplace(text, "\r\n", "`n")
     text := StrReplace(text, "\n", "`n")
-    
+
     text := StrReplace(text, "\player", "player")
     text := StrReplace(text, "\None", "None")
     text := StrReplace(text, "\Welcome", "Welcome")
-    
+
     ; text := StrReplace(text, ",", "")
-    
+
     return text
 }
 
@@ -2190,18 +2408,18 @@ ErrorHandler(exception) {
         . "What: " exception.What "`n"
         . "Line: " exception.Line "`n`n"
         . "Click OK to close all related scripts and exit."
-    
+
     MsgBox, 262160, PTCGPB Error, %errorMessage%
-    
+
     KillAllScripts()
-    
+
     ExitApp, 1
     return true
 }
 
 ~+F7::
     SendAllInstancesOfflineStatus()
-    ExitApp
+ExitApp
 return
 
 ~+F12::

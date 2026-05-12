@@ -1,4 +1,4 @@
-﻿;===============================================================================
+;===============================================================================
 ; Database.ahk - Database and Logging Functions
 ;===============================================================================
 ; This file contains functions for database operations and data persistence.
@@ -73,211 +73,158 @@ GetDeviceAccountFromXML() {
 }
 
 ;-------------------------------------------------------------------------------
-; LogToTradesDatabase - Log card trades to CSV database
+; LogToTradesDatabase - Compatibility no-op
 ;-------------------------------------------------------------------------------
 LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName := "", shinedustValue := "") {
-    global session
+    return true
+}
 
-    dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
+;-------------------------------------------------------------------------------
+; LogToCardDatabase - Log cards to CSV database
+;-------------------------------------------------------------------------------
+CardDatabase_HelperPath() {
+    return getScriptBaseFolder() . "\Helper\carddb.exe"
+}
 
-    if (!FileExist(dbPath)) {
-        header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot,Shinedust`n"
-        FileAppend, %header%, %dbPath%
-    } else {
-        ; Check if Shinedust column exists
-        FileReadLine, headerLine, %dbPath%, 1
-        if (!InStr(headerLine, "Shinedust")) {
-            ; Read entire file and add Shinedust column
-            FileRead, csvContent, %dbPath%
-            csvContent := RegExReplace(csvContent, "^([^\n]+)`n", "$1,Shinedust`n")
-            FileDelete, %dbPath%
-            FileAppend, %csvContent%, %dbPath%
+CloseCardDatabase(deviceAccount := "") {
+    return true
+}
+
+MergeCardDatabase() {
+    helperPath := CardDatabase_HelperPath()
+    if (!FileExist(helperPath))
+        return false
+
+    root := getScriptBaseFolder()
+    RunWait, % """" . helperPath . """ --root """ . root . """ merge-card-db",, Hide
+    return !ErrorLevel
+}
+
+LogToCardDatabase(result) {
+    deviceAccount := GetDeviceAccountFromXML()
+    if (deviceAccount = "")
+        return false
+
+    cards := result.cards
+    pack := result.pack
+
+    cardStr := ""
+
+    if (IsObject(cards)) {
+        for _, card in cards {
+            if (cardStr != "")
+                cardStr .= "|"
+            cardStr .= card
         }
-    }
-
-    cleanFilename := session.get("accountFileName")
-    cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
-    cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]*\))?\.xml$", "")
-
-    cardTypeStr := ""
-    cardCountStr := ""
-
-    Loop, % cardTypes.Length() {
-        if (A_Index > 1) {
-            cardTypeStr .= "|"
-            cardCountStr .= "|"
-        }
-        cardTypeStr .= cardTypes[A_Index]
-        cardCountStr .= cardCounts[A_Index]
     }
 
     timestamp := A_Now
     FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
 
-    csvRow := timestamp . ","
-        . session.get("accountFileName") . ","
-        . cleanFilename . ","
-        . deviceAccount . ","
-        . session.get("openPack") . ","
-        . cardTypeStr . ","
-        . cardCountStr . ","
-        . screenShotFileName . ","
-        . shinedustValue . "`n"
+    helperPath := CardDatabase_HelperPath()
+    if (!FileExist(helperPath))
+        return false
 
-    Loop, {
-        FileAppend, %csvRow%, %dbPath%
-        if !ErrorLevel
-            break
-        Sleep, 10
+    root := getScriptBaseFolder()
+    RunWait, % """" . helperPath . """ --root """ . root . """ append-pull --device-account """ . deviceAccount . """ --timestamp """ . timestamp . """ --pack """ . pack . """ --cards """ . cardStr . """",, Hide
+    return !ErrorLevel
+}
+
+EnsureDirExists(dir) {
+    if (InStr(FileExist(dir), "D"))
+        return true
+
+    SplitPath, dir,, parent
+    if (parent && !InStr(FileExist(parent), "D")) {
+        if (!EnsureDirExists(parent))
+            return false
     }
 
-    UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFileName, shinedustValue)
+    FileCreateDir, %dir%
+    return InStr(FileExist(dir), "D")
+}
+
+EnsureCsvHeader(path, header) {
+    if (!FileExist(path))
+        return AppendTextWithRetry(path, header)
+
+    FileGetSize, size, %path%
+    if (size = 0)
+        return AppendTextWithRetry(path, header)
+
+    FileReadLine, firstLine, %path%, 1
+
+    ; Remove UTF-8 BOM if present.
+    if (SubStr(firstLine, 1, 1) = Chr(0xFEFF))
+        firstLine := SubStr(firstLine, 2)
+
+    ; Header already exists.
+    if (SubStr(firstLine, 1, 9) = "Timestamp")
+        return true
+
+    FileRead, oldContent, %path%
+    if (ErrorLevel) {
+        MsgBox, 16, Error, Could not read existing CSV:`n%path%
+        return false
+    }
+
+    tempPath := path . ".tmp"
+
+    FileDelete, %tempPath%
+    FileAppend, % header . oldContent, %tempPath%, UTF-8
+    if (ErrorLevel) {
+        MsgBox, 16, Error, Could not write temporary CSV:`n%tempPath%
+        return false
+    }
+
+    FileMove, %tempPath%, %path%, 1
+    if (ErrorLevel) {
+        MsgBox, 16, Error, Could not replace CSV with repaired version:`n%path%
+        return false
+    }
+
+    return true
+}
+
+CsvEscape(value) {
+    q := Chr(34)
+    value := "" . value
+    value := StrReplace(value, q, q . q)
+    return q . value . q
+}
+
+AppendTextWithRetry(path, text, retries := 50, sleepMs := 10) {
+    Loop, %retries% {
+        FileAppend, %text%, %path%, UTF-8
+        if (!ErrorLevel)
+            return true
+
+        Sleep, %sleepMs%
+    }
+
+    MsgBox, 16, Error, Could not write to file after %retries% attempts:`n%path%
+    return false
 }
 
 ;-------------------------------------------------------------------------------
-; UpdateTradesJSON - Update JSON index with trade information
+; UpdateTradesJSON - Compatibility no-op
 ;-------------------------------------------------------------------------------
 UpdateTradesJSON(deviceAccount, cardTypes, cardCounts, timestamp, screenShotFileName := "", shinedustValue := "") {
-    global session
-
-    jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
-
-    cleanFilename := session.get("accountFileName")
-    cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
-    cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]+\))?\.xml$", "")
-
-    jsonEntry := "{"
-        . """timestamp"": """ . timestamp . """, "
-        . """deviceAccount"": """ . deviceAccount . """, "
-        . """originalFilename"": """ . session.get("accountFileName") . """, "
-        . """cleanFilename"": """ . cleanFilename . """, "
-        . """packType"": """ . session.get("openPack") . """, "
-        . """packScreenshot"": """ . screenShotFileName . """, "
-
-    ; Add shinedust if provided
-    if (shinedustValue != "") {
-        jsonEntry .= """shinedust"": """ . shinedustValue . """, "
-    }
-
-    jsonEntry .= """cards"": ["
-
-    Loop, % cardTypes.Length() {
-        if (A_Index > 1)
-            jsonEntry .= ", "
-        jsonEntry .= "{""type"": """ . cardTypes[A_Index] . """, ""count"": " . cardCounts[A_Index] . "}"
-    }
-
-    jsonEntry .= "]}`n"
-
-    Loop, {
-        FileAppend, %jsonEntry%, %jsonPath%
-        if !ErrorLevel
-            break
-        Sleep, 10
-    }
+    return true
 }
 
 ;-------------------------------------------------------------------------------
 ; SearchTradesDatabase - Search the trades database with filters
 ;-------------------------------------------------------------------------------
 SearchTradesDatabase(searchPackType := "", searchCardType := "") {
-    dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
-
-    if (!FileExist(dbPath))
-        return []
-
-    results := []
-    FileRead, csvContent, %dbPath%
-
-    Loop, Parse, csvContent, `n, `r
-    {
-        if (A_Index = 1)
-            continue
-
-        if (A_LoopField = "")
-            continue
-
-        fields := StrSplit(A_LoopField, ",")
-
-        if (fields.Length() < 7)
-            continue
-
-        packType := fields[5]
-        cardTypes := fields[6]
-
-        if (searchPackType != "" && packType != searchPackType)
-            continue
-
-        if (searchCardType != "" && !InStr(cardTypes, searchCardType))
-            continue
-
-        result := {}
-        result.Timestamp := fields[1]
-        result.OriginalFilename := fields[2]
-        result.CleanFilename := fields[3]
-        result.DeviceAccount := fields[4]
-        result.PackType := fields[5]
-        result.CardTypes := fields[6]
-        result.CardCounts := fields[7]
-
-        results.Push(result)
-    }
-
-    return results
+    return []
 }
 
 ;-------------------------------------------------------------------------------
 ; GetTradesDatabaseStats - Get statistics from trades database
 ;-------------------------------------------------------------------------------
 GetTradesDatabaseStats() {
-    dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
-
-    if (!FileExist(dbPath))
-        return ""
-
-    stats := {}
-    stats.TotalEntries := 0
-    stats.UniqueAccounts := {}
-    stats.PackTypes := {}
-    stats.CardTypes := {}
-
-    FileRead, csvContent, %dbPath%
-
-    Loop, Parse, csvContent, `n, `r
-    {
-        if (A_Index = 1)
-            continue
-
-        if (A_LoopField = "")
-            continue
-
-        stats.TotalEntries++
-
-        fields := StrSplit(A_LoopField, ",")
-
-        if (fields.Length() < 7)
-            continue
-
-        deviceAccount := fields[4]
-        if (!stats.UniqueAccounts.HasKey(deviceAccount))
-            stats.UniqueAccounts[deviceAccount] := 0
-        stats.UniqueAccounts[deviceAccount]++
-
-        packType := fields[5]
-        if (!stats.PackTypes.HasKey(packType))
-            stats.PackTypes[packType] := 0
-        stats.PackTypes[packType]++
-
-        cardTypes := StrSplit(fields[6], "|")
-        Loop, % cardTypes.Length() {
-            cardType := cardTypes[A_Index]
-            if (!stats.CardTypes.HasKey(cardType))
-                stats.CardTypes[cardType] := 0
-            stats.CardTypes[cardType]++
-        }
-    }
-
-    return stats
+    return ""
 }
 
 ;-------------------------------------------------------------------------------
@@ -325,7 +272,7 @@ SaveCroppedImage(sourceFile, destFile, x, y, w, h) {
 }
 
 ;-------------------------------------------------------------------------------
-; LogShinedustToDatabase - Log shinedust value to database
+; LogShinedustToDatabase - Persist shinedust to account metadata
 ;-------------------------------------------------------------------------------
 LogShinedustToDatabase(shinedustValue) {
     global session
@@ -338,77 +285,17 @@ LogShinedustToDatabase(shinedustValue) {
         return
     }
 
-    dbPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Database.csv"
-
-    if (!FileExist(dbPath)) {
-        header := "Timestamp,OriginalFilename,CleanFilename,DeviceAccount,PackType,CardTypes,CardCounts,PackScreenshot,Shinedust`n"
-        FileAppend, %header%, %dbPath%
-    } else {
-        FileReadLine, headerLine, %dbPath%, 1
-        if (!InStr(headerLine, "Shinedust")) {
-            FileRead, csvContent, %dbPath%
-
-            Lines := StrSplit(csvContent, "`n", "`r")
-            newContent := Lines[1] . ",Shinedust`n"
-
-            Loop, % Lines.Length()
-            {
-                if (A_Index = 1)
-                    continue
-                if (Lines[A_Index] = "")
-                    continue
-                newContent .= Lines[A_Index] . ",`n"
-            }
-
-            FileDelete, %dbPath%
-            FileAppend, %newContent%, %dbPath%
-        }
-    }
-
     deviceAccount := GetDeviceAccountFromXML()
+    if (deviceAccount != "")
+        AccountMetadata_SetShinedust(deviceAccount, shinedustValueClean, session.get("scriptName"), session.get("accountFileName"))
 
-    timestamp := A_Now
-    FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
-
-    cleanFilename := session.get("accountFileName")
-    cleanFilename := RegExReplace(cleanFilename, "^\d+P_", "")
-    cleanFilename := RegExReplace(cleanFilename, "_\d+(\([^)]*\))?\.xml$", "")
-
-    csvRow := timestamp . ","
-        . session.get("accountFileName") . ","
-        . cleanFilename . ","
-        . deviceAccount . ","
-        . ","
-        . ","
-        . ","
-        . ","
-        . shinedustValueClean . "`n"
-
-    Loop, {
-        FileAppend, %csvRow%, %dbPath%
-        if !ErrorLevel
-            break
-        Sleep, 10
-    }
-
-    UpdateShinedustJSON(deviceAccount, shinedustValueClean, timestamp, cleanFilename)
 }
 
 ;-------------------------------------------------------------------------------
-; UpdateShinedustJSON - Update JSON index with shinedust information
+; UpdateShinedustJSON - Compatibility no-op
 ;-------------------------------------------------------------------------------
 UpdateShinedustJSON(deviceAccount, shinedustValue, timestamp, cleanFilename) {
-    jsonPath := A_ScriptDir . "\..\Accounts\Trades\Trades_Index.json"
-
-    jsonEntry := "{"
-        . """timestamp"": """ . timestamp . """, "
-        . """deviceAccount"": """ . deviceAccount . """, "
-        . """originalFilename"": """ . session.get("accountFileName") . """, "
-        . """cleanFilename"": """ . cleanFilename . """, "
-        . """shinedust"": """ . shinedustValue . """"
-        . "}`n"
-
-    FileAppend, %jsonEntry%, %jsonPath%
+    return true
 }
 
 SendMetadataToPTCGPB(valueToSend) {
@@ -416,24 +303,24 @@ SendMetadataToPTCGPB(valueToSend) {
 
     DetectHiddenWindows, On
     TargetScriptTitle := "PTCGPB.ahk ahk_class AutoHotkeyGUI"
-    
+
     Random, randNum, 10000, 99999
     msgID := A_Now . "_" . A_TickCount . "_" . randNum
 
     payload := msgID . "|" . session.get("scriptName") . "|" . valueToSend
-    
+
     VarSetCapacity(CopyDataStruct, 3*A_PtrSize, 0)
     SizeInBytes := (StrLen(payload) + 1) * (A_IsUnicode ? 2 : 1)
     NumPut(SizeInBytes, CopyDataStruct, A_PtrSize)
     NumPut(&payload, CopyDataStruct, 2*A_PtrSize)
-    
+
     SendMessage, 0x4A, 0, &CopyDataStruct,, %TargetScriptTitle%
-    
+
     response := ErrorLevel
-    
+
     if (response == "FAIL") {
-        return 0 
+        return 0
     }
-    
-    return response 
+
+    return response
 }

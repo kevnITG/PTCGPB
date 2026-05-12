@@ -4,62 +4,63 @@
     packList := []
 
     mainConfigUIMap := {"ui_FriendID": "FriendID"
-                      , "ui_Instances": "Instances"
-                      , "ui_Columns": "Columns"
-                      , "ui_instanceStartDelay": "instanceStartDelay"
-                      , "ui_runMain": "runMain"
-                      , "ui_Mains": "Mains"
-                      , "ui_deleteMethod": "deleteMethod"
-                      , "ui_packMethod": "packMethod"
-                      , "ui_openExtraPack": "openExtraPack"
-                      , "ui_spendHourGlass": "spendHourGlass"
-                      , "ui_AccountName": "AccountName"
-                      , "ui_Delay": "Delay"
-                      , "ui_swipeSpeed": "swipeSpeed"
-                      , "ui_waitTime": "waitTime"
-                      , "ui_heartBeat": "heartBeat"
-                      , "ui_heartBeatName": "heartBeatName"
-                      , "ui_heartBeatWebhookURL": "heartBeatWebhookURL"
-                      , "ui_heartBeatDelay": "heartBeatDelay"
-                      , "ui_heartBeatOwnerWebHookURL": "heartBeatOwnerWebHookURL"}
+        , "ui_Instances": "Instances"
+        , "ui_Columns": "Columns"
+        , "ui_instanceStartDelay": "instanceStartDelay"
+        , "ui_runMain": "runMain"
+        , "ui_Mains": "Mains"
+        , "ui_deleteMethod": "deleteMethod"
+        , "ui_packMethod": "packMethod"
+        , "ui_openExtraPack": "openExtraPack"
+        , "ui_spendHourGlass": "spendHourGlass"
+        , "ui_AccountName": "AccountName"
+        , "ui_Delay": "Delay"
+        , "ui_swipeSpeed": "swipeSpeed"
+        , "ui_waitTime": "waitTime"
+        , "ui_heartBeat": "heartBeat"
+        , "ui_heartBeatName": "heartBeatName"
+        , "ui_heartBeatWebhookURL": "heartBeatWebhookURL"
+        , "ui_heartBeatDelay": "heartBeatDelay"
+        , "ui_heartBeatOwnerWebHookURL": "heartBeatOwnerWebHookURL"}
 
     defaultValueMap := {"BotLanguage":"English"
-                      , "IsLanguageSet":0
-                      , "shownLicense":0
-                      , "defaultBotLanguage":1
-                      , "deleteMethod":"Create Bots (13P)"
-                      , "Instances": 1
-                      , "Columns": 5
-                      , "instanceStartDelay": 10
-                      , "runMain": 0
-                      , "Mains": 0
-                      , "openExtraPack": 0
-                      , "spendHourGlass": 0
-                      , "injectSortMethod": "PacksDesc"
-                      , "Delay": 250
-                      , "swipeSpeed": 250
-                      , "waitTime": 5
-                      , "heartBeat": 0
-                      , "heartBeatDelay": 30
-                      , "groupRerollEnabled": 0
-                      , "autoUseGPTest": 0
-                      , "hasUnopenedPack": 0
-                      , "applyRoleFilters": 0
-                      , "TestTime": 3600
-                      , "gpTestWaitTime": 150
-                      , "showcaseEnabled": 0
-                      , "slowMotion": 0
-                      , "claimSpecialMissions": 0
-                      , "SelectedMonitorIndex": 1
-                      , "instanceLaunchDelay": 5
-                      , "folderPath": "C:\Program Files\Netease"
-                      , "RowGap": 105
-                      , "debugMode": 0
-                      , "stopPreference": ""
-                      , "stopPreferenceSingle": ""
-                      , "stopPreferenceMain": ""
-                      , "ocrLanguage": "en"
-                      , "waitAfterBulkLaunch": 40000}
+        , "IsLanguageSet":0
+        , "shownLicense":0
+        , "defaultBotLanguage":1
+        , "deleteMethod":"Create Bots (13P)"
+        , "Instances": 1
+        , "Columns": 5
+        , "instanceStartDelay": 10
+        , "runMain": 0
+        , "Mains": 0
+        , "openExtraPack": 0
+        , "spendHourGlass": 0
+        , "injectSortMethod": "PacksDesc"
+        , "Delay": 250
+        , "swipeSpeed": 250
+        , "waitTime": 5
+        , "heartBeat": 0
+        , "heartBeatDelay": 30
+        , "groupRerollEnabled": 0
+        , "autoUseGPTest": 0
+        , "hasUnopenedPack": 0
+        , "applyRoleFilters": 0
+        , "TestTime": 3600
+        , "gpTestWaitTime": 150
+        , "showcaseEnabled": 0
+        , "slowMotion": 0
+        , "claimSpecialMissions": 0
+        , "SelectedMonitorIndex": 1
+        , "instanceLaunchDelay": 5
+        , "folderPath": "C:\Program Files\Netease"
+        , "RowGap": 105
+        , "debugMode": 0
+        , "stopPreference": ""
+        , "stopPreferenceSingle": ""
+        , "stopPreferenceMain": ""
+        , "s4tKeepSyntheticScreenshots": 0
+        , "ocrLanguage": "en"
+        , "waitAfterBulkLaunch": 40000}
 
     generalSettings := {}
     packSettings := {}
@@ -80,7 +81,6 @@
         this.botConfigs["Extra"] := this.extraSettings
 
         this.botConfigs["UserSettings"] := this.legacySettings
-
         this.initDefaultSettings()
     }
 
@@ -102,7 +102,7 @@
 
         if(value = "" && this.legacySettings.HasKey(configItemName))
             value := this.legacySettings[configItemName]
-        
+
         if(value = "" && this.defaultValueMap.HasKey(configItemName)){
             value := this.defaultValueMap[configItemName]
             this.set(configItemName, value)
@@ -190,7 +190,7 @@
     loadIniSectionFromSettingsFile(sectionName){
         settingsFile := this.settingsFile
         IniRead, rawData, %settingsFile%, %sectionName%
-    
+
         if (rawData = "ERROR" || rawData = "") {
             return
         }
@@ -199,13 +199,13 @@
         {
             if (A_LoopField = "")
                 continue
-            
+
             equalPos := InStr(A_LoopField, "=")
-            
+
             if (equalPos > 0) {
                 key := SubStr(A_LoopField, 1, equalPos - 1)
                 val := SubStr(A_LoopField, equalPos + 1)
-                
+
                 this.botConfigs[sectionName][key] := val
             }
         }

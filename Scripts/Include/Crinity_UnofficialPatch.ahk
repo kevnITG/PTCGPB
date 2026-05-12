@@ -1,4 +1,4 @@
-﻿; FindOrLoseImage EL = 0, Found Mode, Found image - Return xy pos / Not Found image - Return 0
+; FindOrLoseImage EL = 0, Found Mode, Found image - Return xy pos / Not Found image - Return 0
 ; FindOrLoseImage EL = 1, Loose Mode, Found image - Return 0 / Not Found image - Return 1
 ; ====================================================================
 ; #Include %A_ScriptDir%\Include\Crinity_UnofficialPatch.ahk
@@ -10,7 +10,7 @@ processPrivacyAgreement()
         return
 
     CreateStatusMessage("Accepting Privacy and TOS popup.",,,, false)
-    
+
     FindImageAndClick("NewPrivacyAgreement_Main", 142, 372) ; Click First alert OK
     FindImageAndClick("NewPrivacyAgreement_DescX", 140, 336) ; Click Description Button
     FindImageAndClick("NewPrivacyAgreement_Main", 138, 487) ; Close Description Window
@@ -20,7 +20,7 @@ processPrivacyAgreement()
         if(FindOrLoseImage("NewPrivacyAgreement_Checked", 0))
             break
     }
-    
+
     Loop, {
         adbClick_wbb(143, 488) ; Click Main OK Button
         Delay(1)
@@ -80,7 +80,7 @@ startPreProcess(methodType){
     findImageName := ""
     clickX := 0
     clickY := 0
-    
+
     if(methodType = "Create Bots (13P)"){
         findImageName := "Country"
         needleName := "Create_CountryComboBoxButton"
@@ -98,6 +98,12 @@ startPreProcess(methodType){
         needleName := "Common_ActivatedSocialInMainMenu"
         clickX := 143
         clickY := 518
+    }
+    else if(methodType = "Inject Rewards"){
+        findImageName := "Home"
+        needleName := "Pack_PackPointButton"
+        clickX := getPackCoordXInHome()
+        clickY := 203
     }
     findImageName .= "`n(Selected pack: " . session.get("openPack") . ")"
 
@@ -126,36 +132,36 @@ startPreProcess(methodType){
             adbClick_wbb(145, 370)
             Delay(1)
         }
-/*
-        Path = %imagePath%HardwareReqs.png
-        pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 30, 306, 38, 316, searchVariation)
-        if(vRet){
-            CreateStatusMessage("Clearing hardware requirements pop-up",,,, false)
-            adbClick_wbb(199, 370)
-            Delay(1)
-        }
+        /*
+                Path = %imagePath%HardwareReqs.png
+                pNeedle := GetNeedle(Path)
+                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 30, 306, 38, 316, searchVariation)
+                if(vRet){
+                    CreateStatusMessage("Clearing hardware requirements pop-up",,,, false)
+                    adbClick_wbb(199, 370)
+                    Delay(1)
+                }
 
-        Path = %imagePath%HardwareReq2.png
-        pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 41, 388, 92, 403, searchVariation)
-        if(vRet){
-            CreateStatusMessage("Clearing hardware requirements pop-up",,,, false)
-            Sleep, 3000
-            adbClick_wbb(199,370)
-            adbClick_wbb(199,370)
-            adbClick_wbb(199,370)
-            Sleep, 2000
-        }
-*/
+                Path = %imagePath%HardwareReq2.png
+                pNeedle := GetNeedle(Path)
+                vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 41, 388, 92, 403, searchVariation)
+                if(vRet){
+                    CreateStatusMessage("Clearing hardware requirements pop-up",,,, false)
+                    Sleep, 3000
+                    adbClick_wbb(199,370)
+                    adbClick_wbb(199,370)
+                    adbClick_wbb(199,370)
+                    Sleep, 2000
+                }
+        */
         Path = %imagePath%closeduringpack.png
         pNeedle := GetNeedle(Path)
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY
-                                    , needlesDict.Get("Common_AlertForAppCrachDuringOpenPack").coords.startX
-                                    , needlesDict.Get("Common_AlertForAppCrachDuringOpenPack").coords.startY
-                                    , needlesDict.Get("Common_AlertForAppCrachDuringOpenPack").coords.endX
-                                    , needlesDict.Get("Common_AlertForAppCrachDuringOpenPack").coords.endY
-                                    , searchVariation)
+            , needlesDict.Get("Common_AlertForAppCrachDuringOpenPack").coords.startX
+            , needlesDict.Get("Common_AlertForAppCrachDuringOpenPack").coords.startY
+            , needlesDict.Get("Common_AlertForAppCrachDuringOpenPack").coords.endX
+            , needlesDict.Get("Common_AlertForAppCrachDuringOpenPack").coords.endY
+            , searchVariation)
         if(vRet = 1){
             CreateStatusMessage("Found closing during pack pop-up",,,, false)
             Delay(1)
@@ -187,7 +193,7 @@ startPreProcess(methodType){
         }
 
         DelayH(20)
-    
+
         Gdip_DisposeImage(pBitmap)
 
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
@@ -242,6 +248,6 @@ getDevelopmentScreenShot(packCardType, pBitmap := 0){
 
     if(pBitmap = 0)
         pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
-    
+
     Gdip_SaveBitmapToFile(pBitmap, filePath)
 }

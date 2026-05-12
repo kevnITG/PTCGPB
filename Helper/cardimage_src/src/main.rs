@@ -1,0 +1,354 @@
+use ab_glyph::{Font as _, FontArc, PxScale, ScaleFont};
+use anyhow::Context;
+use clap::Parser;
+use futures::future::join_all;
+use image::{ImageBuffer, Rgba, RgbaImage};
+use imageproc::drawing::{draw_hollow_rect_mut, draw_text_mut};
+use imageproc::rect::Rect;
+use reqwest::Client;
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::io::ErrorKind;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use tokio::fs;
+
+#[derive(Parser)]
+#[command(name = "cardimage", about = "Generate a card pack image for Discord")]
+struct Cli {
+    input: PathBuf,
+    output: PathBuf,
+    #[arg(long, default_value_t = 6)]
+    cols: usize,
+    #[arg(long, default_value = "cardmap.json")]
+    cardmaster: PathBuf,
+    #[arg(long, default_value = "CardImageCache")]
+    cache_dir: PathBuf,
+}
+
+#[derive(Deserialize)]
+struct CardMapEntry {
+    #[serde(rename = "IllustrationID")]
+    illustration_id: Option<String>,
+    #[serde(rename = "ExpansionID")]
+    expansion_id: Option<String>,
+    #[serde(rename = "CollectionNumber")]
+    collection_number: Option<u32>,
+}
+
+type CardMap = HashMap<String, CardMapEntry>;
+
+const CARDMAP_URL: &str = "https://leanny.github.io/pocket_tcg_resources/data/cardmap.json";
+
+async fn load_cardmaster(path: &Path) -> anyhow::Result<CardMap> {
+    let data = match fs::read_to_string(path).await {
+        Ok(data) => data,
+        Err(err) if err.kind() == ErrorKind::NotFound => {
+            println!("  {:?} not found; downloading cardmap.json…", path);
+
+            let data = Client::new()
+                .get(CARDMAP_URL)
+                .send()
+                .await
+                .context("Could not download cardmap.json")?
+                .error_for_status()
+                .context("cardmap.json download returned an error status")?
+                .text()
+                .await
+                .context("Could not read downloaded cardmap.json")?;
+
+            // Validate before saving, so we do not cache a bad file.
+            serde_json::from_str::<CardMap>(&data)
+                .context("Downloaded cardmap.json was not valid JSON")?;
+
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent).await?;
+                }
+            }
+
+            fs::write(path, &data)
+                .await
+                .with_context(|| format!("Could not save downloaded cardmap.json to {:?}", path))?;
+
+            data
+        }
+        Err(err) => {
+            return Err(err).with_context(|| format!("Could not read cardmap file at {:?}", path));
+        }
+    };
+
+    serde_json::from_str(&data)
+        .with_context(|| format!("Could not parse cardmap JSON at {:?}", path))
+}
+
+fn get_ill_id<'a>(card_id: &str, cm: &'a CardMap) -> Option<&'a str> {
+    cm.get(card_id)?.illustration_id.as_deref()
+}
+
+fn card_sort_key(card_id: &str, cm: &CardMap) -> (String, u32) {
+    if let Some(entry) = cm.get(card_id) {
+        let exp = entry.expansion_id.clone().unwrap_or_default();
+        let num = entry.collection_number.unwrap_or(u32::MAX);
+        return (exp, num);
+    }
+    // Fallback: derive from card ID segments (PK_NN_XXXXXX_YY)
+    let parts: Vec<&str> = card_id.split('_').collect();
+    let num = if parts.len() >= 3 {
+        parts[2].parse::<u32>().map(|n| n / 10).unwrap_or(u32::MAX)
+    } else {
+        u32::MAX
+    };
+    (String::new(), num)
+}
+
+async fn fetch_one(client: Arc<Client>, url: String, dest: PathBuf) -> bool {
+    if dest.exists() {
+        if let Ok(meta) = std::fs::metadata(&dest) {
+            if meta.len() > 1000 {
+                return true;
+            }
+        }
+        let _ = std::fs::remove_file(&dest);
+    }
+
+    let resp = match client.get(&url).send().await {
+        Ok(r) if r.status().is_success() => r,
+        _ => return false,
+    };
+    let bytes = match resp.bytes().await {
+        Ok(b) if b.len() > 1000 => b,
+        _ => return false,
+    };
+
+    if let Some(parent) = dest.parent() {
+        let _ = fs::create_dir_all(parent).await;
+    }
+    fs::write(&dest, &bytes).await.is_ok()
+}
+
+async fn download_all(tasks: Vec<(String, PathBuf)>, max_conn: usize) -> Vec<bool> {
+    let client = Arc::new(
+        Client::builder()
+            .pool_max_idle_per_host(max_conn)
+            .build()
+            .expect("HTTP client"),
+    );
+
+    let mut results = Vec::with_capacity(tasks.len());
+    for chunk in tasks.chunks(max_conn) {
+        let futs: Vec<_> = chunk
+            .iter()
+            .map(|(url, dest)| fetch_one(Arc::clone(&client), url.clone(), dest.clone()))
+            .collect();
+        results.extend(join_all(futs).await);
+    }
+    results
+}
+
+const CARD_W: u32 = 200;
+const CARD_H: u32 = 280;
+const PADDING: u32 = 10;
+
+const BG: Rgba<u8> = Rgba([26, 26, 46, 255]);
+const PH_FILL: Rgba<u8> = Rgba([37, 37, 69, 255]);
+const PH_BORDER: Rgba<u8> = Rgba([74, 74, 158, 255]);
+const TEXT_COLOR: Rgba<u8> = Rgba([170, 170, 170, 255]);
+
+fn make_placeholder(card_id: &str, font: &FontArc) -> RgbaImage {
+    let mut img: RgbaImage = ImageBuffer::from_pixel(CARD_W, CARD_H, PH_FILL);
+
+    // Border
+    draw_hollow_rect_mut(&mut img, Rect::at(0, 0).of_size(CARD_W, CARD_H), PH_BORDER);
+    draw_hollow_rect_mut(
+        &mut img,
+        Rect::at(1, 1).of_size(CARD_W - 2, CARD_H - 2),
+        PH_BORDER,
+    );
+
+    let label: String = card_id.chars().take(20).collect();
+    let scale = PxScale::from(13.0);
+    let scaled_font = font.as_scaled(scale);
+    let line_h =
+        (scaled_font.ascent() - scaled_font.descent() + scaled_font.line_gap()).ceil() as u32;
+
+    // Measure width to centre
+    let glyph_width = |s: &str| -> u32 {
+        let mut width = 0.0;
+        let mut previous = None;
+
+        for ch in s.chars() {
+            let glyph_id = font.glyph_id(ch);
+            if let Some(previous) = previous {
+                width += scaled_font.kern(previous, glyph_id);
+            }
+            width += scaled_font.h_advance(glyph_id);
+            previous = Some(glyph_id);
+        }
+
+        width.ceil() as u32
+    };
+
+    // Two-line split at '_' boundary around midpoint
+    let mid = label.len() / 2;
+    let split = label[..mid].rfind('_').map(|i| i + 1).unwrap_or(mid);
+    let line1 = &label[..split];
+    let line2 = &label[split..];
+
+    let total_h = line_h * 2 + 4;
+    let y_start = (CARD_H.saturating_sub(total_h)) / 2;
+
+    for (i, line) in [line1, line2].iter().enumerate() {
+        let w = glyph_width(line).max(1);
+        let x = ((CARD_W.saturating_sub(w)) / 2) as i32;
+        let y = (y_start + i as u32 * (line_h + 4)) as i32;
+        draw_text_mut(&mut img, TEXT_COLOR, x, y, scale, font, line);
+    }
+
+    img
+}
+
+fn composite(cards: &[(String, Option<RgbaImage>)], max_cols: usize, font: &FontArc) -> RgbaImage {
+    let total = cards.len();
+    // Fixed width: always use max_cols for canvas width
+    let cols = max_cols as u32;
+    let rows = total.div_ceil(max_cols) as u32;
+
+    // Fixed width canvas (based on max_cols)
+    let canvas_w = PADDING + cols * (CARD_W + PADDING);
+    // Variable height (based on rows)
+    let canvas_h = PADDING + rows * (CARD_H + PADDING);
+
+    let mut canvas: RgbaImage = ImageBuffer::from_pixel(canvas_w, canvas_h, BG);
+
+    for (idx, (card_id, img_opt)) in cards.iter().enumerate() {
+        let col = (idx % max_cols) as u32;
+        let row = (idx / max_cols) as u32;
+
+        // Calculate cards in this row for centering
+        let cards_in_row = if row == rows - 1 {
+            // Last row might be incomplete
+            let remainder = total % max_cols;
+            if remainder == 0 {
+                max_cols
+            } else {
+                remainder
+            }
+        } else {
+            // Full rows always have max_cols cards
+            max_cols
+        };
+
+        // Center cards horizontally when row is not full
+        let unused_slots = max_cols - cards_in_row;
+        let center_offset = (unused_slots as u32 * (CARD_W + PADDING)) / 2;
+
+        let x = PADDING + center_offset + col * (CARD_W + PADDING);
+        let y = PADDING + row * (CARD_H + PADDING);
+
+        let card_img: RgbaImage = match img_opt {
+            Some(src) => {
+                // Resize to fit slot
+                let resized = image::imageops::resize(
+                    src,
+                    CARD_W,
+                    CARD_H,
+                    image::imageops::FilterType::Lanczos3,
+                );
+                resized
+            }
+            None => make_placeholder(card_id, font),
+        };
+
+        image::imageops::overlay(&mut canvas, &card_img, x as i64, y as i64);
+    }
+
+    canvas
+}
+
+fn parse_ids(input: &str) -> Vec<String> {
+    input
+        .lines()
+        .flat_map(|line| line.split(','))
+        .map(|s| s.trim().to_owned())
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+
+    let raw = std::fs::read_to_string(&cli.input)?;
+    let card_ids = parse_ids(&raw);
+    if card_ids.is_empty() {
+        eprintln!("No card IDs found in {:?}", cli.input);
+        std::process::exit(1);
+    }
+
+    let cardmaster = load_cardmaster(&cli.cardmaster).await?;
+    // cardmaster here is actually cardmap.json (has ExpansionID + CollectionNumber + IllustrationID)
+    fs::create_dir_all(&cli.cache_dir).await?;
+
+    let base_url = "https://leanny.github.io/pocket_tcg_resources/img/S/US";
+
+    let mut ill_ids: Vec<Option<String>> = Vec::with_capacity(card_ids.len());
+    let mut cached_paths: Vec<Option<PathBuf>> = Vec::with_capacity(card_ids.len());
+    let mut to_download: Vec<(String, PathBuf)> = Vec::new();
+
+    for cid in &card_ids {
+        let ill_id = get_ill_id(cid, &cardmaster).map(str::to_owned);
+        if let Some(ref id) = ill_id {
+            let safe: String = id
+                .chars()
+                .map(|c| if "\\/:<>\"*?|".contains(c) { '_' } else { c })
+                .collect();
+            let dest = cli.cache_dir.join(format!("{safe}.png"));
+            let needs_dl =
+                !dest.exists() || std::fs::metadata(&dest).map(|m| m.len()).unwrap_or(0) <= 1000;
+            if needs_dl {
+                let url = format!("{base_url}/{id}.png");
+                to_download.push((url, dest.clone()));
+            }
+            cached_paths.push(Some(dest));
+        } else {
+            cached_paths.push(None);
+        }
+        ill_ids.push(ill_id);
+    }
+
+    let dl_results = download_all(to_download, 20).await;
+    let failed = dl_results.iter().filter(|&&ok| !ok).count();
+    if failed > 0 {
+        eprintln!("{failed} image(s) failed to download (shown as placeholders)");
+    }
+
+    let mut cards: Vec<(String, Option<RgbaImage>)> = Vec::with_capacity(card_ids.len());
+    for (cid, path_opt) in card_ids.iter().zip(cached_paths.iter()) {
+        let img = path_opt.as_ref().and_then(|p| {
+            if p.exists() && std::fs::metadata(p).map(|m| m.len()).unwrap_or(0) > 1000 {
+                image::open(p).ok().map(|i| i.to_rgba8())
+            } else {
+                None
+            }
+        });
+        cards.push((cid.clone(), img));
+    }
+
+    // Sort by ExpansionID (alphabetical: A1 < A1a < A2 ...) then CollectionNumber (numeric)
+    cards.sort_by(|a, b| {
+        let ka = card_sort_key(&a.0, &cardmaster);
+        let kb = card_sort_key(&b.0, &cardmaster);
+        ka.cmp(&kb)
+    });
+
+    let font_data = include_bytes!("font.ttf");
+    let font = FontArc::try_from_slice(font_data as &[u8]).expect("embedded font");
+    let result = composite(&cards, cli.cols, &font);
+    if let Some(parent) = cli.output.parent() {
+        fs::create_dir_all(parent).await?;
+    }
+    result.save(&cli.output)?;
+
+    Ok(())
+}

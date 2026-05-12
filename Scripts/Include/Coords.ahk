@@ -1,4 +1,4 @@
-﻿class Coordinate{
+class Coordinate{
     startX := 0
     startY := 0
     endX := 0
@@ -55,8 +55,6 @@ needlesDict.Add(new Needle("Friend_FriendRequestsSubMenu", "requests", new Coord
 needlesDict.Add(new Needle("Friend_BottomDarkHomeIcon", "Home", new Coordinate(28, 504, 42, 518)))
 needlesDict.Add(new Needle("Friend_ActivatedClearAllButton", "clearAll", new Coordinate(191, 493, 200, 509)))
 needlesDict.Add(new Needle("Friend_FriendListEmpty", "empty", new Coordinate(42, 163, 66, 185)))
-needlesDict.Add(new Needle("99ko", "99ko", new Coordinate(63, 106, 102, 120)))
-needlesDict.Add(new Needle("99en", "99en", new Coordinate(63, 106, 102, 120)))
 needlesDict.Add(new Needle("Friend_HamburgerMenuButtonInIntro", "MainHamburgerMenuButton", new Coordinate(241, 68, 258, 84)))
 
 ; Friend - Search
@@ -87,6 +85,7 @@ needlesDict.Add(new Needle("Friend_DenyButtonInApproveSubmenu", "DeleteFriend", 
 needlesDict.Add(new Needle("Friend_RequestAlreadyClosedInApproveSubmenu", "RequestAlreadyClosed", new Coordinate(3, 330, 70, 345)))
 needlesDict.Add(new Needle("Friend_DisabledDenyAllRequestButtonInApproveSubmenu", "Accept", new Coordinate(190, 495, 202, 507)))
 needlesDict.Add(new Needle("Friend_BlankFriendSlotAreaInApproveSubmenu", "Approve", new Coordinate(177, 450, 190, 468)))
+needlesDict.Add(new Needle("FriendLimit", "FriendLimit", new Coordinate(221, 267, 228, 272)))
 
 ;==============================================================================================================================
 
@@ -108,6 +107,9 @@ needlesDict.Add(new Needle("Shinedust_CloseButtonInDetailWindow", "wrongItem", n
 ; Receive Gift
 needlesDict.Add(new Needle("Gift_ClaimAllButton", "ClaimAll", new Coordinate(170, 434, 216, 447)))
 needlesDict.Add(new Needle("Gift_ReceivedWindowRightBorder", "GiftReceiveWindowBorder", new Coordinate(260, 200, 265, 205)))
+needlesDict.Add(new Needle("Gift_ResultAfterOpenPack", "OpeningGift", new Coordinate(167, 494, 178, 505)))
+needlesDict.Add(new Needle("Gift_Claimable", "Claimable", new Coordinate(22, 105, 27, 112)))
+needlesDict.Add(new Needle("Gift_ClaimedAll", "ClaimedAll", new Coordinate(257, 410, 267, 435)))
 
 ;==============================================================================================================================
 
@@ -185,6 +187,7 @@ needlesDict.Add(new Needle("Mission_FirstWonderpickMissionIconInDetails", "First
 needlesDict.Add(new Needle("Mission_ActivatedBeginnerMissionTabButton", "Missions", new Coordinate(15, 451, 18, 468)))
 needlesDict.Add(new Needle("Mission_ThemeCollectionButtonIcon", "Mission_dino1", new Coordinate(180, 493, 190, 503)))
 needlesDict.Add(new Needle("Mission_MissionIconTopAreaInDetails", "Mission_dino2", new Coordinate(130, 160, 150, 180)))
+needlesDict.Add(new Needle("Mission_MissionIconTopAreaInDetailsAlt", "Mission_dino3", new Coordinate(52, 159, 69, 171)))
 needlesDict.Add(new Needle("Mission_GoToDexButtonIcon", "DexMissions", new Coordinate(18, 210, 30, 222)))
 needlesDict.Add(new Needle("Mission_DailyMissionImage", "DailyMissions", new Coordinate(204, 190, 223, 197)))
 needlesDict.Add(new Needle("Mission_CompleteGotAllClaims", "GotAllMissions", new Coordinate(257, 417, 271, 428)))

@@ -7,12 +7,32 @@ SetDefaultMouseSpeed, 0
 SetBatchLines, -1
 SetTitleMatchMode, 3
 
-global adbShell, adbPath, adbPorts, winTitle, folderPath, selectedFilePath, mumuFolder
+global adbShell, adbPath, adbPorts, winTitle, folderPath, selectedFilePath, mumuFolder, headless, injectInProgress
 
 IniRead, winTitle, InjectAccount.ini, UserSettings, winTitle, 1
 IniRead, fileName, InjectAccount.ini, UserSettings, fileName, name
 IniRead, folderPath, InjectAccount.ini, UserSettings, folderPath, C:\Program Files\Netease
 IniRead, selectedFilePath, InjectAccount.ini, UserSettings, selectedFilePath, ""
+IniRead, sendFriendRequestAfterInject, InjectAccount.ini, UserSettings, sendFriendRequestAfterInject, 0
+
+; --- Headless mode (called from the Card Dashboard HTML server) ---------
+headless := false
+Loop, %0%
+{
+    arg := %A_Index%
+    if (arg = "/headless" || arg = "--headless" || arg = "-headless")
+    {
+        headless := true
+        break
+    }
+}
+
+if (headless)
+{
+    Gosub, RunInjectFlow
+    ExitApp
+}
+; -------------------------------------------------------------------------
 
 ; Set a custom font and size for better appearance
 Gui, Font, s10, Segoe UI
@@ -53,23 +73,27 @@ Gui, Add, Button, x+10 yp w80 gBrowseFile, Browse
 Gui, Add, Text, x10 y+15 cDCDCDC, MuMu Folder same as main script (C:\Program Files\Netease)
 Gui, Add, Edit, x10 y+5 vfolderPath w300 c000000 BackgroundFFFFFF, %folderPath%
 
+; Friend request option
+friendCheckText := "Send friend request after inject (uses FriendID in Settings.ini)"
+Gui, Add, Checkbox, x10 y+15 vsendFriendRequestAfterInject Checked%sendFriendRequestAfterInject% cDCDCDC, %friendCheckText%
+
 ; Add another separator
 Gui, Add, Text, x10 y+15 w450 h1 0x10 c3F3F3F ; Darker separator
 
-; Submit button with better styling - making it more prominent
-; Submit and Run Instance buttons centered with adjusted spacing
-Gui, Add, Button, x130 y+30 w100 h40 gSaveSettings cBlue, Submit
-Gui, Add, Button, x+10 yp w100 h40 gRunInstance cGreen, Run Instance
+Gui, Add, Text, x10 y+12 w450 vInjectStatusText c8FD18A, Ready.
+Gui, Add, Progress, x10 y+6 w450 h8 vInjectProgress c4AAE3A Background303030, 0
+Gui, Add, Button, x130 y+16 w100 h40 vSubmitBtn gSaveSettings cBlue, Submit
+Gui, Add, Button, x+10 yp w100 h40 vRunInstanceBtn gRunInstance cGreen, Run Instance
 
 ; Show the GUI with a proper size
-Gui, Show, w470 h400, Arturo's Account Injection Tool ;'
+Gui, Show, w470 h470, Arturo's Account Injection Tool ;'
 Return
 
 OnGuiClose:
-    ExitApp
+ExitApp
 
 GuiClose:
-    ExitApp
+ExitApp
 
 BrowseFile:
     FileSelectFile, selectedFile, 3, , Select XML File, XML Files (*.xml)
@@ -79,120 +103,158 @@ BrowseFile:
         GuiControl,, fileName, %fileNameNoExtNoPath%
         selectedFilePath := selectedFile
     }
-    return
+return
 
 SaveSettings:
+    if (injectInProgress)
+        return
     Gui, Submit, NoHide
+    injectInProgress := 1
+    SetInjectUiBusy(true)
+    UpdateInjectUi("Saving settings...", 5)
     ; Removed: Gui, Destroy
     IniWrite, %winTitle%, InjectAccount.ini, UserSettings, winTitle
     IniWrite, %fileName%, InjectAccount.ini, UserSettings, fileName
     IniWrite, %folderPath%, InjectAccount.ini, UserSettings, folderPath
     IniWrite, %selectedFilePath%, InjectAccount.ini, UserSettings, selectedFilePath
+    IniWrite, %sendFriendRequestAfterInject%, InjectAccount.ini, UserSettings, sendFriendRequestAfterInject
+; fall through into RunInjectFlow
 
-mumuFolder := getMumuFolder(folderPath)
+RunInjectFlow:
+    UpdateInjectUi("Resolving MuMu folder...", 10)
+    mumuFolder := getMumuFolder(folderPath)
 
-adbPath := mumuFolder . "\shell\adb.exe"
-if !FileExist(adbPath)
-    adbPath := mumuFolder . "\nx_main\adb.exe"
-findAdbPorts(mumuFolder)
+    UpdateInjectUi("Locating ADB and instance port...", 18)
+    adbPath := mumuFolder . "\shell\adb.exe"
+    if !FileExist(adbPath)
+        adbPath := mumuFolder . "\nx_main\adb.exe"
+    findAdbPorts(mumuFolder)
 
-if(!WinExist(winTitle)) {
-    Msgbox, 16, , Can't find instance: %winTitle%. Make sure that instance is running.;'
-    ExitApp
-}
-
-if !FileExist(adbPath) ;if international mumu file path isn't found look for chinese domestic path
-    adbPath := folderPath . "\MuMu Player 12\shell\adb.exe"
-if !FileExist(adbPath)
-    adbPath := folderPath . "\MuMuPlayer-12.0\shell\adb.exe"
-if !FileExist(adbPath) ;MuMu Player 12 v5
-    adbPath := folderPath . "\MuMuPlayerGlobal-12.0\nx_main\adb.exe"
-if !FileExist(adbPath) ;MuMu Player 12 v5
-    adbPath := folderPath . "\MuMu Player 12\nx_main\adb.exe"
-if !FileExist(adbPath)
-    adbPath := folderPath . "\MuMuPlayer-12.0\nx_main\adb.exe"
-if !FileExist(adbPath) ;MuMu Player 12 v5
-    adbPath := folderPath . "\MuMuPlayer\nx_main\adb.exe"
-if !FileExist(adbPath)
-    adbPath := folderPath . "\MuMuPlayer-12\shell\adb.exe"
-if !FileExist(adbPath)
-    adbPath := folderPath . "\MuMuPlayer-12\nx_main\adb.exe"
-if !FileExist(adbPath)
-    adbPath := folderPath . "\MuMuPlayer12\shell\adb.exe"
-if !FileExist(adbPath)
-    adbPath := folderPath . "\MuMuPlayer12\nx_main\adb.exe"
-
-if !FileExist(adbPath) {
-    MsgBox, 16, , Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
-    ExitApp
-}
-
-if(!adbPorts) {
-    Msgbox, 16, , Invalid port... Check the common issues section in the readme/github guide.
-    ExitApp
-}
-
-filePath := selectedFilePath
-if (filePath = "")
-    filePath := A_ScriptDir . "\" . fileName . ".xml"
-
-if(!FileExist(filePath)) {
-    Msgbox, 16, , Can't find XML file: %filePath% ;'
-    ExitApp
-}
-RunWait, %adbPath% connect 127.0.0.1:%adbPorts%,, Hide
-
-MaxRetries := 10
-    RetryCount := 0
-    Loop {
-        try {
-            if (!adbShell) {
-                adbShell := ComObjCreate("WScript.Shell").Exec(adbPath . " -s 127.0.0.1:" . adbPorts . " shell")
-                processID := adbShell.ProcessID
-                WinWait, ahk_pid %processID%
-                WinMinimize, ahk_pid %processID%  ; Minimize immediately after window appears
-                adbShell.StdIn.WriteLine("su")
-            }
-            else if (adbShell.Status != 0) {
-                Sleep, 1000
-            }
-            else {
-                Sleep, 1000
-                break
-            }
-        }
-        catch {
-            RetryCount++
-            if(RetryCount > MaxRetries) {
-                Pause
-            }
-        }
-        Sleep, 1000
+    if(!WinExist(winTitle)) {
+        Msgbox, 16, , Can't find instance: %winTitle%. Make sure that instance is running.'
+        UpdateInjectUi("Selected instance is not running.", 0)
+        SetInjectUiBusy(false)
+        injectInProgress := 0
+        return
     }
 
-    loadAccount()
-    if (adbShell) {
-        WinClose, ahk_pid %processID%  ; Force close the window
-        adbShell.Terminate()
-        adbShell := ""
+    if !FileExist(adbPath) ;if international mumu file path isn't found look for chinese domestic path
+        adbPath := folderPath . "\MuMu Player 12\shell\adb.exe"
+    if !FileExist(adbPath)
+        adbPath := folderPath . "\MuMuPlayer-12.0\shell\adb.exe"
+    if !FileExist(adbPath) ;MuMu Player 12 v5
+        adbPath := folderPath . "\MuMuPlayerGlobal-12.0\nx_main\adb.exe"
+    if !FileExist(adbPath) ;MuMu Player 12 v5
+        adbPath := folderPath . "\MuMu Player 12\nx_main\adb.exe"
+    if !FileExist(adbPath)
+        adbPath := folderPath . "\MuMuPlayer-12.0\nx_main\adb.exe"
+    if !FileExist(adbPath) ;MuMu Player 12 v5
+        adbPath := folderPath . "\MuMuPlayer\nx_main\adb.exe"
+    if !FileExist(adbPath)
+        adbPath := folderPath . "\MuMuPlayer-12\shell\adb.exe"
+    if !FileExist(adbPath)
+        adbPath := folderPath . "\MuMuPlayer-12\nx_main\adb.exe"
+    if !FileExist(adbPath)
+        adbPath := folderPath . "\MuMuPlayer12\shell\adb.exe"
+    if !FileExist(adbPath)
+        adbPath := folderPath . "\MuMuPlayer12\nx_main\adb.exe"
+
+    if !FileExist(adbPath) {
+        MsgBox, 16, , Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
+        UpdateInjectUi("Invalid MuMu folder path.", 0)
+        SetInjectUiBusy(false)
+        injectInProgress := 0
+        return
     }
+
+    if(!adbPorts) {
+        Msgbox, 16, , Invalid port... Check the common issues section in the readme/github guide.
+        UpdateInjectUi("Could not resolve ADB port.", 0)
+        SetInjectUiBusy(false)
+        injectInProgress := 0
+        return
+    }
+
+    filePath := selectedFilePath
+    if (filePath = "")
+        filePath := A_ScriptDir . "\" . fileName . ".xml"
+
+    if(!FileExist(filePath)) {
+        Msgbox, 16, , Can't find XML file: %filePath% ;'
+        UpdateInjectUi("XML file not found.", 0)
+        SetInjectUiBusy(false)
+        injectInProgress := 0
+        return
+    }
+    UpdateInjectUi("Connecting to emulator...", 30)
+    RunWait, %adbPath% connect 127.0.0.1:%adbPorts%,, Hide
+    if (ErrorLevel != 0) {
+        MsgBox, 16, , Failed to connect ADB on port %adbPorts%.
+        UpdateInjectUi("Connection failed.", 0)
+        SetInjectUiBusy(false)
+        injectInProgress := 0
+        return
+    }
+
+    UpdateInjectUi("Injecting account data...", 45)
+    if !loadAccount() {
+        UpdateInjectUi("Inject failed.", 0)
+        SetInjectUiBusy(false)
+        injectInProgress := 0
+        return
+    }
+    UpdateInjectUi("Account injected.", 85)
+
+    ; Optional: send a friend request to the account whose code is set in
+    ; Settings.ini ([General] FriendID). The worker script reuses the bot's
+    ; image-search + ADB primitives (same as 1.ahk) and runs a focused
+    ; friend-request flow only.
+    if (sendFriendRequestAfterInject) {
+        UpdateInjectUi("Sending friend request...", 92)
+        sendFRScript := A_ScriptDir . "\_SendFriendRequest.ahk"
+        if (FileExist(sendFRScript)) {
+            RunWait, %A_AhkPath% "%sendFRScript%" "%winTitle%" "%folderPath%"
+        } else {
+            MsgBox, 48, , Cannot find _SendFriendRequest.ahk next to _InjectAccount.ahk.
+        }
+    }
+    UpdateInjectUi("Done.", 100)
+    SetInjectUiBusy(false)
+    injectInProgress := 0
 return
 
 getMumuFolder(folderPath) {
-mumuFolder := folderPath . "\MuMuPlayerGlobal-12.0"
-if !FileExist(mumuFolder)
-    mumuFolder := folderPath . "\MuMu Player 12"
-if !FileExist(mumuFolder)
-    mumuFolder := folderPath . "\MuMuPlayer-12.0"
-if !FileExist(mumuFolder)
-    mumuFolder := folderPath . "\MuMuPlayer"
-if !FileExist(mumuFolder)
-    mumuFolder := folderPath . "\MuMuPlayer-12"
-if !FileExist(mumuFolder)
-    mumuFolder := folderPath . "\MuMuPlayer12"
-return mumuFolder
+    candidateFolders := [folderPath . "\MuMu"
+        , folderPath . "\MuMuPlayerGlobal-12.0"
+        , folderPath . "\MuMuPlayerGlobal"
+        , folderPath . "\MuMuPlayer-12.0"
+        , folderPath . "\MuMu Player 12"
+        , folderPath . "\MuMuPlayer"
+        , folderPath . "\MuMuPlayer-12"
+        , folderPath . "\MuMuPlayer12"]
+
+    for _, candidateFolder in candidateFolders {
+        if FileExist(candidateFolder)
+            return candidateFolder
+    }
+
+    return folderPath . "\MuMuPlayerGlobal-12.0"
 }
 
+GetVmDisplayName(folder) {
+    configFolder := folder "\configs"
+    extraConfigFile := configFolder "\extra_config.json"
+
+    if FileExist(extraConfigFile) {
+        FileRead, fileContent, %extraConfigFile%
+        RegExMatch(fileContent, """playerName"":\s*""(.*?)""", playerName)
+        if (playerName1 != "")
+            return playerName1
+    }
+
+    SplitPath, folder, folderName
+    return folderName
+}
 
 findAdbPorts(mumuFolderParam) {
     global adbPorts, winTitle
@@ -201,13 +263,14 @@ findAdbPorts(mumuFolderParam) {
     mumuFolderPath = %mumuFolderParam%\vms\*
     if !FileExist(mumuFolderPath){
         MsgBox, 16, , Double check your folder path! It should be the one that contains the MuMuPlayer 12 folder! `nDefault is just C:\Program Files\Netease
-        ExitApp
+        return
     }
     ; Loop through all directories in the base folder
     Loop, Files, %mumuFolderPath%, D  ; D flag to include directories only
     {
         folder := A_LoopFileFullPath
         configFolder := folder "\configs"  ; The config folder inside each directory
+        displayName := GetVmDisplayName(folder)
 
         ; Check if config folder exists
         IfExist, %configFolder%
@@ -231,12 +294,76 @@ findAdbPorts(mumuFolderParam) {
                 FileRead, extraConfigContent, %extraConfigFile%
                 ; Parse the JSON for playerName
                 RegExMatch(extraConfigContent, """playerName"":\s*""(.*?)""", playerName)
-                if(playerName1 = winTitle) {
+                if(playerName1 = winTitle || displayName = winTitle) {
                     adbPorts := adbPort
                 }
             }
+            else if (displayName = winTitle) {
+                adbPorts := adbPort
+            }
         }
     }
+}
+
+RunAdbRootCommand(shellCommand) {
+    global adbPath, adbPorts
+    q := Chr(34)
+    sq := Chr(39)
+
+    fullCommand := q . adbPath . q . " -s 127.0.0.1:" . adbPorts . " shell su -c " . sq . shellCommand . sq
+    RunWait, %fullCommand%,, Hide
+    if (ErrorLevel = 0)
+        return 1
+
+    ; Fallback for builds where su uses positional uid instead of -c.
+    fallbackCommand := q . adbPath . q . " -s 127.0.0.1:" . adbPorts . " shell su 0 sh -c " . sq . shellCommand . sq
+    RunWait, %fallbackCommand%,, Hide
+    if (ErrorLevel = 0)
+        return 1
+
+    ; Last fallback: run as shell user (works for some commands like am force-stop).
+    nonRootCommand := q . adbPath . q . " -s 127.0.0.1:" . adbPorts . " shell " . sq . shellCommand . sq
+    RunWait, %nonRootCommand%,, Hide
+    if (ErrorLevel = 0)
+        return 1
+
+    return 0
+}
+
+RunAdbPush(localPath, remotePath) {
+    global adbPath, adbPorts
+    pushCommand := Chr(34) . adbPath . Chr(34) . " -s 127.0.0.1:" . adbPorts . " push " . Chr(34) . localPath . Chr(34) . " " . remotePath
+    RunWait, %pushCommand%,, Hide
+    return (ErrorLevel = 0)
+}
+
+ShowInjectStepError(stepName) {
+    MsgBox, 16, , Inject failed at step:`n%stepName%
+}
+
+SetInjectUiBusy(isBusy) {
+    global headless
+    if (headless)
+        return
+
+    if (isBusy) {
+        GuiControl, Disable, SubmitBtn
+        GuiControl, Disable, RunInstanceBtn
+    } else {
+        GuiControl, Enable, SubmitBtn
+        GuiControl, Enable, RunInstanceBtn
+    }
+}
+
+UpdateInjectUi(statusText, progressValue := "") {
+    global headless
+    if (headless)
+        return
+
+    GuiControl,, InjectStatusText, %statusText%
+    if (progressValue != "")
+        GuiControl,, InjectProgress, %progressValue%
+    Sleep, 10
 }
 
 loadAccount() {
@@ -256,27 +383,26 @@ loadAccount() {
         ,"SoloBattleResumeUserPrefs"
         ,"SortConditionUserPrefs"]
 
-    if (!adbShell) {
-        adbShell := ComObjCreate("WScript.Shell").Exec(adbPath . " -s 127.0.0.1:" . adbPorts . " shell")
-        ; Extract the Process ID
-        processID := adbShell.ProcessID
-
-        ; Wait for the console window to open using the process ID
-        WinWait, ahk_pid %processID%
-
-        ; Minimize the window using the process ID
-        WinMinimize, ahk_pid %processID%
+    UpdateInjectUi("Stopping app...", 50)
+    if !RunAdbRootCommand("am force-stop jp.pokemon.pokemontcgp") {
+        ShowInjectStepError("am force-stop")
+        return 0
     }
-
-    adbShell.StdIn.WriteLine("am force-stop jp.pokemon.pokemontcgp")
     Sleep, 200
 
     ; Clear app data to ensure no previous account information remains
-    adbShell.StdIn.WriteLine("rm -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
+    UpdateInjectUi("Clearing old account...", 58)
+    if !RunAdbRootCommand("rm -f /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") {
+        ShowInjectStepError("remove deviceAccount xml")
+        return 0
+    }
     Sleep, 200
 
     Loop, % UserPreferences.MaxIndex() {
-        adbShell.StdIn.WriteLine("rm -f " . UserPreferencesPath . UserPreferences[A_Index])
+        if !RunAdbRootCommand("rm -f " . UserPreferencesPath . UserPreferences[A_Index]) {
+            ShowInjectStepError("clear user preferences")
+            return 0
+        }
         Sleep, 200
     }
 
@@ -293,37 +419,59 @@ loadAccount() {
     ; Make sure the file exists before trying to push it
     if (!FileExist(loadDir)) {
         MsgBox, 16, Error, Cannot find the XML file: %loadDir%
-        ExitApp
+        return 0
     }
 
     ; Push the file to the device with better error handling
-    RunWait, % adbPath . " -s 127.0.0.1:" . adbPorts . " push """ . loadDir . """ /sdcard/deviceAccount.xml",, Hide
+    UpdateInjectUi("Uploading XML...", 68)
+    if !RunAdbPush(loadDir, "/sdcard/deviceAccount.xml") {
+        ShowInjectStepError("push deviceAccount xml")
+        return 0
+    }
     Sleep, 150
 
     ; Create the shared_prefs directory if it doesn't exist
-    adbShell.StdIn.WriteLine("mkdir -p /data/data/jp.pokemon.pokemontcgp/shared_prefs")
+    UpdateInjectUi("Applying account on device...", 74)
+    if !RunAdbRootCommand("mkdir -p /data/data/jp.pokemon.pokemontcgp/shared_prefs") {
+        ShowInjectStepError("create shared_prefs")
+        return 0
+    }
     Sleep, 100
 
     ; Copy the file with proper permissions
-    adbShell.StdIn.WriteLine("cp /sdcard/deviceAccount.xml /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
+    if !RunAdbRootCommand("cp /sdcard/deviceAccount.xml /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") {
+        ShowInjectStepError("copy deviceAccount xml")
+        return 0
+    }
     Sleep, 100
 
     ; Set proper permissions and ownership (combined commands with shorter delay)
-    adbShell.StdIn.WriteLine("chmod 664 /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml && chown system:system /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml")
+    if !RunAdbRootCommand("chmod 664 /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml && chown system:system /data/data/jp.pokemon.pokemontcgp/shared_prefs/deviceAccount:.xml") {
+        ShowInjectStepError("chmod/chown deviceAccount xml")
+        return 0
+    }
     Sleep, 200
 
     ; Clean up and launch app (reduced delay between operations)
-    adbShell.StdIn.WriteLine("rm -f /sdcard/deviceAccount.xml")
+    if !RunAdbRootCommand("rm -f /sdcard/deviceAccount.xml") {
+        ShowInjectStepError("cleanup temp xml")
+        return 0
+    }
 
     ; Launch the app with both commands in quick succession
-    adbShell.StdIn.WriteLine("am start -n jp.pokemon.pokemontcgp/jp.pokemon.pokemontcgp.UnityPlayerActivity")
+    UpdateInjectUi("Launching game...", 80)
+    if !RunAdbRootCommand("am start -n jp.pokemon.pokemontcgp/jp.pokemon.pokemontcgp.UnityPlayerActivity") {
+        ShowInjectStepError("start UnityPlayerActivity")
+        return 0
+    }
     Sleep, 100
 
-    adbShell.StdIn.WriteLine("am start -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity")
+    if !RunAdbRootCommand("am start -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity") {
+        ShowInjectStepError("start com.unity3d.player.UnityPlayerActivity")
+        return 0
+    }
 
-    ; Close the shell after all operations complete
-    adbShell.Terminate()
-    adbShell := ""
+    return 1
 }
 
 ; New function to get instance list
@@ -335,20 +483,12 @@ GetInstanceList(baseFolder) {
     Loop, Files, %mumuFolder%\vms\*, D
     {
         folder := A_LoopFileFullPath
-        configFolder := folder "\configs"
+        displayName := GetVmDisplayName(folder)
 
-        if InStr(FileExist(configFolder), "D") {
-            extraConfigFile := configFolder "\extra_config.json"
-
-            if FileExist(extraConfigFile) {
-                FileRead, fileContent, %extraConfigFile%
-                RegExMatch(fileContent, """playerName"":\s*""(.*?)""", playerName)
-                if (playerName1 != "") {
-                    if (instanceList != "")
-                        instanceList .= "|"
-                    instanceList .= playerName1
-                }
-            }
+        if (displayName != "") {
+            if (instanceList != "")
+                instanceList .= "|"
+            instanceList .= displayName
         }
     }
 
@@ -359,9 +499,14 @@ GetInstanceList(baseFolder) {
 RefreshInstances:
     refreshedList := GetInstanceList(folderPath)
     GuiControl,, winTitle, |%refreshedList%
-    return
+return
 
 RunInstance:
+    if (injectInProgress)
+        return
+    injectInProgress := 1
+    SetInjectUiBusy(true)
+    UpdateInjectUi("Starting selected instance...", 12)
     Gui, Submit, NoHide
     mumuFolder := getMumuFolder(folderPath)
     ; Find the instance number matching the selected name
@@ -369,17 +514,10 @@ RunInstance:
     Loop, Files, %mumuFolder%\vms\*, D
     {
         folder := A_LoopFileFullPath
-        configFolder := folder "\configs"
-        if InStr(FileExist(configFolder), "D") {
-            extraConfigFile := configFolder "\extra_config.json"
-            if FileExist(extraConfigFile) {
-                FileRead, fileContent, %extraConfigFile%
-                RegExMatch(fileContent, """playerName"":\s*""(.*?)""", playerName)
-                if (playerName1 = winTitle) {
-                    RegExMatch(folder, "[^-]+$", instanceNum)
-                    break
-                }
-            }
+        displayName := GetVmDisplayName(folder)
+        if (displayName = winTitle) {
+            RegExMatch(folder, "[^-]+$", instanceNum)
+            break
         }
     }
     if (instanceNum != "") {
@@ -388,11 +526,16 @@ RunInstance:
             mumuExe := mumuFolder . "\nx_main\MuMuNxMain.exe"
         if FileExist(mumuExe) {
             Run, "%mumuExe%" -v "%instanceNum%"
+            UpdateInjectUi("Instance launch command sent.", 100)
         } else {
             MsgBox, 16, Error, Could not find MuMuPlayer.exe at %mumuExe%
+            UpdateInjectUi("Could not find MuMu executable.", 0)
         }
     }
     else {
         MsgBox, 16, Error, Could not find instance number for %winTitle%
-        }
-    return
+        UpdateInjectUi("Selected instance not found in folder.", 0)
+    }
+    SetInjectUiBusy(false)
+    injectInProgress := 0
+return

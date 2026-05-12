@@ -1,4 +1,4 @@
-﻿; ===== RECORDER GLOBALS =====
+; ===== RECORDER GLOBALS =====
 rec_Active        := false
 rec_Actions       := []
 rec_DownX         := 0

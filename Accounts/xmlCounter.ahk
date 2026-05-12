@@ -10,7 +10,6 @@ global Message := ""
 ; Main execution
 Main()
 
-
 if(isShow)
 {
     ; MsgBox, %Message%
@@ -28,22 +27,22 @@ Main() {
     ; Get the script directory (should be in Accounts folder)
     ScriptDir := A_ScriptDir
     SavedDir := ScriptDir . "\Saved"
-    
+
     ; Check if Saved directory exists
     if !FileExist(SavedDir) {
         MsgBox, 16, Error, Saved directory not found!`nExpected: %SavedDir%
         ExitApp
     }
-    
+
     ; Show progress message
     Progress, b w300 h50, Analyzing XML files..., Please wait, Account Analysis
-    
+
     ; Analyze directory
     Result := AnalyzeDirectory(SavedDir)
-    
+
     ; Close progress
     Progress, Off
-    
+
     ; Show results
     if (Result.TotalFiles = 0) {
         MsgBox, 48, No Files Found, No XML files found in the Saved directory.
@@ -58,16 +57,16 @@ AnalyzeDirectory(DirectoryPath) {
     Result.TotalFiles := 0
     Result.RegularPacks := {}
     Result.RerollSummary := {}
-    
+
     ; Initialize regular packs (1-95) with 0 count
     Loop, 95 {
         Result.RegularPacks[A_Index] := 0
     }
-    
+
     ; Find all XML files recursively
     XMLFiles := []
     FindXMLFiles(DirectoryPath, XMLFiles)
-    
+
     ; Filter out Account Vault files (if they exist)
     FilteredFiles := []
     for Index, FilePath in XMLFiles {
@@ -75,18 +74,18 @@ AnalyzeDirectory(DirectoryPath) {
             FilteredFiles.Push(FilePath)
         }
     }
-    
+
     Result.TotalFiles := FilteredFiles.Length()
-    
+
     ; Analyze each file
     for Index, FilePath in FilteredFiles {
         ; Extract filename from full path
         SplitPath, FilePath, FileName
-        
+
         ; Parse filename using regex pattern: (\d+)P(_\d+)+(\([A-Za-z]+\))*(.*\.xml)
         if RegExMatch(FileName, "^(\d+)P(_\d+)+(\([A-Za-z]+\))*(.*\.xml)$", Match) {
             PackNumber := Match1 + 0  ; Convert to number
-            
+
             if (PackNumber >= 96) {
                 ; Reroll Ready category
                 if (PackNumber >= 96 and PackNumber < 100) {
@@ -99,7 +98,7 @@ AnalyzeDirectory(DirectoryPath) {
                     RangeEnd := RangeStart + 10
                     RangeName := RangeStart . "-" . RangeEnd
                 }
-                
+
                 if !Result.RerollSummary.HasKey(RangeName) {
                     Result.RerollSummary[RangeName] := 0
                 }
@@ -110,7 +109,7 @@ AnalyzeDirectory(DirectoryPath) {
             }
         }
     }
-    
+
     return Result
 }
 
@@ -120,7 +119,7 @@ FindXMLFiles(Directory, ByRef FileArray) {
     {
         FileArray.Push(A_LoopFileFullPath)
     }
-    
+
     ; Search subdirectories recursively
     Loop, Files, %Directory%\*.*, D
     {
@@ -187,10 +186,10 @@ ShowSummary(Result) {
         }
         ; Sort
         Sort, Ranges, F SortRanges
-		
-		Loop, % Ranges.Length() - 1 {
-    		i := A_Index
-    		Loop, % Ranges.Length() - i {
+
+        Loop, % Ranges.Length() - 1 {
+            i := A_Index
+            Loop, % Ranges.Length() - i {
                 j := A_Index
                 if (Ranges[j].s > Ranges[j+1].s) {
                     tmp := Ranges[j]
@@ -211,9 +210,9 @@ SortRanges(a, b) {
 }
 
 ExitButton:
-    ExitApp
+ExitApp
 return
 
 SummaryGuiClose:
-   ExitApp
+ExitApp
 return

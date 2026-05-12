@@ -1,4 +1,4 @@
-﻿; Resizes a GDI+ bitmap by a percentage or to specific dimensions.
+; Resizes a GDI+ bitmap by a percentage or to specific dimensions.
 Gdip_ResizeBitmap(pBitmap, PercentOrWH, Dispose=1) {
     ; ------------------------------------------------------------------------------
     ; Source: http://www.autohotkey.com/forum/post-477333.html#477333

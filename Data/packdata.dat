@@ -1,5 +1,5 @@
-﻿# Pack list in Home screen
-Home:Left|Mewtwo,Middle|PulsingAura,Right|MegaShine
+# Pack list in Home screen
+Home:Left|PaldeanWonders,Middle|PulsingAura,Right|MegaShine
 
 # Pack data(Structure)
 # PackID, Series Type, Number of packs in the set, Location of extension window, y Pos, Scroll Type
