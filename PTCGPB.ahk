@@ -146,7 +146,7 @@ NextStep:
     }
 
     KillADBProcesses()
-    ;CheckForUpdate()
+    CheckForUpdate()
 
     scriptName := StrReplace(A_ScriptName, ".ahk")
     winTitle := scriptName
@@ -315,7 +315,7 @@ NextStep:
     Gui, Font, s12 cWhite Bold
     Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % dict["title_main"]
     Gui, Font, s10 cWhite Bold
-    Gui, Add, Text, x621 y20 w155 h150 Left BackgroundTrans cWhite, % "`n" localVersion "`n(improve Card Detection)`n`nModder: Lean & xedranort " modVersion
+    Gui, Add, Text, x621 y20 w155 h150 Left BackgroundTrans cWhite, % "`n" localVersion "`n(Mod: improve Card Detection)`n`nModder: Lean & xedranort " modVersion
 
     Gui, Add, Picture, gBuyMeCoffee x625 y130 w150, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
