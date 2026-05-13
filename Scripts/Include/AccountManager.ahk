@@ -673,7 +673,7 @@ AccountEligibility_InjectPackEligible(accountMeta, method) {
         return false
 
     if (botConfig.get("spendHourGlass"))
-        return true
+        return AccountEligibility_FlagIsExpired(accountMeta, "SH", 24)
 
     lastPackPulled := accountMeta["lastPackPulled"]
     if (lastPackPulled = "" || lastPackPulled = "0")

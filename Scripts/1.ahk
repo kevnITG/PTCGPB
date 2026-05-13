@@ -236,6 +236,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
     startPreProcess(botConfig.get("deleteMethod"))
     if (session.get("injectMethod") && session.get("loadedAccount") && session.get("deviceAccount") != "") {
         AccountMetadata_SetLastLoggedInNow(session.get("deviceAccount"), session.get("scriptName"), session.get("accountFileName"))
+        SetSpendHourglassMetadataFlag()
         GetHistoryOfAccount()
         new_packcount := EvaluatePackCount()
         if (new_packcount != 0) {
@@ -406,6 +407,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
         startPreProcess(botConfig.get("deleteMethod"))
         if (session.get("injectMethod") && session.get("loadedAccount") && session.get("deviceAccount") != "") {
             AccountMetadata_SetLastLoggedInNow(session.get("deviceAccount"), session.get("scriptName"), session.get("accountFileName"))
+            SetSpendHourglassMetadataFlag()
             GetHistoryOfAccount()
             new_packcount := EvaluatePackCount()
             if (new_packcount != 0) {
@@ -4250,6 +4252,21 @@ SetWonderPickMetadataFlag() {
     validUntil := A_Now
     validUntil += 24, Hours
     AccountMetadata_SetFlag(session.get("scriptName"), session.get("accountFileName"), "W", 1, validUntil)
+}
+
+SetSpendHourglassMetadataFlag() {
+    global session, botConfig
+
+    if (!session.get("injectMethod") || !session.get("loadedAccount") || session.get("accountFileName") = "")
+        return
+    if (!botConfig.get("spendHourGlass"))
+        return
+    if (botConfig.get("deleteMethod") != "Inject 13P+" && botConfig.get("deleteMethod") != "Inject Wonderpick 96P+")
+        return
+
+    validUntil := A_Now
+    validUntil += 24, Hours
+    AccountMetadata_SetFlag(session.get("scriptName"), session.get("accountFileName"), "SH", 1, validUntil)
 }
 
 DoWonderPick() {

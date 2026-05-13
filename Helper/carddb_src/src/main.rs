@@ -900,7 +900,8 @@ fn new_account(instance: &str, file_name: &str, file_path: &Path) -> Value {
             "T": flag_value('T'),
             "R": flag_value('R'),
             "W": flag_value('W'),
-            "H": flag_value('H')
+            "H": flag_value('H'),
+            "SH": new_flag(0, "", "")
         }
     })
 }
@@ -1368,7 +1369,7 @@ fn inject_pack_eligible(account: &Value, options: &ScheduleOptions) -> bool {
     }
 
     if options.spend_hourglass {
-        return true;
+        return flag_is_expired(account, "SH", 24);
     }
 
     let last_pack = field_str(account, "lastPackPulled");
