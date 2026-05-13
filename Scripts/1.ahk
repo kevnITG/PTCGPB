@@ -4537,7 +4537,6 @@ GetAllRewards(tomain := true, dailies := false) {
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
     Loop {
-        adbClick(261, 478)
         Delay(1)
         if FindOrLoseImage("Mission_ActivatedBeginnerMissionTabButton", 0, failSafeTime)
             break
@@ -4549,6 +4548,7 @@ GetAllRewards(tomain := true, dailies := false) {
         }
         else if FindOrLoseImage("Mission_DailyMissionImage", 0, failSafeTime)
             break
+        adbClick(261, 478)
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
     }
 
