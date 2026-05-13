@@ -1631,7 +1631,7 @@ ReportPackRecognitionFailure(reason := "Card Recognition Failed, use fallback me
     preSnapshot := PullPackOpeningMissionUserPrefsSnapshot("pre", failedDir, uniquePrefix)
     postSnapshot := PullPackOpeningMissionUserPrefsSnapshot("post", failedDir, uniquePrefix)
 
-    message := reason . "\nPlease submit these MissionUserPrefs files for the bug report as well."
+    message := reason . "\nPlease submit these files for the bug report as well."
     for _, snapshot in [preSnapshot, postSnapshot] {
         localPathForMessage := StrReplace(snapshot.localPath, "\", "/")
         if (snapshot.exists) {
@@ -1660,21 +1660,7 @@ TerminateHelper() {
     adbWriteRaw("pkill -f /data/ptcgp/ptcgpb")
 }
 
-EvaluatePack() {
-    global session
-    adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
-    Loop, 10 {
-        RunWait, % adbCommand . " shell test -f /data/ptcgp/result.rc", , Hide
-        if (ErrorLevel = 0)
-            break
-        Sleep, 300
-    }
-    adbWriteRaw("pkill -f /data/ptcgp/ptcgpb")
-    waitadb()
-
-    SavePackOpeningMissionUserPrefsSnapshot("post")
-
-    output := GetStdout(adbCommand . " shell cat /data/ptcgp/result.rc")
+ParsePackResultOutput(output) {
     output := StrReplace(output, "`r")
     output := Trim(output, "`n ")
     lines := StrSplit(output, "`n")
@@ -1693,7 +1679,26 @@ EvaluatePack() {
         rarity.Push(Trim(val) + 0)
     }
     raw_msg := lines[1] . "\n" . lines[2] . "\n" . lines[3]
+
     return { cards: cards, pack: pack, rarity: rarity, raw: raw_msg }
+}
+
+EvaluatePack() {
+    global session
+    adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
+    Loop, 10 {
+        RunWait, % adbCommand . " shell test -f /data/ptcgp/result.rc", , Hide
+        if (ErrorLevel = 0)
+            break
+        Sleep, 300
+    }
+    adbWriteRaw("pkill -f /data/ptcgp/ptcgpb")
+    waitadb()
+
+    SavePackOpeningMissionUserPrefsSnapshot("post")
+
+    output := GetStdout(adbCommand . " shell cat /data/ptcgp/result.rc")
+    return ParsePackResultOutput(output)
 }
 
 EvaluatePackCount() {
@@ -1711,8 +1716,26 @@ EvaluatePackCount() {
     return output + 0
 }
 
+RecoverPack() {
+    global session
+    adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
+
+    pre := PackOpeningMissionUserPrefsSnapshotPath("pre")
+    post := PackOpeningMissionUserPrefsSnapshotPath("post")
+
+    adbWriteRaw("rm -f /data/ptcgp/result.rc")
+    adbWriteRaw("/data/ptcgp/ptcgpb diff-files " . pre . " " . post)
+
+    output := GetStdout(adbCommand . " shell cat /data/ptcgp/result.rc")
+    return ParsePackResultOutput(output)
+}
+
 CheckPack(stopEarly := false) {
     result := EvaluatePack()
+    if(!result) {
+        result := RecoverPack()
+    }
+    ExitApp
     if (!result) {
         ReportPackRecognitionFailure()
         if (!stopEarly) {
