@@ -1152,6 +1152,11 @@ fn merge_account(base: &mut Value, patch: &Value) {
                     base_obj.insert(key.clone(), value.clone());
                 }
             }
+            "createdAt" => {
+                if !value_is_zeroish(value) {
+                    base_obj.insert(key.clone(), value.clone());
+                }
+            }
             _ => {
                 if meaningful(value) {
                     base_obj.insert(key.clone(), value.clone());

@@ -220,6 +220,8 @@ AccountMetadata_ExtractPackCount(fileName) {
 }
 
 AccountMetadata_ExtractCreatedAt(fileName) {
+    if (RegExMatch(fileName, "^\d+P_(\d{14})_", match))
+        return match1
     return "0"
 }
 
@@ -675,7 +677,7 @@ AccountMetadata_EnsureAccount(ByRef store, instance, fileName, filePath := "", d
         store["accounts"][key]["deviceAccount"] := deviceAccount
     store["accounts"][key]["instance"] := instance
     store["accounts"][key]["fileName"] := fileName
-    if (store["accounts"][key]["createdAt"] = "")
+    if (store["accounts"][key]["createdAt"] = "" || store["accounts"][key]["createdAt"] = "0")
         store["accounts"][key]["createdAt"] := AccountMetadata_ExtractCreatedAt(fileName)
 
     return store["accounts"][key]
@@ -696,7 +698,7 @@ AccountMetadata_MergeAccount(baseAccount, patchAccount) {
         baseAccount["packCount"] := patchAccount["packCount"] + 0
     if (patchAccount["lastModified"] != "")
         baseAccount["lastModified"] := patchAccount["lastModified"]
-    if (patchAccount["createdAt"] != "")
+    if (patchAccount["createdAt"] != "" && patchAccount["createdAt"] != "0")
         baseAccount["createdAt"] := patchAccount["createdAt"]
     if (patchAccount["lastPackPulled"] != "" && patchAccount["lastPackPulled"] != "0")
         baseAccount["lastPackPulled"] := patchAccount["lastPackPulled"]
@@ -956,7 +958,9 @@ AccountMetadata_SaveAccount(instance, fileName, account) {
     key := AccountMetadata_FindKey(store, instance, fileName, "", account["deviceAccount"])
     account["instance"] := instance
     account["fileName"] := fileName
-    if (account["createdAt"] = "")
+    if ((account["createdAt"] = "" || account["createdAt"] = "0") && store["accounts"].HasKey(key) && store["accounts"][key]["createdAt"] != "" && store["accounts"][key]["createdAt"] != "0")
+        account["createdAt"] := store["accounts"][key]["createdAt"]
+    else if (account["createdAt"] = "" || account["createdAt"] = "0")
         account["createdAt"] := AccountMetadata_ExtractCreatedAt(fileName)
     if (store["accounts"].HasKey(key))
         account["shinedust"] := AccountMetadata_NormalizeShinedust(store["accounts"][key]["shinedust"])
@@ -1025,7 +1029,7 @@ AccountMetadata_MoveToInstanceInStore(ByRef store, fileName, newInstance, filePa
     account["fileName"] := fileName
     if (account["packCount"] = "")
         account["packCount"] := AccountMetadata_ExtractPackCount(fileName)
-    if (account["createdAt"] = "")
+    if (account["createdAt"] = "" || account["createdAt"] = "0")
         account["createdAt"] := AccountMetadata_ExtractCreatedAt(fileName)
 
     newKey := account["deviceAccount"] != "" ? AccountMetadata_DeviceKey(account["deviceAccount"]) : AccountMetadata_Key(newInstance, fileName)
@@ -1080,7 +1084,7 @@ AccountMetadata_BulkMoveToInstances(moves) {
             account["fileName"] := fileName
             if (account["packCount"] = "")
                 account["packCount"] := AccountMetadata_ExtractPackCount(fileName)
-            if (account["createdAt"] = "")
+            if (account["createdAt"] = "" || account["createdAt"] = "0")
                 account["createdAt"] := AccountMetadata_ExtractCreatedAt(fileName)
 
             newKey := account["deviceAccount"] != "" ? AccountMetadata_DeviceKey(account["deviceAccount"]) : AccountMetadata_Key(newInstance, fileName)
@@ -1246,7 +1250,7 @@ AccountMetadata_SetLastPackPulledNow(deviceAccount, instance := "", fileName := 
         account["instance"] := instance
     if (fileName != "") {
         account["fileName"] := fileName
-        if (account["createdAt"] = "")
+        if (account["createdAt"] = "" || account["createdAt"] = "0")
             account["createdAt"] := AccountMetadata_ExtractCreatedAt(fileName)
     }
 
@@ -1293,7 +1297,7 @@ AccountMetadata_SetLastLoggedInNow(deviceAccount, instance := "", fileName := ""
         account["instance"] := instance
     if (fileName != "") {
         account["fileName"] := fileName
-        if (account["createdAt"] = "")
+        if (account["createdAt"] = "" || account["createdAt"] = "0")
             account["createdAt"] := AccountMetadata_ExtractCreatedAt(fileName)
     }
 

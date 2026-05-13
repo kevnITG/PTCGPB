@@ -1509,7 +1509,7 @@ BalanceXMLs:
                     FileRead, errorText, %errorPath%
                 MsgBox, 0x40000, XML Balance, % "carddb balance-xmls failed.`n`n" . errorText
             } else {
-                MsgBox, 0x40000, XML Balance, % "Done balancing XMLs between " botConfig.get("Instances") " instances.`nEligible for injection now: " counter
+                MsgBox, 0x40000, XML Balance, % XMLBalanceResultMessage(botConfig.get("Instances"), counter)
             }
             return
         }
@@ -1623,24 +1623,34 @@ BalanceXMLs:
         ToolTip, Updating metadata indexes...please wait
         AccountMetadata_BulkMoveToInstances(metadataMoves)
 
-        instanceOneDir := saveDir . "1"
         counter := 0
         ToolTip, Counting XMLs older than 24 hours...
-        Loop, Files, %instanceOneDir%\*.xml
+        Loop, % botConfig.get("Instances")
         {
-            FileGetTime, fileModifiedTime, %A_LoopFileFullPath%, M
-            if (fileModifiedTime = "")
-                continue
-            fileModifiedTimeDiff := A_Now
-            EnvSub, fileModifiedTimeDiff, %fileModifiedTime%, Hours
-            if (fileModifiedTimeDiff >= 24)
-                counter++
+            instanceDir := saveDir . A_Index
+            Loop, Files, %instanceDir%\*.xml
+            {
+                FileGetTime, fileModifiedTime, %A_LoopFileFullPath%, M
+                if (fileModifiedTime = "")
+                    continue
+                fileModifiedTimeDiff := A_Now
+                EnvSub, fileModifiedTimeDiff, %fileModifiedTime%, Hours
+                if (fileModifiedTimeDiff >= 24)
+                    counter++
+            }
         }
 
         Tooltip
-        MsgBox, 0x40000, XML Balance, % "Done balancing XMLs between " botConfig.get("Instances") " instances.`nEligible for injection now: " counter
+        MsgBox, 0x40000, XML Balance, % XMLBalanceResultMessage(botConfig.get("Instances"), counter)
     }
 return
+
+XMLBalanceResultMessage(instances, eligibleCount) {
+    instances += 0
+    eligibleCount += 0
+    averagePerInstance := instances > 0 ? Round(eligibleCount / instances, 0) : 0
+    return "Done balancing XMLs between " instances " instances.`nEligible for injection now: " eligibleCount "`nAverage per instance: " averagePerInstance
+}
 
 BalanceXMLs_RunWithProgress(command) {
     resultPath := A_ScriptDir . "\Accounts\Saved\balance_result.txt"
