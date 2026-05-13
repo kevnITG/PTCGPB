@@ -1492,6 +1492,8 @@ BalanceXMLs:
                 command .= " --ocr-shinedust"
             if (botConfig.get("s4tEnabled"))
                 command .= " --s4t-enabled"
+            if (botConfig.get("spendHourGlass"))
+                command .= " --spend-hourglass"
             balanceOk := BalanceXMLs_RunWithProgress(command)
             resultPath := A_ScriptDir . "\Accounts\Saved\balance_result.txt"
             counter := 0

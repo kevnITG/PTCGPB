@@ -667,21 +667,19 @@ AccountEligibility_InjectRewardsEligible(accountMeta) {
 }
 
 AccountEligibility_InjectPackEligible(accountMeta, method) {
-    if (method = "Inject Wonderpick 96P+" && AccountEligibility_TFlagBlocks(accountMeta))
+    global botConfig
+
+    if ((method = "Inject 13P+" || method = "Inject Wonderpick 96P+") && AccountEligibility_TFlagBlocks(accountMeta))
         return false
 
-    timestamps := []
-    AccountEligibility_AddFlagTimestamp(timestamps, accountMeta, "W")
-    AccountEligibility_AddFlagTimestamp(timestamps, accountMeta, "X")
-    AccountEligibility_AddFlagTimestamp(timestamps, accountMeta, "R")
-    AccountEligibility_AddTimestamp(timestamps, AccountEligibility_GetShinedustLastUpdatedAt(accountMeta))
-    AccountEligibility_AddTimestamp(timestamps, accountMeta["lastPackPulled"])
-
-    earliest := AccountEligibility_GetEarliestTimestamp(timestamps)
-    if (earliest = "")
+    if (botConfig.get("spendHourGlass"))
         return true
 
-    return AccountEligibility_HoursSince(earliest) >= 24
+    lastPackPulled := accountMeta["lastPackPulled"]
+    if (lastPackPulled = "" || lastPackPulled = "0")
+        return true
+
+    return AccountEligibility_HoursSince(lastPackPulled) >= 24
 }
 
 AccountEligibility_IsEligible(instance, fileName, filePath, accountMeta := "") {
@@ -844,6 +842,8 @@ CreateAccountList(instance) {
         command .= " --ocr-shinedust"
     if (botConfig.get("s4tEnabled"))
         command .= " --s4t-enabled"
+    if (botConfig.get("spendHourGlass"))
+        command .= " --spend-hourglass"
     if (forceRegeneration)
         command .= " --force-clear-used"
 

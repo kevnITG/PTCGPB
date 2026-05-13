@@ -46,6 +46,8 @@ enum Command {
         #[arg(long, default_value_t = false)]
         s4t_enabled: bool,
         #[arg(long, default_value_t = false)]
+        spend_hourglass: bool,
+        #[arg(long, default_value_t = false)]
         force_clear_used: bool,
     },
     BalanceXmls {
@@ -65,6 +67,8 @@ enum Command {
         ocr_shinedust: bool,
         #[arg(long, default_value_t = false)]
         s4t_enabled: bool,
+        #[arg(long, default_value_t = false)]
+        spend_hourglass: bool,
     },
     ExtractMetadata {
         #[arg(long)]
@@ -176,6 +180,7 @@ fn run(cli: Cli) -> Result<()> {
             receive_gift,
             ocr_shinedust,
             s4t_enabled,
+            spend_hourglass,
             force_clear_used,
         } => schedule_accounts(
             &cli.root,
@@ -188,6 +193,7 @@ fn run(cli: Cli) -> Result<()> {
                 receive_gift,
                 ocr_shinedust,
                 s4t_enabled,
+                spend_hourglass,
                 force_clear_used,
             },
         ),
@@ -200,6 +206,7 @@ fn run(cli: Cli) -> Result<()> {
             receive_gift,
             ocr_shinedust,
             s4t_enabled,
+            spend_hourglass,
         } => balance_xmls(
             &cli.root,
             instances,
@@ -212,6 +219,7 @@ fn run(cli: Cli) -> Result<()> {
                 receive_gift,
                 ocr_shinedust,
                 s4t_enabled,
+                spend_hourglass,
                 force_clear_used: false,
             },
         ),
@@ -1220,6 +1228,7 @@ struct ScheduleOptions {
     receive_gift: bool,
     ocr_shinedust: bool,
     s4t_enabled: bool,
+    spend_hourglass: bool,
     force_clear_used: bool,
 }
 
@@ -1349,45 +1358,32 @@ fn inject_rewards_eligible(account: &Value, options: &ScheduleOptions) -> bool {
         || (do_shinedust && hours_since(shinedust_updated_at(account)) >= 24)
 }
 
-fn inject_pack_eligible(account: &Value, method: &str) -> bool {
-    if method == "Inject Wonderpick 96P+" && t_flag_blocks(account) {
+fn inject_pack_eligible(account: &Value, options: &ScheduleOptions) -> bool {
+    if matches!(
+        options.delete_method.as_str(),
+        "Inject 13P+" | "Inject Wonderpick 96P+"
+    ) && t_flag_blocks(account)
+    {
         return false;
     }
 
-    let mut timestamps = Vec::new();
-    for flag_name in ["W", "X", "R"] {
-        if flag_value(account, flag_name) {
-            let set_at = flag_set_at(account, flag_name);
-            if !set_at.is_empty() {
-                timestamps.push(set_at);
-            }
-        }
-    }
-
-    let shinedust = shinedust_updated_at(account);
-    if shinedust != "0" && !shinedust.is_empty() {
-        timestamps.push(shinedust);
+    if options.spend_hourglass {
+        return true;
     }
 
     let last_pack = field_str(account, "lastPackPulled");
-    if last_pack != "0" && !last_pack.is_empty() {
-        timestamps.push(last_pack);
+    if last_pack == "0" || last_pack.is_empty() {
+        return true;
     }
 
-    let Some(earliest) = timestamps.into_iter().min() else {
-        return true;
-    };
-
-    hours_since(earliest) >= 24
+    hours_since(last_pack) >= 24
 }
 
 fn eligible(account: &Value, options: &ScheduleOptions) -> bool {
     match options.delete_method.as_str() {
         "Create Bots (13P)" => true,
         "Inject Rewards" => inject_rewards_eligible(account, options),
-        "Inject 13P+" | "Inject Wonderpick 96P+" => {
-            inject_pack_eligible(account, &options.delete_method)
-        }
+        "Inject 13P+" | "Inject Wonderpick 96P+" => inject_pack_eligible(account, options),
         _ => true,
     }
 }

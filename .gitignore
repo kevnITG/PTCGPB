@@ -41,3 +41,4 @@ Accounts/Cards/accounts/
 .REFACTORING_SUMMARY.md
 *.py
 carddb_balance.log
+Cargo.lock
