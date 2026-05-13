@@ -1737,7 +1737,6 @@ CheckPack(stopEarly := false) {
     if(!result) {
         result := RecoverPack()
     }
-    ExitApp
     if (!result) {
         ReportPackRecognitionFailure()
         if (!stopEarly) {
