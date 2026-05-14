@@ -672,7 +672,7 @@ AccountEligibility_InjectPackEligible(accountMeta, method) {
     if ((method = "Inject 13P+" || method = "Inject Wonderpick 96P+") && AccountEligibility_TFlagBlocks(accountMeta))
         return false
 
-    if (botConfig.get("spendHourGlass"))
+    if (method = "Inject 13P+" && botConfig.get("spendHourGlass"))
         return AccountEligibility_FlagIsExpired(accountMeta, "SH", 24)
 
     lastPackPulled := accountMeta["lastPackPulled"]

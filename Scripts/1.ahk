@@ -417,6 +417,14 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
                 accountMeta["deviceAccount"] := GetCurrentDeviceAccountForMetadata()
                 accountMeta["packCount"] := new_packcount
                 AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
+
+                if(botConfig.get("deleteMethod") = "Inject Wonderpick 96P+" && new_packcount < 70) {
+                    ; we now have a proper pack count and can evaluate if this is valid or if this is a waste of time
+                    MarkAccountAsUsed()
+                    session.set("loadedAccount", false)
+                    restartGameInstance("New Run", false)
+                    continue
+                }
             }
         }
         if(!session.get("injectMethod") || !session.get("loadedAccount")) {
@@ -1683,7 +1691,7 @@ ReportPackRecognitionFailure(reason := "Card Recognition Failed, use fallback me
     preSnapshot := PullPackOpeningMissionUserPrefsSnapshot("pre", failedDir, uniquePrefix)
     postSnapshot := PullPackOpeningMissionUserPrefsSnapshot("post", failedDir, uniquePrefix)
 
-    message := reason . "\nPlease submit these files for the bug report as well."
+    message := reason . "\nVersion: 0.9.4\nPlease submit these files for the bug report as well."
     for _, snapshot in [preSnapshot, postSnapshot] {
         localPathForMessage := StrReplace(snapshot.localPath, "\", "/")
         if (snapshot.exists) {
@@ -4310,7 +4318,7 @@ SetSpendHourglassMetadataFlag() {
         return
     if (!botConfig.get("spendHourGlass"))
         return
-    if (botConfig.get("deleteMethod") != "Inject 13P+" && botConfig.get("deleteMethod") != "Inject Wonderpick 96P+")
+    if (botConfig.get("deleteMethod") != "Inject 13P+")
         return
 
     validUntil := A_Now

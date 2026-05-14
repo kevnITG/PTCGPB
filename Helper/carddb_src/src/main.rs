@@ -1292,6 +1292,10 @@ fn field_i64(account: &Value, field: &str) -> Option<i64> {
     })
 }
 
+fn explicit_pack_count(account: &Value) -> Option<i64> {
+    field_i64(account, "packCount").filter(|count| *count > 0)
+}
+
 fn flag<'a>(account: &'a Value, name: &str) -> Option<&'a Value> {
     account.get("flags")?.get(name)
 }
@@ -1373,7 +1377,7 @@ fn inject_pack_eligible(account: &Value, options: &ScheduleOptions) -> bool {
         return false;
     }
 
-    if options.spend_hourglass {
+    if options.delete_method == "Inject 13P+" && options.spend_hourglass {
         return flag_is_expired(account, "SH", 24);
     }
 
@@ -1396,10 +1400,24 @@ fn eligible(account: &Value, options: &ScheduleOptions) -> bool {
 
 fn pack_range(method: &str) -> (i64, i64) {
     match method {
-        "Inject Wonderpick 96P+" => (96, 9999),
         "Inject Missions" => (0, 38),
         _ => (0, 9999),
     }
+}
+
+fn pack_count_allowed(
+    method: &str,
+    metadata_account: Option<&Value>,
+    resolved_pack_count: i64,
+) -> bool {
+    if method == "Inject Wonderpick 96P+" {
+        return metadata_account
+            .and_then(explicit_pack_count)
+            .map_or(true, |pack_count| pack_count >= 70);
+    }
+
+    let (min_packs, max_packs) = pack_range(method);
+    resolved_pack_count >= min_packs && resolved_pack_count <= max_packs
 }
 
 fn clean_used_accounts(save_dir: &Path, force_clear: bool) -> Result<HashSet<String>> {
@@ -1483,8 +1501,6 @@ fn schedule_accounts(root: &Path, options: ScheduleOptions) -> Result<()> {
     let last_generated_path = save_dir.join("list_last_generated.txt");
     let used = clean_used_accounts(&save_dir, options.force_clear_used)?;
     let by_file = accounts_by_file(&store, &options.instance);
-    let (min_packs, max_packs) = pack_range(&options.delete_method);
-
     let mut candidates = Vec::new();
     for entry in
         fs::read_dir(&save_dir).with_context(|| format!("Could not read {:?}", save_dir))?
@@ -1507,14 +1523,15 @@ fn schedule_accounts(root: &Path, options: ScheduleOptions) -> Result<()> {
         }
 
         let fallback = new_account(&options.instance, &file_name, &path);
-        let account = by_file.get(&file_name).unwrap_or(&fallback);
+        let metadata_account = by_file.get(&file_name);
+        let account = metadata_account.unwrap_or(&fallback);
         if !eligible(account, &options) {
             continue;
         }
 
         let pack_count =
             field_i64(account, "packCount").unwrap_or_else(|| extract_pack_count(&file_name));
-        if pack_count < min_packs || pack_count > max_packs {
+        if !pack_count_allowed(&options.delete_method, metadata_account, pack_count) {
             continue;
         }
 
@@ -1562,7 +1579,6 @@ fn count_eligible_for_all_instances(
     options: &ScheduleOptions,
 ) -> Result<usize> {
     let mut total = 0usize;
-    let (min_packs, max_packs) = pack_range(&options.delete_method);
 
     for instance in 1..=instances {
         let instance_name = instance.to_string();
@@ -1595,14 +1611,15 @@ fn count_eligible_for_all_instances(
             }
 
             let fallback = new_account(&instance_name, &file_name, &path);
-            let account = by_file.get(&file_name).unwrap_or(&fallback);
+            let metadata_account = by_file.get(&file_name);
+            let account = metadata_account.unwrap_or(&fallback);
             if !eligible(account, options) {
                 continue;
             }
 
             let pack_count =
                 field_i64(account, "packCount").unwrap_or_else(|| extract_pack_count(&file_name));
-            if pack_count >= min_packs && pack_count <= max_packs {
+            if pack_count_allowed(&options.delete_method, metadata_account, pack_count) {
                 total += 1;
             }
         }
