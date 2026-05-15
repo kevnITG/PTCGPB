@@ -662,14 +662,14 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             SpendAllHourglass()
         }
 
-        ; Friend removal for Inject Wonderpick 96P+
-        if (session.get("injectMethod") && session.get("friended") && !session.get("keepAccount")) {
-            RemoveFriends()
-        }
-
         if(botConfig.get("ocrShinedust") && session.get("injectMethod") && session.get("loadedAccount") && botConfig.get("s4tEnabled")) {
             GoToMain()
             CountShinedust()
+        }
+
+        ; Friend removal for Inject Wonderpick 96P+
+        if (session.get("injectMethod") && session.get("friended") && !session.get("keepAccount")) {
+            RemoveFriends()
         }
 
         ; Showcase likes
