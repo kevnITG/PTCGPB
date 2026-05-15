@@ -1823,6 +1823,22 @@ fn is_within(path: &Path, parent: &Path) -> bool {
     path.starts_with(parent)
 }
 
+fn strip_balance_staging_prefix(file_name: &str) -> String {
+    let mut current = file_name;
+
+    while current.len() > 9 {
+        let Some((prefix, rest)) = current.split_once('_') else {
+            break;
+        };
+        if prefix.len() != 8 || !prefix.chars().all(|ch| ch.is_ascii_digit()) || rest.is_empty() {
+            break;
+        }
+        current = rest;
+    }
+
+    current.to_owned()
+}
+
 fn collect_xmls_for_balance(
     save_dir: &Path,
     staging_dir: &Path,
@@ -1873,6 +1889,7 @@ fn collect_xmls_for_balance(
                 .file_name()
                 .map(|s| s.to_string_lossy().to_string())
                 .unwrap_or_default();
+            let file_name = strip_balance_staging_prefix(&file_name);
             counter += 1;
             let staging_name = format!("{counter:08}_{file_name}");
             let staging_path = staging_dir.join(staging_name);
