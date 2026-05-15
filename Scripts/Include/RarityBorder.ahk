@@ -8,6 +8,9 @@ class RarityBorder {
     static DefaultCommon := { 4: [ new Coordinate(96, 279, 116, 281), new Coordinate(181, 279, 201, 281), new Coordinate(96, 394, 116, 396), new Coordinate(181, 394, 201, 396) ]
                             , 5: [ new Coordinate(56, 279, 76, 281), new Coordinate(139, 279, 159, 281), new Coordinate(222, 279, 242, 281), new Coordinate(96, 394, 116, 396), new Coordinate(181, 394, 201, 396) ] 
                             , 6: [ new Coordinate(56, 279, 76, 281), new Coordinate(139, 279, 159, 281), new Coordinate(222, 279, 242, 281), new Coordinate(56, 394, 76, 396), new Coordinate(139, 394, 159, 396), new Coordinate(222, 394, 242, 396) ] }
+    static DefaultCommon125 := { 4: [ new Coordinate(96, 284, 123, 286), new Coordinate(181, 284, 208, 286), new Coordinate(96, 399, 123, 401), new Coordinate(181, 399, 208, 401) ]
+                               , 5: [ new Coordinate(56, 284, 83, 286), new Coordinate(139, 284, 166, 286), new Coordinate(222, 284, 249, 286), new Coordinate(96, 399, 123, 401), new Coordinate(181, 399, 208, 401) ]
+                               , 6: [ new Coordinate(56, 284, 83, 286), new Coordinate(139, 284, 166, 286), new Coordinate(222, 284, 249, 286), new Coordinate(56, 399, 83, 401), new Coordinate(139, 399, 166, 401), new Coordinate(256, 386, 260, 402) ] }
 
     ; =========================================================
     ; [Static] MASK 모드용 단일 기준점(좌상단 x, y) 앵커 좌표
@@ -22,8 +25,11 @@ class RarityBorder {
         this.SearchMode := searchMode
         
         this.AdditionalSets := { 4: [], 5: [], 6: [] }
+        this.Scale125AdditionalSets := { 4: [], 5: [], 6: [] }
         this.CommonCoords := RarityBorder.DefaultCommon
+        this.CommonCoords125 := RarityBorder.DefaultCommon125
         this.MaskAnchors := RarityBorder.DefaultMaskAnchors
+        this.Scale125MaskAnchors := ""
         
         this.ValidPixelSets := []
     }
@@ -69,12 +75,28 @@ class RarityBorder {
         this.MaskAnchors := anchorsObj
     }
 
+    SetScale125MaskAnchors(anchorsObj) {
+        if (!anchorsObj.HasKey(4) || !anchorsObj.HasKey(5) || !anchorsObj.HasKey(6)) {
+            MsgBox, 16, Error, % this.RarityName " Scale 125 Mask Anchors Register failed!"
+            return
+        }
+        this.Scale125MaskAnchors := anchorsObj
+    }
+
     SetCustomCommon(coordsObj) {
         if (!coordsObj.HasKey(4) || !coordsObj.HasKey(5) || !coordsObj.HasKey(6)) {
             MsgBox, 16, Error, % this.RarityName " Register failed!"
             return
         }
         this.CommonCoords := coordsObj
+    }
+
+    SetScale125Common(coordsObj) {
+        if (!coordsObj.HasKey(4) || !coordsObj.HasKey(5) || !coordsObj.HasKey(6)) {
+            MsgBox, 16, Error, % this.RarityName " Scale 125 Register failed!"
+            return
+        }
+        this.CommonCoords125 := coordsObj
     }
 
     AddAdditionalSet(setPrefix, coordsObj) {
@@ -87,67 +109,121 @@ class RarityBorder {
         this.AdditionalSets[6].Push({ Prefix: setPrefix, Coords: coordsObj[6] })
     }
 
+    AddScale125AdditionalSet(setPrefix, coordsObj) {
+        if (!coordsObj.HasKey(4) || !coordsObj.HasKey(5) || !coordsObj.HasKey(6)) {
+            MsgBox, 16, Error, % this.RarityName " Scale 125 [" setPrefix "] register failed!"
+            return
+        }
+        this.Scale125AdditionalSets[4].Push({ Prefix: setPrefix, Coords: coordsObj[4] })
+        this.Scale125AdditionalSets[5].Push({ Prefix: setPrefix, Coords: coordsObj[5] })
+        this.Scale125AdditionalSets[6].Push({ Prefix: setPrefix, Coords: coordsObj[6] })
+    }
+
     Search(pBitmap, cardCount, targetIndex) {
-        if (this.SearchMode == "MASK") {
-            anchor := this.MaskAnchors[cardCount][targetIndex]
-            if (!anchor || anchor.x == "")
-                return false
-            return this.DoMaskSearch(pBitmap, anchor.x, anchor.y)
+        isScale125 := (GetConfiguredDisplayScale() = 125)
+        searchMode := this.SearchMode
+        basePrefix := this.BasePrefix
+
+        if (searchMode == "MASK") {
+            maskAnchors := this.MaskAnchors
+            if (isScale125 && this.Scale125MaskAnchors)
+                maskAnchors := this.Scale125MaskAnchors
+
+            anchor := maskAnchors[cardCount][targetIndex]
+            return (anchor && anchor.x != "" && this.DoMaskSearch(pBitmap, anchor.x, anchor.y))
         }
 
-        commonCoord := this.CommonCoords[cardCount][targetIndex]
+        commonCoords := this.CommonCoords
+        if (isScale125 && this.CommonCoords125)
+            commonCoords := this.CommonCoords125
+        commonCoord := commonCoords[cardCount][targetIndex]
         additionalGroups := this.AdditionalSets[cardCount]
+        if (isScale125 && this.Scale125AdditionalSets[cardCount].MaxIndex())
+            additionalGroups := this.Scale125AdditionalSets[cardCount]
 
         if (!commonCoord || commonCoord.startX == "")
             return false
 
-        if (this.SearchMode == "COMMON_ONLY") {
-            return this.DoSearch(pBitmap, commonCoord, this.BasePrefix)
+        if (searchMode == "COMMON_ONLY") {
+            return this.DoSearch(pBitmap, commonCoord, basePrefix, cardCount, targetIndex)
         }
-        else if (this.SearchMode == "ALL") {
-            if !this.DoSearch(pBitmap, commonCoord, this.BasePrefix)
+        else if (searchMode == "ALL") {
+            if !this.DoSearch(pBitmap, commonCoord, basePrefix, cardCount, targetIndex)
                 return false
             
             for i, altSet in additionalGroups {
                 altCoord := altSet.Coords[targetIndex]
-                if !this.DoSearch(pBitmap, altCoord, altSet.Prefix)
+                if !this.DoSearch(pBitmap, altCoord, altSet.Prefix, cardCount, targetIndex)
                     return false
             }
             return true
         }
-        else if (this.SearchMode == "ANY") {
-            if this.DoSearch(pBitmap, commonCoord, this.BasePrefix)
+        else if (searchMode == "ANY") {
+            if this.DoSearch(pBitmap, commonCoord, basePrefix, cardCount, targetIndex)
                 return true
             
             for i, altSet in additionalGroups {
                 altCoord := altSet.Coords[targetIndex]
-                if this.DoSearch(pBitmap, altCoord, altSet.Prefix)
+                if this.DoSearch(pBitmap, altCoord, altSet.Prefix, cardCount, targetIndex)
                     return true
             }
             return false
         }
     }
 
-    DoSearch(pBitmap, coord, targetPrefix) {
+    DoSearch(pBitmap, coord, targetPrefix, cardCount := "", targetIndex := "") {
         if (!coord || coord.startX == "")
             return false
-        
+
+        return this.DoPrimarySearch(pBitmap, coord, targetPrefix, cardCount, targetIndex)
+    }
+
+    DoPrimarySearch(pBitmap, coord, targetPrefix, cardCount := "", targetIndex := "") {
         imageIdx := 1
         Loop {
             vRet := false
-            Path := A_ScriptDir . "\Needles\" . targetPrefix . imageIdx . ".png" 
-            if(!FileExist(Path))
+            Path := A_ScriptDir . "\Needles\" . targetPrefix . imageIdx . ".png"
+            if(!FileExist(ResolveNeedlePath(Path)))
                 break
             
-            pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coord.startX, coord.startY, coord.endX, coord.endY, 40)
-            
-            if(vRet = 1)
+            if (this.SearchNeedlePath(pBitmap, coord, Path, cardCount, targetIndex))
                 return true
             else
                 imageIdx += 1
         }
         return false
+    }
+
+    GetSearchVariation(cardCount := "", targetIndex := "") {
+        isScale125 := (GetConfiguredDisplayScale() = 125)
+
+        if (isScale125 && this.RarityName = "normal") {
+            if (cardCount = 4)
+                return 60
+
+            if (cardCount = 6 && targetIndex >= 4)
+                return 60
+
+            return 40
+        }
+
+        if (this.RarityName = "normal")
+            return 40
+
+        if (cardCount = 6 && targetIndex >= 4)
+            return 80
+
+        return 60
+    }
+
+    SearchNeedlePath(pBitmap, coord, Path, cardCount := "", targetIndex := "") {
+        if(!FileExist(ResolveNeedlePath(Path)))
+            return false
+
+        pNeedle := GetNeedle(Path)
+        searchVariation := this.GetSearchVariation(cardCount, targetIndex)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, coord.startX, coord.startY, coord.endX, coord.endY, searchVariation)
+        return (vRet = 1)
     }
 
     DoMaskSearch(pBitmap, cardX, cardY) {
@@ -221,6 +297,9 @@ borderTrainer := new RarityBorder("trainer", "trainer")
 borderRainbow := new RarityBorder("rainbow", "rainbow")
 borderFullArt := new RarityBorder("fullart", "fullart", "MASK")
 borderFullArt.LoadMaskReferences(A_ScriptDir . "\Mask")
+borderFullArt.SetScale125MaskAnchors({ 4: [ {x: 57, y: 186}, {x: 142, y: 186}, {x: 57, y: 301}, {x: 142, y: 301} ]
+                                     , 5: [ {x: 17, y: 181}, {x: 100, y: 181}, {x: 182, y: 181}, {x: 57, y: 301}, {x: 142, y: 301} ]
+                                     , 6: [ {x: 17, y: 181}, {x: 100, y: 181}, {x: 182, y: 181}, {x: 17, y: 301}, {x: 100, y: 301}, {x: 182, y: 301} ] })
 borderImmersive := new RarityBorder("immersive", "immersive")
 borderCrown := new RarityBorder("crown", "crown")
 borderGimmighoul := new RarityBorder("gimmighoul", "gimmighoul")
@@ -257,6 +336,53 @@ borderShinyEx.AddAdditionalSet("ShinyEx_ex_", { 4: [ new Coordinate(100, 272, 11
                                                , new Coordinate(60, 387, 70, 389)
                                                , new Coordinate(143, 387, 153, 389)
                                                , new Coordinate(225, 387, 235, 389) ] })
+
+borderShinyEx.SetScale125Common({ 4: [ new Coordinate(90, 261, 93, 283)
+                                     , new Coordinate(173, 261, 176, 283)
+                                     , new Coordinate(130, 376, 133, 398)
+                                     , new Coordinate(215, 376, 218, 398) ]
+                                 , 5: [ new Coordinate(90, 261, 93, 283)
+                                     , new Coordinate(173, 261, 176, 283)
+                                     , new Coordinate(255, 261, 258, 283)
+                                     , new Coordinate(130, 376, 133, 398)
+                                     , new Coordinate(215, 376, 218, 398) ]
+                                 , 6: [ new Coordinate(90, 261, 93, 283)
+                                     , new Coordinate(173, 261, 176, 283)
+                                     , new Coordinate(255, 261, 258, 283)
+                                     , new Coordinate(90, 376, 93, 398)
+                                     , new Coordinate(173, 376, 176, 398)
+                                     , new Coordinate(254, 384, 258, 400) ] })
+borderShinyEx.AddScale125AdditionalSet("ShinyEx_ex_", { 4: [ new Coordinate(110, 175, 140, 187)
+                                                           , new Coordinate(192, 175, 223, 187)
+                                                           , new Coordinate(110, 293, 140, 305)
+                                                           , new Coordinate(192, 293, 223, 305) ]
+                                                       , 5: [ new Coordinate(74, 175, 97, 187)
+                                                           , new Coordinate(153, 175, 180, 187)
+                                                           , new Coordinate(237, 175, 262, 187)
+                                                           , new Coordinate(110, 293, 140, 305)
+                                                           , new Coordinate(192, 293, 223, 305) ]
+                                                       , 6: [ new Coordinate(74, 175, 97, 187)
+                                                           , new Coordinate(153, 175, 180, 187)
+                                                           , new Coordinate(237, 175, 262, 187)
+                                                           , new Coordinate(74, 293, 97, 305)
+                                                           , new Coordinate(153, 293, 180, 305)
+                                                           , new Coordinate(253, 385, 259, 402) ] })
+
+borderShiny1Star.SetScale125Common({ 4: [ new Coordinate(90, 261, 93, 283)
+                                        , new Coordinate(173, 261, 176, 283)
+                                        , new Coordinate(130, 376, 133, 398)
+                                        , new Coordinate(215, 376, 218, 398) ]
+                                    , 5: [ new Coordinate(90, 261, 93, 283)
+                                        , new Coordinate(173, 261, 176, 283)
+                                        , new Coordinate(255, 261, 258, 283)
+                                        , new Coordinate(130, 376, 133, 398)
+                                        , new Coordinate(215, 376, 218, 398) ]
+                                    , 6: [ new Coordinate(90, 261, 93, 283)
+                                        , new Coordinate(173, 261, 176, 283)
+                                        , new Coordinate(255, 261, 258, 283)
+                                        , new Coordinate(90, 376, 93, 398)
+                                        , new Coordinate(173, 376, 176, 398)
+                                        , new Coordinate(254, 384, 258, 400) ] })
 
 rarityCheckers.Push(borderNormal)
 rarityCheckers.Push(border3Diamond)

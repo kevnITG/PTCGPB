@@ -22,12 +22,15 @@ class Needle{
     needleName := ""
     imageName := ""
     coords := ""
+    coords100 := ""
+    scale125Coords := ""
 
     __New(needleName, imageName, coords)
     {
         this.needleName := needleName
         this.imageName := imageName
         this.coords := coords
+        this.coords100 := coords
     }
 }
 
@@ -40,7 +43,21 @@ class NeedlesDict{
     }
 
     Get(needleName){
-        return this.needles[needleName]
+        needleObj := this.needles[needleName]
+
+        if (GetConfiguredDisplayScale() = 125 && needleObj.scale125Coords)
+            needleObj.coords := needleObj.scale125Coords
+        else
+            needleObj.coords := needleObj.coords100
+
+        return needleObj
+    }
+
+    SetScale125(needleName, coords){
+        if (!this.needles.HasKey(needleName))
+            return
+
+        this.needles[needleName].scale125Coords := coords
     }
 }
 
@@ -53,6 +70,7 @@ needlesDict.Add(new Needle("Friend_AddButtonInFriendList", "Add", new Coordinate
 needlesDict.Add(new Needle("Friend_FriendListSubmenu", "Friends", new Coordinate(84, 457, 100, 469)))
 needlesDict.Add(new Needle("Friend_FriendRequestsSubMenu", "requests", new Coordinate(97, 447, 104, 471)))
 needlesDict.Add(new Needle("Friend_BottomDarkHomeIcon", "Home", new Coordinate(28, 504, 42, 518)))
+needlesDict.Add(new Needle("Friend_SocialHubFriendButton", "Friend2", new Coordinate(20, 440, 70, 500)))
 needlesDict.Add(new Needle("Friend_ActivatedClearAllButton", "clearAll", new Coordinate(191, 493, 200, 509)))
 needlesDict.Add(new Needle("Friend_FriendListEmpty", "empty", new Coordinate(42, 163, 66, 185)))
 needlesDict.Add(new Needle("99ko", "99ko", new Coordinate(63, 106, 102, 120)))
@@ -241,3 +259,142 @@ needlesDict.Add(new Needle("GPTest_FriendRequestButtonInUserDetails", "Favourite
 
 ; Unknown
 ;Proceed
+
+;==============================================================================================================================
+; Scale 125 coordinate overrides from the last Scale 125 release (v9.5.9).
+; Default coordinates above remain the Scale 100 profile.
+
+needlesDict.SetScale125("Create_SoloBattleMissionIconInDetail", new Coordinate(108, 180, 177, 208))
+needlesDict.SetScale125("Friend_DisabledDenyAllRequestButtonInApproveSubmenu", new Coordinate(186, 496, 206, 518))
+needlesDict.SetScale125("Menu_SettingButtonInMenu", new Coordinate(24, 158, 57, 189))
+needlesDict.SetScale125("Menu_RemoveAccountNintendoButtonInMenu", new Coordinate(56, 435, 108, 460))
+needlesDict.SetScale125("Friend_AddButtonInFriendList", new Coordinate(226, 100, 270, 135))
+needlesDict.SetScale125("Friend_SearchFriendButton", new Coordinate(10, 433, 45, 460))
+needlesDict.SetScale125("Friend_SearchFriendWindowCancelButtonCorner", new Coordinate(0, 375, 70, 430))
+needlesDict.SetScale125("Friend_BlankFriendSlotAreaInApproveSubmenu", new Coordinate(170, 450, 195, 480))
+needlesDict.SetScale125("Create_BirthConfirmCancelButton", new Coordinate(116, 352, 138, 389))
+needlesDict.SetScale125("Common_UnknownButton2", new Coordinate(75, 340, 195, 530))
+needlesDict.SetScale125("Common_ColorChangeButton", new Coordinate(100, 367, 190, 480))
+needlesDict.SetScale125("WonderPick_SelectCards", new Coordinate(160, 330, 200, 370))
+needlesDict.SetScale125("Create_CinematicBackground", new Coordinate(0, 46, 20, 70))
+needlesDict.SetScale125("Common_AlertForAppCrachDuringOpenPack", new Coordinate(241, 377, 269, 407))
+needlesDict.SetScale125("Create_DownloadComplete", new Coordinate(215, 371, 264, 418))
+needlesDict.SetScale125("Create_DownloadAlertWindow", new Coordinate(110, 350, 150, 404))
+needlesDict.SetScale125("Pack_BackButtonInSelectPackScreen", new Coordinate(121, 465, 140, 485))
+needlesDict.SetScale125("Create_CountryComboBoxButton", new Coordinate(105, 396, 121, 406))
+needlesDict.SetScale125("Mission_DailyMissionImage", new Coordinate(204, 195, 223, 202))
+needlesDict.SetScale125("Mission_GoToDexButtonIcon", new Coordinate(18, 215, 30, 227))
+needlesDict.SetScale125("GPTest_FriendRequestButtonInUserDetails", new Coordinate(84, 397, 98, 410))
+needlesDict.SetScale125("GPTest_NotFavouriteInDetails", new Coordinate(245, 73, 260, 89))
+needlesDict.SetScale125("GPTest_FavouritedInDetails", new Coordinate(244, 73, 262, 88))
+needlesDict.SetScale125("Mission_FirstWonderpickMissionIconInDetails", new Coordinate(120, 185, 150, 215))
+needlesDict.SetScale125("Mission_CompleteGotAllClaims", new Coordinate(244, 406, 273, 449))
+needlesDict.SetScale125("Create_MustClickMissionBackground", new Coordinate(46, 368, 103, 411))
+needlesDict.SetScale125("Friend_BottomDarkHomeIcon", new Coordinate(20, 500, 55, 530))
+needlesDict.SetScale125("Create_TutorialUseResourceForOpenPack", new Coordinate(178, 193, 251, 282))
+needlesDict.SetScale125("Create_TutorialPremiumPass", new Coordinate(98, 184, 151, 224))
+needlesDict.SetScale125("Create_InfoIconInStandByOpenPack", new Coordinate(236, 198, 266, 226))
+needlesDict.SetScale125("Pack_HourglassImageAfterOpenPackClick", new Coordinate(60, 440, 90, 480))
+needlesDict.SetScale125("Create_NintendoLink", new Coordinate(51, 335, 107, 359))
+needlesDict.SetScale125("Create_FullFreepackInMainCenter", new Coordinate(120, 316, 143, 335))
+needlesDict.SetScale125("Menu_AgreementIconInIntroMenu", new Coordinate(20, 120, 50, 150))
+needlesDict.SetScale125("Create_ConfirmDexMissionComplete", new Coordinate(115, 255, 176, 308))
+needlesDict.SetScale125("Mission_ThemeCollectionButtonIcon", new Coordinate(180, 498, 190, 508))
+needlesDict.SetScale125("Mission_MissionIconTopAreaInDetails", new Coordinate(136, 158, 156, 190))
+needlesDict.SetScale125("Mission_ActivatedBeginnerMissionTabButton", new Coordinate(15, 456, 18, 473))
+needlesDict.SetScale125("Create_SelectedMonth", new Coordinate(100, 386, 138, 416))
+needlesDict.SetScale125("Create_NameInputIcon", new Coordinate(190, 241, 225, 270))
+needlesDict.SetScale125("Pack_NextButtonAfterOpenPack", new Coordinate(120, 70, 150, 100))
+needlesDict.SetScale125("Next2", new Coordinate(120, 70, 150, 100))
+needlesDict.SetScale125("Pack_NotEnoughItemsForOpenPack", new Coordinate(92, 299, 115, 317))
+needlesDict.SetScale125("Create_TutorialPackOpenNotifyIcon", new Coordinate(170, 160, 220, 200))
+needlesDict.SetScale125("WonderPick_NoEnergy", new Coordinate(37, 424, 57, 446))
+needlesDict.SetScale125("WonderPick_EnergyStatusAfterSelect", new Coordinate(20, 440, 45, 485))
+needlesDict.SetScale125("Create_DeactivatedOKButton", new Coordinate(0, 476, 40, 502))
+needlesDict.SetScale125("Friend_FriendIDInputReady", new Coordinate(0, 475, 25, 495))
+needlesDict.SetScale125("Common_SpeedMod1x", new Coordinate(20, 170, 24, 174))
+needlesDict.SetScale125("Pack_ResultAfterOpenPack", new Coordinate(170, 98, 270, 125))
+needlesDict.SetScale125("Pack_ReadyForOpenPack", new Coordinate(198, 273, 207, 287))
+needlesDict.SetScale125("Friend_AcceptButtonInApproveSubmenu", new Coordinate(225, 195, 250, 215))
+needlesDict.SetScale125("GPTest_ReqeustCancelButtonInSearchResult", new Coordinate(188, 243, 221, 274))
+needlesDict.SetScale125("Create_TitleBottomBorderInWPSelectCard", new Coordinate(60, 130, 202, 142))
+needlesDict.SetScale125("Pack_PackPointButton", new Coordinate(233, 400, 264, 428))
+needlesDict.SetScale125("Create_TutorialDexMission", new Coordinate(115, 97, 174, 150))
+needlesDict.SetScale125("Pack_PokeGoldImageAfterOpenPackClick", new Coordinate(60, 440, 90, 480))
+needlesDict.SetScale125("Common_PopupXButtonInMain", new Coordinate(129, 477, 156, 494))
+needlesDict.SetScale125("Profile_EditNameButtonIcon", new Coordinate(203, 272, 237, 300))
+needlesDict.SetScale125("Create_TutorialDexMissionComplete", new Coordinate(124, 168, 162, 207))
+needlesDict.SetScale125("Friend_RemoveConfirmButtonInFriendDetails", new Coordinate(135, 355, 160, 385))
+needlesDict.SetScale125("Friend_RemoveConfirmButtonInSearchResult", new Coordinate(135, 355, 160, 385))
+needlesDict.SetScale125("Create_PackReturnButtonIcon", new Coordinate(121, 490, 161, 520))
+needlesDict.SetScale125("Create_BeginNewAccountButton", new Coordinate(30, 336, 53, 370))
+needlesDict.SetScale125("Pack_ScrollInSelectExpansion", new Coordinate(115, 140, 160, 155))
+needlesDict.SetScale125("Friend_RequestButtonInSearchResult", new Coordinate(165, 245, 190, 270))
+needlesDict.SetScale125("Friend_ReqeustButtonInFriendDetails", new Coordinate(70, 395, 100, 420))
+needlesDict.SetScale125("Menu_InventoryIconInMenu", new Coordinate(90, 260, 126, 290))
+; Group reroll rate-limit recovery opens the menu and returns to title.
+; Keep the same managed needle names for 100/125; Scale125 images live in Scripts\Scale125.
+needlesDict.SetScale125("Menu_GoToTitleButton_Up", new Coordinate(20, 418, 55, 447))
+needlesDict.SetScale125("Menu_GoToTitleButton_Down", new Coordinate(20, 458, 60, 488))
+needlesDict.SetScale125("Menu_MiscMenuLeftTop", new Coordinate(0, 65, 45, 105))
+needlesDict.SetScale125("Common_ShopButtonInMain", new Coordinate(191, 393, 211, 411))
+needlesDict.SetScale125("Common_CloseAlertWindowInMain", new Coordinate(0, 350, 70, 430))
+needlesDict.SetScale125("Common_ActivatedHomeInMainMenu", new Coordinate(20, 490, 60, 530))
+needlesDict.SetScale125("Pack_ActivatedBSeriesTab", new Coordinate(15, 450, 130, 482))
+needlesDict.SetScale125("Pack_SkipButtonAfterOpenPack", new Coordinate(233, 486, 272, 519))
+needlesDict.SetScale125("Pack_AnimationToReadyOpenPack", new Coordinate(233, 486, 272, 519))
+needlesDict.SetScale125("Common_ActivatedSocialInMainMenu", new Coordinate(120, 500, 155, 530))
+needlesDict.SetScale125("Common_SpeedModMenuButton", new Coordinate(158, 252, 177, 259))
+needlesDict.SetScale125("Create_SwipeForRegisterDexIcon", new Coordinate(34, 99, 74, 131))
+needlesDict.SetScale125("Create_ConfirmRegisteredCard", new Coordinate(133, 72, 141, 78))
+needlesDict.SetScale125("Common_SpeedMod3x", new Coordinate(187, 168, 191, 174))
+needlesDict.SetScale125("Create_TosCloseButton", new Coordinate(129, 477, 156, 494))
+needlesDict.SetScale125("Create_TosOpenButton", new Coordinate(210, 285, 250, 315))
+needlesDict.SetScale125("Common_SpeedMod2x", new Coordinate(102, 170, 107, 174))
+needlesDict.SetScale125("Create_WelcomePopup", new Coordinate(110, 230, 182, 257))
+needlesDict.SetScale125("Create_UnlockedWonerPickIconInLevelUp", new Coordinate(53, 281, 86, 310))
+needlesDict.SetScale125("Create_CardImageInTutorialWPFirstScreen", new Coordinate(75, 156, 83, 167))
+needlesDict.SetScale125("Create_WPItemBottomBorder", new Coordinate(114, 430, 155, 441))
+needlesDict.SetScale125("Create_SelectedWPItem", new Coordinate(155, 281, 192, 315))
+needlesDict.SetScale125("WonderPick_WonderPickButtonInHome", new Coordinate(240, 80, 265, 100))
+needlesDict.SetScale125("Create_SelectedYear", new Coordinate(148, 384, 256, 419))
+
+; Additional Scale 125 overrides audited from v9.5.9 raw image-search calls.
+needlesDict.SetScale125("Friend_FriendListSubmenu", new Coordinate(84, 463, 100, 475))
+needlesDict.SetScale125("Friend_FriendRequestsSubMenu", new Coordinate(97, 452, 104, 476))
+needlesDict.SetScale125("Friend_SocialHubFriendButton", new Coordinate(20, 450, 70, 500))
+needlesDict.SetScale125("Friend_ActivatedClearAllButton", new Coordinate(191, 498, 207, 514))
+needlesDict.SetScale125("Friend_FriendListEmpty", new Coordinate(42, 163, 66, 185))
+needlesDict.SetScale125("Friend_InputFormBlank", new Coordinate(15, 500, 68, 520))
+needlesDict.SetScale125("Friend_WithdrawButton", new Coordinate(165, 240, 255, 270))
+needlesDict.SetScale125("Friend_AcceptedButtonInSearchResult", new Coordinate(165, 250, 190, 275))
+needlesDict.SetScale125("Friend_AcceptedButtonInFriendDetails", new Coordinate(87, 401, 99, 412))
+needlesDict.SetScale125("Friend_DenyButtonInApproveSubmenu", new Coordinate(196, 196, 210, 209))
+needlesDict.SetScale125("Friend_FriendIDSearchWindow", new Coordinate(215, 252, 240, 277))
+needlesDict.SetScale125("Friend_ShowcaseIDInputFormBlank", new Coordinate(157, 498, 225, 522))
+needlesDict.SetScale125("Friend_CompleteClickShowcaseLike", new Coordinate(98, 187, 125, 214))
+needlesDict.SetScale125("Friend_CommunityShowcaseMain", new Coordinate(174, 464, 189, 479))
+needlesDict.SetScale125("Common_Error", new Coordinate(100, 180, 170, 230))
+needlesDict.SetScale125("Common_LevelUpBackground", new Coordinate(100, 86, 167, 116))
+needlesDict.SetScale125("StartupErrorX", new Coordinate(124, 423, 155, 455))
+needlesDict.SetScale125("Profile_UserNameArrowInSettingMenu", new Coordinate(230, 120, 260, 150))
+needlesDict.SetScale125("Profile_ShinedustIconInTrophyDetails", new Coordinate(122, 375, 161, 390))
+needlesDict.SetScale125("Shinedust_CopySupportIDButtonInSettings", new Coordinate(252, 78, 263, 92))
+needlesDict.SetScale125("Shinedust_ShinedustInInventorys", new Coordinate(26, 188, 43, 204))
+needlesDict.SetScale125("Shinedust_CloseButtonInDetailWindow", new Coordinate(133, 369, 148, 385))
+needlesDict.SetScale125("Menu_DeleteConfimButtonStep1", new Coordinate(200, 340, 250, 530))
+needlesDict.SetScale125("Pack_HourglassAndPokeGoldImageAfterOpenPackClick", new Coordinate(49, 449, 70, 474))
+needlesDict.SetScale125("Pack_PackImageBlankAreaForLunala", new Coordinate(58, 303, 74, 319))
+needlesDict.SetScale125("Mission_PremiumLockImage", new Coordinate(225, 444, 272, 470))
+needlesDict.SetScale125("GPTest_FriendedInSearcResult", new Coordinate(165, 250, 190, 275))
+needlesDict.SetScale125("GPTest_AccountNotFound", new Coordinate(211, 320, 245, 344))
+
+; Scale 125 audit remains for these needles because v9.5.9 has no direct
+; equivalent, or the current image name did not exist in the old asset set:
+; 99ko, 99en, Common_Error_Cache, Common_Error_NoResponse,
+; Common_Error_NoResponseDark, Common_Error_NoBackground_1Button,
+; Common_Error_3ButtonError_Nodata, Friend_CannotFriendRequest,
+; Friend_HamburgerMenuButtonInIntro, Friend_RequestAlreadyClosedInApproveSubmenu,
+; Gift_ClaimAllButton, Gift_ReceivedWindowRightBorder,
+; Pack_GetItemDialogAfterOpenPack,
+; Profile_TrophyStandIconInProfile, CountrySelect, CountrySelect2.

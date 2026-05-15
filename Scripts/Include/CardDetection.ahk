@@ -29,7 +29,7 @@ DetectSixCardPack() {
     Path = %imagePath%6cardpackindicator.png
     if (FileExist(Path)) {
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 228, 324, 248, 351, searchVariation)
+        vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [228, 324, 248, 351], [228, 324, 248, 351], searchVariation)
         if (vRet = 1) {
             ; Found the check image, so this is a 5-card pack
             Gdip_DisposeImage(pBitmap)
@@ -57,7 +57,27 @@ CheckCardLoading(totalCardsInPack){
     global session
 
     count := 0
-    if (totalCardsInPack = 4) {
+    if (GetConfiguredDisplayScale() = 125) {
+        if (totalCardsInPack = 4) {
+            borderCoords := [[96, 284, 116, 286]
+                ,[181, 284, 201, 286]
+                ,[96, 399, 116, 401]
+                ,[181, 399, 201, 401]]
+        } else if (totalCardsInPack = 6) {
+            borderCoords := [[56, 284, 76, 286]
+                ,[139, 284, 159, 286]
+                ,[222, 284, 242, 286]
+                ,[56, 399, 76, 401]
+                ,[139, 399, 159, 401]
+                ,[222, 399, 242, 401]]
+        } else {
+            borderCoords := [[56, 284, 76, 286]
+                ,[139, 284, 159, 286]
+                ,[222, 284, 242, 286]
+                ,[96, 399, 116, 401]
+                ,[181, 399, 201, 401]]
+        }
+    } else if (totalCardsInPack = 4) {
         borderCoords := [[96, 279, 116, 281]  ; Card 1
             ,[181, 279, 201, 281] ; Card 2
             ,[96, 394, 116, 396] ; Card 3
@@ -105,7 +125,8 @@ AnalysisBorder(totalCardsInPack) {
     global session, isDevelopment, rarityCheckers
 
     currentPackInfo := {"isVerified": false, "CardSlot": [], "TypeCount": {}}
-    loadingBorderCoords := [[121, 269, 154, 272], [121, 297, 154, 300]]
+    loadingBorderCoords := GetScaleProfileValue([[121, 269, 154, 272], [121, 297, 154, 300]]
+                                                , [[121, 274, 154, 277], [121, 302, 154, 305]])
     pBitmap := 0
     Loop, {
         pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
