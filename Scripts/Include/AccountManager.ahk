@@ -227,16 +227,16 @@ saveAccount(file := "Valid", ByRef filePath := "", packDetails := "", addWFlag :
     if (file = "All") {
         saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
 
-        deviceAccountForFile := session.get("deviceAccount")
-        if (deviceAccountForFile = "")
-            deviceAccountForFile := GetDeviceAccountFromXML()
+        deviceAccountForFile := GetDeviceAccountFromXML()
         if (deviceAccountForFile != "")
             session.set("deviceAccount", deviceAccountForFile)
+        else
+            session.set("deviceAccount", "")
         if (deviceAccountForFile != "") {
             safeDeviceAccount := RegExReplace(deviceAccountForFile, "[\\/:*?""<>|]", "_")
             xmlFile := safeDeviceAccount . ".xml"
         } else {
-            xmlFile := A_Now . "_" . session.get("scriptName") . ".xml"
+            xmlFile := A_Now . "_" . A_TickCount . "_" . session.get("scriptName") . ".xml"
         }
         filePath := saveDir . "\" . xmlFile
 
