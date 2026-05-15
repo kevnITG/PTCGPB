@@ -34,9 +34,7 @@ pToken := Gdip_Startup()
 #Include SpecialEvent.ahk
 #Include Crinity_UnofficialPatch.ahk
 
-; Allocate and hide the console window to reduce flashing
-DllCall("AllocConsole")
-WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
+InitializeHiddenConsole()
 
 ; Register OnExit handler to clean up ADB shell properly when script exits
 ; DISABLED - was causing Reload delays due to blocking ADB shell communication
@@ -159,7 +157,8 @@ Loop {
         sleep, 1000
         OwnerWND := getMuMuHwnd(session.get("winTitle"))
         x4 := x + 4
-        y4 := y + 529
+        windowMetrics := GetMumuWindowMetrics()
+        y4 := y + windowMetrics.rowHeight - 3
         buttonWidth := 50
 
         Gui, New, +Owner%OwnerWND% -AlwaysOnTop +ToolWindow -Caption +LastFound -DPIScale
@@ -306,6 +305,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             LogToFile("[" . A_ScriptName . "] GPU usage exceeds the threshold and restarts. VRAM Usage(" . session.get("VRAMUsage").Mode . "): " . session.get("VRAMUsage").Usage . " GB", "Restart.txt")
             CreateStatusMessage("Restarting Instance...",,,, false)
             restartInstance()
+            RefreshAdbConnectionAfterInstanceRestart(45000)
             DirectlyPositionWindow()
             CreateStatusMessage("Restart complete!",,,, false)
             LogToFile("[" . A_ScriptName . "] Restart complete!", "Restart.txt")
@@ -893,7 +893,7 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
     if (imageName = "CommunityShowcase" || imageName = "Search" || imageName = "inHamburgerMenu" || imageName = "Trade") {
         Path = %imagePath%Tutorial.png
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 111, 115, 167, 121, searchVariation)
+        vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [111, 115, 167, 121], [111, 115, 167, 121], searchVariation)
         if (vRet = 1) {
             adbClick_wbb(145, 451)
         }
@@ -903,7 +903,7 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
     if(imageName = "Points" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll" || imageName = "inHamburgerMenu" || imageName = "Trade") {
         Path = %imagePath%Update.png
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 15, 180, 53, 228, searchVariation)
+        vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [15, 180, 53, 228], [15, 180, 53, 228], searchVariation)
         if (vRet = 1) {
             adbClick_wbb(137, 485)
             Gdip_DisposeImage(pBitmap)
@@ -920,7 +920,7 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
         Path = %imagePath%Delete2.png
         pNeedle := GetNeedle(Path)
         ; ImageSearch within the region
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 118, 353, 135, 390, searchVariation)
+        vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [118, 353, 135, 390], [118, 353, 135, 390], searchVariation)
         if (vRet = 1) {
             adbClick_wbb(74, 353)
             Delay(1)
@@ -933,7 +933,7 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
         Path = %imagePath%NoSave.png ; look for No Save Data error message > if loaded account > delete xml > reload
         pNeedle := GetNeedle(Path)
         ; ImageSearch within the region
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 30, 331, 50, 449, searchVariation)
+        vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [30, 331, 50, 449], [30, 331, 50, 449], searchVariation)
         if (vRet = 1) {
             adbWriteRaw("rm -rf /data/data/jp.pokemon.pokemontcgp/cache/*") ; clear cache
             waitadb()
@@ -1053,7 +1053,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
         if (imageName = "CommunityShowcase" || imageName = "Add" || imageName = "Search") {
             Path = %imagePath%Tutorial.png
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 111, 115, 167, 121, searchVariation)
+            vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [111, 115, 167, 121], [111, 115, 167, 121], searchVariation)
             if (vRet = 1) {
                 adbClick_wbb(145, 451)
             }
@@ -1063,7 +1063,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
         if(imageName = "Points" || imageName = "Missions" || imageName = "WonderPick" || imageName = "Home" || imageName = "Country" || imageName = "Account2" || imageName = "Account" || imageName = "ClaimAll" || imageName = "inHamburgerMenu" || imageName = "Trade") {
             Path = %imagePath%Update.png
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 20, 191, 36, 211, searchVariation)
+            vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [20, 191, 36, 211], [20, 191, 36, 211], searchVariation)
             if (vRet = 1) {
                 adbClick_wbb(137, 485)
                 Gdip_DisposeImage(pBitmap)
@@ -1080,7 +1080,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
             Path = %imagePath%NoSave.png ; look for No Save Data error message > if loaded account > delete xml > reload
             pNeedle := GetNeedle(Path)
             ; ImageSearch within the region
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 30, 331, 50, 449, searchVariation)
+            vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [30, 331, 50, 449], [30, 331, 50, 449], searchVariation)
             if (vRet = 1) {
                 adbWriteRaw("rm -rf /data/data/jp.pokemon.pokemontcgp/cache/*") ; clear cache
                 waitadb()
@@ -1098,7 +1098,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
         if(imageName = "Skip2" || imageName = "Pack" || imageName = "Hourglass2") {
             Path = %imagePath%notenoughitems.png
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 92, 299, 115, 317, 0)
+            vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [92, 299, 115, 317], [92, 299, 115, 317], 0)
             if(vRet = 1) {
                 session.set("cantOpenMorePacks", 1)
                 return 0
@@ -1108,7 +1108,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
         if(imageName = "Mission_dino2") {
             Path = %imagePath%1solobattlemission.png
             pNeedle := GetNeedle(Path)
-            vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 108, 180, 177, 208, 0)
+            vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [108, 180, 177, 208], [108, 180, 177, 208], 0)
             if(vRet = 1) {
                 session.get("missionDoneList")["beginnerMissionsDone"] := 1
                 if(session.get("injectMethod") && session.get("loadedAccount"))
@@ -1148,7 +1148,8 @@ resetWindows() {
 DirectlyPositionWindow() {
     global botConfig
 
-    scaleParam := 283
+    windowMetrics := GetMumuWindowMetrics()
+    scaleParam := windowMetrics.scaleParam
     rowGap := botConfig.get("rowGap")
 
     ; Get monitor information
@@ -1164,10 +1165,10 @@ DirectlyPositionWindow() {
         instanceIndex := Title
     }
 
-    titleHeight := 40
+    titleHeight := windowMetrics.titleHeight
 
     borderWidth := 4 - 1
-    rowHeight := titleHeight + 492
+    rowHeight := windowMetrics.rowHeight
     currentRow := Floor((instanceIndex - 1) / botConfig.get("Columns"))
 
     y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
@@ -1208,7 +1209,6 @@ restartGameInstance(reason, RL := true) {
         logStr .= "loadedAccount: " . (session.get("loadedAccount") ? "true" : "false") . " | "
         logStr .= "accountFileName: " . session.get("accountFileName")
         LogToFile(logStr)
-        SaveStuckScreenshot(reason)
     }
 
     if (RL = "GodPack") {
@@ -1268,30 +1268,6 @@ restartGameInstance(reason, RL := true) {
             CleanupBeforeExit()
             ExitApp
         }
-    }
-}
-
-SaveStuckScreenshot(reason) {
-    global session
-
-    fileDir := A_ScriptDir . "\..\Screenshots\Stuck"
-    if !FileExist(fileDir)
-        FileCreateDir, %fileDir%
-
-    safeReason := RegExReplace(reason, "[\\/:*?""<>|]", "_")
-    safeReason := RegExReplace(safeReason, "\s+", "_")
-    safeReason := SubStr(safeReason, 1, 80)
-    filePath := fileDir . "\" . A_Now . "_inst" . session.get("scriptName") . "_" . safeReason . ".png"
-
-    hWnd := getMuMuHwnd(session.get("winTitle"))
-    if (!hWnd)
-        return
-
-    pBitmap := from_window(hWnd)
-    if (pBitmap) {
-        Gdip_SaveBitmapToFile(pBitmap, filePath)
-        Gdip_DisposeImage(pBitmap)
-        LogToFile("Saved stuck screenshot: " . filePath)
     }
 }
 
@@ -1794,10 +1770,10 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
     filePath := fileDir "\" . fileName
 
     yBias := 40
-    cropX := 18
+    cropX := GetScaleProfileValue(18, 12)
     cropY := 170
-    cropW := 240
-    cropH := 227
+    cropW := GetScaleProfileValue(240, 251)
+    cropH := GetScaleProfileValue(227, 245)
 
     if (fileType = "FRIENDCODE"){
         cropX := 18
@@ -2426,14 +2402,29 @@ Gdip_ImageSearch_wbb(pBitmapHaystack,pNeedle,ByRef OutputList=""
     ,SearchDirection=1,Instances=1,LineDelim="`n",CoordDelim=",") {
     global session
 
-    vret := Gdip_ImageSearch(pBitmapHaystack,pNeedle.needle,OutputList,OuterX1,OuterY1,OuterX2,OuterY2,Variation,Trans,SearchDirection,Instances,LineDelim,CoordDelim)
+    windowMetrics := GetMumuWindowMetrics()
+    yBias := windowMetrics.imageSearchYBias
+    vret := Gdip_ImageSearch(pBitmapHaystack,pNeedle.needle,OutputList,OuterX1,OuterY1+yBias,OuterX2,OuterY2+yBias,Variation,Trans,SearchDirection,Instances,LineDelim,CoordDelim)
     if(session.get("dbg_bbox"))
-        bboxAndPause_immage(OuterX1, OuterY1, OuterX2, OuterY2, pNeedle, vret, session.get("dbg_bboxNpause"))
+        bboxAndPause_immage(OuterX1, OuterY1+yBias, OuterX2, OuterY2+yBias, pNeedle, vret, session.get("dbg_bboxNpause"))
     return vret
+}
+
+Gdip_ImageSearchProfile_wbb(pBitmapHaystack, pNeedle, ByRef OutputList=""
+    , coords100="", coords125="", Variation=0, Trans=""
+    , SearchDirection=1, Instances=1, LineDelim="`n", CoordDelim=",") {
+    if (!IsObject(coords125))
+        coords125 := coords100
+
+    coords := GetScaleProfileValue(coords100, coords125)
+    return Gdip_ImageSearch_wbb(pBitmapHaystack, pNeedle, OutputList
+        , coords[1], coords[2], coords[3], coords[4], Variation, Trans
+        , SearchDirection, Instances, LineDelim, CoordDelim)
 }
 
 GetNeedle(Path) {
     static NeedleBitmaps := Object()
+    Path := ResolveNeedlePath(Path)
 
     if (NeedleBitmaps.HasKey(Path)) {
         return NeedleBitmaps[Path]
@@ -2461,10 +2452,13 @@ DoTutorial() {
     Delay(3)
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
+    ; The legacy Scale 125 birth-date needles are on opposite selector columns.
+    firstBirthNeedle := GetScaleProfileValue("Create_SelectedYear", "Create_SelectedMonth")
+    firstBirthLabel := GetScaleProfileValue("Year", "Month")
 
     Loop {
         Delay(3)
-        if(FindImageAndClick("Create_SelectedYear", , , , , 1, failSafeTime))
+        if(FindImageAndClick(firstBirthNeedle, , , , , 1, failSafeTime))
             break
         Delay(3)
         adbClick_wbb(142, 159)
@@ -2475,7 +2469,7 @@ DoTutorial() {
         Delay(3)
         adbClick_wbb(82, 422)
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-        CreateStatusMessage("Waiting for Year`n(" . failSafeTime . "/45 seconds)")
+        CreateStatusMessage("Waiting for " . firstBirthLabel . "`n(" . failSafeTime . "/45 seconds)")
     } ;select month and year and click
 
     adbClick_wbb(200, 400)
@@ -2484,9 +2478,11 @@ DoTutorial() {
     Delay(3)
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
+    secondBirthNeedle := GetScaleProfileValue("Create_SelectedMonth", "Create_SelectedYear")
+    secondBirthLabel := GetScaleProfileValue("Month", "Year")
     Loop { ;select month and year and click
         Delay(3)
-        if(FindImageAndClick("Create_SelectedMonth", , , , , 1, failSafeTime))
+        if(FindImageAndClick(secondBirthNeedle, , , , , 1, failSafeTime))
             break
         Delay(3)
         adbClick_wbb(142, 159)
@@ -2500,7 +2496,7 @@ DoTutorial() {
         adbClick_wbb(142, 159)
         Delay(3)
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-        CreateStatusMessage("Waiting for Month`n(" . failSafeTime . "/45 seconds)")
+        CreateStatusMessage("Waiting for " . secondBirthLabel . "`n(" . failSafeTime . "/45 seconds)")
     } ;select month and year and click
 
     Delay(3)
@@ -2848,7 +2844,7 @@ DoTutorial() {
 }
 
 SelectPack(HG := false) {
-    global session
+    global botConfig, session
 
     ; define constants
     mapPackX := {"Left":60, "Middle":140, "Right":215}
@@ -2859,6 +2855,7 @@ SelectPack(HG := false) {
 
     packx := getPackCoordXInHome()
     packy := HomeScreenAllPackY
+    enteredPackScreenFromHome := false
 
     if(HG = "First" && session.get("injectMethod") && session.get("loadedAccount") ){
         session.set("failSafe", A_TickCount)
@@ -2894,9 +2891,11 @@ SelectPack(HG := false) {
             failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
             CreateStatusMessage("Waiting for Points`n(" . failSafeTime . "/90 seconds)")
         }
+        enteredPackScreenFromHome := true
     }
 
-    FindImageAndClick("Pack_PackPointButton", packx, packy, , 1000)
+    if (!enteredPackScreenFromHome)
+        FindImageAndClick("Pack_PackPointButton", packx, packy, , 1000)
 
     if(!session.get("isSkipSelectExpansion")) {
         FindImageAndClick("Pack_ScrollInSelectExpansion", 248, 459, , 300)
@@ -3707,8 +3706,3 @@ CleanupBeforeExit(){
     allSpecialEventDispose()
     GetGPUMemoryByPDH(-1, true)
 }
-
-^e::
-    pToken := Gdip_Startup()
-    Screenshot_dev()
-return

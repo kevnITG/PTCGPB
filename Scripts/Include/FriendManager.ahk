@@ -46,10 +46,12 @@ AddFriends(renew := false, getFC := false) {
         }
         else if(!renew && !getFC) {
             Delay(3)
-            clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, , 80)
-            if(clickButton) {
-                StringSplit, pos, clickButton, `,  ; Split at ", "
-                adbClick_wbb(pos1, pos2)
+            if(!ShouldSkipGenericButtonInSocialWait()) {
+                clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, , 80)
+                if(clickButton) {
+                    StringSplit, pos, clickButton, `,  ; Split at ", "
+                    adbClick_wbb(pos1, pos2)
+                }
             }
         }
         else if(FindOrLoseImage("Create_TutorialUseResourceForOpenPack", 0)) {
@@ -209,9 +211,32 @@ AddFriends(renew := false, getFC := false) {
     }
 
     ; ratelimit, only use this route when number of added ids is 6-10, 16-20, etc
-    if (Mod(n - 1, 10) >= 5) {
-        FindImageAndClick("Menu_InventoryIconInMenu", 240, 494)
-        FindImageAndClick("Menu_MiscMenuLeftTop", 105, 435, , 750)
+    rateLimitMod := Mod(n - 1, 10)
+    if (rateLimitMod >= 5) {
+        menuClickX := GetScaleProfileValue(240, 245)
+        menuClickY := GetScaleProfileValue(494, 520)
+        menuOpenSleepTime := GetScaleProfileValue(botConfig.get("Delay"), 1000)
+        FindImageAndClick("Menu_InventoryIconInMenu", menuClickX, menuClickY, , menuOpenSleepTime)
+        menuSettleDelay := GetScaleProfileValue(0, 1)
+        if(menuSettleDelay > 0)
+            Delay(menuSettleDelay)
+        miscClickX := 105
+        miscClickY := 435
+        ; Stability patch: this coordinate opens Misc in the hamburger menu, but becomes Go To Title after navigation.
+        adbClick_wbb(miscClickX, miscClickY)
+        miscWaitStart := A_TickCount
+        Loop {
+            if(FindOrLoseImage("Menu_GoToTitleButton_Up", 0, , 60, true)
+                || FindOrLoseImage("Menu_GoToTitleButton_Down", 0, , 60, true)
+                || FindOrLoseImage("Menu_MiscMenuLeftTop", 0, , 20, true))
+                break
+
+            if((A_TickCount - miscWaitStart) > 5000) {
+                restartGameInstance("Stuck at InSubMenu...")
+                return false
+            }
+            Delay(0.25)
+        }
         DelayH(600)
         
         clickX := 137
@@ -293,12 +318,14 @@ RemoveFriends() {
 
             adbClick_wbb(203, 436) ; 203 436
         } else if(!renew && !getFC && DeadCheck = 1) {
-            clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, , 80)
-            if(clickButton) {
-                StringSplit, pos, clickButton, `,  ; Split at ", "
-                adbClick_wbb(pos1, pos2)
+            if(!ShouldSkipGenericButtonInSocialWait()) {
+                clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, , 80)
+                if(clickButton) {
+                    StringSplit, pos, clickButton, `,  ; Split at ", "
+                    adbClick_wbb(pos1, pos2)
                 }
             }
+        }
         Sleep, 500
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
         CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
@@ -522,6 +549,39 @@ EraseInput(num := 0, total := 0) {
     }
 }
 
+ShouldSkipGenericButtonInSocialWait() {
+    reason := ""
+    if(FindOrLoseImage("Common_ActivatedHomeInMainMenu", 0, , , true))
+        reason := "home active"
+    else if(FindOrLoseImage("Friend_BottomDarkHomeIcon", 0, , , true))
+        reason := "bottom home"
+    else if(FindOrLoseImage("Common_ShopButtonInMain", 0, , , true))
+        reason := "home shop"
+    else if(FindOrLoseImage("WonderPick_WonderPickButtonInHome", 0, , , true))
+        reason := "home wonderpick"
+    else if(FindOrLoseImage("Pack_PackPointButton", 0, , , true))
+        reason := "pack points"
+    else if(FindOrLoseImage("Pack_BackButtonInSelectPackScreen", 0, , , true))
+        reason := "pack select"
+    else if(FindOrLoseImage("Pack_ReadyForOpenPack", 0, , , true))
+        reason := "ready open pack"
+    else if(FindOrLoseImage("Pack_HourglassImageAfterOpenPackClick", 0, , , true))
+        reason := "hourglass pack"
+    else if(FindOrLoseImage("Pack_HourglassAndPokeGoldImageAfterOpenPackClick", 0, , , true))
+        reason := "hourglass/gold pack"
+    else if(FindOrLoseImage("Pack_PokeGoldImageAfterOpenPackClick", 0, , , true))
+        reason := "gold pack"
+
+    if(reason = "")
+        return false
+
+    return true
+}
+
+IsSocialHubReadyForFriends() {
+    return FindOrLoseImage("Friend_SocialHubFriendButton", 0, , 20, true)
+}
+
 GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
     global session
 
@@ -529,16 +589,7 @@ GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
     failSafeTime := 0
     mainLoopBreak := false
     Loop {
-        if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime, , true)) {
-            ; If main screen(social): Click friends button
-            adbClick_wbb(38, 460)
-        }
-        else if(FindOrLoseImage("Friend_AddButtonInFriendList", 0, failSafeTime, , true)) {
-            ; If friends list screen: Click Search button
-            adbClick_wbb(240, 120)
-            Delay(1)
-        }
-        else if(FindOrLoseImage("Friend_SearchFriendButton", 0, failSafeTime, , true)) {
+        if(FindOrLoseImage("Friend_SearchFriendButton", 0, failSafeTime, , true)) {
             if(!isKeepSearch){
                 Loop {
                     if(FindOrLoseImage("Friend_SearchFriendButton", 0, failSafeTime, , true)) {
@@ -549,6 +600,11 @@ GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
                         break
                     }
                     Delay(2)
+                    failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+                    if(failSafeTime > 45) {
+                        restartGameInstance("Stuck at Goto friends screen")
+                        return
+                    }
                 }
             }
             else
@@ -556,6 +612,23 @@ GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
 
             if(mainLoopBreak)
                 break
+        }
+        else if(FindOrLoseImage("Friend_AddButtonInFriendList", 0, failSafeTime, , true)) {
+            ; If friends list screen: Click Search button
+            adbClick_wbb(240, 120)
+            Delay(1)
+        }
+        else if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime, , true)) {
+            if(!IsSocialHubReadyForFriends()) {
+                failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+                Delay(0.5)
+                CreateStatusMessage("Waiting for Social hub`n(" . failSafeTime . "/45 seconds)")
+                continue
+            }
+
+            ; If main screen(social): Click friends button
+            adbClick_wbb(38, 460)
+            Delay(1)
         }
         else{
             ; For Tutorial Window
@@ -565,6 +638,10 @@ GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
         Delay(0.25)
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
         CreateStatusMessage("Goto friends screen`n(" . failSafeTime . "/45 seconds)")
+        if(failSafeTime > 45) {
+            restartGameInstance("Stuck at Goto friends screen")
+            return
+        }
     }
 }
 
@@ -576,7 +653,6 @@ getFriendCode() {
 
     CreateStatusMessage("Getting friend code...",,,, false)
     Sleep, 2000
-    FindImageAndClick("Pack_SkipButtonAfterOpenPack", 146, 494) ;click on next until skip button appears
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
     Loop {
