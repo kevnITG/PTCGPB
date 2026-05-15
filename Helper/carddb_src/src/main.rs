@@ -1312,6 +1312,16 @@ struct Candidate {
     pack_count: i64,
 }
 
+struct UsedAccountsState {
+    used: HashSet<String>,
+    backup: Option<PathBuf>,
+}
+
+struct AccountLookup {
+    by_file: HashMap<String, Value>,
+    by_device: HashMap<String, Value>,
+}
+
 fn parse_local(timestamp: &str) -> Option<DateTime<Local>> {
     if timestamp.is_empty() || timestamp == "0" {
         return None;
@@ -1488,23 +1498,55 @@ fn pack_count_allowed(
     resolved_pack_count >= min_packs && resolved_pack_count <= max_packs
 }
 
-fn clean_used_accounts(save_dir: &Path, force_clear: bool) -> Result<HashSet<String>> {
+fn cleanup_used_account_backups(save_dir: &Path, keep: Option<&Path>) -> Result<()> {
+    if !save_dir.exists() {
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(save_dir).with_context(|| format!("Could not read {:?}", save_dir))? {
+        let path = entry?.path();
+        let is_used_backup = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| {
+                name.starts_with("used_accounts_backup_") && name.ends_with(".txt")
+            });
+        if !is_used_backup {
+            continue;
+        }
+        if keep.is_some_and(|keep| keep == path) {
+            continue;
+        }
+        let _ = fs::remove_file(path);
+    }
+
+    Ok(())
+}
+
+fn clean_used_accounts(save_dir: &Path, force_clear: bool) -> Result<UsedAccountsState> {
     let used_path = save_dir.join("used_accounts.txt");
     if force_clear {
+        let mut backup = None;
         if used_path.exists() {
-            let backup = save_dir.join(format!(
+            let backup_path = save_dir.join(format!(
                 "used_accounts_backup_{}.txt",
                 Local::now().format("%Y%m%d%H%M%S")
             ));
-            let _ = fs::copy(&used_path, backup);
+            fs::copy(&used_path, &backup_path)?;
             fs::remove_file(&used_path)?;
+            backup = Some(backup_path);
         }
-        return Ok(HashSet::new());
+        cleanup_used_account_backups(save_dir, backup.as_deref())?;
+        return Ok(UsedAccountsState {
+            used: HashSet::new(),
+            backup,
+        });
     }
 
+    cleanup_used_account_backups(save_dir, None)?;
     let mut used = HashSet::new();
     if !used_path.exists() {
-        return Ok(used);
+        return Ok(UsedAccountsState { used, backup: None });
     }
 
     let text = fs::read_to_string(&used_path)?;
@@ -1537,26 +1579,65 @@ fn clean_used_accounts(save_dir: &Path, force_clear: bool) -> Result<HashSet<Str
             .collect::<String>(),
     )?;
 
-    Ok(used)
+    Ok(UsedAccountsState { used, backup: None })
 }
 
-fn accounts_by_file(store: &Value, instance: &str) -> HashMap<String, Value> {
-    let mut result = HashMap::new();
+fn remove_used_accounts_backup(state: UsedAccountsState) {
+    if let Some(backup) = state.backup {
+        let _ = fs::remove_file(backup);
+    }
+}
+
+fn accounts_for_instance(store: &Value, instance: &str) -> AccountLookup {
+    let mut by_file = HashMap::new();
+    let mut by_device = HashMap::new();
     let Some(accounts) = store.get("accounts").and_then(Value::as_object) else {
-        return result;
+        return AccountLookup { by_file, by_device };
     };
 
-    for account in accounts.values() {
+    for (key, account) in accounts {
         if field_str(account, "instance") != instance {
             continue;
         }
         let file_name = field_str(account, "fileName");
         if !file_name.is_empty() {
-            result.insert(file_name.to_owned(), account.clone());
+            by_file.insert(file_name.to_owned(), account.clone());
+        }
+        if !key.starts_with("legacy:") {
+            by_device.insert(key.clone(), account.clone());
         }
     }
 
-    result
+    AccountLookup { by_file, by_device }
+}
+
+fn metadata_for_xml<'a>(
+    lookup: &'a AccountLookup,
+    file_name: &str,
+    device_account: &str,
+) -> Option<&'a Value> {
+    if !device_account.is_empty() {
+        if let Some(account) = lookup.by_device.get(device_account) {
+            return Some(account);
+        }
+    }
+
+    lookup.by_file.get(file_name)
+}
+
+fn used_account_matches(used: &HashSet<String>, file_name: &str, device_account: &str) -> bool {
+    if used.contains(file_name) {
+        return true;
+    }
+    if device_account.is_empty() {
+        return false;
+    }
+
+    let plain_xml = format!("{device_account}.xml");
+    let prefixed_xml = format!("_{device_account}.xml");
+    used.iter().any(|entry| {
+        entry == device_account || entry == &plain_xml || entry.ends_with(&prefixed_xml)
+    })
 }
 
 fn schedule_accounts(root: &Path, options: ScheduleOptions) -> Result<()> {
@@ -1567,8 +1648,8 @@ fn schedule_accounts(root: &Path, options: ScheduleOptions) -> Result<()> {
     let list_path = save_dir.join("list.txt");
     let current_path = save_dir.join("list_current.txt");
     let last_generated_path = save_dir.join("list_last_generated.txt");
-    let used = clean_used_accounts(&save_dir, options.force_clear_used)?;
-    let by_file = accounts_by_file(&store, &options.instance);
+    let used_state = clean_used_accounts(&save_dir, options.force_clear_used)?;
+    let lookup = accounts_for_instance(&store, &options.instance);
     let mut candidates = Vec::new();
     for entry in
         fs::read_dir(&save_dir).with_context(|| format!("Could not read {:?}", save_dir))?
@@ -1586,12 +1667,13 @@ fn schedule_accounts(root: &Path, options: ScheduleOptions) -> Result<()> {
             .file_name()
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_default();
-        if used.contains(&file_name) {
+        let device_account = extract_device_account_from_xml(&path);
+        if used_account_matches(&used_state.used, &file_name, &device_account) {
             continue;
         }
 
         let fallback = new_account(&options.instance, &file_name, &path);
-        let metadata_account = by_file.get(&file_name);
+        let metadata_account = metadata_for_xml(&lookup, &file_name, &device_account);
         let account = metadata_account.unwrap_or(&fallback);
         if !eligible(account, &options) {
             continue;
@@ -1637,6 +1719,7 @@ fn schedule_accounts(root: &Path, options: ScheduleOptions) -> Result<()> {
         Local::now().format("%Y%m%d%H%M%S").to_string(),
     )?;
     println!("{}", list.lines().count());
+    remove_used_accounts_backup(used_state);
     Ok(())
 }
 
@@ -1655,8 +1738,8 @@ fn count_eligible_for_all_instances(
             continue;
         }
 
-        let used = clean_used_accounts(&save_dir, false)?;
-        let by_file = accounts_by_file(store, &instance_name);
+        let used_state = clean_used_accounts(&save_dir, false)?;
+        let lookup = accounts_for_instance(store, &instance_name);
 
         for entry in
             fs::read_dir(&save_dir).with_context(|| format!("Could not read {:?}", save_dir))?
@@ -1674,12 +1757,13 @@ fn count_eligible_for_all_instances(
                 .file_name()
                 .map(|s| s.to_string_lossy().to_string())
                 .unwrap_or_default();
-            if used.contains(&file_name) {
+            let device_account = extract_device_account_from_xml(&path);
+            if used_account_matches(&used_state.used, &file_name, &device_account) {
                 continue;
             }
 
             let fallback = new_account(&instance_name, &file_name, &path);
-            let metadata_account = by_file.get(&file_name);
+            let metadata_account = metadata_for_xml(&lookup, &file_name, &device_account);
             let account = metadata_account.unwrap_or(&fallback);
             if !eligible(account, options) {
                 continue;
@@ -2518,5 +2602,50 @@ mod tests {
         assert_eq!(pulls.len(), 1);
         assert_eq!(pulls[0]["pack"], "A4b");
         assert_eq!(pulls[0]["cards"].as_array().unwrap().len(), 3);
+    }
+
+    #[test]
+    fn prefixed_duplicate_xml_uses_device_account_metadata() {
+        let device_account = "a47fba5b1186e05e";
+        let recent_pull = Local::now().format("%Y%m%d%H%M%S").to_string();
+        let store = json!({
+            "accounts": {
+                device_account: {
+                    "instance": "1",
+                    "fileName": "a47fba5b1186e05e.xml",
+                    "packCount": 34,
+                    "lastPackPulled": recent_pull,
+                    "flags": {}
+                }
+            }
+        });
+        let lookup = accounts_for_instance(&store, "1");
+
+        let metadata = metadata_for_xml(&lookup, "00000035_a47fba5b1186e05e.xml", device_account)
+            .expect("metadata by device account");
+
+        assert_eq!(field_str(metadata, "fileName"), "a47fba5b1186e05e.xml");
+        assert!(!eligible(
+            metadata,
+            &ScheduleOptions {
+                instance: "1".to_owned(),
+                delete_method: "Inject 13P+".to_owned(),
+                sort_method: "ModifiedAsc".to_owned(),
+                wonderpick_for_event_missions: false,
+                claim_special_missions: false,
+                receive_gift: false,
+                ocr_shinedust: false,
+                s4t_enabled: false,
+                spend_hourglass: false,
+                force_clear_used: false,
+            }
+        ));
+
+        let used = HashSet::from(["a47fba5b1186e05e.xml".to_owned()]);
+        assert!(used_account_matches(
+            &used,
+            "00000035_a47fba5b1186e05e.xml",
+            device_account
+        ));
     }
 }
