@@ -1353,7 +1353,7 @@ restartGameInstance(reason, RL := true) {
         }
         Sleep, 100
         AccountMetadata_CloseTempForInstance(session.get("scriptName"))
-        if (session.get("loadedAccount")) {
+        if (session.get("loadedAccount") || botConfig.get("deleteMethod") = "Create Bots (13P)") {
             startPTCGPApp()
         }
 
