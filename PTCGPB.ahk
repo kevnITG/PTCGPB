@@ -81,11 +81,19 @@ botConfig.loadSettingsToConfig("ALL")
 
 SetTimer, ShowSwipeSpeedToolTip, 50
 
+displayScaleSetting := botConfig.get("DisplayScale")
+if (displayScaleSetting = "")
+    displayScaleSetting := "Auto"
+configuredDisplayScale := GetConfiguredDisplayScale()
+if (displayScaleSetting = "Auto")
+    displayScaleLabel := "Auto (resolved to " . configuredDisplayScale . "%)"
+else
+    displayScaleLabel := displayScaleSetting . "%"
 hasInvalidScale := false
 
 monitorScaleList := GetAllMonitorScales()
 For idx, scaleValue in monitorScaleList {
-    if(scaleValue != 100){
+    if(scaleValue != configuredDisplayScale){
         hasInvalidScale := true
         break
     }
@@ -94,10 +102,11 @@ For idx, scaleValue in monitorScaleList {
 if (hasInvalidScale) {
     msgTitle := "Display Scale Warning"
     msgText := "WARNING: Display scale issue detected!`n`n"
-             . "To ensure the program works correctly, ALL monitors must be set to 100% scale in Windows settings.`n`n"
-             . "Please change your display scale to 100% and restart the program.`n`n"
-             . "[!] If you are ABSOLUTELY SURE all your monitors are already at 100% (script detection error), you can choose to ignore this warning.`n`n"
-             . "Do you want to ignore this warning and continue anyway?"
+             . "PTCGPB needs one matching display scale for coordinates and image search.`n"
+             . "Set the bot Display Scale and every Windows monitor to the same value (100% or 125%).`n`n"
+             . "Bot Display Scale: " displayScaleLabel "`n`n"
+             . "Restart the program after changing scale settings.`n`n"
+             . "Continue anyway?"
     
     MsgBox, 308, %msgTitle%, %msgText%
     
@@ -312,7 +321,12 @@ NextStep:
     Gui, Font, s12 cWhite Bold
     Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % dict["title_main"]
     Gui, Font, s10 cWhite Bold
-    Gui, Add, Text, x621 y20 w155 h150 Left BackgroundTrans cWhite, % "`n" localVersion "`n(for Scale 100%)`n`nModder: Crinity " modVersion 
+    displayScaleCaption := botConfig.get("DisplayScale")
+    if (displayScaleCaption = "" || displayScaleCaption = "Auto")
+        displayScaleCaption := "Auto/" . GetConfiguredDisplayScale() . "%"
+    else
+        displayScaleCaption := displayScaleCaption . "%"
+    Gui, Add, Text, x621 y20 w155 h150 Left BackgroundTrans cWhite, % "`n" localVersion "`n(Scale " displayScaleCaption ")`n`nModder: Crinity " modVersion
 
     Gui, Add, Picture, gBuyMeCoffee x625 y130 w150, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -1123,6 +1137,17 @@ ShowToolsAndSystemSettings:
     SelectedMonitorIndex := RegExReplace(botConfig.get("SelectedMonitorIndex"), ":.*$")
     Gui, ToolsAndSystemSelect:Add, DropDownList, x%col2X% y%yPos2% w100 vui_SelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     yPos2 += 25
+
+    displayScaleList := "Auto|100|125"
+    displayScaleChoose := 1
+    if (botConfig.get("DisplayScale") = "100")
+        displayScaleChoose := 2
+    else if (botConfig.get("DisplayScale") = "125")
+        displayScaleChoose := 3
+    displayScaleTextY := yPos2 + 2
+    Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%displayScaleTextY% %sectionColor%, Display Scale
+    Gui, ToolsAndSystemSelect:Add, DropDownList, x325 y%yPos2% w60 vui_DisplayScale_Popup Choose%displayScaleChoose% Background2A2A2A cWhite, %displayScaleList%
+    yPos2 += 25
     
     rowGapY := yPos2 + 2
     Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%rowGapY% %sectionColor%, % dict["Txt_RowGap"]
@@ -1222,6 +1247,7 @@ saveToolsAndSystemSettings:
     botConfig.set("wonderpickForEventMissions", ui_wonderpickForEventMissions_Popup, "ToolsAndSystem")
     
     botConfig.set("SelectedMonitorIndex", ui_SelectedMonitorIndex_Popup, "ToolsAndSystem")
+    botConfig.set("DisplayScale", ui_DisplayScale_Popup, "ToolsAndSystem")
     botConfig.set("RowGap", ui_RowGap_Popup, "ToolsAndSystem")
     botConfig.set("folderPath", ui_folderPath_Popup, "ToolsAndSystem")
     botConfig.set("ocrLanguage", ui_ocrLanguage_Popup, "ToolsAndSystem")
@@ -1575,9 +1601,10 @@ ArrangeWindows:
 
     SaveAllSettings()
 
-    scaleParam := 283
+    windowMetrics := GetMumuWindowMetrics()
+    scaleParam := windowMetrics.scaleParam
     windowsPositioned := 0
-    titleHeight := 40
+    titleHeight := windowMetrics.titleHeight
 
     if(botConfig.get("SelectedMonitorIndex") = "")
         botConfig.set("SelectedMonitorIndex", "1:", "ToolsAndSystem")
@@ -1595,7 +1622,7 @@ ArrangeWindows:
 
                 instanceIndex := A_Index
                 borderWidth := 4 - 1
-                rowHeight := titleHeight + 492
+                rowHeight := windowMetrics.rowHeight
                 currentRow := Floor((instanceIndex - 1) / botConfig.get("Columns"))
                 y := MonitorTop + (currentRow * rowHeight) + (currentRow * botConfig.get("rowGap"))
                 x := MonitorLeft + (Mod((instanceIndex - 1), botConfig.get("Columns")) * (scaleParam - borderWidth * 2))
@@ -1626,7 +1653,7 @@ ArrangeWindows:
                     instanceIndex := (botConfig.get("Mains") - 1) + A_Index + 1
 
                 borderWidth := 4 - 1
-                rowHeight := titleHeight + 492
+                rowHeight := windowMetrics.rowHeight
                 currentRow := Floor((instanceIndex - 1) / botConfig.get("Columns"))
                 y := MonitorTop + (currentRow * rowHeight) + (currentRow * botConfig.get("rowGap"))
                 x := MonitorLeft + (Mod((instanceIndex - 1), botConfig.get("Columns")) * (scaleParam - borderWidth * 2))
@@ -1725,10 +1752,6 @@ SaveAllSettings() {
     botConfig.set("stopPreferenceMain", botConfig.get("stopPreferenceMain"), "Extra")
 
     botConfig.saveConfigToSettings("ALL")
-    
-    if (botConfig.get("debugMode")) {
-        FileAppend, % A_Now . " - Settings saved. DeleteMethod: " . botConfig.get("deleteMethod") . "`n", %A_ScriptDir%\debug_settings.log
-    }
 }
 
 ; =================== Logic - Reset account lists ===================

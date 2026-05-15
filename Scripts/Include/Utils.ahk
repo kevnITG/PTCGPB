@@ -399,6 +399,20 @@ ShellRun(prms*) {
     }
 }
 
+InitializeHiddenConsole() {
+    previousHwnd := DllCall("GetForegroundWindow", "Ptr")
+
+    if (!DllCall("GetConsoleWindow", "Ptr"))
+        DllCall("AllocConsole")
+
+    consoleHwnd := DllCall("GetConsoleWindow", "Ptr")
+    if (consoleHwnd)
+        DllCall("ShowWindow", "Ptr", consoleHwnd, "Int", 0)
+
+    if (previousHwnd && WinExist("ahk_id " . previousHwnd))
+        DllCall("SetForegroundWindow", "Ptr", previousHwnd)
+}
+
 CmdRet(sCmd, callBackFuncObj := "", encoding := "") {
     static HANDLE_FLAG_INHERIT := 0x00000001, flags := HANDLE_FLAG_INHERIT
         , STARTF_USESTDHANDLES := 0x100, CREATE_NO_WINDOW := 0x08000000
@@ -691,12 +705,13 @@ getScreenHandle(ParentTitle){
 }
 
 FixInstanceScreen(instanceNo){
+    windowMetrics := GetMumuWindowMetrics()
     instanceTitle := instanceNo . " ahk_class Qt5156QWindowIcon"
     SendMessage, 0x0005, 1, 0,, %instanceTitle%
     Sleep, 50
     SendMessage, 0x0005, 0, 0,, %instanceTitle%
     Sleep, 500
-    WinMove, %instanceTitle%, , , , 283, 532
+    WinMove, %instanceTitle%, , , , % windowMetrics.scaleParam, % windowMetrics.rowHeight
 }
 
 getMuMuHwnd(winTitle) {
@@ -1007,8 +1022,111 @@ findAdbPath(targetDir) {
     return ""
 }
 
+GetConfiguredDisplayScale() {
+    global botConfig
+
+    displayScale := ""
+    try {
+        displayScale := botConfig.get("DisplayScale")
+    } catch {
+    }
+
+    if (displayScale = "" || displayScale = "Auto") {
+        selectedMonitorIndex := "1"
+        try {
+            selectedMonitorIndex := RegExReplace(botConfig.get("SelectedMonitorIndex"), ":.*$")
+        } catch {
+        }
+
+        monitorScales := GetAllMonitorScales()
+        if (monitorScales.HasKey(selectedMonitorIndex))
+            return monitorScales[selectedMonitorIndex]
+
+        return 100
+    }
+
+    if (InStr(displayScale, "125"))
+        return 125
+
+    return 100
+}
+
+GetMumuWindowMetrics() {
+    displayScale := GetConfiguredDisplayScale()
+    metrics := {}
+
+    if (displayScale = 125) {
+        if (IsMuMuv5()) {
+            metrics.scaleParam := 283
+            metrics.titleHeight := 50
+        } else {
+            metrics.scaleParam := 277
+            metrics.titleHeight := 45
+        }
+    } else {
+        metrics.scaleParam := 283
+        metrics.titleHeight := 40
+    }
+
+    metrics.rowHeight := metrics.titleHeight + 492
+    metrics.imageSearchYBias := (displayScale = 125) ? metrics.titleHeight - 45 : 0
+    return metrics
+}
+
+GetAdbClickMetrics() {
+    metrics := {}
+
+    if (GetConfiguredDisplayScale() = 125) {
+        ; Keep the working Scale 125 tap mapping from v9.5.9. This coordinate
+        ; space is independent from the window chrome/image-search yBias.
+        metrics.convX := 540/277
+        metrics.convY := 960/489
+        metrics.offset := -44
+    } else {
+        metrics.convX := 540/283
+        metrics.convY := 960/488
+        metrics.offset := -40
+    }
+
+    return metrics
+}
+
+IsMuMuv5() {
+    static cachedIsMuMuv5 := ""
+
+    if (cachedIsMuMuv5 != "")
+        return cachedIsMuMuv5
+
+    mumuFolder := getMuMuFolder()
+    cachedIsMuMuv5 := (mumuFolder != "" && FileExist(mumuFolder . "\nx_main")) ? 1 : 0
+    return cachedIsMuMuv5
+}
+
+ResolveNeedlePath(path) {
+    if (GetConfiguredDisplayScale() != 125)
+        return path
+
+    scale125Path := StrReplace(path, "\Needles\", "\Scale125\")
+    if (scale125Path != path && FileExist(scale125Path))
+        return scale125Path
+
+    return path
+}
+
+GetScaleProfileValue(scale100Value, scale125Value) {
+    return (GetConfiguredDisplayScale() = 125) ? scale125Value : scale100Value
+}
+
 GetAllMonitorScales() {
     scales := {}
+    oldDpiContext := 0
+    try {
+        ; GetDpiForMonitor returns system DPI for every monitor unless the
+        ; calling thread is per-monitor DPI aware while querying.
+        oldDpiContext := DllCall("User32\SetThreadDpiAwarenessContext", "Ptr", -3, "Ptr")
+    } catch {
+        oldDpiContext := 0
+    }
     
     SysGet, monitorCount, MonitorCount
     
@@ -1027,6 +1145,13 @@ GetAllMonitorScales() {
         if (hr == 0) {
             scalePercent := Round((dpiX / 96) * 100)
             scales[A_Index] := scalePercent
+        }
+    }
+
+    if (oldDpiContext) {
+        try {
+            DllCall("User32\SetThreadDpiAwarenessContext", "Ptr", oldDpiContext, "Ptr")
+        } catch {
         }
     }
     

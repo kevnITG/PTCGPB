@@ -51,6 +51,7 @@
                       , "slowMotion": 0
                       , "claimSpecialMissions": 0
                       , "SelectedMonitorIndex": 1
+                      , "DisplayScale": "Auto"
                       , "instanceLaunchDelay": 5
                       , "folderPath": "C:\Program Files\Netease"
                       , "RowGap": 105

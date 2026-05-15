@@ -115,6 +115,51 @@ ConnectAdb() {
     }
 }
 
+RefreshAdbConnectionAfterInstanceRestart(timeoutMs = 30000) {
+    global session
+
+    startTick := A_TickCount
+    oldPort := session.get("adbPort")
+    lastPort := oldPort
+
+    Loop {
+        newPort := findAdbPorts()
+        if (newPort) {
+            if (newPort != lastPort) {
+                LogToFile("[" . A_ScriptName . "] ADB port refreshed after instance restart: " . lastPort . " -> " . newPort, "ADB.txt")
+                lastPort := newPort
+            }
+
+            session.set("adbPort", newPort)
+            ip := "127.0.0.1:" . newPort
+            if (oldPort && oldPort != newPort)
+                CmdRet(session.get("adbPath") . " disconnect 127.0.0.1:" . oldPort)
+
+            connectionResult := CmdRet(session.get("adbPath") . " connect " . ip)
+            if (InStr(connectionResult, "connected to " . ip) || InStr(connectionResult, "already connected to " . ip)) {
+                shellResult := CmdRet(session.get("adbPath") . " -s " . ip . " shell echo ready")
+                if (InStr(shellResult, "ready")) {
+                    session.set("adbShell", "")
+                    initializeAdbShell()
+                    LogToFile("[" . A_ScriptName . "] ADB reconnected after instance restart on " . ip, "ADB.txt")
+                    return true
+                }
+            }
+
+            LogToFile("[" . A_ScriptName . "] Waiting for ADB after instance restart on " . ip . ". Connection result: " . connectionResult, "ADB.txt")
+        } else {
+            LogToFile("[" . A_ScriptName . "] Waiting for ADB port after instance restart.", "ADB.txt")
+        }
+
+        if ((A_TickCount - startTick) > timeoutMs) {
+            LogToFile("[" . A_ScriptName . "] Failed to refresh ADB after instance restart within " . timeoutMs . "ms.", "ADB.txt")
+            return false
+        }
+
+        Sleep, 2000
+    }
+}
+
 DisableBackgroundServices() {
     global session
 
@@ -382,14 +427,15 @@ waitadb(){
 
 adbClick(X, Y) {
     static clickCommands := Object()
-    static convX := 540/283, convY := 960/488, offset := -40
-
-    key := X << 16 | Y
+    metrics := GetAdbClickMetrics()
+    key := X "|" Y "|" metrics.convX "|" metrics.convY "|" metrics.offset
+    physicalX := Round(X * metrics.convX)
+    physicalY := Round((Y + metrics.offset) * metrics.convY)
 
     if (!clickCommands.HasKey(key)) {
         clickCommands[key] := Format("input tap {} {}"
-            , Round(X * convX)
-            , Round((Y + offset) * convY))
+            , physicalX
+            , physicalY)
     }
     adbWriteRaw(clickCommands[key])
 }
