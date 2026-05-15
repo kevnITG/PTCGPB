@@ -763,7 +763,6 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
                     SplitPath, existingXmlPath, oldFileName, saveDir
                     accountMeta := AccountMetadata_Get(session.get("scriptName"), oldFileName, existingXmlPath)
                     accountMeta["packCount"] := session.get("accountOpenPacks") + 0
-                    accountMeta["lastModified"] := AccountMetadata_GetLastModified(session.get("scriptName"), oldFileName, existingXmlPath)
                     flags := {"B": session.get("missionDoneList")["beginnerMissionsDone"]
                         , "X": session.get("missionDoneList")["specialMissionsDone"]
                         , "T": session.get("missionDoneList")["accountHasPackInTesting"]
@@ -1354,7 +1353,9 @@ restartGameInstance(reason, RL := true) {
         }
         Sleep, 100
         AccountMetadata_CloseTempForInstance(session.get("scriptName"))
-        startPTCGPApp()
+        if (session.get("loadedAccount")) {
+            startPTCGPApp()
+        }
 
         if (RL) {
             LogToFile("Restarted game. Reason: " reason)
@@ -1691,7 +1692,7 @@ ReportPackRecognitionFailure(reason := "Card Recognition Failed, use fallback me
     preSnapshot := PullPackOpeningMissionUserPrefsSnapshot("pre", failedDir, uniquePrefix)
     postSnapshot := PullPackOpeningMissionUserPrefsSnapshot("post", failedDir, uniquePrefix)
 
-    message := reason . "\nVersion: 0.9.4\nPlease submit these files for the bug report as well."
+    message := reason . "\nVersion: 0.9.5\nPlease submit these files for the bug report as well."
     for _, snapshot in [preSnapshot, postSnapshot] {
         localPathForMessage := StrReplace(snapshot.localPath, "\", "/")
         if (snapshot.exists) {

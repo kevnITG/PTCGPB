@@ -201,7 +201,6 @@ AccountMetadata_NewAccount(instance, fileName) {
     account["instance"] := instance
     account["fileName"] := fileName
     account["packCount"] := 0
-    account["lastModified"] := ""
     account["createdAt"] := "0"
     account["lastPackPulled"] := 0
     account["lastLoggedIn"] := "0"
@@ -475,9 +474,10 @@ AccountMetadata_ParseAccount(accountJson) {
     account := AccountMetadata_NewAccount(AccountMetadata_ParseString(accountJson, "instance"), AccountMetadata_ParseString(accountJson, "fileName"))
     account["deviceAccount"] := AccountMetadata_ParseString(accountJson, "deviceAccount")
     account["packCount"] := AccountMetadata_ParseNumber(accountJson, "packCount", account["packCount"])
-    account["lastModified"] := AccountMetadata_ParseString(accountJson, "lastModified")
     account["createdAt"] := AccountMetadata_ParseString(accountJson, "createdAt", account["createdAt"])
     account["lastPackPulled"] := AccountMetadata_ParseString(accountJson, "lastPackPulled", AccountMetadata_ParseNumber(accountJson, "lastPackPulled", 0))
+    if (account["lastPackPulled"] = "" || account["lastPackPulled"] = "0")
+        account["lastPackPulled"] := AccountMetadata_ParseString(accountJson, "lastModified", account["lastPackPulled"])
     account["lastLoggedIn"] := AccountMetadata_ParseString(accountJson, "lastLoggedIn", AccountMetadata_ParseNumber(accountJson, "lastLoggedIn", 0))
 
     shinedustPos := InStr(accountJson, """shinedust""")
@@ -543,9 +543,6 @@ AccountMetadata_SerializeAccount(account, indent := "") {
 
     if (account["packCount"] != "" && (account["packCount"] + 0) != 0)
         AccountMetadata_AppendJsonNumber(json, firstField, "packCount", account["packCount"] + 0, "      ")
-
-    if (account["lastModified"] != "")
-        AccountMetadata_AppendJsonString(json, firstField, "lastModified", account["lastModified"], "      ")
 
     if (account["createdAt"] != "" && account["createdAt"] != "0")
         AccountMetadata_AppendJsonString(json, firstField, "createdAt", account["createdAt"], "      ")
@@ -696,8 +693,6 @@ AccountMetadata_MergeAccount(baseAccount, patchAccount) {
 
     if (patchAccount["packCount"] != "" && (patchAccount["packCount"] + 0) > 0)
         baseAccount["packCount"] := patchAccount["packCount"] + 0
-    if (patchAccount["lastModified"] != "")
-        baseAccount["lastModified"] := patchAccount["lastModified"]
     if (patchAccount["createdAt"] != "" && patchAccount["createdAt"] != "0")
         baseAccount["createdAt"] := patchAccount["createdAt"]
     if (patchAccount["lastPackPulled"] != "" && patchAccount["lastPackPulled"] != "0")
@@ -970,7 +965,7 @@ AccountMetadata_SaveAccount(instance, fileName, account) {
         account["lastLoggedIn"] := store["accounts"][key]["lastLoggedIn"]
     else if (account["lastLoggedIn"] = "")
         account["lastLoggedIn"] := "0"
-    if (store["accounts"].HasKey(key) && store["accounts"][key]["lastPackPulled"] != "")
+    if (store["accounts"].HasKey(key) && store["accounts"][key]["lastPackPulled"] != "" && store["accounts"][key]["lastPackPulled"] != "0")
         account["lastPackPulled"] := store["accounts"][key]["lastPackPulled"]
     else if (account["lastPackPulled"] = "")
         account["lastPackPulled"] := "0"
@@ -1099,37 +1094,6 @@ AccountMetadata_BulkMoveToInstances(moves) {
     AccountMetadata_WriteStoreUnlocked(store)
     AccountMetadata_ReleaseLock(hMutex)
     return true
-}
-
-AccountMetadata_SetLastModified(instance, fileName, modTime) {
-    if (AccountMetadata_UseTempWrites()) {
-        account := AccountMetadata_NewAccount(instance, fileName)
-        account["lastModified"] := modTime
-        return AccountMetadata_SaveTempAccount(instance, fileName, account)
-    }
-
-    hMutex := AccountMetadata_AcquireLock()
-    if (!hMutex)
-        return false
-
-    store := AccountMetadata_ReadStoreUnlocked()
-    account := AccountMetadata_EnsureAccount(store, instance, fileName, "")
-    account["lastModified"] := modTime
-    key := account["deviceAccount"] != "" ? AccountMetadata_DeviceKey(account["deviceAccount"]) : AccountMetadata_Key(instance, fileName)
-    store["accounts"][key] := account
-    AccountMetadata_WriteStoreUnlocked(store)
-    AccountMetadata_ReleaseLock(hMutex)
-    return true
-}
-
-AccountMetadata_GetLastModified(instance, fileName, filePath := "") {
-    account := AccountMetadata_Get(instance, fileName, filePath)
-    modTime := account["lastModified"]
-    if (modTime = "" && filePath != "" && FileExist(filePath)) {
-        FileGetTime, modTime, %filePath%, M
-        AccountMetadata_SetLastModified(instance, fileName, modTime)
-    }
-    return modTime
 }
 
 AccountMetadata_SetFlag(instance, fileName, flag, value, validUntil := "") {

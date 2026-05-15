@@ -543,6 +543,7 @@ fn compact_account_for_write(account: &mut Value) {
     };
 
     obj.remove("deviceAccount");
+    normalize_legacy_last_modified(obj, "");
 
     let file_name = obj
         .get("fileName")
@@ -560,14 +561,6 @@ fn compact_account_for_write(account: &mut Value) {
     }
     if file_name.is_empty() {
         obj.remove("fileName");
-    }
-    if obj
-        .get("lastModified")
-        .and_then(Value::as_str)
-        .unwrap_or("")
-        .is_empty()
-    {
-        obj.remove("lastModified");
     }
 
     if obj
@@ -615,6 +608,55 @@ fn compact_account_for_write(account: &mut Value) {
         }
         if flags.as_object().map_or(true, Map::is_empty) {
             obj.remove("flags");
+        }
+    }
+}
+
+fn value_truthy(value: &Value) -> bool {
+    value.as_bool().unwrap_or(false) || value.as_i64().unwrap_or(0) != 0
+}
+
+fn add_days_stamp(timestamp: &str, days: i64) -> String {
+    parse_local(timestamp)
+        .map(|dt| {
+            (dt + Duration::days(days))
+                .format("%Y%m%d%H%M%S")
+                .to_string()
+        })
+        .unwrap_or_default()
+}
+
+fn normalize_legacy_last_modified(obj: &mut Map<String, Value>, fallback_modified: &str) {
+    let legacy_modified = obj
+        .remove("lastModified")
+        .and_then(|value| value.as_str().map(str::to_owned))
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| fallback_modified.to_owned());
+
+    if legacy_modified.is_empty() {
+        return;
+    }
+
+    if obj
+        .get("lastPackPulled")
+        .is_none_or(|value| value_is_zeroish(value) || value.as_str() == Some(""))
+    {
+        obj.insert("lastPackPulled".to_owned(), json!(legacy_modified.clone()));
+    }
+
+    let Some(t_flag) = obj
+        .get_mut("flags")
+        .and_then(Value::as_object_mut)
+        .and_then(|flags| flags.get_mut("T"))
+        .and_then(Value::as_object_mut)
+    else {
+        return;
+    };
+
+    if t_flag.get("value").is_some_and(value_truthy) {
+        let valid_until = add_days_stamp(&legacy_modified, 5);
+        if !valid_until.is_empty() {
+            t_flag.insert("validUntil".to_owned(), json!(valid_until));
         }
     }
 }
@@ -877,9 +919,15 @@ fn new_flag(value: i64, set_at: &str, valid_until: &str) -> Value {
 fn new_account(instance: &str, file_name: &str, file_path: &Path) -> Value {
     let found_flags = filename_flags(file_name);
     let now = Local::now().format("%Y%m%d%H%M%S").to_string();
+    let modified = modified_stamp(file_path);
     let flag_value = |name: char| {
         if found_flags.contains(&name) {
-            new_flag(1, &now, "")
+            let valid_until = if name == 'T' {
+                add_days_stamp(&modified, 5)
+            } else {
+                String::new()
+            };
+            new_flag(1, &now, &valid_until)
         } else {
             new_flag(0, "", "")
         }
@@ -889,9 +937,8 @@ fn new_account(instance: &str, file_name: &str, file_path: &Path) -> Value {
         "instance": instance,
         "fileName": file_name,
         "packCount": initial_pack_count_from_filename(file_name),
-        "lastModified": modified_stamp(file_path),
         "createdAt": initial_created_at_from_filename(file_name),
-        "lastPackPulled": "0",
+        "lastPackPulled": modified,
         "lastLoggedIn": "0",
         "shinedust": { "value": -1, "lastUpdatedAt": "0" },
         "flags": {
@@ -982,6 +1029,10 @@ fn scan_saved_xmls_into_store(root: &Path, store: &mut Value) -> Result<()> {
             })
             .filter(|pack_count| *pack_count > 0);
         let existing_created_at = base.get("createdAt").cloned();
+        let existing_last_pack_pulled = base
+            .get("lastPackPulled")
+            .filter(|value| !value_is_zeroish(value))
+            .cloned();
         merge_account(base, &patch);
         if let Some(obj) = base.as_object_mut() {
             if account_existed {
@@ -1001,10 +1052,12 @@ fn scan_saved_xmls_into_store(root: &Path, store: &mut Value) -> Result<()> {
                         json!(initial_created_at_from_filename(&file_name)),
                     );
                 }
+                if let Some(last_pack_pulled) = existing_last_pack_pulled {
+                    obj.insert("lastPackPulled".to_owned(), last_pack_pulled);
+                }
             }
             obj.insert("instance".to_owned(), json!(instance));
             obj.insert("fileName".to_owned(), json!(file_name));
-            obj.insert("lastModified".to_owned(), json!(modified_stamp(&path)));
             obj.remove("deviceAccount");
         }
     }
@@ -1133,6 +1186,11 @@ fn merge_account(base: &mut Value, patch: &Value) {
     let Some(patch_obj) = patch.as_object() else {
         return;
     };
+    let legacy_modified = patch_obj
+        .get("lastModified")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_owned();
 
     for (key, value) in patch_obj {
         match key.as_str() {
@@ -1145,6 +1203,15 @@ fn merge_account(base: &mut Value, patch: &Value) {
             "lastPackPulled" | "lastLoggedIn" => {
                 if !value_is_zeroish(value) {
                     base_obj.insert(key.clone(), value.clone());
+                }
+            }
+            "lastModified" => {
+                if !value_is_zeroish(value)
+                    && base_obj
+                        .get("lastPackPulled")
+                        .is_none_or(|value| value_is_zeroish(value))
+                {
+                    base_obj.insert("lastPackPulled".to_owned(), value.clone());
                 }
             }
             "packCount" => {
@@ -1164,6 +1231,7 @@ fn merge_account(base: &mut Value, patch: &Value) {
             }
         }
     }
+    normalize_legacy_last_modified(base_obj, &legacy_modified);
 }
 
 fn merge_flags(base_obj: &mut Map<String, Value>, patch_flags: &Value) {
@@ -1536,7 +1604,7 @@ fn schedule_accounts(root: &Path, options: ScheduleOptions) -> Result<()> {
         }
 
         let sort_time = {
-            let value = field_str(account, "lastModified");
+            let value = field_str(account, "lastPackPulled");
             if value.is_empty() {
                 modified_stamp(&path)
             } else {
@@ -1813,7 +1881,6 @@ fn update_metadata_instance(store: &mut Value, file_name: &str, instance: usize,
         obj.insert("fileName".to_owned(), json!(file_name));
         obj.entry("packCount".to_owned())
             .or_insert_with(|| json!(extract_pack_count(file_name)));
-        obj.insert("lastModified".to_owned(), json!(modified_stamp(file_path)));
         if created_at_empty {
             obj.insert("createdAt".to_owned(), json!(extract_created_at(file_name)));
         }
