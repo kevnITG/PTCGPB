@@ -16,8 +16,11 @@ Scripts/*.ini
 *.bak
 !.gitkeep
 Accounts/Saved/**/*.xml
+Accounts/SpecificCards/*.xml
+Accounts/Saved/tmp/**
 Accounts/Trades/*.csv
 Accounts/Trades/*.json
+Scripts/temp/**
 Lab
 
 # macOS metadata files
