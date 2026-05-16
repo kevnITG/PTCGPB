@@ -4556,8 +4556,6 @@ GetAllRewards(tomain := true, dailies := false) {
         session.set("failSafe", A_TickCount)
         failSafeTime := 0
         Loop {
-            adbClick(165, 465)
-            Sleep, 500
             if FindOrLoseImage("Mission_DailyMissionImage", 0, failSafeTime)
                 break
             else if (FindOrLoseImage("Mission_GoToDexButtonIcon", 0, failSafeTime)) {
@@ -4573,6 +4571,8 @@ GetAllRewards(tomain := true, dailies := false) {
                 GotRewards := false
                 return
             }
+            adbClick(165, 465)
+            Sleep, 500
         }
 
     }
