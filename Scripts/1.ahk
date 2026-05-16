@@ -1267,13 +1267,15 @@ PersistStopAfterRunIfNeeded() {
         IniWrite, 1, % session.get("scriptIniFile"), UserSettings, stopAfterRunPending
 }
 
-FinalizeInjectedGodPackAccount() {
+FinalizeInjectedGodPackAccount(testing := True) {
     global botConfig, session, DeadCheck
 
     if (!session.get("injectMethod") || !session.get("loadedAccount"))
         return
 
-    session.get("missionDoneList")["accountHasPackInTesting"] := 1
+    if(testing) {
+        session.get("missionDoneList")["accountHasPackInTesting"] := 1
+    }
     setMetaData()
     IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
 
@@ -2009,33 +2011,24 @@ CheckPack(stopEarly := false) {
 
     ; Check for 2-star cards (for Inject Wonderpick 96P+ only)
     2starCount := false
-
     if (botConfig.get("PseudoGodPack") && !foundLabel) {
         2starCount := foundTrainer + foundRainbow + foundFullArt
         if (2starCount > 1)
             foundLabel := "Double two star"
     }
-    if (botConfig.get("TrainerCheck") && !foundLabel) {
-        if (!botConfig.get("PseudoGodPack") && foundTrainer)
-            foundLabel := "Trainer"
+    if (botConfig.get("TrainerCheck") && !foundLabel && foundTrainer) {
+        foundLabel := "Trainer"
     }
-    if (botConfig.get("RainbowCheck") && !foundLabel) {
-        if (!botConfig.get("PseudoGodPack") && foundRainbow)
-            foundLabel := "Rainbow"
+    if (botConfig.get("RainbowCheck") && !foundLabel && foundRainbow) {
+        foundLabel := "Rainbow"
     }
-    if (botConfig.get("FullArtCheck") && !foundLabel) {
-        if (!botConfig.get("PseudoGodPack") && foundFullArt)
-            foundLabel := "Full Art"
+    if (botConfig.get("FullArtCheck") && !foundLabel && foundFullArt) {
+        foundLabel := "Full Art"
     }
 
     if (foundLabel) {
-        if (session.get("loadedAccount")) {
-            ; NEW: Do NOT add T flag for single 2-star cards
-            ; Only godpacks get the T flag now
-            IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
-        }
-
-        FoundStars(foundLabel)
+        FinalizeInjectedGodPackAccount(False)
+        FoundStars(foundLabel, cards)
         restartGameInstance(foundLabel . " found. Continuing...", "GodPack")
     }
 
@@ -2209,7 +2202,6 @@ CheckPackFallback() {
 
     if (session.get("foundGP")) {
         FinalizeInjectedGodPackAccount()
-
         restartGameInstance("God Pack found. Continuing...", "GodPack")
         return
     }
@@ -2248,12 +2240,7 @@ CheckPackFallback() {
     }
 
     if (foundLabel) {
-        if (session.get("loadedAccount")) {
-            ; NEW: Do NOT add T flag for single 2-star cards
-            ; Only godpacks get the T flag now
-            IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
-        }
-
+        FinalizeInjectedGodPackAccount(False)
         FoundStars(foundLabel)
         restartGameInstance(foundLabel . " found. Continuing...", "GodPack")
     }

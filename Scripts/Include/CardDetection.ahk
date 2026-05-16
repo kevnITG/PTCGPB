@@ -241,13 +241,32 @@ FindGodPack(invalidPack := false, cards := "") {
 ;-------------------------------------------------------------------------------
 ; FoundStars - Process found star/special cards
 ;-------------------------------------------------------------------------------
-FoundStars(star) {
+FoundStars(star, cards := "") {
     global botConfig, session, DeadCheck
 
     IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
     session.set("keepAccount", true)
 
-    screenShot := Screenshot(star)
+    ; Try synthetic image from card IDs, fallback to real screenshot
+    isSyntheticGP := false
+    screenShot := ""
+    if (IsObject(cards) && cards.MaxIndex() > 0) {
+        synthGPPath := ""
+        if (GenerateSyntheticPackImage(cards, synthGPPath)) {
+            persistedGPPath := PersistSyntheticScreenshot(synthGPPath, star)
+            if (persistedGPPath != "") {
+                screenShot := persistedGPPath
+                if (FileExist(synthGPPath))
+                    FileDelete, %synthGPPath%
+            } else {
+                screenShot := synthGPPath
+            }
+            isSyntheticGP := true
+        }
+    }
+    if (!isSyntheticGP)
+        screenShot := Screenshot(star)
+
     accountFullPath := ""
     username := ""
 
