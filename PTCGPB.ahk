@@ -205,10 +205,12 @@ NextStep:
     Gui, Add, DropDownList, vui_deleteMethod gdeleteSettings choose%defaultDelete% x20 y210 w200 Background2A2A2A cWhite, Create Bots (13P)|Inject 13P+|Inject Wonderpick 96P+|Inject Rewards
 
     Gui, Add, Checkbox, % (botConfig.get("packMethod") ? "Checked" : "") " vui_packMethod x20 y240 " . sectionColor . ((botMethod = "Inject Wonderpick 96P+") ? "" : " Hidden"), % dict["Txt_packMethod"]
-    Gui, Add, Checkbox, % (botConfig.get("openExtraPack") ? "Checked" : "") " vui_openExtraPack gopenExtraPackSettings x20 y260 " . sectionColor . ((botMethod = "Inject Wonderpick 96P+" || botMethod = "Inject 13P+") ? "" : " Hidden"), % dict["Txt_openExtraPack"]
-    Gui, Add, Checkbox, % (botConfig.get("spendHourGlass") ? "Checked" : "") " vui_spendHourGlass gspendHourGlassSettings x20 y280 " . sectionColor . ((botMethod = "Create Bots (13P)" || botMethod = "Inject Rewards")? " Hidden":""), % dict["Txt_spendHourGlass"]
+    Gui, Add, Text, % "vui_injectWonderpickMinPacksText x40 y262 " . sectionColor . ((botMethod = "Inject Wonderpick 96P+") ? "" : " Hidden"), Min Packs:
+    Gui, Add, Edit, % "vui_injectWonderpickMinPacks w40 x130 y260 h20 -E0x200 Background2A2A2A cWhite Center" . ((botMethod = "Inject Wonderpick 96P+") ? "" : " Hidden"), % botConfig.get("injectWonderpickMinPacks")
+    Gui, Add, Checkbox, % (botConfig.get("openExtraPack") ? "Checked" : "") " vui_openExtraPack gopenExtraPackSettings x20 y285 " . sectionColor . ((botMethod = "Inject Wonderpick 96P+" || botMethod = "Inject 13P+") ? "" : " Hidden"), % dict["Txt_openExtraPack"]
+    Gui, Add, Checkbox, % (botConfig.get("spendHourGlass") ? "Checked" : "") " vui_spendHourGlass gspendHourGlassSettings x20 y305 " . sectionColor . ((botMethod = "Create Bots (13P)" || botMethod = "Inject Rewards")? " Hidden":""), % dict["Txt_spendHourGlass"]
 
-    Gui, Add, Text, x20 y305 %sectionColor% vui_SortByText, % dict["SortByText"]
+    Gui, Add, Text, x20 y330 %sectionColor% vui_SortByText, % dict["SortByText"]
     sortOption := 1
     if (botConfig.get("injectSortMethod") = "ModifiedDesc")
         sortOption := 2
@@ -216,7 +218,7 @@ NextStep:
         sortOption := 3
     else if (botConfig.get("injectSortMethod") = "PacksDesc")
         sortOption := 4
-    Gui, Add, DropDownList, vui_SortByDropdown gSortByDropdownHandler choose%sortOption% x20 y325 w130 Background2A2A2A cWhite, Oldest First|Newest First|Fewest Packs First|Most Packs First
+    Gui, Add, DropDownList, vui_SortByDropdown gSortByDropdownHandler choose%sortOption% x90 y325 w130 Background2A2A2A cWhite, Oldest First|Newest First|Fewest Packs First|Most Packs First
 
     Gui, Add, Text, x20 y260 %sectionColor% vui_AccountNameText, % dict["Txt_AccountName"]
     Gui, Add, Edit, vui_AccountName w90 x130 y260 h20 -E0x200 Background2A2A2A cWhite Center, % botConfig.get("AccountName")
@@ -352,6 +354,8 @@ deleteSettings:
         GuiControl, Hide, ui_FriendID
         GuiControl, Hide, ui_spendHourGlass
         GuiControl, Hide, ui_packMethod
+        GuiControl, Hide, ui_injectWonderpickMinPacksText
+        GuiControl, Hide, ui_injectWonderpickMinPacks
         GuiControl, Hide, ui_openExtraPack
         GuiControl, Hide, ui_SortByText
         GuiControl, Hide, ui_SortByDropdown
@@ -363,6 +367,8 @@ deleteSettings:
         GuiControl, Show, ui_FriendID
         GuiControl, Show, ui_spendHourGlass
         GuiControl, Show, ui_packMethod
+        GuiControl, Show, ui_injectWonderpickMinPacksText
+        GuiControl, Show, ui_injectWonderpickMinPacks
         GuiControl, Show, ui_openExtraPack
         GuiControl, Show, ui_SortByText
         GuiControl, Show, ui_SortByDropdown
@@ -373,6 +379,8 @@ deleteSettings:
         GuiControl, Hide, ui_FriendID
         GuiControl, Show, ui_spendHourGlass
         GuiControl, Hide, ui_packMethod
+        GuiControl, Hide, ui_injectWonderpickMinPacksText
+        GuiControl, Hide, ui_injectWonderpickMinPacks
         GuiControl, Show, ui_openExtraPack
         GuiControl, Show, ui_SortByText
         GuiControl, Show, ui_SortByDropdown
@@ -384,6 +392,8 @@ deleteSettings:
         GuiControl, Hide, ui_FriendID
         GuiControl, Hide, ui_spendHourGlass
         GuiControl, Hide, ui_packMethod
+        GuiControl, Hide, ui_injectWonderpickMinPacksText
+        GuiControl, Hide, ui_injectWonderpickMinPacks
         GuiControl, Hide, ui_openExtraPack
         GuiControl, Show, ui_SortByText
         GuiControl, Show, ui_SortByDropdown
@@ -1305,7 +1315,8 @@ Save:
 
     ;Deluxe := 0 ; Turn off Deluxe for all users now that pack is removed
 
-    SaveAllSettings()
+    if (!SaveAllSettings())
+        return
 
     if(StrLen(A_ScriptDir) > 200 || InStr(A_ScriptDir, " ")) {
         MsgBox, 0x40000,, % dict["Error_BotPathTooLong"]
@@ -1472,7 +1483,8 @@ return
 ; =================== Logic - Balance XMLs Button Action ===================
 BalanceXMLs:
     Gui, Submit, NoHide
-    SaveAllSettings()
+    if (!SaveAllSettings())
+        return
 
     if(botConfig.get("Instances")>0) {
         helperPath := AccountMetadata_HelperPath()
@@ -1482,6 +1494,7 @@ BalanceXMLs:
             command .= " --instances """ . botConfig.get("Instances") . """"
             command .= " --delete-method """ . botConfig.get("deleteMethod") . """"
             command .= " --sort-method """ . botConfig.get("injectSortMethod") . """"
+            command .= " --inject-wonderpick-min-packs """ . botConfig.get("injectWonderpickMinPacks") . """"
             if (botConfig.get("wonderpickForEventMissions"))
                 command .= " --wonderpick-for-event-missions"
             if (botConfig.get("claimSpecialMissions"))
@@ -1723,7 +1736,8 @@ BalanceXMLs_RunWithProgress(command) {
 ; =================== Logic - Launch All Mumu Button Action ===================
 LaunchAllMumu:
     Gui, Submit, NoHide
-    SaveAllSettings()
+    if (!SaveAllSettings())
+        return
 
     if(StrLen(A_ScriptDir) > 200 || InStr(A_ScriptDir, " ")) {
         MsgBox, 0x40000,, ERROR: bot folder path is too long or contains blank spaces. Move to a shorter path without spaces such as C:\PTCGPB
@@ -1747,7 +1761,8 @@ return
 ArrangeWindows:
     Gui, Submit, NoHide
 
-    SaveAllSettings()
+    if (!SaveAllSettings())
+        return
 
     scaleParam := 283
     windowsPositioned := 0
@@ -1883,7 +1898,8 @@ return
 
 GuiClose:
     Gui, Submit, NoHide
-    SaveAllSettings()
+    if (!SaveAllSettings())
+        return
 
     KillAllScripts()
 
@@ -1918,6 +1934,14 @@ SaveAllSettings() {
         botConfig.set(configName, configValue, "General")
     }
 
+    if (botConfig.get("injectWonderpickMinPacks") = "")
+        botConfig.set("injectWonderpickMinPacks", 96, "General")
+    else if (!RegExMatch(botConfig.get("injectWonderpickMinPacks"), "^\d+$") || botConfig.get("injectWonderpickMinPacks") < 70 || botConfig.get("injectWonderpickMinPacks") > 999) {
+        MsgBox, 0x40000, Invalid Setting, Inject Wonderpick minimum packs must be between 70 and 999.
+        GuiControl, Focus, ui_injectWonderpickMinPacks
+        return false
+    }
+
     if(botConfig.get("debugMode") = 0)
         botConfig.set("debugMode", 0, "Extra")
 
@@ -1933,6 +1957,8 @@ SaveAllSettings() {
     if (botConfig.get("debugMode")) {
         FileAppend, % A_Now . " - Settings saved. DeleteMethod: " . botConfig.get("deleteMethod") . "`n", %A_ScriptDir%\debug_settings.log
     }
+
+    return true
 }
 
 ; =================== Logic - Reset account lists ===================

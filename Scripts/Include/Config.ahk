@@ -11,6 +11,7 @@
         , "ui_Mains": "Mains"
         , "ui_deleteMethod": "deleteMethod"
         , "ui_packMethod": "packMethod"
+        , "ui_injectWonderpickMinPacks": "injectWonderpickMinPacks"
         , "ui_openExtraPack": "openExtraPack"
         , "ui_spendHourGlass": "spendHourGlass"
         , "ui_AccountName": "AccountName"
@@ -33,6 +34,7 @@
         , "instanceStartDelay": 10
         , "runMain": 0
         , "Mains": 0
+        , "injectWonderpickMinPacks": 96
         , "openExtraPack": 0
         , "spendHourGlass": 0
         , "injectSortMethod": "PacksDesc"

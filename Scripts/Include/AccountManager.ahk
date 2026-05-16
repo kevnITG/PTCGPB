@@ -820,6 +820,7 @@ CreateAccountList(instance) {
     command .= " --instance """ . instance . """"
     command .= " --delete-method """ . botConfig.get("deleteMethod") . """"
     command .= " --sort-method """ . botConfig.get("injectSortMethod") . """"
+    command .= " --inject-wonderpick-min-packs """ . botConfig.get("injectWonderpickMinPacks") . """"
     if (botConfig.get("wonderpickForEventMissions"))
         command .= " --wonderpick-for-event-missions"
     if (botConfig.get("claimSpecialMissions"))

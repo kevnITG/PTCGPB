@@ -418,7 +418,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
                 accountMeta["packCount"] := new_packcount
                 AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
 
-                if(botConfig.get("deleteMethod") = "Inject Wonderpick 96P+" && new_packcount < 70) {
+                if(botConfig.get("deleteMethod") = "Inject Wonderpick 96P+" && new_packcount < botConfig.get("injectWonderpickMinPacks")) {
                     ; we now have a proper pack count and can evaluate if this is valid or if this is a waste of time
                     MarkAccountAsUsed()
                     session.set("loadedAccount", false)
