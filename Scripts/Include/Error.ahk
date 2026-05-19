@@ -1,4 +1,4 @@
-global errorImageList := ["Common_Error"
+﻿global errorImageList := ["Common_Error"
                         , "Common_Error_Cache"
                         , "Common_Error_NoResponse"
                         , "Common_Error_NoResponseDark"

@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 #SingleInstance Force
 SetBatchLines, -1
 SetTitleMatchMode, 2

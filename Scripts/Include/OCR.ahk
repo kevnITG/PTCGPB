@@ -1,4 +1,4 @@
-; SOURCE: https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
+﻿; SOURCE: https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
 
 HBitmapToRandomAccessStream(hBitmap) {
     static IID_IRandomAccessStream := "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}"

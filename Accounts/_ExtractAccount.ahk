@@ -1,4 +1,4 @@
-#SingleInstance on
+﻿#SingleInstance on
 ;SetKeyDelay, -1, -1
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0

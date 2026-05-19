@@ -1,4 +1,4 @@
-; FindOrLoseImage EL = 0, Found Mode, Found image - Return xy pos / Not Found image - Return 0
+﻿; FindOrLoseImage EL = 0, Found Mode, Found image - Return xy pos / Not Found image - Return 0
 ; FindOrLoseImage EL = 1, Loose Mode, Found image - Return 0 / Not Found image - Return 1
 ; ====================================================================
 ; #Include %A_ScriptDir%\Include\Crinity_UnofficialPatch.ahk

@@ -1,4 +1,4 @@
-;===============================================================================
+﻿;===============================================================================
 ; CockpitAggregatorEngine.ahk
 ; In-process Aggregator engine used by Cockpit.ahk
 ;===============================================================================
@@ -498,7 +498,7 @@ Agg_ParseOverlayPacks(rawText) {
     if (rawText = "")
         return -1
     ; generateStatusText(): "Packs: " N " |" - allow stray spaces / fullwidth colon
-    if (RegExMatch(rawText, "i)Packs\s*[:：]\s*(\d+)", m))
+    if (RegExMatch(rawText, "i)Packs\s*[:ï¼š]\s*(\d+)", m))
         return m1 + 0
     return -1
 }
@@ -507,7 +507,7 @@ Agg_ParseOverlayRuns(rawText) {
     if (rawText = "")
         return -1
     ; generateStatusText(): "Runs: " N " |" - same allowances as Agg_ParseOverlayPacks
-    if (RegExMatch(rawText, "i)Runs\s*[:：]\s*(\d+)", m))
+    if (RegExMatch(rawText, "i)Runs\s*[:ï¼š]\s*(\d+)", m))
         return m1 + 0
     return -1
 }

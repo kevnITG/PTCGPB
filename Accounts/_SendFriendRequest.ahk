@@ -1,4 +1,4 @@
-; _SendFriendRequest.ahk
+﻿; _SendFriendRequest.ahk
 ; Sends friend request(s): first to [General] FriendID in Settings.ini, then to any
 ; extra 16-digit codes in InjectAccount.ini ([UserSettings] injectExtraFriendIDs=, comma-separated).
 ; At most 10 codes total are sent (order: Settings.ini first, then extras; further codes are dropped).

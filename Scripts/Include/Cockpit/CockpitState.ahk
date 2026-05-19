@@ -1,4 +1,4 @@
-;===============================================================================
+﻿;===============================================================================
 ; CockpitState.ahk - Lib for reading/writing the Cockpit state file
 ;===============================================================================
 ; The file `Scripts\Include\Cockpit\CockpitState.ini` is the single source of

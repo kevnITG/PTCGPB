@@ -1,4 +1,4 @@
-IsGitRepo(path) {
+﻿IsGitRepo(path) {
     tmpFile := A_Temp . "\ptcgpb_git_check.txt"
     RunWait, %ComSpec% /c git -C "%path%" rev-parse --git-dir > "%tmpFile%" 2>&1,, Hide
     FileRead, output, %tmpFile%

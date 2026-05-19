@@ -1,4 +1,4 @@
-; Calculates the Levenshtein distance between two strings.
+﻿; Calculates the Levenshtein distance between two strings.
 Levenshtein(s1, s2) {
     ; ------------------------------------------------------------------------------
     ; Parameters:

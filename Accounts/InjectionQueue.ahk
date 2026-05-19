@@ -1,4 +1,4 @@
-#SingleInstance, force
+﻿#SingleInstance, force
 #NoEnv
 SetBatchLines, -1
 SetWorkingDir %A_ScriptDir%

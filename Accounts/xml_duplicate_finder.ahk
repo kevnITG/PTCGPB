@@ -1,4 +1,4 @@
-; XML Duplicate Finder
+﻿; XML Duplicate Finder
 ; Scans for duplicate XML files in Accounts\Saved folder and removes duplicates
 ; Keeps files with higher P numbers or older timestamps
 

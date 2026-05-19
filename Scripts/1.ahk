@@ -1,4 +1,4 @@
-#SingleInstance on
+﻿#SingleInstance on
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0
 SetBatchLines, -1
@@ -724,7 +724,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             ; For injection methods, mark the account as used
             if (!session.get("keepAccount") || session.get("s4tFoundTradeable")) {
                 if (botConfig.get("deleteMethod") = "Inject Rewards" && !session.get("s4tFoundTradeable")) {
-                    MarkAccountAsClaimed()  ; No 24h lock � account stays available for pack-opening
+                    MarkAccountAsClaimed()  ; No 24h lock ï¿½ account stays available for pack-opening
                     LogDebug("Marked injected account as claimed: " . session.get("accountFileName"))
                 } else {
                     MarkAccountAsUsed()  ; Remove account from queue

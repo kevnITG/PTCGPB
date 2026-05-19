@@ -1,4 +1,4 @@
-#SingleInstance, force
+﻿#SingleInstance, force
 CoordMode, Mouse, Screen
 SetTitleMatchMode, 3
 

@@ -1,4 +1,4 @@
-global ScriptDir := RegExReplace(A_LineFile, "\\[^\\]+$"), LogsDir := ScriptDir . "\..\..\Logs"
+﻿global ScriptDir := RegExReplace(A_LineFile, "\\[^\\]+$"), LogsDir := ScriptDir . "\..\..\Logs"
 global Debug, discordWebhookURL, discordUserId, sendAccountXml, botConfig
 global DEFAULT_STATUS_MESSAGE := "..."
 

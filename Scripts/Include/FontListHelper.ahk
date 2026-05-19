@@ -1,4 +1,4 @@
-GetAllFontNames() {
+﻿GetAllFontNames() {
     fontNames := "Segoe UI||Arial|Calibri|Times New Roman|"
     fontNames .= "Microsoft JhengHei|Microsoft YaHei|"
     fontNames .= "SimSun|Tahoma|Verdana|Courier New|"
@@ -9,7 +9,7 @@ ShowFontListGui(ByRef selectedFont) {
     global FontChoice
     fontList := GetAllFontNames()
     if (fontList = "") {
-        MsgBox, Can't get list！
+        MsgBox, Can't get listï¼
         selectedFont := ""
         return
     }
