@@ -3,11 +3,13 @@ use anyhow::Context;
 use clap::Parser;
 use futures::future::join_all;
 use image::{ImageBuffer, Rgba, RgbaImage};
-use imageproc::drawing::{draw_hollow_rect_mut, draw_text_mut};
+use imageproc::drawing::{
+    draw_filled_circle_mut, draw_hollow_circle_mut, draw_hollow_rect_mut, draw_text_mut,
+};
 use imageproc::rect::Rect;
 use reqwest::Client;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -24,6 +26,9 @@ struct Cli {
     cardmaster: PathBuf,
     #[arg(long, default_value = "CardImageCache")]
     cache_dir: PathBuf,
+    /// Comma-separated cardIds to highlight with a gold border (wishlist matches).
+    #[arg(long, default_value = "")]
+    highlight: String,
 }
 
 #[derive(Deserialize)]
@@ -154,6 +159,14 @@ const BG: Rgba<u8> = Rgba([26, 26, 46, 255]);
 const PH_FILL: Rgba<u8> = Rgba([37, 37, 69, 255]);
 const PH_BORDER: Rgba<u8> = Rgba([74, 74, 158, 255]);
 const TEXT_COLOR: Rgba<u8> = Rgba([170, 170, 170, 255]);
+// Wishlist badge: red gradient circle (#E8254F) with a white heart, top-left.
+// Inspired by .wishlist-heart-btn.on in card_database.html.
+const WISHLIST_BADGE_BG: Rgba<u8> = Rgba([232, 37, 79, 255]);
+const WISHLIST_BADGE_RIM: Rgba<u8> = Rgba([255, 200, 210, 255]);
+const WISHLIST_HEART: Rgba<u8> = Rgba([255, 255, 255, 255]);
+const WISHLIST_BADGE_RADIUS: i32 = 22;
+const WISHLIST_HEART_RADIUS: f32 = 14.0;
+const WISHLIST_BADGE_OFFSET: i32 = 26; // center offset from top-left corner
 
 fn make_placeholder(card_id: &str, font: &FontArc) -> RgbaImage {
     let mut img: RgbaImage = ImageBuffer::from_pixel(CARD_W, CARD_H, PH_FILL);
@@ -208,7 +221,12 @@ fn make_placeholder(card_id: &str, font: &FontArc) -> RgbaImage {
     img
 }
 
-fn composite(cards: &[(String, Option<RgbaImage>)], max_cols: usize, font: &FontArc) -> RgbaImage {
+fn composite(
+    cards: &[(String, Option<RgbaImage>)],
+    max_cols: usize,
+    font: &FontArc,
+    highlight: &HashSet<String>,
+) -> RgbaImage {
     let total = cards.len();
     // Fixed width: always use max_cols for canvas width
     let cols = max_cols as u32;
@@ -261,9 +279,40 @@ fn composite(cards: &[(String, Option<RgbaImage>)], max_cols: usize, font: &Font
         };
 
         image::imageops::overlay(&mut canvas, &card_img, x as i64, y as i64);
+
+        if highlight.contains(card_id) {
+            let cx = x as i32 + WISHLIST_BADGE_OFFSET;
+            let cy = y as i32 + WISHLIST_BADGE_OFFSET;
+            draw_filled_circle_mut(&mut canvas, (cx, cy), WISHLIST_BADGE_RADIUS, WISHLIST_BADGE_BG);
+            draw_hollow_circle_mut(&mut canvas, (cx, cy), WISHLIST_BADGE_RADIUS, WISHLIST_BADGE_RIM);
+            draw_heart(&mut canvas, cx, cy, WISHLIST_HEART_RADIUS, WISHLIST_HEART);
+        }
     }
 
     canvas
+}
+
+// Fills pixels inside the implicit heart curve (x² + y² − 1)³ − x²·y³ ≤ 0,
+// scaled to `radius`, centered at (cx, cy). Pixel-rasterised, no AA.
+fn draw_heart(canvas: &mut RgbaImage, cx: i32, cy: i32, radius: f32, color: Rgba<u8>) {
+    let r_int = radius.ceil() as i32;
+    let (w, h) = (canvas.width() as i32, canvas.height() as i32);
+    for dy in -r_int..=r_int {
+        for dx in -r_int..=r_int {
+            let x = dx as f32 / radius;
+            // Flip vertically and shift up so the heart sits visually centered
+            // (the curve's bounding box is taller above than below).
+            let y = -(dy as f32) / radius + 0.25;
+            let t = x * x + y * y - 1.0;
+            if t * t * t - x * x * y * y * y <= 0.0 {
+                let px = cx + dx;
+                let py = cy + dy;
+                if px >= 0 && py >= 0 && px < w && py < h {
+                    canvas.put_pixel(px as u32, py as u32, color);
+                }
+            }
+        }
+    }
 }
 
 fn parse_ids(input: &str) -> Vec<String> {
@@ -344,7 +393,13 @@ async fn main() -> anyhow::Result<()> {
 
     let font_data = include_bytes!("font.ttf");
     let font = FontArc::try_from_slice(font_data as &[u8]).expect("embedded font");
-    let result = composite(&cards, cli.cols, &font);
+    let highlight: HashSet<String> = cli
+        .highlight
+        .split(',')
+        .map(|s| s.trim().to_owned())
+        .filter(|s| !s.is_empty())
+        .collect();
+    let result = composite(&cards, cli.cols, &font, &highlight);
     if let Some(parent) = cli.output.parent() {
         fs::create_dir_all(parent).await?;
     }

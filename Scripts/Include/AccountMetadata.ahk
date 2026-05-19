@@ -1307,6 +1307,9 @@ AccountMetadata_GetFlag(instance, fileName, flag, ByRef found) {
 }
 
 AccountMetadata_ClearFlagEverywhere(flag) {
+    if (AccountMetadata_MigrationNeeded())
+        AccountMetadata_Ensure()
+
     helperPath := AccountMetadata_HelperPath()
     if (FileExist(helperPath)) {
         root := getScriptBaseFolder()
@@ -1360,10 +1363,15 @@ AccountMetadata_ClearFlagEverywhere(flag) {
 
         if (FileExist(resultPath)) {
             FileRead, resultText, %resultPath%
-            return resultText + 0
+            resultText := Trim(resultText, "`r`n ")
+            return resultText = "" ? 0 : resultText + 0
         }
         return 0
     }
+
+    changed := AccountMetadata_ClearFlagInAccountFiles(flag)
+    if (changed != "")
+        return changed + 0
 
     hMutex := AccountMetadata_AcquireLock()
     if (!hMutex)
@@ -1382,5 +1390,37 @@ AccountMetadata_ClearFlagEverywhere(flag) {
 
     AccountMetadata_WriteStoreUnlocked(store)
     AccountMetadata_ReleaseLock(hMutex)
+    return changed
+}
+
+AccountMetadata_ClearFlagInAccountFiles(flag) {
+    accountDir := AccountMetadata_AccountDir()
+    if (!FileExist(accountDir))
+        return ""
+
+    changed := 0
+    foundAny := false
+    Loop, Files, %accountDir%\*.json, F
+    {
+        foundAny := true
+        SplitPath, A_LoopFileName,,,, deviceAccount
+        if (deviceAccount = "")
+            continue
+
+        account := AccountMetadata_ReadAccountUnlocked(deviceAccount)
+        if (!IsObject(account["flags"]) || !account["flags"].HasKey(flag))
+            continue
+        if (!account["flags"][flag]["value"])
+            continue
+
+        account["flags"][flag]["value"] := 0
+        account["flags"][flag]["setAt"] := ""
+        account["flags"][flag]["validUntil"] := ""
+        AccountMetadata_WriteAccountUnlocked(deviceAccount, account)
+        changed++
+    }
+
+    if (!foundAny)
+        return ""
     return changed
 }

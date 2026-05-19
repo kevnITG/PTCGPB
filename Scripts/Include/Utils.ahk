@@ -11,7 +11,7 @@
 ;   - Mission checking logic
 ;   - MuMu version detection
 ;
-; Dependencies: None for core helpers. Do not call LogToFile here ? use AppendGPlog for GPlog.txt
+; Dependencies: none for core helpers; do not call LogToFile here - use AppendGPlog for GPlog.txt
 ;   (Utils is #included by LaunchAllMumu.ahk without Logging.ahk).
 ; Used by: Multiple modules throughout 1.ahk
 ;===============================================================================
@@ -756,7 +756,7 @@ AppendGPlog(message) {
 }
 
 ;-------------------------------------------------------------------------------
-; AppendFriendCodeToManualVipIds - Solo reroll: persist GP account for Main GP Test
+; AppendFriendCodeToManualVipIds - solo reroll path: persist GP account for Main GP Test
 ; Same format as manual_vip_ids.txt (see GetFriendAccountsFromFile in Main.ahk).
 ;-------------------------------------------------------------------------------
 AppendFriendCodeToManualVipIds(friendCodeRaw) {
@@ -953,24 +953,11 @@ VersionCompare(v1, v2) {
 }
 
 ShowCustomToolTip(text, x, y) {
-    static hToolTipText := 0 
-
-    Gui, ShowSwipeDesc:+AlwaysOnTop -Caption +ToolWindow +Border    
-    Gui, ShowSwipeDesc:Color, FFFFAA
-    Gui, ShowSwipeDesc:Font, s12 cBlack, Malgun Gothic
-    
-    GuiControlGet, isExist, ShowSwipeDesc:Pos, ToolTipText
-    if (isExist) {
-        GuiControl, ShowSwipeDesc:, ToolTipText, %text%
-    } else {
-        Gui, ShowSwipeDesc:Add, Text, HwndhToolTipText, %text%
-    }
-    
-    Gui, ShowSwipeDesc:Show, x%x% y%y% NoActivate
+    ToolTip, % text, % x, % y
 }
 
 HideCustomToolTip() {
-    Gui, ShowSwipeDesc:Destroy
+    ToolTip
 }
 
 generateStatusText(){

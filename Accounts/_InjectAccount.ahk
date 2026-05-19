@@ -14,6 +14,38 @@ IniRead, fileName, InjectAccount.ini, UserSettings, fileName, name
 IniRead, folderPath, InjectAccount.ini, UserSettings, folderPath, C:\Program Files\Netease
 IniRead, selectedFilePath, InjectAccount.ini, UserSettings, selectedFilePath, ""
 IniRead, sendFriendRequestAfterInject, InjectAccount.ini, UserSettings, sendFriendRequestAfterInject, 0
+IniRead, injectExtraFriendIDsIni, InjectAccount.ini, UserSettings, injectExtraFriendIDs,
+if (injectExtraFriendIDsIni = "ERROR")
+    injectExtraFriendIDsIni := ""
+
+settingsIniFriend := A_ScriptDir . "\..\Settings.ini"
+IniRead, injectFriendPrimary, %settingsIniFriend%, General, FriendID, ERROR
+if (injectFriendPrimary = "ERROR")
+    injectFriendPrimary := ""
+
+injectFriend2 := ""
+injectFriend3 := ""
+injectFriend4 := ""
+injectFriend5 := ""
+injectFriend6 := ""
+injectFriend7 := ""
+injectFriend8 := ""
+injectFriend9 := ""
+injectFriend10 := ""
+injectExtraCsv := injectExtraFriendIDsIni
+StringReplace, injectExtraCsv, injectExtraCsv, |, `,, All
+slotN := 0
+Loop, Parse, injectExtraCsv, `,
+{
+    id := Trim(A_LoopField)
+    if (id = "")
+        continue
+    slotN += 1
+    if (slotN > 9)
+        break
+    vn := "injectFriend" . (slotN + 1)
+    %vn% := id
+}
 
 ; --- Headless mode (called from the Card Dashboard HTML server) ---------
 headless := false
@@ -60,33 +92,54 @@ if (instanceList != "") {
         }
     }
 }
-Gui, Add, Text, x10 y+15, Instance Name:
-Gui, Add, DropDownList, x10 y+5 vwinTitle w200 Choose%selectedIndex%, %instanceList%
-Gui, Add, Button, x+10 yp w80 gRefreshInstances, Refresh
+Gui, Add, Text, x10 y+15 w450, Instance Name:
+Gui, Add, DropDownList, x10 y+5 vwinTitle w340 Choose%selectedIndex%, %instanceList%
+Gui, Add, Button, x+10 yp w100 gRefreshInstances, Refresh
 
 ; File section
-Gui, Add, Text, x10 y+15 cDCDCDC, File Name (without spaces and without .xml):
-Gui, Add, Edit, x10 y+5 vfileName w300 c000000 BackgroundFFFFFF, %fileName%
-Gui, Add, Button, x+10 yp w80 gBrowseFile, Browse
+Gui, Add, Text, x10 y+15 w450 cDCDCDC, File Name (without spaces and without .xml):
+Gui, Add, Edit, x10 y+5 vfileName w340 c000000 BackgroundFFFFFF, %fileName%
+Gui, Add, Button, x+10 yp w100 gBrowseFile, Browse
 
 ; Folder section
-Gui, Add, Text, x10 y+15 cDCDCDC, MuMu Folder same as main script (C:\Program Files\Netease)
-Gui, Add, Edit, x10 y+5 vfolderPath w300 c000000 BackgroundFFFFFF, %folderPath%
+Gui, Add, Text, x10 y+15 w450 cDCDCDC, MuMu Folder same as main script (C:\Program Files\Netease)
+Gui, Add, Edit, x10 y+5 vfolderPath w450 c000000 BackgroundFFFFFF, %folderPath%
 
 ; Friend request option
-friendCheckText := "Send friend request after inject (uses FriendID in Settings.ini)"
-Gui, Add, Checkbox, x10 y+15 vsendFriendRequestAfterInject Checked%sendFriendRequestAfterInject% cDCDCDC, %friendCheckText%
+friendCheckText := "Send friend request(s) after inject"
+Gui, Add, Checkbox, x10 y+12 vsendFriendRequestAfterInject Checked%sendFriendRequestAfterInject% cDCDCDC, %friendCheckText%
+Gui, Add, Text, x10 y+8 w450 cGray, Friend IDs (max 10)
+Gui, Add, Text, x10 y+6 w14 Right +0x200 section, 1
+Gui, Add, Edit, x28 ys-2 w200 h22 vinjectFriendPrimary ReadOnly Disabled cDCDCDC Background303030, %injectFriendPrimary%
+Gui, Add, Text, x238 ys w20 Right +0x200, 2
+Gui, Add, Edit, x260 ys-2 w200 h22 vinjectFriend2 Number Limit16 c000000 BackgroundFFFFFF, %injectFriend2%
+Gui, Add, Text, x10 y+8 w14 Right +0x200 section, 3
+Gui, Add, Edit, x28 ys-2 w200 h22 vinjectFriend3 Number Limit16 c000000 BackgroundFFFFFF, %injectFriend3%
+Gui, Add, Text, x238 ys w20 Right +0x200, 4
+Gui, Add, Edit, x260 ys-2 w200 h22 vinjectFriend4 Number Limit16 c000000 BackgroundFFFFFF, %injectFriend4%
+Gui, Add, Text, x10 y+8 w14 Right +0x200 section, 5
+Gui, Add, Edit, x28 ys-2 w200 h22 vinjectFriend5 Number Limit16 c000000 BackgroundFFFFFF, %injectFriend5%
+Gui, Add, Text, x238 ys w20 Right +0x200, 6
+Gui, Add, Edit, x260 ys-2 w200 h22 vinjectFriend6 Number Limit16 c000000 BackgroundFFFFFF, %injectFriend6%
+Gui, Add, Text, x10 y+8 w14 Right +0x200 section, 7
+Gui, Add, Edit, x28 ys-2 w200 h22 vinjectFriend7 Number Limit16 c000000 BackgroundFFFFFF, %injectFriend7%
+Gui, Add, Text, x238 ys w20 Right +0x200, 8
+Gui, Add, Edit, x260 ys-2 w200 h22 vinjectFriend8 Number Limit16 c000000 BackgroundFFFFFF, %injectFriend8%
+Gui, Add, Text, x10 y+8 w14 Right +0x200 section, 9
+Gui, Add, Edit, x28 ys-2 w200 h22 vinjectFriend9 Number Limit16 c000000 BackgroundFFFFFF, %injectFriend9%
+Gui, Add, Text, x238 ys w20 Right +0x200, 10
+Gui, Add, Edit, x260 ys-2 w200 h22 vinjectFriend10 Number Limit16 c000000 BackgroundFFFFFF, %injectFriend10%
 
 ; Add another separator
-Gui, Add, Text, x10 y+15 w450 h1 0x10 c3F3F3F ; Darker separator
+Gui, Add, Text, x10 y+12 w450 h1 0x10 c3F3F3F ; Darker separator
 
-Gui, Add, Text, x10 y+12 w450 vInjectStatusText c8FD18A, Ready.
+Gui, Add, Text, x10 y+10 w450 vInjectStatusText c8FD18A, Ready.
 Gui, Add, Progress, x10 y+6 w450 h8 vInjectProgress c4AAE3A Background303030, 0
 Gui, Add, Button, x130 y+16 w100 h40 vSubmitBtn gSaveSettings cBlue, Submit
 Gui, Add, Button, x+10 yp w100 h40 vRunInstanceBtn gRunInstance cGreen, Run Instance
 
 ; Show the GUI with a proper size
-Gui, Show, w470 h470, Arturo's Account Injection Tool ;'
+Gui, Show, w484 h628, Arturo's Account Injection Tool ;'
 Return
 
 OnGuiClose:
@@ -109,6 +162,16 @@ SaveSettings:
     if (injectInProgress)
         return
     Gui, Submit, NoHide
+    if (!ValidateInjectFriendSlots())
+        return
+    extraFriendIDs := injectFriendSlotsToCsv()
+    settingsIni := A_ScriptDir . "\..\Settings.ini"
+    IniRead, prSid, %settingsIni%, General, FriendID, ERROR
+    mergedN := FriendRequestMergedCount(prSid, extraFriendIDs)
+    if (mergedN > 10) {
+        MsgBox, 48, Friend codes, Maximum 10 friend codes total (Settings.ini FriendID + optional extras in this window).`n`nYou have: %mergedN%.
+        return
+    }
     injectInProgress := 1
     SetInjectUiBusy(true)
     UpdateInjectUi("Saving settings...", 5)
@@ -118,6 +181,14 @@ SaveSettings:
     IniWrite, %folderPath%, InjectAccount.ini, UserSettings, folderPath
     IniWrite, %selectedFilePath%, InjectAccount.ini, UserSettings, selectedFilePath
     IniWrite, %sendFriendRequestAfterInject%, InjectAccount.ini, UserSettings, sendFriendRequestAfterInject
+    extraFriendForIni := extraFriendIDs
+    Loop {
+        if (!InStr(extraFriendForIni, ",,"))
+            break
+        StringReplace, extraFriendForIni, extraFriendForIni, `,,`,, All
+    }
+    extraFriendForIni := Trim(extraFriendForIni, " `t,")
+    IniWrite, %extraFriendForIni%, InjectAccount.ini, UserSettings, injectExtraFriendIDs
 ; fall through into RunInjectFlow
 
 RunInjectFlow:
@@ -210,7 +281,7 @@ RunInjectFlow:
     ; image-search + ADB primitives (same as 1.ahk) and runs a focused
     ; friend-request flow only.
     if (sendFriendRequestAfterInject) {
-        UpdateInjectUi("Sending friend request...", 92)
+        UpdateInjectUi("Sending friend request(s)...", 92)
         sendFRScript := A_ScriptDir . "\_SendFriendRequest.ahk"
         if (FileExist(sendFRScript)) {
             RunWait, %A_AhkPath% "%sendFRScript%" "%winTitle%" "%folderPath%"
@@ -495,6 +566,74 @@ GetInstanceList(baseFolder) {
     return instanceList
 }
 
+FriendListHasId(list, id) {
+    if (!IsObject(list) || !list.MaxIndex())
+        return false
+    Loop, % list.MaxIndex()
+    {
+        if (list[A_Index] = id)
+            return true
+    }
+    return false
+}
+
+injectFriendSlotsToCsv() {
+    global injectFriend2, injectFriend3, injectFriend4, injectFriend5, injectFriend6, injectFriend7, injectFriend8, injectFriend9, injectFriend10
+    arr := [Trim(injectFriend2), Trim(injectFriend3), Trim(injectFriend4), Trim(injectFriend5), Trim(injectFriend6), Trim(injectFriend7), Trim(injectFriend8), Trim(injectFriend9), Trim(injectFriend10)]
+    out := ""
+    Loop % arr.MaxIndex() {
+        val := arr[A_Index]
+        if (val = "")
+            continue
+        if (out != "")
+            out .= ","
+        out .= val
+    }
+    return out
+}
+
+ValidateInjectFriendSlots() {
+    global injectFriend2, injectFriend3, injectFriend4, injectFriend5, injectFriend6, injectFriend7, injectFriend8, injectFriend9, injectFriend10
+    vals := [injectFriend2, injectFriend3, injectFriend4, injectFriend5, injectFriend6, injectFriend7, injectFriend8, injectFriend9, injectFriend10]
+    Loop % vals.MaxIndex() {
+        slot := A_Index + 1
+        v := Trim(vals[A_Index])
+        if (v = "")
+            continue
+        if (!RegExMatch(v, "^\d{16}$")) {
+            MsgBox, 48, Friend codes, Slot %slot% must contain exactly 16 digits (numbers only).
+            return false
+        }
+    }
+    return true
+}
+
+; Count unique 16-digit friend codes after merging Settings.ini FriendID + optional extra field (same rules as _SendFriendRequest.ahk).
+FriendRequestMergedCount(primaryRaw, extraGuiText) {
+    list := []
+    sid := Trim(primaryRaw)
+    if (sid != "" && sid != "ERROR" && RegExMatch(sid, "^\d{16}$"))
+        list.Push(sid)
+    cleaned := RegExReplace(extraGuiText, "[\r\n]+", ",")
+    cleaned := RegExReplace(cleaned, "\|+", ",")
+    cleaned := RegExReplace(cleaned, "[\t; ]+", ",")
+    Loop {
+        if (!InStr(cleaned, ",,"))
+            break
+        StringReplace, cleaned, cleaned, `,,`,, All
+    }
+    cleaned := Trim(cleaned, " `t,")
+    Loop, Parse, cleaned, `,
+    {
+        id := Trim(A_LoopField)
+        if (!RegExMatch(id, "^\d{16}$"))
+            continue
+        if (!FriendListHasId(list, id))
+            list.Push(id)
+    }
+    return list.MaxIndex() ? list.MaxIndex() : 0
+}
+
 ; Refresh button handler
 RefreshInstances:
     refreshedList := GetInstanceList(folderPath)
@@ -508,6 +647,30 @@ RunInstance:
     SetInjectUiBusy(true)
     UpdateInjectUi("Starting selected instance...", 12)
     Gui, Submit, NoHide
+    if (!ValidateInjectFriendSlots()) {
+        SetInjectUiBusy(false)
+        injectInProgress := 0
+        return
+    }
+    extraFriendIDs := injectFriendSlotsToCsv()
+    settingsIni := A_ScriptDir . "\..\Settings.ini"
+    IniRead, prSid, %settingsIni%, General, FriendID, ERROR
+    mergedN := FriendRequestMergedCount(prSid, extraFriendIDs)
+    if (mergedN > 10) {
+        MsgBox, 48, Friend codes, Maximum 10 friend codes total (Settings.ini FriendID + optional extras in this window).`n`nYou have: %mergedN%.
+        SetInjectUiBusy(false)
+        injectInProgress := 0
+        return
+    }
+    extraFriendForIni := extraFriendIDs
+    Loop {
+        if (!InStr(extraFriendForIni, ",,"))
+            break
+        StringReplace, extraFriendForIni, extraFriendForIni, `,,`,, All
+    }
+    extraFriendForIni := Trim(extraFriendForIni, " `t,")
+    IniWrite, %extraFriendForIni%, InjectAccount.ini, UserSettings, injectExtraFriendIDs
+    IniWrite, %sendFriendRequestAfterInject%, InjectAccount.ini, UserSettings, sendFriendRequestAfterInject
     mumuFolder := getMumuFolder(folderPath)
     ; Find the instance number matching the selected name
     instanceNum := ""

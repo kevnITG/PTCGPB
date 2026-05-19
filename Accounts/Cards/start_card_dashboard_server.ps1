@@ -62,9 +62,38 @@ function Write-JsonResponse {
     Write-TextResponse -Context $Context -StatusCode $StatusCode -Body $json -ContentType "application/json; charset=utf-8"
 }
 
+function Write-BytesResponse {
+    param(
+        [Parameter(Mandatory = $true)]$Context,
+        [int]$StatusCode,
+        [byte[]]$Bytes,
+        [string]$ContentType = "application/octet-stream"
+    )
+
+    $response = $Context.Response
+    $response.StatusCode = $StatusCode
+    $response.ContentType = $ContentType
+    $response.ContentLength64 = $Bytes.Length
+    $response.OutputStream.Write($Bytes, 0, $Bytes.Length)
+    $response.OutputStream.Close()
+}
+
+function Write-Utf8File {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Text
+    )
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Text, $utf8NoBom)
+}
+
 function Read-RequestBody {
     param([Parameter(Mandatory = $true)]$Context)
-    $reader = New-Object System.IO.StreamReader($Context.Request.InputStream, $Context.Request.ContentEncoding)
+    # Always decode as UTF-8: HttpListener.ContentEncoding falls back to Windows-1252
+    # when the request's Content-Type has no charset, which mangles curly apostrophes
+    # and other non-ASCII chars in JSON payloads.
+    $reader = New-Object System.IO.StreamReader($Context.Request.InputStream, [System.Text.Encoding]::UTF8)
     try { return $reader.ReadToEnd() } finally { $reader.Dispose() }
 }
 
@@ -200,6 +229,25 @@ function Update-InjectIni {
     [System.IO.File]::WriteAllLines($IniPath, $output, $encoding)
 }
 
+function Normalize-InjectExtraFriendIdsText {
+    param([AllowNull()][AllowEmptyString()][string]$Text)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return "" }
+    $t = [string]$Text
+    $t = $t -replace "[\r\n\t]+", ","
+    $t = $t -replace "\|", ","
+    $t = $t -replace ",+", ","
+    $t = $t.Trim().Trim(",").Trim()
+    $parts = @(
+        $t.Split(",") |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -ne "" } |
+            ForEach-Object { $_ -replace "[=\[\]\r\n]", "" } |
+            Where-Object { $_ -ne "" }
+    )
+    if ($parts.Count -eq 0) { return "" }
+    return ($parts -join ",")
+}
+
 function Resolve-AutoHotkeyExe {
     $candidates = @(
         "$env:ProgramFiles\AutoHotkey\AutoHotkey.exe",
@@ -302,10 +350,15 @@ function Invoke-ListInstances {
         return
     }
     $instances = Get-MumuInstances -BaseFolder $folderPath
+    $injectExtraFriendIds = ""
+    if ($settings.ContainsKey("injectExtraFriendIDs")) {
+        $injectExtraFriendIds = Normalize-InjectExtraFriendIdsText -Text ([string]$settings["injectExtraFriendIDs"])
+    }
     Write-JsonResponse -Context $Context -StatusCode 200 -Payload @{
         ok = $true
         folderPath = $folderPath
         defaultInstance = if ($settings.ContainsKey("winTitle")) { $settings["winTitle"] } else { "" }
+        injectExtraFriendIds = $injectExtraFriendIds
         instances = $instances
     }
 }
@@ -450,6 +503,10 @@ function Invoke-InjectAccount {
         selectedFilePath = $xmlPath
         sendFriendRequestAfterInject = if ($sendFriendRequest) { 1 } else { 0 }
     }
+    $injectExtraProp = $payload.PSObject.Properties["injectExtraFriendIds"]
+    if ($null -ne $injectExtraProp) {
+        $iniValues["injectExtraFriendIDs"] = Normalize-InjectExtraFriendIdsText -Text ([string]$injectExtraProp.Value)
+    }
     if (-not [string]::IsNullOrWhiteSpace($winTitle)) {
         # Reject anything weird so we don't write garbage that breaks the ini.
         if ($winTitle -match "[`r`n=\[\]]") {
@@ -496,10 +553,202 @@ function Invoke-InjectAccount {
     }
 }
 
+function ConvertTo-JsonStringLiteral {
+    param([AllowNull()][string]$Value)
+    return [string]($Value | ConvertTo-Json -Compress)
+}
+
+function Get-TextSha256 {
+    param([Parameter(Mandatory = $true)][string]$Text)
+
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($Text)
+        $hash = $sha.ComputeHash($bytes)
+        return ([System.BitConverter]::ToString($hash)).Replace("-", "").ToLowerInvariant()
+    } finally {
+        $sha.Dispose()
+    }
+}
+
+function Get-DashboardAccountManifest {
+    param([Parameter(Mandatory = $true)][string]$AccountsDataDir)
+
+    $files = @(Get-ChildItem -LiteralPath $AccountsDataDir -Filter "*.json" -File -ErrorAction SilentlyContinue | Sort-Object Name)
+    $manifestBuilder = New-Object System.Text.StringBuilder
+    $totalLength = [int64]0
+
+    foreach ($file in $files) {
+        $totalLength += [int64]$file.Length
+        [void]$manifestBuilder.Append($file.Name).Append("|").Append($file.Length).Append("|").Append($file.LastWriteTimeUtc.Ticks).Append("`n")
+    }
+
+    return [pscustomobject]@{
+        Files = $files
+        Signature = Get-TextSha256 -Text $manifestBuilder.ToString()
+        Count = $files.Count
+        TotalLength = $totalLength
+    }
+}
+
+function Test-DashboardAccountsCache {
+    param(
+        [Parameter(Mandatory = $true)][string]$CachePath,
+        [Parameter(Mandatory = $true)][string]$MetaPath,
+        [Parameter(Mandatory = $true)]$Manifest
+    )
+
+    if (-not (Test-Path -LiteralPath $CachePath -PathType Leaf)) { return $false }
+    if (-not (Test-Path -LiteralPath $MetaPath -PathType Leaf)) { return $false }
+
+    try {
+        $cacheFile = Get-Item -LiteralPath $CachePath -ErrorAction Stop
+        if ($cacheFile.Length -le 0) { return $false }
+
+        $metaText = [System.IO.File]::ReadAllText($MetaPath)
+        $meta = $metaText | ConvertFrom-Json
+        return [string]$meta.signature -eq [string]$Manifest.Signature
+    } catch {
+        return $false
+    }
+}
+
+function Add-DashboardJsonDefaults {
+    param(
+        [Parameter(Mandatory = $true)][string]$JsonText,
+        [Parameter(Mandatory = $true)][string]$FileName
+    )
+
+    $trimmed = $JsonText.Trim()
+    if ($trimmed.Length -lt 2 -or -not $trimmed.StartsWith("{") -or -not $trimmed.EndsWith("}")) {
+        throw "Account JSON is not an object."
+    }
+
+    $extraFields = New-Object System.Collections.Generic.List[string]
+    if ($trimmed -notmatch '(?i)"deviceAccount"\s*:') {
+        $deviceAccount = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
+        $extraFields.Add('"deviceAccount":' + (ConvertTo-JsonStringLiteral -Value $deviceAccount))
+    }
+    if ($trimmed -notmatch '(?i)"metadata"\s*:') {
+        $extraFields.Add('"metadata":{}')
+    }
+    if ($trimmed -notmatch '(?i)"pulls"\s*:') {
+        $extraFields.Add('"pulls":[]')
+    }
+    if ($trimmed -notmatch '(?i)"sourceFileName"\s*:') {
+        $extraFields.Add('"sourceFileName":' + (ConvertTo-JsonStringLiteral -Value $FileName))
+    }
+
+    if ($extraFields.Count -eq 0) {
+        return $trimmed
+    }
+
+    $prefix = $trimmed.Substring(0, $trimmed.Length - 1).TrimEnd()
+    $extrasJson = [string]::Join(",", $extraFields)
+    if ($prefix.EndsWith("{")) {
+        return $prefix + $extrasJson + "}"
+    }
+    return $prefix + "," + $extrasJson + "}"
+}
+
+function Convert-SkippedFilesToJson {
+    param([Parameter(Mandatory = $true)]$SkippedFiles)
+
+    if ($SkippedFiles.Count -eq 0) { return "[]" }
+
+    $items = New-Object System.Collections.Generic.List[string]
+    foreach ($item in $SkippedFiles) {
+        $items.Add(
+            '{"file":' +
+            (ConvertTo-JsonStringLiteral -Value ([string]$item.File)) +
+            ',"error":' +
+            (ConvertTo-JsonStringLiteral -Value ([string]$item.Error)) +
+            '}'
+        )
+    }
+    return "[" + [string]::Join(",", $items) + "]"
+}
+
+function New-DashboardAccountsPayload {
+    param([Parameter(Mandatory = $true)]$Files)
+
+    $accountsBuilder = New-Object System.Text.StringBuilder
+    $skipped = New-Object System.Collections.Generic.List[object]
+    $accountCount = 0
+
+    foreach ($file in $Files) {
+        try {
+            $text = [System.IO.File]::ReadAllText($file.FullName)
+            $documentJson = Add-DashboardJsonDefaults -JsonText $text -FileName $file.Name
+            if ($accountCount -gt 0) {
+                [void]$accountsBuilder.Append(",")
+            }
+            [void]$accountsBuilder.Append($documentJson)
+            $accountCount++
+        } catch {
+            $skipped.Add([pscustomobject]@{
+                File = $file.Name
+                Error = $_.Exception.Message
+            })
+        }
+    }
+
+    $skippedJson = Convert-SkippedFilesToJson -SkippedFiles $skipped
+    $payloadBuilder = New-Object System.Text.StringBuilder
+    [void]$payloadBuilder.Append('{"ok":true,"source":"Accounts/Cards/accounts","accountCount":')
+    [void]$payloadBuilder.Append($accountCount)
+    [void]$payloadBuilder.Append(',"skippedCount":')
+    [void]$payloadBuilder.Append($skipped.Count)
+    [void]$payloadBuilder.Append(',"skipped":')
+    [void]$payloadBuilder.Append($skippedJson)
+    [void]$payloadBuilder.Append(',"accounts":[')
+    [void]$payloadBuilder.Append($accountsBuilder.ToString())
+    [void]$payloadBuilder.Append("]}")
+
+    return [pscustomobject]@{
+        Json = $payloadBuilder.ToString()
+        AccountCount = $accountCount
+        SkippedCount = $skipped.Count
+    }
+}
+
+function Invoke-DashboardCacheBuilder {
+    param(
+        [Parameter(Mandatory = $true)][string]$CachePath,
+        [Parameter(Mandatory = $true)][string]$MetaPath,
+        [Parameter(Mandatory = $true)]$Manifest
+    )
+
+    $carddbPath = Join-Path $resolvedRoot "Helper\carddb.exe"
+    if (-not (Test-Path -LiteralPath $carddbPath -PathType Leaf)) {
+        return $false
+    }
+
+    try {
+        $args = @(
+            "--root", $resolvedRoot,
+            "build-dashboard-cache",
+            "--output", $CachePath,
+            "--meta", $MetaPath,
+            "--signature", [string]$Manifest.Signature,
+            "--source-count", [string]$Manifest.Count,
+            "--source-bytes", [string]$Manifest.TotalLength
+        )
+        $builderOutput = & $carddbPath @args 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            return $false
+        }
+        return (Test-DashboardAccountsCache -CachePath $CachePath -MetaPath $MetaPath -Manifest $Manifest)
+    } catch {
+        return $false
+    }
+}
+
 function Invoke-LoadAccountData {
     param([Parameter(Mandatory = $true)]$Context)
 
-    $accountsDataDir = Join-Path $resolvedRoot "Accounts\Cards\accounts"
+    $cardsDir = Join-Path $resolvedRoot "Accounts\Cards"
+    $accountsDataDir = Join-Path $cardsDir "accounts"
     if (-not (Test-Path -LiteralPath $accountsDataDir -PathType Container)) {
         Write-JsonResponse -Context $Context -StatusCode 404 -Payload @{
             ok = $false
@@ -508,50 +757,144 @@ function Invoke-LoadAccountData {
         return
     }
 
-    $documents = New-Object System.Collections.Generic.List[object]
-    $skipped = New-Object System.Collections.Generic.List[object]
+    $cacheDir = Join-Path $cardsDir "database_cache"
+    $cachePath = Join-Path $cacheDir "accounts-data.cache.json"
+    $cacheMetaPath = Join-Path $cacheDir "accounts-data.cache.meta.json"
+    New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
+    $manifest = Get-DashboardAccountManifest -AccountsDataDir $accountsDataDir
 
-    Get-ChildItem -LiteralPath $accountsDataDir -Filter "*.json" -File -ErrorAction SilentlyContinue |
-        Sort-Object Name |
-        ForEach-Object {
-            $file = $_
-            try {
-                $text = [System.IO.File]::ReadAllText($file.FullName)
-                $doc = $text | ConvertFrom-Json
-                if ($null -eq $doc) {
-                    throw "Empty JSON document."
-                }
-
-                $deviceAccount = [string]$doc.deviceAccount
-                if ([string]::IsNullOrWhiteSpace($deviceAccount)) {
-                    $deviceAccount = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
-                    $doc | Add-Member -NotePropertyName deviceAccount -NotePropertyValue $deviceAccount -Force
-                }
-
-                if (-not $doc.PSObject.Properties["metadata"] -or $null -eq $doc.metadata) {
-                    $doc | Add-Member -NotePropertyName metadata -NotePropertyValue ([pscustomobject]@{}) -Force
-                }
-                if (-not $doc.PSObject.Properties["pulls"] -or $null -eq $doc.pulls) {
-                    $doc | Add-Member -NotePropertyName pulls -NotePropertyValue @() -Force
-                }
-
-                $doc | Add-Member -NotePropertyName sourceFileName -NotePropertyValue $file.Name -Force
-                $documents.Add($doc)
-            } catch {
-                $skipped.Add([pscustomobject]@{
-                    file = $file.Name
-                    error = $_.Exception.Message
-                })
-            }
+    if (Test-DashboardAccountsCache -CachePath $cachePath -MetaPath $cacheMetaPath -Manifest $manifest) {
+        try {
+            $bytes = [System.IO.File]::ReadAllBytes($cachePath)
+            Write-BytesResponse -Context $Context -StatusCode 200 -Bytes $bytes -ContentType "application/json; charset=utf-8"
+            return
+        } catch {
+            # Fall through and rebuild the cache.
         }
+    }
 
-    Write-JsonResponse -Context $Context -StatusCode 200 -Depth 12 -Payload @{
+    if (Invoke-DashboardCacheBuilder -CachePath $cachePath -MetaPath $cacheMetaPath -Manifest $manifest) {
+        try {
+            $bytes = [System.IO.File]::ReadAllBytes($cachePath)
+            Write-BytesResponse -Context $Context -StatusCode 200 -Bytes $bytes -ContentType "application/json; charset=utf-8"
+            return
+        } catch {
+            # Fall through and rebuild using the PowerShell fallback.
+        }
+    }
+
+    $payload = New-DashboardAccountsPayload -Files $manifest.Files
+
+    try {
+        Write-Utf8File -Path $cachePath -Text $payload.Json
+        $meta = @{
+            signature = $manifest.Signature
+            sourceCount = $manifest.Count
+            sourceBytes = $manifest.TotalLength
+            accountCount = $payload.AccountCount
+            skippedCount = $payload.SkippedCount
+            generatedAt = (Get-Date).ToUniversalTime().ToString("o")
+        } | ConvertTo-Json -Depth 4 -Compress
+        Write-Utf8File -Path $cacheMetaPath -Text $meta
+    } catch {
+        # Cache writes are an optimization; the response should still succeed.
+    }
+
+    Write-TextResponse -Context $Context -StatusCode 200 -Body $payload.Json -ContentType "application/json; charset=utf-8"
+}
+
+function Get-WishlistPath {
+    return Join-Path $resolvedRoot "Accounts\Cards\wishlist.json"
+}
+
+function Invoke-GetWishlist {
+    param([Parameter(Mandatory = $true)]$Context)
+
+    $path = Get-WishlistPath
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        Write-JsonResponse -Context $Context -StatusCode 200 -Payload @{
+            ok = $true
+            version = 1
+            updatedAt = ""
+            cards = @()
+        }
+        return
+    }
+
+    try {
+        $text = [System.IO.File]::ReadAllText($path)
+        Write-TextResponse -Context $Context -StatusCode 200 -Body $text -ContentType "application/json; charset=utf-8"
+    } catch {
+        Write-JsonResponse -Context $Context -StatusCode 500 -Payload @{
+            ok = $false
+            error = "Failed to read wishlist.json: $($_.Exception.Message)"
+        }
+    }
+}
+
+function Invoke-SaveWishlist {
+    param([Parameter(Mandatory = $true)]$Context)
+
+    $bodyText = Read-RequestBody -Context $Context
+    if ([string]::IsNullOrWhiteSpace($bodyText)) {
+        Write-JsonResponse -Context $Context -StatusCode 400 -Payload @{ ok = $false; error = "Empty request body." }
+        return
+    }
+    try { $payload = $bodyText | ConvertFrom-Json } catch {
+        Write-JsonResponse -Context $Context -StatusCode 400 -Payload @{ ok = $false; error = "Invalid JSON body." }
+        return
+    }
+
+    if ($null -eq $payload.cards) {
+        Write-JsonResponse -Context $Context -StatusCode 400 -Payload @{ ok = $false; error = "Missing 'cards' field." }
+        return
+    }
+
+    # Validate and normalise each card entry. Accept either bare cardId strings or {id, name} objects.
+    $cardRegex = '^(PK|TR)_\d{2}_\d{6}(_\d{2})?$'
+    $normalised = New-Object 'System.Collections.Generic.List[object]'
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]'
+    foreach ($entry in $payload.cards) {
+        $cardId = $null
+        $cardName = ""
+        if ($entry -is [string]) {
+            $cardId = $entry
+        } elseif ($null -ne $entry) {
+            $cardId = [string]$entry.id
+            if ($null -ne $entry.name) { $cardName = [string]$entry.name }
+        }
+        if ([string]::IsNullOrWhiteSpace($cardId)) { continue }
+        $cardId = $cardId.Trim()
+        if ($cardId -notmatch $cardRegex) { continue }
+        if (-not $seen.Add($cardId)) { continue }
+        $normalised.Add([pscustomobject]@{ id = $cardId; name = $cardName })
+    }
+
+    $payloadOut = [ordered]@{
+        version = 1
+        updatedAt = (Get-Date).ToString("o")
+        cards = $normalised.ToArray()
+    }
+    $json = $payloadOut | ConvertTo-Json -Depth 4
+
+    $path = Get-WishlistPath
+    $tmp = "$path.tmp"
+    try {
+        Write-Utf8File -Path $tmp -Text $json
+        Move-Item -LiteralPath $tmp -Destination $path -Force
+    } catch {
+        if (Test-Path -LiteralPath $tmp -PathType Leaf) { Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue }
+        Write-JsonResponse -Context $Context -StatusCode 500 -Payload @{
+            ok = $false
+            error = "Failed to write wishlist.json: $($_.Exception.Message)"
+        }
+        return
+    }
+
+    Write-JsonResponse -Context $Context -StatusCode 200 -Payload @{
         ok = $true
-        source = "Accounts/Cards/accounts"
-        accountCount = $documents.Count
-        skippedCount = $skipped.Count
-        skipped = $skipped
-        accounts = $documents
+        count = $normalised.Count
+        path = $path
     }
 }
 
@@ -623,6 +966,25 @@ try {
             continue
         }
 
+        if ($request.Url.AbsolutePath -eq "/__dashboard/settings-friend-id" -and $request.HttpMethod -eq "GET") {
+            if (-not (Is-LocalRequest -Context $context)) {
+                Write-JsonResponse -Context $context -StatusCode 403 -Payload @{ ok = $false; error = "Local requests only" }
+                continue
+            }
+            $settingsPath = Join-Path $resolvedRoot "Settings.ini"
+            $fid = ""
+            if (Test-Path -LiteralPath $settingsPath -PathType Leaf) {
+                $sec = Read-IniSection -IniPath $settingsPath -Section "General"
+                if ($sec.ContainsKey("FriendID")) {
+                    $fid = [string]$sec["FriendID"]
+                }
+                $fid = $fid.Trim()
+                if ($fid -ieq "ERROR") { $fid = "" }
+            }
+            Write-JsonResponse -Context $context -StatusCode 200 -Payload @{ ok = $true; friendId = $fid }
+            continue
+        }
+
         if ($request.Url.AbsolutePath -eq "/__dashboard/inject" -and $request.HttpMethod -eq "POST") {
             if (-not (Is-LocalRequest -Context $context)) {
                 Write-JsonResponse -Context $context -StatusCode 403 -Payload @{ ok = $false; error = "Local requests only" }
@@ -643,6 +1005,32 @@ try {
             }
             try {
                 Invoke-LoadAccountData -Context $context
+            } catch {
+                Write-JsonResponse -Context $context -StatusCode 500 -Payload @{ ok = $false; error = "Unexpected server error: $($_.Exception.Message)" }
+            }
+            continue
+        }
+
+        if ($request.Url.AbsolutePath -eq "/__dashboard/wishlist" -and $request.HttpMethod -eq "GET") {
+            if (-not (Is-LocalRequest -Context $context)) {
+                Write-JsonResponse -Context $context -StatusCode 403 -Payload @{ ok = $false; error = "Local requests only" }
+                continue
+            }
+            try {
+                Invoke-GetWishlist -Context $context
+            } catch {
+                Write-JsonResponse -Context $context -StatusCode 500 -Payload @{ ok = $false; error = "Unexpected server error: $($_.Exception.Message)" }
+            }
+            continue
+        }
+
+        if ($request.Url.AbsolutePath -eq "/__dashboard/wishlist" -and $request.HttpMethod -eq "POST") {
+            if (-not (Is-LocalRequest -Context $context)) {
+                Write-JsonResponse -Context $context -StatusCode 403 -Payload @{ ok = $false; error = "Local requests only" }
+                continue
+            }
+            try {
+                Invoke-SaveWishlist -Context $context
             } catch {
                 Write-JsonResponse -Context $context -StatusCode 500 -Payload @{ ok = $false; error = "Unexpected server error: $($_.Exception.Message)" }
             }

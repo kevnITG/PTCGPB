@@ -21,6 +21,7 @@ pToken := Gdip_Startup()
 #Include Gdip_Extra.ahk
 #Include AccountMetadata.ahk
 #Include Database.ahk
+#Include Wishlist.ahk
 #Include CardDetection.ahk
 #Include AccountManager.ahk
 #Include FriendManager.ahk
@@ -517,7 +518,8 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             ; If only claiming daily missions (no extra pack)
             if(botConfig.get("claimDailyMission") && !botConfig.get("openExtraPack")) {
                 GoToMain()
-                GetAllRewards(false, true)
+                dailyRewardsClaimed := GetAllRewards(false, true)
+                ClaimSpecialMissionRewards(!dailyRewardsClaimed)
             }
             ; If only opening extra pack (no daily mission claim)
             else if(!botConfig.get("claimDailyMission") && botConfig.get("openExtraPack")) {
@@ -538,7 +540,8 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
                 }
 
                 GoToMain()
-                GetAllRewards(false, true)
+                dailyRewardsClaimed := GetAllRewards(false, true)
+                ClaimSpecialMissionRewards(!dailyRewardsClaimed)
                 GoToMain()
                 SelectPack("HGPack")
                 if(!session.get("cantOpenMorePacks")) {
@@ -623,18 +626,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
         }
 
         ; Special missions
-        if (botConfig.get("claimSpecialMissions") = 1 && (botConfig.get("deleteMethod") = "Inject 13P+" || botConfig.get("deleteMethod") = "Inject Wonderpick 96P+" || botConfig.get("deleteMethod") = "Inject Rewards") && (!IsObject(accountMeta) || !AccountEligibility_FlagIsSet(accountMeta, "X"))) {
-            syncSpecialEvents()
-
-            ; removed check for !specialMissionsDone := 1 so that users don't need to constantly reset claim status on accounts.
-            GoToMain()
-            ;HomeAndMission(1)
-            GetEventRewards(true) ; collects all the Special mission hourglass
-            session.get("missionDoneList")["specialMissionsDone"] := 1
-            session.set("cantOpenMorePacks", 0)
-            if (session.get("injectMethod") && session.get("loadedAccount"))
-                setMetaData()
-        }
+        ClaimSpecialMissionRewards(true, accountMeta)
 
         if(!session.get("missionDoneList")["receivedGiftDone"] && botConfig.get("receiveGift") && session.get("injectMethod") && (!IsObject(accountMeta) || !AccountEligibility_FlagIsSet(accountMeta, "R"))) {
             GoToMain()
@@ -713,7 +705,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
         CreateStatusMessage(generateStatusText(), "AvgRuns", 0, 605, false, true)
 
         ; Log to file
-        LogToFile("Packs: " . session.get("packsThisRun") . " | Total time: " . mminutes . "m " . sseconds . "s | Avg: " . aminutes . "m " . aseconds . "s | Runs: " . rerolls)
+        LogToFile("Packs: " . session.get("packsThisRun") . " | Total time: " . session.get("mminutes") . "m " . session.get("sseconds") . "s | Avg: " . session.get("aminutes") . "m " . session.get("aseconds") . "s | Runs: " . session.get("rerolls"))
 
         SendMetadataToPTCGPB(session.get("packsThisRun"))
 
@@ -1533,8 +1525,7 @@ GetAccountCreationDate() {
 
     accountPath := A_ScriptDir . "\..\Accounts\Saved\" . session.get("scriptName") . "\" . session.get("accountFileName")
     accountMeta := AccountMetadata_Get(session.get("scriptName"), session.get("accountFileName"), accountPath)
-    if (accountMeta["createdAt"] != "" && accountMeta["createdAt"] != "0")
-        return true
+    existingCreatedAt := accountMeta["createdAt"]
 
     adbWriteRaw("mkdir -p /data/ptcgp &&  if [ ! -e /data/ptcgp/ptcgpb ]; then curl -L -o /data/ptcgp/ptcgpb https://leanny.github.io/ptcgpb-helper/ptcgpb-helper-android && chmod +x /data/ptcgp/ptcgpb; fi")
     earliestOutput := adbWriteRaw("/data/ptcgp/ptcgpb earliest", true)
@@ -1545,6 +1536,12 @@ GetAccountCreationDate() {
 
     earliestUnix := earliestMatch1 + 0
     latestUnix := earliestUnix + 86400
+    if (RegExMatch(existingCreatedAt, "^\d{14}$")) {
+        existingCreatedAtUnix := AccountCreationDate_ToUnix(existingCreatedAt)
+        if (existingCreatedAtUnix >= earliestUnix && existingCreatedAtUnix <= latestUnix)
+            return true
+    }
+
     creationDate := AccountCreationDate_FromUnix(latestUnix)
 
     if (RegExMatch(session.get("accountFileName"), "^\d+P_(\d{14})_", fileMatch)) {
@@ -1683,7 +1680,7 @@ PullPackOpeningMissionUserPrefsSnapshot(kind, failedDir, uniquePrefix) {
 }
 
 ReportPackRecognitionFailure(reason := "Card Recognition Failed, use fallback mechanism") {
-    global session
+    global session, botConfig
 
     root := getScriptBaseFolder()
     failedDir := root . "\Logs\failed"
@@ -1704,7 +1701,11 @@ ReportPackRecognitionFailure(reason := "Card Recognition Failed, use fallback me
         }
     }
 
-    LogToDiscord(message)
+    ownerWebhookURL := botConfig.get("heartBeatOwnerWebHookURL")
+    if (ownerWebhookURL != "")
+        LogToDiscord(message,, false,,, ownerWebhookURL)
+    else
+        LogToFile("Owner Discord webhook URL is not configured. Card recognition failure message was not sent.", "Discord.txt")
 }
 
 RemoveOldFiles() {
@@ -1793,7 +1794,7 @@ RecoverPack() {
 
 CheckPack(stopEarly := false) {
     result := EvaluatePack()
-    if(!result) {
+    if (!result) {
         result := RecoverPack()
     }
     if (!result) {
@@ -1883,6 +1884,12 @@ CheckPack(stopEarly := false) {
     foundShiny1Star  := CountOccurances(cards, rarity, 11)
     foundShiny2Star  := CountOccurances(cards, rarity, 12)
 
+    Wishlist_EnsureFresh()
+    wishlistMap      := session.get("wishlistMap")
+    foundWishlist    := Wishlist_CountMatches(cards, wishlistMap)
+    wishlistMatches  := Wishlist_MatchEntries(cards, wishlistMap)
+    session.set("wishlistMatches", wishlistMatches)
+
     logMessage := "Instance: " . session.get("scriptName") " | Found: " . found1Dmnd
     logMessage := logMessage . "|" . found2Dmnd
     logMessage := logMessage . "|" . found2Dmnd
@@ -1910,6 +1917,7 @@ CheckPack(stopEarly := false) {
         tradeableList.Push({key: "Crown",     flag: botConfig.get("s4tCrown"),      count: foundCrown})
         tradeableList.Push({key: "Shiny1Star",flag: botConfig.get("s4tShiny1Star"), count: foundShiny1Star})
         tradeableList.Push({key: "Shiny2Star",flag: botConfig.get("s4tShiny2Star"), count: foundShiny2Star})
+        tradeableList.Push({key: "Wishlist",  flag: botConfig.get("s4tWishlist"),   count: foundWishlist})
 
         foundCards := {}
         foundTradeable := 0
@@ -2009,6 +2017,7 @@ CheckPack(stopEarly := false) {
 
     ; Check for 2-star cards (for Inject Wonderpick 96P+ only)
     2starCount := false
+
     if (botConfig.get("PseudoGodPack") && !foundLabel) {
         2starCount := foundTrainer + foundRainbow + foundFullArt
         if (2starCount > 1)
@@ -2021,7 +2030,10 @@ CheckPack(stopEarly := false) {
         foundLabel := "Rainbow"
     }
     if (botConfig.get("FullArtCheck") && !foundLabel && foundFullArt) {
-        foundLabel := "Full Art"
+            foundLabel := "Full Art"
+    }
+    if (botConfig.get("WishlistCheck") && !foundLabel && foundWishlist) {
+            foundLabel := "Wishlist"
     }
 
     if (foundLabel) {
@@ -4406,12 +4418,44 @@ SpendAllHourglass() {
     }
 }
 
+ClaimSpecialMissionRewards(frommain := true, accountMeta := "") {
+    global botConfig, session
+
+    method := botConfig.get("deleteMethod")
+    if (botConfig.get("claimSpecialMissions") != 1)
+        return false
+    if (method != "Inject 13P+" && method != "Inject Wonderpick 96P+" && method != "Inject Rewards")
+        return false
+    if (session.get("missionDoneList")["specialMissionsDone"])
+        return false
+
+    if (!IsObject(accountMeta) && session.get("injectMethod") && session.get("loadedAccount") && session.get("accountFileName") != "") {
+        accountMetaPath := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName") . "\" . session.get("accountFileName")
+        accountMeta := AccountMetadata_Get(session.get("scriptName"), session.get("accountFileName"), accountMetaPath)
+    }
+
+    if (IsObject(accountMeta) && AccountEligibility_FlagIsSet(accountMeta, "X"))
+        return false
+
+    syncSpecialEvents()
+
+    if (frommain)
+        GoToMain()
+
+    GetEventRewards(frommain) ; collects all the Special mission hourglass
+    session.get("missionDoneList")["specialMissionsDone"] := 1
+    session.set("cantOpenMorePacks", 0)
+    if (session.get("injectMethod") && session.get("loadedAccount"))
+        setMetaData()
+
+    return true
+}
+
 ; For Special Missions 2025
 GetEventRewards(frommain := true){
     global session
 
     isAllEventExpired := true
-    missionDirection := "Forward"
 
     for specialEventName, specialEventObj in session.get("specialEventList") {
         if(!specialEventObj.isExpiredSpecialEvent()){
@@ -4447,82 +4491,99 @@ GetEventRewards(frommain := true){
     }
     Delay(4)
 
-    isForceMoveToEnd := true
-    eventSuccessCount := 0
     eventResult := initEventResult()
+    if (frommain)
+        MoveToDailyMissionPageForRewards()
 
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
+    movedRightCount := 0
+    maxMissionPages := 12
     Loop{
         if (isAllEventGotReward(eventResult))
             break
 
-        if(missionDirection = "Forward"){
-            ; Move to Premium
-            adbClick_wbb(235, 460)
-            Delay(0.1)
-            adbClick_wbb(175, 445)
-        }
-        else if(missionDirection = "Backward"){
-            adbClick_wbb(6, 465)
-        }
-        Delay(1)
-
-        if (isForceMoveToEnd){
-            if(FindOrLoseImage("Mission_PremiumLockImage", 0, failSafeTime) || FindOrLoseImage("Mission_ActivatedBeginnerMissionTabButton", 0, failSafeTime)){
-                missionDirection := "Backward"
-                isForceMoveToEnd := false
-                adbClick_wbb(115, 463)
-                Delay(1)
-            }
+        Delay(2)
+        if (ClaimVisibleEventRewards(eventResult)) {
+            session.set("failSafe", A_TickCount)
+            failSafeTime := 0
+            continue
         }
 
-        if (!isForceMoveToEnd){
-            Delay(6)
-            if(FindOrLoseImage("Mission_DailyMissionImage", 0, failSafeTime)){
-                missionDirection := "Forward"
-                isForceMoveToEnd := true
-                continue
-            }
+        if(FindOrLoseImage("Mission_PremiumLockImage", 0, failSafeTime) || (movedRightCount > 0 && FindOrLoseImage("Mission_ActivatedBeginnerMissionTabButton", 0, failSafeTime)))
+            break
 
-            foundEvent := false
-            for specialEventName, specialEventObj in session.get("specialEventList") {
-                if(specialEventObj.isExpiredSpecialEvent()){
-                    eventResult[specialEventName] := true
-                    continue
-                }
+        adbClick_wbb(235, 460)
+        Delay(0.2)
+        adbClick_wbb(175, 445)
+        movedRightCount++
+        Delay(3)
 
-                redBoxCoords := specialEventObj.redBoxCoords
-                blueBoxCoords := specialEventObj.redBoxCoords
-
-                if (specialEventObj.isExistNeedleInScreen(session.get("winTitle")) = 2){
-                    Loop{
-                        adbClick_wbb(175, 422)
-                        Delay(1)
-                        adbClick_wbb(138, 451)
-                        Delay(1)
-
-                        if (FindOrLoseImage("Mission_CompleteGotAllClaims", 0, failSafeTime, , true)) {
-                            eventResult[specialEventName] := true
-                            session.set("failSafe", A_TickCount)
-                            foundEvent := true
-                            break
-                        }
-                        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-                        CreateStatusMessage("Get reward event: " . specialEventName . "`n(" . failSafeTime . "/45 seconds)")
-                    }
-                    Delay(2)
-                }
-
-                if(foundEvent)
-                    break
-
-                failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-            }
-        }
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-        CreateStatusMessage("Move to premium and Find event`n(" . failSafeTime . "/45 seconds)")
+        CreateStatusMessage("Scanning event rewards page " . movedRightCount . "`n(" . failSafeTime . "/60 seconds)")
+        if (failSafeTime > 60 || movedRightCount >= maxMissionPages)
+            break
     }
+}
+
+MoveToDailyMissionPageForRewards() {
+    global session
+
+    session.set("failSafe", A_TickCount)
+    failSafeTime := 0
+    Loop {
+        if FindOrLoseImage("Mission_DailyMissionImage", 0, failSafeTime)
+            return true
+        else if (FindOrLoseImage("Mission_GoToDexButtonIcon", 0, failSafeTime)) {
+            Delay(1)
+            adbClick(42, 465)
+            Delay(2)
+            return true
+        }
+
+        adbClick(165, 465)
+        Sleep, 500
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+        if (failSafeTime > 10)
+            return false
+    }
+}
+
+ClaimVisibleEventRewards(eventResult) {
+    global session
+
+    for specialEventName, specialEventObj in session.get("specialEventList") {
+        if(eventResult.HasKey(specialEventName) && eventResult[specialEventName])
+            continue
+        if(specialEventObj.isExpiredSpecialEvent()){
+            eventResult[specialEventName] := true
+            continue
+        }
+
+        if (specialEventObj.isExistNeedleInScreen(session.get("winTitle")) = 2){
+            session.set("failSafe", A_TickCount)
+            failSafeTime := 0
+            Loop{
+                adbClick_wbb(175, 422)
+                Delay(1)
+                adbClick_wbb(138, 451)
+                Delay(1)
+
+                if (FindOrLoseImage("Mission_CompleteGotAllClaims", 0, failSafeTime, , true)) {
+                    eventResult[specialEventName] := true
+                    return true
+                }
+                failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+                CreateStatusMessage("Get reward event: " . specialEventName . "`n(" . failSafeTime . "/45 seconds)")
+                if (failSafeTime > 45) {
+                    eventResult[specialEventName] := true
+                    return true
+                }
+            }
+        }
+    }
+
+    return false
 }
 
 GetAllRewards(tomain := true, dailies := false) {
@@ -4567,7 +4628,7 @@ GetAllRewards(tomain := true, dailies := false) {
                 ; and we are on the wrong tab like 'Deck' missions in the center tab instead.
                 GoToMain()
                 GotRewards := false
-                return
+                return GotRewards
             }
             adbClick(165, 465)
             Sleep, 500
@@ -4592,6 +4653,7 @@ GetAllRewards(tomain := true, dailies := false) {
     if (tomain) {
         GoToMain()
     }
+    return GotRewards
 }
 
 ; Failsafe if Missions page lands on 'Deck' mission tutorial.

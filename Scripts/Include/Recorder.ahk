@@ -147,7 +147,7 @@ ReviewRecording() {
             Gui, RecReview:Show, w590 h520, % "Recording Review - Action " i
             WinActivate, ahk_id %rec_ReviewHwnd%
             Sleep, 50                    ; pump message queue so buffered clicks from previous action fire now
-            rec_ReviewDone   := false   ; reset AFTER drain — queue is empty, spin loop starts clean
+            rec_ReviewDone   := false   ; reset AFTER drain; queue is empty, spin loop starts clean
             rec_ReviewBack   := false
             rec_JumpToOutput := false
             LogToFile("[Review] Showing action " i " / " actionCount " type=" action.type " rec_ReviewDone=" rec_ReviewDone " rec_ReviewBack=" rec_ReviewBack " rec_JumpToOutput=" rec_JumpToOutput, "recorder.txt")

@@ -110,6 +110,18 @@ enum Command {
         #[arg(long)]
         cards: String,
     },
+    BuildDashboardCache {
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long)]
+        meta: PathBuf,
+        #[arg(long)]
+        signature: String,
+        #[arg(long)]
+        source_count: usize,
+        #[arg(long)]
+        source_bytes: u64,
+    },
 }
 
 fn main() {
@@ -250,6 +262,20 @@ fn run(cli: Cli) -> Result<()> {
             pack,
             cards,
         } => append_pull(&cli.root, &device_account, &timestamp, &pack, &cards),
+        Command::BuildDashboardCache {
+            output,
+            meta,
+            signature,
+            source_count,
+            source_bytes,
+        } => build_dashboard_cache(
+            &cli.root,
+            &output,
+            &meta,
+            &signature,
+            source_count,
+            source_bytes,
+        ),
     }
 }
 
@@ -317,6 +343,115 @@ fn account_file_path(root: &Path, account_key: &str) -> PathBuf {
 
 fn account_key_from_file(path: &Path) -> Option<String> {
     path.file_stem().map(|s| s.to_string_lossy().to_string())
+}
+
+fn build_dashboard_cache(
+    root: &Path,
+    output: &Path,
+    meta: &Path,
+    signature: &str,
+    source_count: usize,
+    source_bytes: u64,
+) -> Result<()> {
+    let dir = account_files_dir(root);
+    let mut paths = Vec::new();
+    if dir.exists() {
+        for entry in fs::read_dir(&dir).with_context(|| format!("Could not read {:?}", dir))? {
+            let path = entry?.path();
+            if path
+                .extension()
+                .and_then(|e| e.to_str())
+                .is_some_and(|e| e.eq_ignore_ascii_case("json"))
+            {
+                paths.push(path);
+            }
+        }
+    }
+    paths.sort_by(|a, b| {
+        a.file_name()
+            .map(|s| s.to_string_lossy())
+            .cmp(&b.file_name().map(|s| s.to_string_lossy()))
+    });
+
+    let mut accounts = Vec::with_capacity(paths.len());
+    let mut skipped = Vec::new();
+
+    for path in paths {
+        let file_name = path
+            .file_name()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_default();
+        match load_dashboard_account_document(&path, &file_name) {
+            Ok(doc) => accounts.push(doc),
+            Err(err) => skipped.push(json!({
+                "file": file_name,
+                "error": err.to_string(),
+            })),
+        }
+    }
+
+    let account_count = accounts.len();
+    let skipped_count = skipped.len();
+    let payload = json!({
+        "ok": true,
+        "source": "Accounts/Cards/accounts",
+        "accountCount": account_count,
+        "skippedCount": skipped_count,
+        "skipped": skipped,
+        "accounts": accounts,
+    });
+    let meta_payload = json!({
+        "signature": signature,
+        "sourceCount": source_count,
+        "sourceBytes": source_bytes,
+        "accountCount": account_count,
+        "skippedCount": skipped_count,
+        "generatedAt": Utc::now().to_rfc3339(),
+        "generator": "carddb",
+    });
+
+    if let Some(parent) = output.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    if let Some(parent) = meta.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    fs::write(output, serde_json::to_vec(&payload)?)?;
+    fs::write(meta, serde_json::to_vec(&meta_payload)?)?;
+    Ok(())
+}
+
+fn load_dashboard_account_document(path: &Path, file_name: &str) -> Result<Value> {
+    let text = fs::read_to_string(path).with_context(|| format!("Could not read {:?}", path))?;
+    let mut value: Value = serde_json::from_str(text.trim_start_matches('\u{feff}'))
+        .with_context(|| format!("Could not parse {:?}", path))?;
+    if !value.is_object() {
+        anyhow::bail!("Account JSON is not an object.");
+    }
+
+    let fallback_account = path
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let obj = value.as_object_mut().expect("dashboard account object");
+    let device_account_blank = obj
+        .get("deviceAccount")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .unwrap_or("")
+        .is_empty();
+    if device_account_blank {
+        obj.insert("deviceAccount".to_owned(), json!(fallback_account));
+    }
+    if obj.get("metadata").map_or(true, Value::is_null) {
+        obj.insert("metadata".to_owned(), json!({}));
+    }
+    if obj.get("pulls").map_or(true, Value::is_null) {
+        obj.insert("pulls".to_owned(), json!([]));
+    }
+    obj.insert("sourceFileName".to_owned(), json!(file_name));
+    Ok(value)
 }
 
 fn merge_card_db(root: &Path) -> Result<()> {
@@ -1318,6 +1453,7 @@ struct ScheduleOptions {
 struct Candidate {
     file_name: String,
     sort_time: String,
+    last_login: String,
     pack_count: i64,
 }
 
@@ -1650,6 +1786,16 @@ fn used_account_matches(used: &HashSet<String>, file_name: &str, device_account:
     })
 }
 
+fn sort_candidates(candidates: &mut Vec<Candidate>, sort_method: &str) {
+    match sort_method {
+        "ModifiedDesc" => candidates.sort_by_key(|c| Reverse(c.sort_time.clone())),
+        "PacksAsc" => candidates.sort_by_key(|c| (c.pack_count, c.sort_time.clone())),
+        "PacksDesc" => candidates.sort_by_key(|c| (Reverse(c.pack_count), c.sort_time.clone())),
+        "LastLoginAsc" => candidates.sort_by_key(|c| (c.last_login.clone(), c.sort_time.clone())),
+        _ => candidates.sort_by_key(|c| c.sort_time.clone()),
+    }
+}
+
 fn schedule_accounts(root: &Path, options: ScheduleOptions) -> Result<()> {
     let store = ensure_metadata(root)?;
     let save_dir = saved_dir(root).join(&options.instance);
@@ -1708,20 +1854,24 @@ fn schedule_accounts(root: &Path, options: ScheduleOptions) -> Result<()> {
                 value.to_owned()
             }
         };
+        let last_login = {
+            let value = field_str(account, "lastLoggedIn");
+            if value.is_empty() {
+                "0".to_owned()
+            } else {
+                value.to_owned()
+            }
+        };
 
         candidates.push(Candidate {
             file_name,
             sort_time,
+            last_login,
             pack_count,
         });
     }
 
-    match options.sort_method.as_str() {
-        "ModifiedDesc" => candidates.sort_by_key(|c| Reverse(c.sort_time.clone())),
-        "PacksAsc" => candidates.sort_by_key(|c| (c.pack_count, c.sort_time.clone())),
-        "PacksDesc" => candidates.sort_by_key(|c| (Reverse(c.pack_count), c.sort_time.clone())),
-        _ => candidates.sort_by_key(|c| c.sort_time.clone()),
-    }
+    sort_candidates(&mut candidates, &options.sort_method);
 
     let list = candidates
         .into_iter()
@@ -2685,5 +2835,37 @@ mod tests {
             "00000035_a47fba5b1186e05e.xml",
             device_account
         ));
+    }
+
+    #[test]
+    fn last_login_sort_orders_unset_login_first_then_oldest_login() {
+        let mut candidates = vec![
+            Candidate {
+                file_name: "recent.xml".to_owned(),
+                sort_time: "20260503000000".to_owned(),
+                last_login: "20260505000000".to_owned(),
+                pack_count: 20,
+            },
+            Candidate {
+                file_name: "unset.xml".to_owned(),
+                sort_time: "20260502000000".to_owned(),
+                last_login: "0".to_owned(),
+                pack_count: 30,
+            },
+            Candidate {
+                file_name: "old.xml".to_owned(),
+                sort_time: "20260501000000".to_owned(),
+                last_login: "20260504000000".to_owned(),
+                pack_count: 10,
+            },
+        ];
+
+        sort_candidates(&mut candidates, "LastLoginAsc");
+
+        let names = candidates
+            .iter()
+            .map(|candidate| candidate.file_name.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(names, vec!["unset.xml", "old.xml", "recent.xml"]);
     }
 }

@@ -17,6 +17,10 @@ Accounts/Saved/**/*.xml
 Accounts/Saved/metadata.json
 Accounts/Saved/**/metadata.json
 Accounts/Cards/metadata.json
+Accounts/Cards/database_cache/
+Accounts/Cards/*.tmp
+Accounts/Cards/**
+Accounts/SpecificCards
 Lab
 tmp.ahk
 *.bak
@@ -28,6 +32,9 @@ Helper/*.txt
 Helper/*.json
 Helper/*_src/target/
 Accounts/Cards/accounts/
+Accounts/GodPacks
+SpecialEvents/Events
+SpecialEvents/PastEvents
 
 # macOS metadata files
 ._*

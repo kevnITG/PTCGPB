@@ -104,6 +104,9 @@
 
             existResult += vRet
         }
+
+        if (pBitmap)
+            Gdip_DisposeImage(pBitmap)
         
         if(existResult = 2)
             return 2
@@ -165,9 +168,39 @@
     }
 }
 
-loadSevtFile(FilePath){
+MoveSevtToPastEvents(FilePath){
+    PastRoot := getScriptBaseFolder() . "\SpecialEvents\PastEvents"
+    FileCreateDir, %PastRoot%
+    SplitPath, FilePath, fileNameOnly
+
+    loop 512 {
+        if (A_Index = 1){
+            TrialPath := PastRoot . "\" . fileNameOnly
+        }else{
+            TrialPath := PastRoot . "\" . A_Now "_" . A_Index . "_" . fileNameOnly
+        }
+        if (FileExist(TrialPath)){
+            continue
+        }
+        FileMove %FilePath%, %TrialPath%, 0
+
+        If ErrorLevel
+            continue
+        
+        return
+    }
+}
+
+purgeExpiredSpecialEventFiles(){
+    TargetPath := getScriptBaseFolder() . "\SpecialEvents\Events"
+
+    Loop, Files, %TargetPath%\*.sevt, F
+        LoadSevtFileCore(A_LoopFileFullPath, false)
+}
+
+LoadSevtFileCore(FilePath, addToSession){
     global session
-    
+
     FileRead, FileContent, %FilePath%
 
     IniRead, vName, %FilePath%, TargetInfo, EventName
@@ -195,15 +228,35 @@ loadSevtFile(FilePath){
                                                 , rImage, bImage)
     tempSpecialEventObj.isValidate()
 
-    if(tempSpecialEventObj.getValidate())
-        session.get("specialEventList")[vName] := tempSpecialEventObj
-    else
+    if (!tempSpecialEventObj.getValidate()) {
         tempSpecialEventObj.disposeBitmapObject()
-    
-    return
+        return
+    }
+
+    if (tempSpecialEventObj.isExpiredSpecialEvent()){
+        if (session.get("specialEventList").HasKey(vName)) {
+             session.get("specialEventList")[vName].disposeBitmapObject()
+             session.get("specialEventList").Delete(vName)
+        }
+        MoveSevtToPastEvents(FilePath)
+        tempSpecialEventObj.disposeBitmapObject()
+        return
+    }
+
+    if (addToSession) {
+        session.get("specialEventList")[vName] := tempSpecialEventObj
+    } else {
+        tempSpecialEventObj.disposeBitmapObject()
+    }
+}
+
+
+loadSevtFile(FilePath){
+    LoadSevtFileCore(FilePath, true)
 }
 
 loadAllSevtFiles() {
+    purgeExpiredSpecialEventFiles()
     TargetPath := getScriptBaseFolder() . "\SpecialEvents\Events"
 
     Loop, Files, %TargetPath%\*.sevt, F
@@ -244,6 +297,8 @@ isAllEventGotReward(eventResult) {
 
 syncSpecialEvents() {
     global session
+    purgeExpiredSpecialEventFiles()
+
     TargetPath := getScriptBaseFolder() . "\SpecialEvents\Events"
     
     CurrentFileNames := {}

@@ -17,12 +17,7 @@
         , "ui_AccountName": "AccountName"
         , "ui_Delay": "Delay"
         , "ui_swipeSpeed": "swipeSpeed"
-        , "ui_waitTime": "waitTime"
-        , "ui_heartBeat": "heartBeat"
-        , "ui_heartBeatName": "heartBeatName"
-        , "ui_heartBeatWebhookURL": "heartBeatWebhookURL"
-        , "ui_heartBeatDelay": "heartBeatDelay"
-        , "ui_heartBeatOwnerWebHookURL": "heartBeatOwnerWebHookURL"}
+        , "ui_waitTime": "waitTime"}
 
     defaultValueMap := {"BotLanguage":"English"
         , "IsLanguageSet":0
@@ -62,7 +57,9 @@
         , "stopPreferenceMain": ""
         , "s4tKeepSyntheticScreenshots": 0
         , "ocrLanguage": "en"
-        , "waitAfterBulkLaunch": 40000}
+        , "waitAfterBulkLaunch": 40000
+        , "WishlistCheck": 0
+        , "s4tWishlist": 0}
 
     generalSettings := {}
     packSettings := {}

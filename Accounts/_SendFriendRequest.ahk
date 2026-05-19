@@ -1,6 +1,7 @@
 ; _SendFriendRequest.ahk
-; Sends a single friend request to the FriendID configured in
-; Settings.ini ([General] FriendID) on the given MuMu instance.
+; Sends friend request(s): first to [General] FriendID in Settings.ini, then to any
+; extra 16-digit codes in InjectAccount.ini ([UserSettings] injectExtraFriendIDs=, comma-separated).
+; At most 10 codes total are sent (order: Settings.ini first, then extras; further codes are dropped).
 ; Usage: _SendFriendRequest.ahk "<winTitle>" "<folderPath>"
 
 #SingleInstance off
@@ -27,16 +28,7 @@ if (!FileExist(g_settingsPath)) {
     MsgBox, 16, Send Friend Request, Cannot find Settings.ini at:`n%g_settingsPath%
     ExitApp, 1
 }
-IniRead, g_friendID, %g_settingsPath%, General, FriendID, ERROR
-if (g_friendID = "ERROR" || g_friendID = "") {
-    MsgBox, 16, Send Friend Request, FriendID is not set in Settings.ini`n[General] FriendID=
-    ExitApp, 1
-}
-if (StrLen(g_friendID) != 16) {
-    fidLen := StrLen(g_friendID)
-    MsgBox, 48, Send Friend Request, % "FriendID in Settings.ini must be exactly 16 digits.`nGot: """ . g_friendID . """ (length " . fidLen . ")`n`nAborting."
-    ExitApp, 1
-}
+IniRead, g_friendIDRaw, %g_settingsPath%, General, FriendID, ERROR
 
 SetWorkingDir, %A_ScriptDir%\..\Scripts
 
@@ -50,6 +42,11 @@ global pToken := Gdip_Startup()
 #Include %A_ScriptDir%\..\Scripts\Include\Utils.ahk
 #Include %A_ScriptDir%\..\Scripts\Include\ADB.ahk
 #Include %A_ScriptDir%\..\Scripts\Include\Coords.ahk
+
+global g_injectIniPath := A_ScriptDir . "\InjectAccount.ini"
+IniRead, g_injectExtraRaw, %g_injectIniPath%, UserSettings, injectExtraFriendIDs,
+if (g_injectExtraRaw = "ERROR")
+    g_injectExtraRaw := ""
 
 ; Stubs for the few Logging.ahk symbols ADB.ahk / Utils.ahk reference,
 ; without pulling in the floating status GUI from Logging.ahk itself.
@@ -96,6 +93,12 @@ session.set("dbg_bboxNpause", 0)
 session.set("failSafe", A_TickCount)
 session.set("baseTime", 0)
 
+g_friendIDList := BuildFriendRequestIdList(g_friendIDRaw, g_injectExtraRaw)
+if (!g_friendIDList.MaxIndex()) {
+    MsgBox, 16, Send Friend Request, No friend codes to send.`n`nSet a valid 16-digit [General] FriendID= in Settings.ini and/or add optional extra codes in Inject Account (injectExtraFriendIDs).
+    ExitApp, 1
+}
+
 hwnd := getMuMuHwnd(g_winTitle)
 if (!hwnd) {
     MsgBox, 16, Send Friend Request, Cannot find MuMu instance window: %g_winTitle%`n`nMake sure the instance is running.
@@ -104,11 +107,16 @@ if (!hwnd) {
 
 ; Strip caption + force the canonical 283x532 client size the needle
 ; coordinates are calibrated against (matches DirectlyPositionWindow in 1.ahk).
-WinGetPos, wx, wy, , , ahk_id %hwnd%
-WinSet, Style, -0xC00000, ahk_id %hwnd%
-WinMove, ahk_id %hwnd%, , %wx%, %wy%, 283, 532
-WinSet, Redraw, , ahk_id %hwnd%
-Sleep, 400
+WinGetPos, wx, wy, ww, wh, ahk_id %hwnd%
+WinGet, curStyle, Style, ahk_id %hwnd%
+needsCaptionStrip := (curStyle & 0x00C00000) != 0
+needsResize := (ww != 283 || wh != 532)
+if (needsCaptionStrip)
+    WinSet, Style, -0xC00000, ahk_id %hwnd%
+if (needsResize)
+    WinMove, ahk_id %hwnd%, , %wx%, %wy%, 283, 532
+if (needsCaptionStrip || needsResize)
+    Sleep, 180
 
 setADBBaseInfo()
 ConnectAdb()
@@ -124,8 +132,29 @@ try {
 } catch e {
 }
 
-result := SendFriendRequest(g_friendID)
-ExitWithCleanup(result ? 0 : 4)
+allFriendRequestsOk := true
+g_friendIdTotal := g_friendIDList.MaxIndex()
+Loop, %g_friendIdTotal% {
+    fid := g_friendIDList[A_Index]
+    if (A_Index = 1) {
+        if (!SendFriendRequestFromMainMenu(fid)) {
+            allFriendRequestsOk := false
+            LogToFile("SendFriendRequest failed for ID index " . A_Index . " / " . g_friendIdTotal)
+        }
+    } else {
+        if (!PrepareNextFriendIdEntry()) {
+            MsgBox, 48, Send Friend Request, Could not reset the add-friend dialog before request %A_Index%/%g_friendIdTotal%. Stopping.
+            allFriendRequestsOk := false
+            break
+        }
+        if (!SubmitFriendIdSearchAndWait(fid)) {
+            allFriendRequestsOk := false
+            LogToFile("SendFriendRequest failed for ID index " . A_Index . " / " . g_friendIdTotal)
+        }
+    }
+    Sleep, 1200
+}
+ExitWithCleanup(allFriendRequestsOk ? 0 : 4)
 
 GetNeedle(Path) {
     static NeedleBitmaps := Object()
@@ -205,26 +234,58 @@ clickUntilNeedle(needleName, clickX, clickY, timeoutSec := 30, retryMs := 800) {
     return false
 }
 
-SendFriendRequest(fid) {
-    if (!clickUntilNeedle("Common_ActivatedSocialInMainMenu", 143, 518, 240, 1500)) {
-        MsgBox, 16, Send Friend Request, Timed out (4 min) waiting for the game to reach the main menu.
-        return false
+BuildFriendRequestIdList(settingsRaw, injectExtraRaw) {
+    list := []
+    sid := Trim(settingsRaw)
+    if (sid != "" && sid != "ERROR" && RegExMatch(sid, "^\d{16}$"))
+        list.Push(sid)
+    cleaned := RegExReplace(injectExtraRaw, "[\r\n]+", ",")
+    cleaned := RegExReplace(cleaned, "\|+", ",")
+    cleaned := RegExReplace(cleaned, "[\t; ]+", ",")
+    Loop {
+        if (!InStr(cleaned, ",,"))
+            break
+        StringReplace, cleaned, cleaned, `,,`,, All
     }
+    cleaned := Trim(cleaned, " `t,")
+    Loop, Parse, cleaned, `,
+    {
+        id := Trim(A_LoopField)
+        if (!RegExMatch(id, "^\d{16}$"))
+            continue
+        if (!HasVal(list, id))
+            list.Push(id)
+    }
+    if (list.MaxIndex() > 10) {
+        oldN := list.MaxIndex()
+        fixed := []
+        Loop, 10
+            fixed.Push(list[A_Index])
+        list := fixed
+        LogToFile("Friend request list truncated to 10 codes (had " . oldN . ").")
+    }
+    return list
+}
 
-    if (!gotoFriendSearchPanel(60)) {
-        MsgBox, 16, Send Friend Request, Could not reach the Friend Search panel within 60 s.
+; Same pattern as FriendManager between multiple adds: close dialog, reopen blank field, clear text.
+PrepareNextFriendIdEntry() {
+    if (!clickUntilNeedle("Friend_SearchFriendWindowCancelButtonCorner", 143, 518, 25, 1500))
         return false
+    Sleep, 400
+    if (!clickUntilNeedle("Friend_FriendIDInputReady", 138, 265, 25, 1500))
+        return false
+    Loop, 12 {
+        tap(138, 265)
+        Sleep, 120
+        adbInputEvent("59 122 67")
+        Sleep, 200
+        if (findNeedle("Friend_InputFormBlank"))
+            return true
     }
+    return true
+}
 
-    if (!clickUntilNeedle("Friend_SearchFriendWindowCancelButtonCorner", 75, 440, 20, 1000)) {
-        MsgBox, 16, Send Friend Request, Could not open the "Add Friend by ID" dialog.
-        return false
-    }
-    if (!clickUntilNeedle("Friend_FriendIDInputReady", 138, 265, 20, 1000)) {
-        MsgBox, 16, Send Friend Request, Could not focus the Friend ID input field.
-        return false
-    }
-
+SubmitFriendIdSearchAndWait(fid) {
     Sleep, 300
     adbInput(fid)
     Sleep, 500
@@ -264,6 +325,29 @@ SendFriendRequest(fid) {
 
         Sleep, 300
     }
+}
+
+SendFriendRequestFromMainMenu(fid) {
+    if (!clickUntilNeedle("Common_ActivatedSocialInMainMenu", 143, 518, 240, 1500)) {
+        MsgBox, 16, Send Friend Request, Timed out (4 min) waiting for the game to reach the main menu.
+        return false
+    }
+
+    if (!gotoFriendSearchPanel(60)) {
+        MsgBox, 16, Send Friend Request, Could not reach the Friend Search panel within 60 s.
+        return false
+    }
+
+    if (!clickUntilNeedle("Friend_SearchFriendWindowCancelButtonCorner", 75, 440, 20, 1000)) {
+        MsgBox, 16, Send Friend Request, Could not open the "Add Friend by ID" dialog.
+        return false
+    }
+    if (!clickUntilNeedle("Friend_FriendIDInputReady", 138, 265, 20, 1000)) {
+        MsgBox, 16, Send Friend Request, Could not focus the Friend ID input field.
+        return false
+    }
+
+    return SubmitFriendIdSearchAndWait(fid)
 }
 
 gotoFriendSearchPanel(timeoutSec := 60) {

@@ -23,7 +23,7 @@ Gui, Add, Text, x10 y+5 w450 cRed, It will OVERWRITE any file named the same.
 Gui, Add, Text, x10 y+5 w450 cWhite, Ensure the file name is unique before continuing.
 Gui, Add, Text, x10 y+15 w450 h1 0x10 c3F3F3F
 
-Gui, Add, Text, x10 y+15, Instance Name:
+Gui, Add, Text, x10 y+15 w450, Instance Name:
 instanceList := GetInstanceList(folderPath)
 selectedIndex := 1
 if (instanceList != "") {
@@ -36,14 +36,14 @@ if (instanceList != "") {
         }
     }
 }
-Gui, Add, DropDownList, x10 y+5 vwinTitle w200 Choose%selectedIndex%, %instanceList%
-Gui, Add, Button, x+10 yp w80 gRefreshInstances, Refresh
+Gui, Add, DropDownList, x10 y+5 vwinTitle w340 Choose%selectedIndex%, %instanceList%
+Gui, Add, Button, x+10 yp w100 gRefreshInstances, Refresh
 
-Gui, Add, Text, x10 y+15 cDCDCDC, File Name (without spaces and without .xml):
-Gui, Add, Edit, x10 y+5 vfileName w300 c000000 BackgroundFFFFFF, %fileName%
+Gui, Add, Text, x10 y+15 w450 cDCDCDC, File Name (without spaces and without .xml):
+Gui, Add, Edit, x10 y+5 vfileName w450 c000000 BackgroundFFFFFF, %fileName%
 
-Gui, Add, Text, x10 y+15 cDCDCDC, MuMu Folder same as main script (C:\Program Files\Netease)
-Gui, Add, Edit, x10 y+5 vfolderPath w300 c000000 BackgroundFFFFFF, %folderPath%
+Gui, Add, Text, x10 y+15 w450 cDCDCDC, MuMu Folder same as main script (C:\Program Files\Netease)
+Gui, Add, Edit, x10 y+5 vfolderPath w450 c000000 BackgroundFFFFFF, %folderPath%
 
 Gui, Add, Text, x10 y+15 w450 h1 0x10 c3F3F3F
 Gui, Add, Text, x10 y+12 w450 vExtractStatusText c8FD18A, Ready.

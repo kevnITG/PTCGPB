@@ -149,6 +149,15 @@ loadAccount() {
 
     getMetaData()
 
+    ; Cockpit: Metrics\currentAccount only (written once on load). Never pack/status text here;
+    ; pack counts come from the instance GUIs/account metadata inside the aggregator.
+    try {
+        cockpitIni := A_ScriptDir . "\" . session.get("scriptName") . ".ini"
+        IniWrite, % session.get("accountFileName"), %cockpitIni%, Metrics, currentAccount
+    } catch e {
+        ; non-fatal
+    }
+
     return loadFile
 }
 

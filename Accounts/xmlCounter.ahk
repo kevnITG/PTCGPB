@@ -26,26 +26,26 @@ return
 Main() {
     ; Get the script directory (should be in Accounts folder)
     ScriptDir := A_ScriptDir
-    SavedDir := ScriptDir . "\Saved"
+    MetadataDir := ScriptDir . "\Cards\accounts"
 
-    ; Check if Saved directory exists
-    if !FileExist(SavedDir) {
-        MsgBox, 16, Error, Saved directory not found!`nExpected: %SavedDir%
+    ; Check if metadata directory exists
+    if !FileExist(MetadataDir) {
+        MsgBox, 16, Error, Metadata directory not found!`nExpected: %MetadataDir%
         ExitApp
     }
 
     ; Show progress message
-    Progress, b w300 h50, Analyzing XML files..., Please wait, Account Analysis
+    Progress, b w300 h50, Analyzing metadata files..., Please wait, Account Analysis
 
     ; Analyze directory
-    Result := AnalyzeDirectory(SavedDir)
+    Result := AnalyzeDirectory(MetadataDir)
 
     ; Close progress
     Progress, Off
 
     ; Show results
     if (Result.TotalFiles = 0) {
-        MsgBox, 48, No Files Found, No XML files found in the Saved directory.
+        MsgBox, 48, No Files Found, No JSON metadata files found in the Cards\accounts directory.
     } else {
         ShowSummary(Result)
     }
@@ -63,59 +63,55 @@ AnalyzeDirectory(DirectoryPath) {
         Result.RegularPacks[A_Index] := 0
     }
 
-    ; Find all XML files recursively
-    XMLFiles := []
-    FindXMLFiles(DirectoryPath, XMLFiles)
+    ; Find all JSON metadata files recursively
+    JSONFiles := []
+    FindJSONFiles(DirectoryPath, JSONFiles)
 
-    ; Filter out Account Vault files (if they exist)
-    FilteredFiles := []
-    for Index, FilePath in XMLFiles {
-        if !InStr(FilePath, "\Account Vault\") {
-            FilteredFiles.Push(FilePath)
-        }
-    }
-
-    Result.TotalFiles := FilteredFiles.Length()
+    Result.TotalFiles := JSONFiles.Length()
 
     ; Analyze each file
-    for Index, FilePath in FilteredFiles {
-        ; Extract filename from full path
-        SplitPath, FilePath, FileName
+    for Index, FilePath in JSONFiles {
+        ; Read JSON content and extract packCount from the metadata block
+        FileRead, FileContent, %FilePath%
+        if (ErrorLevel) {
+            continue
+        }
 
-        ; Parse filename using regex pattern: (\d+)P(_\d+)+(\([A-Za-z]+\))*(.*\.xml)
-        if RegExMatch(FileName, "^(\d+)P(_\d+)+(\([A-Za-z]+\))*(.*\.xml)$", Match) {
-            PackNumber := Match1 + 0  ; Convert to number
+        if !RegExMatch(FileContent, """packCount""\s*:\s*(\d+)", Match) {
+            continue
+        }
 
-            if (PackNumber >= 96) {
-                ; Reroll Ready category
-                if (PackNumber >= 96 and PackNumber < 100) {
-                    RangeName := "96-100"
-                } else if (PackNumber >= 100 and PackNumber < 110) {
-                    RangeName := "100-110"
-                } else {
-                    ; For higher ranges
-                    RangeStart := Floor(PackNumber / 10) * 10
-                    RangeEnd := RangeStart + 10
-                    RangeName := RangeStart . "-" . RangeEnd
-                }
+        PackNumber := Match1 + 0  ; Convert to number
 
-                if !Result.RerollSummary.HasKey(RangeName) {
-                    Result.RerollSummary[RangeName] := 0
-                }
-                Result.RerollSummary[RangeName]++
-            } else if (PackNumber >= 1 and PackNumber <= 95) {
-                ; Regular packs category
-                Result.RegularPacks[PackNumber]++
+        if (PackNumber >= 96) {
+            ; Reroll Ready category
+            if (PackNumber >= 96 and PackNumber < 100) {
+                RangeName := "96-100"
+            } else if (PackNumber >= 100 and PackNumber < 110) {
+                RangeName := "100-110"
+            } else {
+                ; For higher ranges
+                RangeStart := Floor(PackNumber / 10) * 10
+                RangeEnd := RangeStart + 10
+                RangeName := RangeStart . "-" . RangeEnd
             }
+
+            if !Result.RerollSummary.HasKey(RangeName) {
+                Result.RerollSummary[RangeName] := 0
+            }
+            Result.RerollSummary[RangeName]++
+        } else if (PackNumber >= 1 and PackNumber <= 95) {
+            ; Regular packs category
+            Result.RegularPacks[PackNumber]++
         }
     }
 
     return Result
 }
 
-FindXMLFiles(Directory, ByRef FileArray) {
-    ; Search for XML files in current directory
-    Loop, Files, %Directory%\*.xml
+FindJSONFiles(Directory, ByRef FileArray) {
+    ; Search for JSON files in current directory
+    Loop, Files, %Directory%\*.json
     {
         FileArray.Push(A_LoopFileFullPath)
     }
@@ -124,7 +120,7 @@ FindXMLFiles(Directory, ByRef FileArray) {
     Loop, Files, %Directory%\*.*, D
     {
         if (A_LoopFileName != "." and A_LoopFileName != "..") {
-            FindXMLFiles(A_LoopFileFullPath, FileArray)
+            FindJSONFiles(A_LoopFileFullPath, FileArray)
         }
     }
 }
@@ -133,8 +129,8 @@ ShowSummary(Result) {
     Gui, Summary:New
     Gui, Font, s10, Consolas
 
-    Message := "=== XML Account Summary ===`n`n"
-    Message .= "Total XML files found: " Result.TotalFiles "`n`n"
+    Message := "=== Account Summary ===`n`n"
+    Message .= "Total accounts found: " Result.TotalFiles "`n`n"
     Message .= "=== Regular Pack Folders ===`n"
 
     ; Collect non-zero packs

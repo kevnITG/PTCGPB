@@ -1,5 +1,5 @@
 global ScriptDir := RegExReplace(A_LineFile, "\\[^\\]+$"), LogsDir := ScriptDir . "\..\..\Logs"
-global Debug, discordWebhookURL, discordUserId, sendAccountXml
+global Debug, discordWebhookURL, discordUserId, sendAccountXml, botConfig
 global DEFAULT_STATUS_MESSAGE := "..."
 
 ; Read settings.
@@ -37,6 +37,8 @@ CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debug
 
     if (Debug && Message != DEFAULT_STATUS_MESSAGE)
         LogToFile(GuiName . ": " . Message)
+
+    Cockpit_WriteLiveMetrics(Message)
 
     guiWidth := 275
     guiheight := 40
@@ -76,7 +78,13 @@ CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debug
 
                 Gui, %GuiName%:Show, NoActivate x%X% y%Y% w%guiWidth% h%guiheight%
             }
-            SetTimer, % timerReposition, 2000
+            if (!isController)
+                SetTimer, % timerReposition, 2000
+        }
+        if (isController) {
+            ; Force the window to exist (hidden) so SendMessage can find it.
+            Gui, %GuiName%:Show, Hide
+            return
         }
         SetTextAndResize(hwnds[GuiName], Message)
         Gui, %GuiName%:Show, NoActivate  w%guiWidth% h%guiheight%
@@ -89,6 +97,21 @@ CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debug
             SetTimer, % resetStatusFunc, -2000
         }
     }
+}
+
+Cockpit_WriteLiveMetrics(message) {
+    global session
+
+    if (!IsObject(session))
+        return
+
+    scriptName := session.get("scriptName")
+    if (scriptName = "")
+        return
+
+    if !(RegExMatch(scriptName, "^\d+$") || scriptName = "Main")
+        return
+    return
 }
 
 SetReposition(){
@@ -164,24 +187,70 @@ LogToFile(message, logFile := "") {
     }
 }
 
+GetActiveDiscordProfile() {
+    global botConfig, discordWebhookURL, discordUserId, sendAccountXml
+
+    profile := {"name": "Solo", "webhookURL": discordWebhookURL, "userId": discordUserId, "sendAccountXml": sendAccountXml}
+
+    if (!IsObject(botConfig))
+        return profile
+
+    if (botConfig.get("groupRerollEnabled")) {
+        profile.name := "Group Reroll"
+        profile.webhookURL := botConfig.get("groupRerollDiscordWebhookURL")
+        profile.userId := botConfig.get("groupRerollDiscordUserId")
+        profile.sendAccountXml := botConfig.get("groupRerollSendAccountXml")
+    } else {
+        profile.webhookURL := botConfig.get("discordWebhookURL")
+        profile.userId := botConfig.get("discordUserId")
+        profile.sendAccountXml := botConfig.get("sendAccountXml")
+    }
+
+    return profile
+}
+
+DiscordShouldSendAccountXml() {
+    profile := GetActiveDiscordProfile()
+    return profile.sendAccountXml
+}
+
+LogMissingDiscordWebhook(profileName) {
+    static warnedProfiles := {}
+
+    if (warnedProfiles.HasKey(profileName))
+        return
+
+    warnedProfiles[profileName] := true
+    LogToFile(profileName . " Discord webhook URL is not configured. Message was not sent.", "Discord.txt")
+    CreateStatusMessage(profileName . " Discord webhook missing.",,,, false)
+}
+
 LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screenshotFile2 := "", altWebhookURL := "", altUserId := "") {
+    profile := GetActiveDiscordProfile()
     discordPing := ""
 
     if (ping) {
-        userId := (altUserId ? altUserId : discordUserId)
+        userId := (altUserId ? altUserId : profile.userId)
 
-        discordPing := "<@" . userId . "> "
+        if (userId)
+            discordPing := "<@" . userId . "> "
         discordFriends := ReadFile("discord")
         if (discordFriends) {
             for index, value in discordFriends {
-                if (value = userId)
+                if (value = "" || value = userId)
                     continue
                 discordPing .= "<@" . value . "> "
             }
         }
     }
 
-    webhookURL := (altWebhookURL ? altWebhookURL : discordWebhookURL)
+    webhookURL := (altWebhookURL ? altWebhookURL : profile.webhookURL)
+
+    if (webhookURL = "") {
+        if (!altWebhookURL)
+            LogMissingDiscordWebhook(profile.name)
+        return
+    }
 
     if (webhookURL != "") {
         MaxRetries := 10
@@ -207,8 +276,8 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
                 ; If an screenshot or xml file is provided, send it
                 sendScreenshot1 := screenshotFile != "" && FileExist(screenshotFile)
                 sendScreenshot2 := screenshotFile2 != "" && FileExist(screenshotFile2)
-                sendAccountXml := xmlFile != "" && FileExist(xmlFile)
-                if (sendScreenshot1 + sendScreenshot2 + sendAccountXml > 1) {
+                sendXmlFile := xmlFile != "" && FileExist(xmlFile)
+                if (sendScreenshot1 + sendScreenshot2 + sendXmlFile > 1) {
                     fileIndex := 0
                     if (sendScreenshot1) {
                         fileIndex++
@@ -218,17 +287,17 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
                         fileIndex++
                         curlCommand := curlCommand . "-F ""file" . fileIndex . "=@" . screenshotFile2 . """ "
                     }
-                    if (sendAccountXml) {
+                    if (sendXmlFile) {
                         fileIndex++
                         curlCommand := curlCommand . "-F ""file" . fileIndex . "=@" . xmlFile . """ "
                     }
                 }
-                else if (sendScreenshot1 + sendScreenshot2 + sendAccountXml == 1) {
+                else if (sendScreenshot1 + sendScreenshot2 + sendXmlFile == 1) {
                     if (sendScreenshot1)
                         curlCommand := curlCommand . "-F ""file=@" . screenshotFile . """ "
                     if (sendScreenshot2)
                         curlCommand := curlCommand . "-F ""file=@" . screenshotFile2 . """ "
-                    if (sendAccountXml)
+                    if (sendXmlFile)
                         curlCommand := curlCommand . "-F ""file=@" . xmlFile . """ "
                 }
                 ; Add the webhook

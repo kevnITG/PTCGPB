@@ -21,6 +21,7 @@ CoordMode, Pixel, Screen
 #Include OCR.ahk
 #Include AccountMetadata.ahk
 #Include Database.ahk
+#Include Wishlist.ahk
 #Include CardDetection.ahk
 #Include AccountManager.ahk
 #Include FriendManager.ahk
@@ -630,7 +631,7 @@ return
 
 VipTrimModeChanged:
     Gui, VipTrim:Submit, NoHide
-    isCustom := VipTrimCustom
+    isCustom := ui_VipTrimCustom
     GuiControl, % (isCustom ? "Enable" : "Disable"), ui_VipCustomCount
     GuiControl, % (isCustom ? "Enable" : "Disable"), ui_VipCustomDirTop
     GuiControl, % (isCustom ? "Enable" : "Disable"), ui_VipCustomDirBottom
@@ -1551,6 +1552,8 @@ SaveGPTestedCache() {
 ; Closing the dialog without clicking Start proceeds with the full unmodified list.
 PromptVipListTrim(vipFriendsArray) {
     global session
+    global ui_VipTrimTop, ui_VipTrimBottom, ui_VipTrimCustom, ui_VipCustomCount
+    global ui_VipCustomDirTop, ui_VipCustomDirBottom
     vipCount := vipFriendsArray.MaxIndex()
     session.set("vipTrimDialogDone", false)
 

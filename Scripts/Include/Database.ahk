@@ -301,9 +301,6 @@ UpdateShinedustJSON(deviceAccount, shinedustValue, timestamp, cleanFilename) {
 SendMetadataToPTCGPB(valueToSend) {
     global session
 
-    DetectHiddenWindows, On
-    TargetScriptTitle := "PTCGPB.ahk ahk_class AutoHotkeyGUI"
-
     Random, randNum, 10000, 99999
     msgID := A_Now . "_" . A_TickCount . "_" . randNum
 
@@ -314,8 +311,7 @@ SendMetadataToPTCGPB(valueToSend) {
     NumPut(SizeInBytes, CopyDataStruct, A_PtrSize)
     NumPut(&payload, CopyDataStruct, 2*A_PtrSize)
 
-    SendMessage, 0x4A, 0, &CopyDataStruct,, %TargetScriptTitle%
-
+    SendMessage, 0x4A, 0, &CopyDataStruct,, PTCGPB.ahk
     response := ErrorLevel
 
     if (response == "FAIL") {
