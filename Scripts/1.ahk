@@ -1536,10 +1536,17 @@ GetAccountCreationDate() {
 
     earliestUnix := earliestMatch1 + 0
     latestUnix := earliestUnix + 86400
-    if (RegExMatch(existingCreatedAt, "^\d{14}$")) {
-        existingCreatedAtUnix := AccountCreationDate_ToUnix(existingCreatedAt)
+    normalizedExistingCreatedAt := AccountCreationDate_Normalize(existingCreatedAt)
+    if (normalizedExistingCreatedAt != "") {
+        existingCreatedAtUnix := AccountCreationDate_ToUnix(normalizedExistingCreatedAt)
         if (existingCreatedAtUnix >= earliestUnix && existingCreatedAtUnix <= latestUnix)
+        {
+            if (normalizedExistingCreatedAt != existingCreatedAt) {
+                accountMeta["createdAt"] := normalizedExistingCreatedAt
+                AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
+            }
             return true
+        }
     }
 
     creationDate := AccountCreationDate_FromUnix(latestUnix)
@@ -1554,6 +1561,15 @@ GetAccountCreationDate() {
     accountMeta["deviceAccount"] := GetCurrentDeviceAccountForMetadata()
     accountMeta["createdAt"] := creationDate
     return AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
+}
+
+AccountCreationDate_Normalize(value) {
+    value := Trim(value)
+    if (RegExMatch(value, "^\d{14}$"))
+        return value
+    if (RegExMatch(value, "^\d{9,12}$"))
+        return AccountCreationDate_FromUnix(value + 0)
+    return ""
 }
 
 AccountCreationDate_FromUnix(unixTimestamp) {

@@ -195,6 +195,18 @@ AccountMetadata_NormalizeShinedust(shinedust) {
     return AccountMetadata_NewShinedust(shinedust, "0")
 }
 
+AccountMetadata_NormalizeCreatedAt(value) {
+    value := Trim(value)
+    if (RegExMatch(value, "^\d{14}$"))
+        return value
+    if (RegExMatch(value, "^\d{9,12}$")) {
+        createdAt := "19700101000000"
+        EnvAdd, createdAt, %value%, Seconds
+        return createdAt
+    }
+    return value
+}
+
 AccountMetadata_NewAccount(instance, fileName) {
     account := {}
     account["deviceAccount"] := ""
@@ -474,7 +486,7 @@ AccountMetadata_ParseAccount(accountJson) {
     account := AccountMetadata_NewAccount(AccountMetadata_ParseString(accountJson, "instance"), AccountMetadata_ParseString(accountJson, "fileName"))
     account["deviceAccount"] := AccountMetadata_ParseString(accountJson, "deviceAccount")
     account["packCount"] := AccountMetadata_ParseNumber(accountJson, "packCount", account["packCount"])
-    account["createdAt"] := AccountMetadata_ParseString(accountJson, "createdAt", account["createdAt"])
+    account["createdAt"] := AccountMetadata_NormalizeCreatedAt(AccountMetadata_ParseString(accountJson, "createdAt", AccountMetadata_ParseNumber(accountJson, "createdAt", account["createdAt"])))
     account["lastPackPulled"] := AccountMetadata_ParseString(accountJson, "lastPackPulled", AccountMetadata_ParseNumber(accountJson, "lastPackPulled", 0))
     if (account["lastPackPulled"] = "" || account["lastPackPulled"] = "0")
         account["lastPackPulled"] := AccountMetadata_ParseString(accountJson, "lastModified", account["lastPackPulled"])
@@ -544,8 +556,9 @@ AccountMetadata_SerializeAccount(account, indent := "") {
     if (account["packCount"] != "" && (account["packCount"] + 0) != 0)
         AccountMetadata_AppendJsonNumber(json, firstField, "packCount", account["packCount"] + 0, "      ")
 
-    if (account["createdAt"] != "" && account["createdAt"] != "0")
-        AccountMetadata_AppendJsonString(json, firstField, "createdAt", account["createdAt"], "      ")
+    createdAt := AccountMetadata_NormalizeCreatedAt(account["createdAt"])
+    if (createdAt != "" && createdAt != "0")
+        AccountMetadata_AppendJsonString(json, firstField, "createdAt", createdAt, "      ")
 
     if (account["lastPackPulled"] != "" && account["lastPackPulled"] != "0")
         AccountMetadata_AppendJsonString(json, firstField, "lastPackPulled", account["lastPackPulled"], "      ")

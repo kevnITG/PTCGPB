@@ -718,12 +718,12 @@ fn compact_account_for_write(account: &mut Value) {
         obj.remove("packCount");
     }
 
-    if obj
-        .get("createdAt")
-        .and_then(Value::as_str)
-        .is_some_and(|created_at| created_at.is_empty() || created_at == "0")
-    {
-        obj.remove("createdAt");
+    if let Some(created_at) = obj.get("createdAt").cloned() {
+        if let Some(normalized) = normalize_created_at_value(&created_at) {
+            obj.insert("createdAt".to_owned(), normalized);
+        } else {
+            obj.remove("createdAt");
+        }
     }
 
     for key in ["lastPackPulled", "lastLoggedIn"] {
@@ -1171,7 +1171,7 @@ fn scan_saved_xmls_into_store(root: &Path, store: &mut Value) -> Result<()> {
                     .or_else(|| value.as_str().and_then(|s| s.parse().ok()))
             })
             .filter(|pack_count| *pack_count > 0);
-        let existing_created_at = base.get("createdAt").cloned();
+        let existing_created_at = base.get("createdAt").and_then(normalize_created_at_value);
         let existing_last_pack_pulled = base
             .get("lastPackPulled")
             .filter(|value| !value_is_zeroish(value))
@@ -1363,8 +1363,8 @@ fn merge_account(base: &mut Value, patch: &Value) {
                 }
             }
             "createdAt" => {
-                if !value_is_zeroish(value) {
-                    base_obj.insert(key.clone(), value.clone());
+                if let Some(created_at) = normalize_created_at_value(value) {
+                    base_obj.insert(key.clone(), created_at);
                 }
             }
             _ => {
@@ -1405,6 +1405,30 @@ fn value_is_zeroish(value: &Value) -> bool {
         Value::Number(n) => n.as_i64() == Some(0),
         _ => false,
     }
+}
+
+fn normalize_created_at_value(value: &Value) -> Option<Value> {
+    let raw = match value {
+        Value::String(s) => s.trim().to_owned(),
+        Value::Number(n) => n.to_string(),
+        _ => return meaningful(value).then(|| value.clone()),
+    };
+
+    if raw.is_empty() || raw == "0" {
+        return None;
+    }
+    if raw.len() == 14 && raw.chars().all(|c| c.is_ascii_digit()) {
+        return Some(json!(raw));
+    }
+    if (9..=12).contains(&raw.len()) && raw.chars().all(|c| c.is_ascii_digit()) {
+        if let Ok(unix_timestamp) = raw.parse::<i64>() {
+            if let Some(dt) = Utc.timestamp_opt(unix_timestamp, 0).single() {
+                return Some(json!(dt.format("%Y%m%d%H%M%S").to_string()));
+            }
+        }
+    }
+
+    Some(json!(raw))
 }
 
 fn shinedust_is_meaningful(value: &Value) -> bool {
@@ -2145,16 +2169,19 @@ fn update_metadata_instance(store: &mut Value, file_name: &str, instance: usize,
     let mut account = accounts
         .remove(&key)
         .unwrap_or_else(|| new_account(&instance.to_string(), file_name, file_path));
-    let created_at_empty = field_str(&account, "createdAt").is_empty();
+    let normalized_created_at = account
+        .get("createdAt")
+        .and_then(normalize_created_at_value);
     if let Some(obj) = account.as_object_mut() {
         obj.remove("deviceAccount");
         obj.insert("instance".to_owned(), json!(instance.to_string()));
         obj.insert("fileName".to_owned(), json!(file_name));
         obj.entry("packCount".to_owned())
             .or_insert_with(|| json!(extract_pack_count(file_name)));
-        if created_at_empty {
-            obj.insert("createdAt".to_owned(), json!(extract_created_at(file_name)));
-        }
+        obj.insert(
+            "createdAt".to_owned(),
+            normalized_created_at.unwrap_or_else(|| json!(extract_created_at(file_name))),
+        );
     }
 
     let new_key = account_key(&key, &account);
@@ -2867,5 +2894,22 @@ mod tests {
             .map(|candidate| candidate.file_name.as_str())
             .collect::<Vec<_>>();
         assert_eq!(names, vec!["unset.xml", "old.xml", "recent.xml"]);
+    }
+
+    #[test]
+    fn created_at_unix_values_normalize_to_timestamp_strings() {
+        assert_eq!(
+            normalize_created_at_value(&json!("1716123456")),
+            Some(json!("20240519125736"))
+        );
+        assert_eq!(
+            normalize_created_at_value(&json!(1716123456)),
+            Some(json!("20240519125736"))
+        );
+        assert_eq!(
+            normalize_created_at_value(&json!("20260519123045")),
+            Some(json!("20260519123045"))
+        );
+        assert_eq!(normalize_created_at_value(&json!("0")), None);
     }
 }

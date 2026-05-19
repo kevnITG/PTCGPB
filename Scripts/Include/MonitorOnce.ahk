@@ -29,7 +29,7 @@ EnvSub, nowEpoch, 1970, seconds
 
 Loop %Instances% {
     instanceNum := Format("{:u}", A_Index)
-    
+
     IniRead, LastEndEpoch, %A_ScriptDir%\..\%instanceNum%.ini, Metrics, LastEndEpoch, 0
     secondsSinceLastEnd := nowEpoch - LastEndEpoch
     if(LastEndEpoch > 0 && secondsSinceLastEnd > (15 * 60))
@@ -37,31 +37,31 @@ Loop %Instances% {
         ; msgbox, Killing Instance %instanceNum%! Last Run Completed %secondsSinceLastEnd% Seconds Ago
         msg := "Killing Instance " . instanceNum . "! Last Run Completed " . secondsSinceLastEnd . " Seconds Ago"
         LogToFile(msg, "Monitor.txt")
-        
+
         scriptName := instanceNum . ".ahk"
-        
+
         killedAHK := killAHK(scriptName)
         killedInstance := killInstance(instanceNum)
         Sleep, 3000
-        
+
         cntAHK := checkAHK(scriptName)
         pID := checkInstance(instanceNum)
         if not pID && not cntAHK {
             ; Change the last end date to now so that we don't keep trying to restart this beast
             IniWrite, %nowEpoch%, %A_ScriptDir%\..\%instanceNum%.ini, Metrics, LastEndEpoch
-            
+
             launchInstance(instanceNum)
-            
+
             sleepTime := instanceLaunchDelay * 1000
             Sleep, % sleepTime
             launched := launched + 1
-            
+
             Sleep, %waitAfterBulkLaunch%
-            
+
             ;Command := "Scripts\" . scriptName
             ;Run, %Command%
             scriptPath := A_ScriptDir "\.." "\" scriptName
-            Run, "%A_AhkPath%" /restart "%scriptPath%
+            Run, "%A_AhkPath%" /restart "%scriptPath%"
         }
     }
 }
@@ -71,7 +71,7 @@ ExitApp
 killAHK(scriptName := "")
 {
     killed := 0
-    
+
     if(scriptName != "") {
         DetectHiddenWindows, On
         WinGet, IDList, List, ahk_class AutoHotkey
@@ -87,14 +87,14 @@ killAHK(scriptName := "")
             }
         }
     }
-    
+
     return killed
 }
 
 checkAHK(scriptName := "")
 {
     cnt := 0
-    
+
     if(scriptName != "") {
         DetectHiddenWindows, On
         WinGet, IDList, List, ahk_class AutoHotkey
@@ -107,20 +107,20 @@ checkAHK(scriptName := "")
             }
         }
     }
-    
+
     return cnt
 }
 
 killInstance(instanceNum := "")
 {
     killed := 0
-    
+
     pID := checkInstance(instanceNum)
     if pID {
         Process, Close, %pID%
         killed := killed + 1
     }
-    
+
     return killed
 }
 
@@ -132,14 +132,14 @@ checkInstance(instanceNum := "")
         WinGet, temp_pid, PID, ahk_id %ret%
         return temp_pid
     }
-    
+
     return ""
 }
 
 launchInstance(instanceNum := "")
 {
     global mumuFolder
-    
+
     if(instanceNum != "") {
         mumuNum := getMumuInstanceNum(instanceNum, mumuFolder)
         if(mumuNum != "") {
