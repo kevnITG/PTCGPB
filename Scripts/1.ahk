@@ -1586,6 +1586,10 @@ AccountCreationDate_ToUnix(creationDate) {
 
 GetHistoryOfAccount() {
     global session
+    global botConfig
+    if (!botConfig.get("importHistory"))
+        return true
+
     if (!session.get("injectMethod") || !session.get("loadedAccount") || session.get("accountFileName") = "")
         return false
 
