@@ -1,4 +1,4 @@
-﻿#SingleInstance on
+﻿#SingleInstance, Force
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0
 SetBatchLines, -1
@@ -122,6 +122,16 @@ if(botConfig.get("deleteMethod") != "Inject Wonderpick 96P+")
     session.set("packMethod", 0)
 
 IniRead, DeadCheck, % session.get("scriptIniFile"), UserSettings, DeadCheck, 0
+IniRead, friendCleanupPending, % session.get("scriptIniFile"), UserSettings, friendCleanupPending, 0
+if(friendCleanupPending = 1) {
+    DeadCheck := 1
+    IniWrite, 1, % session.get("scriptIniFile"), UserSettings, DeadCheck
+    session.set("friended", true)
+    LogToFile("Friend cleanup pending found at startup. Entering cleanup recovery.", "GroupReroll.txt")
+}
+if(DeadCheck = 1) {
+    RestoreLoadedAccountForRecovery()
+}
 IniRead, rerollsValue, % session.get("scriptIniFile"), Metrics, rerolls, 0
 IniRead, rerollStartTimeValue, % session.get("scriptIniFile"), Metrics, rerollStartTime, -1
 
@@ -138,7 +148,8 @@ if(botConfig.get("heartBeat"))
 
 SetTimer, RefreshAccountLists, 3600000  ; Refresh Account list every hour
 
-DirectlyPositionWindow()
+windowCoverHwnd := GetMuMuCoverWindowForMaintenance(session.get("winTitle"))
+DirectlyPositionWindow(windowCoverHwnd)
 Sleep, 500
 
 setADBBaseInfo()
@@ -148,7 +159,7 @@ Sleep, 500
 CreateStatusMessage("Disabling background services...")
 DisableBackgroundServices()
 
-resetWindows()
+resetWindows(windowCoverHwnd)
 MaxRetries := 10
 RetryCount := 0
 Loop {
@@ -173,6 +184,7 @@ Loop {
         DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1  ; HWND_BOTTOM
             , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
         Gui, Show, NoActivate x%x4% y%y4%  w275 h30
+        RestoreMuMuCoverWindow(windowCoverHwnd, session.get("winTitle"))
         break
     }
     catch {
@@ -202,7 +214,7 @@ SetTimer, LiveMetricsTimer, 5000
 if(session.get("injectMethod") && DeadCheck != 1) {
     session.set("loadedAccount", loadAccount())
 } else if(session.get("injectMethod") && DeadCheck = 1) {
-    ; DeadCheck = 1: Start the Pokemon app for the stuck account (don't inject new account)
+    ; DeadCheck/friend cleanup recovery: Start the existing app account (don't inject new account).
     startPTCGPApp()
 }
 
@@ -854,7 +866,10 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
     global botConfig, session, needlesDict
     static lastStatusTime := 0
 
-    needleObj := needlesDict.Get(needleName)
+    needleObj := GetSearchNeedleObj(needleName, "FindOrLoseImage")
+    if (!IsObject(needleObj))
+        return false
+
     imageName := needleObj.imageName
 
     if(botConfig.get("slowMotion")) {
@@ -969,7 +984,10 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
 FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVariation := 20, sleepTime := "", skip := false, safeTime := 0) {
     global botConfig, session, needlesDict
 
-    needleObj := needlesDict.Get(needleName)
+    needleObj := GetSearchNeedleObj(needleName, "FindImageAndClick")
+    if (!IsObject(needleObj))
+        return false
+
     imageName := needleObj.imageName
 
     if(botConfig.get("slowMotion")) {
@@ -1139,14 +1157,14 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
     return confirmed
 }
 
-resetWindows() {
-    DirectlyPositionWindow()
+resetWindows(coverHwnd := "") {
+    DirectlyPositionWindow(coverHwnd)
 
     return true
 }
 
-DirectlyPositionWindow() {
-    global botConfig
+DirectlyPositionWindow(coverHwnd := "") {
+    global botConfig, session
 
     windowMetrics := GetMumuWindowMetrics()
     scaleParam := windowMetrics.scaleParam
@@ -1158,6 +1176,8 @@ DirectlyPositionWindow() {
 
     ; Calculate position based on instance number
     Title := session.get("winTitle")
+    if (!coverHwnd)
+        coverHwnd := GetMuMuCoverWindowForMaintenance(Title)
 
     if (botConfig.get("runMain")) {
         instanceIndex := (botConfig.get("Mains") - 1) + Title + 1
@@ -1182,6 +1202,7 @@ DirectlyPositionWindow() {
     FixInstanceScreen(session.get("winTitle"))
 
     CreateStatusMessage("Positioned window at x:" . x . " y:" . y,,,, false)
+    RestoreMuMuCoverWindow(coverHwnd, Title)
 
     return true
 }
@@ -1207,8 +1228,16 @@ restartGameInstance(reason, RL := true) {
     if (isStuck) {
         logStr := "STUCK DETECTED - Reason: " . reason . " | injectMethod: " . (session.get("injectMethod") ? "true" : "false") . " | "
         logStr .= "loadedAccount: " . (session.get("loadedAccount") ? "true" : "false") . " | "
+        logStr .= "friended: " . (session.get("friended") ? "true" : "false") . " | "
         logStr .= "accountFileName: " . session.get("accountFileName")
         LogToFile(logStr)
+        SaveStuckScreenshot(reason)
+
+        if(session.get("injectMethod") && session.get("loadedAccount") && session.get("friended")) {
+            IniWrite, 1, % session.get("scriptIniFile"), UserSettings, DeadCheck
+            SetFriendCleanupPending("Stuck recovery: " . reason)
+            LogToFile("DeadCheck set for stuck recovery cleanup. Reason: " . reason)
+        }
     }
 
     if (RL = "GodPack") {
@@ -1268,6 +1297,30 @@ restartGameInstance(reason, RL := true) {
             CleanupBeforeExit()
             ExitApp
         }
+    }
+}
+
+SaveStuckScreenshot(reason) {
+    global session
+
+    fileDir := A_ScriptDir . "\..\Screenshots\Stuck"
+    if !FileExist(fileDir)
+        FileCreateDir, %fileDir%
+
+    safeReason := RegExReplace(reason, "[\\/:*?""<>|]", "_")
+    safeReason := RegExReplace(safeReason, "\s+", "_")
+    safeReason := SubStr(safeReason, 1, 80)
+    filePath := fileDir . "\" . A_Now . "_inst" . session.get("scriptName") . "_" . safeReason . ".png"
+
+    hWnd := getMuMuHwnd(session.get("winTitle"))
+    if (!hWnd)
+        return
+
+    pBitmap := from_window(hWnd)
+    if (pBitmap) {
+        Gdip_SaveBitmapToFile(pBitmap, filePath)
+        Gdip_DisposeImage(pBitmap)
+        LogToFile("Saved stuck screenshot: " . filePath)
     }
 }
 

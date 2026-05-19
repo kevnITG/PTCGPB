@@ -16,12 +16,13 @@ Scripts/*.ini
 *.bak
 !.gitkeep
 Accounts/Saved/**/*.xml
-Accounts/SpecificCards/*.xml
+Accounts/SpecificCards/
+Accounts/GodPacks/
 Accounts/Saved/tmp/**
 Accounts/Trades/*.csv
 Accounts/Trades/*.json
 Scripts/temp/**
-Lab
+Lab/
 
 # macOS metadata files
 ._*

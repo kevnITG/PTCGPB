@@ -59,7 +59,11 @@ OnMessage(0x4A, "ReceiveData")
 
 if not A_IsAdmin
 {
-    Run *RunAs "%A_ScriptFullPath%"
+    try {
+        Run *RunAs "%A_ScriptFullPath%"
+    } catch {
+        MsgBox, 48, PTCGPB, Administrator permission is required to run PTCGPB.`n`nPlease launch it again and approve the permission prompt.
+    }
     ExitApp
 }
 

@@ -36,10 +36,15 @@ AddFriends(renew := false, getFC := false) {
 		return false
 
     session.set("friended", true)
+    if(!getFC)
+        SetFriendCleanupPending("AddFriends started")
 
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
     Loop {
+        if(DismissFriendFlowBlockingPopup("Waiting for Social"))
+            continue
+
         adbClick_wbb(143, 518)
         if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime)) {
             break
@@ -281,8 +286,13 @@ AddFriends(renew := false, getFC := false) {
 RemoveFriends() {
     global botConfig, session, interceptProc, DeadCheck
 
+    cleanupAccount := session.get("accountFileName")
+    LogToFile("RemoveFriends start | account=" . cleanupAccount)
+    LogDebugToFile("RemoveFriends start detail | account=" . cleanupAccount . " | friended=" . session.get("friended") . " | DeadCheck=" . DeadCheck . " | deleteMethod=" . botConfig.get("deleteMethod") . " | useSoloIdsFile=" . botConfig.get("useSoloIdsFile"))
+
     ; Only allow RemoveFriends in Inject Wonderpick 96P+ mode
     if (botConfig.get("deleteMethod") != "Inject Wonderpick 96P+" && !botConfig.get("useSoloIdsFile")) {
+        LogToFile("RemoveFriends skipped: unsupported delete method | account=" . cleanupAccount . " | deleteMethod=" . botConfig.get("deleteMethod") . " | useSoloIdsFile=" . botConfig.get("useSoloIdsFile"))
         session.set("friended", false)
         return false
     }
@@ -290,17 +300,27 @@ RemoveFriends() {
 	session.set("friendIDs", ReadFile("ids"))
 
     if(!session.get("friendIDs") && botConfig.get("FriendID") = "") {
-        session.set("friended", false)
-        return false
+        if(!session.get("friended") && DeadCheck != 1) {
+            LogToFile("RemoveFriends skipped: no friend IDs and no cleanup pending | account=" . cleanupAccount . " | DeadCheck=" . DeadCheck)
+            session.set("friended", false)
+            return false
+        }
+
+        LogToFile("Friend IDs unavailable during RemoveFriends; continuing because cleanup is pending | account=" . cleanupAccount . " | DeadCheck=" . DeadCheck)
+        LogToFile("Friend IDs unavailable during RemoveFriends; continuing because cleanup is pending | account=" . cleanupAccount . " | DeadCheck=" . DeadCheck, "GroupReroll.txt")
     }
 
     session.set("packsInPool", 0) ; if friends are removed, clear the pool
 
     CreateStatusMessage("Starting friend removal process...",,,, false)
+    LogDebugToFile("RemoveFriends navigation start | account=" . cleanupAccount)
 
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
     Loop {
+        if(DismissFriendFlowBlockingPopup("Waiting for Social"))
+            continue
+
         adbClick_wbb(143, 518)
         if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime))
             break
@@ -333,6 +353,7 @@ RemoveFriends() {
 
     GoToFriendsList(false, true)
     Delay(2)
+    LogDebugToFile("RemoveFriends friend list reached | account=" . cleanupAccount)
     FindImageAndClick("Friend_FriendRequestsSubMenu", 167, 467, , 10)
     Delay(2)
     adbClick(167, 472) ; extra click since failing to get into requests sometimes
@@ -340,6 +361,9 @@ RemoveFriends() {
     failSafeTime := 0    
     interceptProc := true
     Loop{
+        if(DismissFriendFlowBlockingPopup("Waiting for clearAll"))
+            continue
+
         if (FindOrLoseImage("Friend_ActivatedClearAllButton", 0, failSafeTime))
             break
         adbClick(205, 510)
@@ -366,6 +390,9 @@ RemoveFriends() {
         failSafeTime := 0
         accepted := false
         Loop {
+            if(DismissFriendFlowBlockingPopup("Waiting for friend details"))
+                continue
+
             adbClick(58, 190)
             Delay(1)
             if(FindOrLoseImage("Friend_AcceptedButtonInFriendDetails", 0, failSafeTime)){
@@ -393,6 +420,9 @@ RemoveFriends() {
             interceptProc := true
             isContinue := false
             Loop, {
+                if(DismissFriendFlowBlockingPopup("Confirming friend removal"))
+                    continue
+
                 adbClick(200, 372)
                 Delay(0.5)
                 if(FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0))
@@ -410,6 +440,9 @@ RemoveFriends() {
         failSafeTime := 0
         ; Either find "Add" (expected), or if we accidentally went back too many pages to "Social", go back into friends.
         Loop {
+            if(DismissFriendFlowBlockingPopup("Returning to friend list"))
+                continue
+
             adbClick(143, 507)
             Sleep, 750
             if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime)) {
@@ -426,8 +459,11 @@ RemoveFriends() {
 
     ; Exit friend removal process
     CreateStatusMessage("Friend removal completed. Processed " . friendsProcessed . " friends. Returning to main...",,,, false)
+    LogToFile("RemoveFriends complete | account=" . cleanupAccount . " | processed=" . friendsProcessed . " | DeadCheckBeforeClear=" . DeadCheck)
 	IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
+    ClearFriendCleanupPending()
     session.set("friended", false)
+    LogDebugToFile("RemoveFriends cleanup state cleared | account=" . cleanupAccount . " | processed=" . friendsProcessed)
     CreateStatusMessage("Friends removed successfully!",,,, false)
 
     if(session.get("stopToggle")) {
@@ -456,13 +492,13 @@ ReEnterSocial(prevAction){
     global interceptProc
     reEnterStart := A_TickCount
     Loop {
+        if(DismissFriendFlowBlockingPopup("Re-entering Social"))
+            continue
+
         adbClick_wbb(143, 518)
         reEnterElapsed := (A_TickCount - reEnterStart) // 1000
         if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, reEnterElapsed)) {
             break
-        }
-        else if(FindOrLoseImage("Common_PopupXButtonInMain", 0, , , true)){
-            adbClick_wbb(137, 480)
         }
         Delay(0.25)
     }
@@ -578,6 +614,22 @@ ShouldSkipGenericButtonInSocialWait() {
     return true
 }
 
+DismissFriendFlowBlockingPopup(context := "") {
+    if(!FindOrLoseImage("Common_PopupXButtonInMain", 0, , , true))
+        return false
+
+    LogDebugToFile("Dismissed friend flow blocking popup | context=" . context)
+
+    if(context != "")
+        CreateStatusMessage("Closing popup during friend flow`n" . context,,,, false)
+    else
+        CreateStatusMessage("Closing popup during friend flow",,,, false)
+
+    adbClick_wbb(137, 480)
+    Delay(1)
+    return true
+}
+
 IsSocialHubReadyForFriends() {
     return FindOrLoseImage("Friend_SocialHubFriendButton", 0, , 20, true)
 }
@@ -589,9 +641,15 @@ GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
     failSafeTime := 0
     mainLoopBreak := false
     Loop {
+        if(DismissFriendFlowBlockingPopup("Goto friends screen"))
+            continue
+
         if(FindOrLoseImage("Friend_SearchFriendButton", 0, failSafeTime, , true)) {
             if(!isKeepSearch){
                 Loop {
+                    if(DismissFriendFlowBlockingPopup("Leaving friend search"))
+                        continue
+
                     if(FindOrLoseImage("Friend_SearchFriendButton", 0, failSafeTime, , true)) {
                         adbInputEvent("111") ;send ESC
                     }

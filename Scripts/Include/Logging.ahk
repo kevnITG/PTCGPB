@@ -48,6 +48,12 @@ CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debug
         guiWidth := 260
         guiheight := 25
     }
+
+    coverHwnd := ""
+    try {
+        if (IsObject(session))
+            coverHwnd := CaptureMuMuCoverWindow(session.get("winTitle"))
+    }
 		
     try {
 
@@ -81,6 +87,7 @@ CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debug
         }
         SetTextAndResize(hwnds[GuiName], Message)
         Gui, %GuiName%:Show, NoActivate  w%guiWidth% h%guiheight%
+        RestoreMuMuCoverWindow(coverHwnd)
 
         ; Clear any previous timers.
         SetTimer, % resetStatusFunc, Off
@@ -167,6 +174,9 @@ LogToFile(message, logFile := "") {
     }
     else
         logFile := LogsDir . "\" . logFile
+    if !FileExist(LogsDir)
+        FileCreateDir, %LogsDir%
+    RotateLogFileIfNeeded(logFile)
     FormatTime, readableTime, %A_Now%, MMMM dd, yyyy HH:mm:ss
 
     Loop, {
@@ -174,6 +184,86 @@ LogToFile(message, logFile := "") {
         if !ErrorLevel
             break
         Sleep, 10
+    }
+}
+
+LogDebugToFile(message, logFile := "") {
+    global Debug
+
+    if (Debug)
+        LogToFile(message, logFile)
+}
+
+RotateLogFileIfNeeded(logFile) {
+    static lastCheck := {}
+    maxBytes := 5 * 1024 * 1024
+    checkIntervalMs := 60000
+
+    if (logFile = "" || !FileExist(logFile))
+        return
+
+    last := lastCheck.HasKey(logFile) ? lastCheck[logFile] : 0
+    elapsed := A_TickCount - last
+    if (last && elapsed >= 0 && elapsed < checkIntervalMs)
+        return
+    lastCheck[logFile] := A_TickCount
+
+    FileGetSize, fileSize, %logFile%
+    if (ErrorLevel || fileSize < maxBytes)
+        return
+
+    SplitPath, logFile, fileName, logDir, ext, nameNoExt
+    if (logDir = "" || nameNoExt = "")
+        return
+    if (ext = "")
+        ext := "log"
+
+    archiveDir := logDir . "\Archive"
+    if !FileExist(archiveDir)
+        FileCreateDir, %archiveDir%
+
+    FormatTime, stamp, %A_Now%, yyyyMMdd_HHmmss
+    pid := DllCall("GetCurrentProcessId")
+    archivePath := archiveDir . "\" . nameNoExt . "_" . stamp . "_" . pid . "_" . A_TickCount . "." . ext
+    FileMove, %logFile%, %archivePath%, 0
+    if ErrorLevel
+        return
+
+    PruneLogArchives(archiveDir, nameNoExt, ext)
+}
+
+PruneLogArchives(archiveDir, nameNoExt, ext) {
+    keepArchives := 3
+    archiveList := ""
+    archivePattern := archiveDir . "\" . nameNoExt . "_*." . ext
+
+    Loop, Files, %archivePattern%, F
+    {
+        FileGetTime, fileTime, %A_LoopFileFullPath%, M
+        if !ErrorLevel
+            archiveList .= fileTime . A_Tab . A_LoopFileFullPath . "`n"
+    }
+
+    if (archiveList = "")
+        return
+
+    Sort, archiveList, R
+    archiveCount := 0
+    Loop, Parse, archiveList, `n, `r
+    {
+        if (A_LoopField = "")
+            continue
+
+        archiveCount++
+        if (archiveCount <= keepArchives)
+            continue
+
+        tabPos := InStr(A_LoopField, A_Tab)
+        if (!tabPos)
+            continue
+
+        oldArchive := SubStr(A_LoopField, tabPos + 1)
+        FileDelete, %oldArchive%
     }
 }
 
@@ -196,8 +286,13 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
 
     webhookURL := (altWebhookURL ? altWebhookURL : discordWebhookURL)
 
+    if (webhookURL = "") {
+        LogToFile("Discord send skipped: missing webhook URL", "Discord.txt")
+        return
+    }
+
     if (webhookURL != "") {
-        MaxRetries := 10
+        MaxRetries := 3
         RetryCount := 0
         try {
         RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
@@ -206,21 +301,29 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
             ProxyEnable := false
             ProxyServer := ""
         }
-        if (proxyEnabled) {
-            curlChar := "curl -k -x " . proxyServer . "/ " 
+        if (proxyEnabled && proxyServer != "") {
+            curlChar := "curl.exe -k -sS --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 60 -o NUL -w ""HTTP_STATUS:%{http_code}"" -x """ . proxyServer . """ "
         } else {
-            curlChar := "curl -k "
+            curlChar := "curl.exe -k -sS --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 60 -o NUL -w ""HTTP_STATUS:%{http_code}"" "
         }
+
+        payloadFile := CreateDiscordPayloadFile(discordPing . message)
+        if (payloadFile = "") {
+            LogToFile("Discord send failed before curl: could not create payload file | webhook=" . RedactDiscordWebhookURL(webhookURL), "Discord.txt")
+            return
+        }
+
         Loop {
+            RetryCount++
             try {
                 ; Base command
-                curlCommand := curlChar
-                    . "-F ""payload_json={\""content\"":\""" . discordPing . message . "\""};type=application/json;charset=UTF-8"" "
+                curlCommand := curlChar . "-F ""payload_json=<" . payloadFile . ";type=application/json;charset=UTF-8"" "
 
                 ; If an screenshot or xml file is provided, send it
                 sendScreenshot1 := screenshotFile != "" && FileExist(screenshotFile)
                 sendScreenshot2 := screenshotFile2 != "" && FileExist(screenshotFile2)
                 sendAccountXml := xmlFile != "" && FileExist(xmlFile)
+                fileCount := sendScreenshot1 + sendScreenshot2 + sendAccountXml
                 if (sendScreenshot1 + sendScreenshot2 + sendAccountXml > 1) {
                     fileIndex := 0
                     if (sendScreenshot1) {
@@ -245,23 +348,91 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
                         curlCommand := curlCommand . "-F ""file=@" . xmlFile . """ "
                 }
                 ; Add the webhook
-                curlCommand := curlCommand . webhookURL
+                curlCommand := curlCommand . """" . webhookURL . """"
 
-                LogToFile(curlCommand, "Discord.txt")
+                LogDebugToFile("Discord send attempt | attempt=" . RetryCount . "/" . MaxRetries . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | messageLen=" . StrLen(message), "Discord.txt")
 
                 ; Send the message using curl
-                RunWait, %curlCommand%,, Hide
-                break
-            }
-            catch {
-                RetryCount++
-                if (RetryCount >= MaxRetries) {
-                    CreateStatusMessage("Failed to send discord message.")
+                if (IsFunc("CmdRet")) {
+                    cmdFn := Func("CmdRet")
+                    curlResult := cmdFn.Call(curlCommand)
+                } else {
+                    RunWait, %curlCommand%,, Hide
+                    curlResult := "HTTP_STATUS:" . ErrorLevel
+                }
+
+                httpStatus := GetDiscordCurlHttpStatus(curlResult)
+                if (httpStatus >= 200 && httpStatus < 300) {
+                    LogDebugToFile("Discord send complete | status=" . httpStatus . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | messageLen=" . StrLen(message), "Discord.txt")
                     break
                 }
-                Sleep, 250
+
+                LogToFile("Discord send failed | attempt=" . RetryCount . "/" . MaxRetries . " | status=" . httpStatus . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | result=" . TrimDiscordCurlResult(curlResult), "Discord.txt")
             }
-            Sleep, 250
+            catch e {
+                LogToFile("Discord send exception | attempt=" . RetryCount . "/" . MaxRetries . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | error=" . FormatDiscordException(e), "Discord.txt")
+            }
+
+            if (RetryCount >= MaxRetries) {
+                CreateStatusMessage("Failed to send discord message.")
+                break
+            }
+            Sleep, % 1000 * RetryCount
         }
+
+        FileDelete, %payloadFile%
     }
+}
+
+CreateDiscordPayloadFile(content) {
+    payloadJson := "{""content"":""" . DiscordEscapeJson(content) . """}"
+    payloadFile := A_Temp . "\ptcgpb_discord_payload_" . DllCall("GetCurrentProcessId") . "_" . A_TickCount . ".json"
+
+    FileDelete, %payloadFile%
+    FileAppend, %payloadJson%, %payloadFile%, UTF-8-RAW
+    if (ErrorLevel || !FileExist(payloadFile))
+        return ""
+
+    return payloadFile
+}
+
+DiscordEscapeJson(text) {
+    text := StrReplace(text, "\n", "`n")
+    text := StrReplace(text, Chr(92), Chr(92) . Chr(92))
+    text := StrReplace(text, Chr(34), Chr(92) . Chr(34))
+    text := StrReplace(text, "`r", "")
+    text := StrReplace(text, "`n", Chr(92) . "n")
+    text := StrReplace(text, "`t", Chr(92) . "t")
+    return text
+}
+
+GetDiscordCurlHttpStatus(curlResult) {
+    if RegExMatch(curlResult, "HTTP_STATUS:(\d{3})", match)
+        return match1 + 0
+    return 0
+}
+
+TrimDiscordCurlResult(curlResult) {
+    curlResult := StrReplace(curlResult, "`r", " ")
+    curlResult := StrReplace(curlResult, "`n", " ")
+    curlResult := Trim(curlResult)
+
+    if (StrLen(curlResult) > 500)
+        curlResult := SubStr(curlResult, 1, 500) . "..."
+
+    return curlResult
+}
+
+RedactDiscordWebhookURL(webhookURL) {
+    return RegExReplace(webhookURL, "i)(/api/webhooks/[^/]+/)[^?\s]+", "$1<redacted>")
+}
+
+FormatDiscordException(e) {
+    if (IsObject(e)) {
+        if (e.Message != "")
+            return e.Message
+        if (e.What != "")
+            return e.What
+    }
+    return e
 }

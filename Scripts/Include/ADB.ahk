@@ -146,9 +146,9 @@ RefreshAdbConnectionAfterInstanceRestart(timeoutMs = 30000) {
                 }
             }
 
-            LogToFile("[" . A_ScriptName . "] Waiting for ADB after instance restart on " . ip . ". Connection result: " . connectionResult, "ADB.txt")
+            LogDebugToFile("[" . A_ScriptName . "] Waiting for ADB after instance restart on " . ip . ". Connection result: " . connectionResult, "ADB.txt")
         } else {
-            LogToFile("[" . A_ScriptName . "] Waiting for ADB port after instance restart.", "ADB.txt")
+            LogDebugToFile("[" . A_ScriptName . "] Waiting for ADB port after instance restart.", "ADB.txt")
         }
 
         if ((A_TickCount - startTick) > timeoutMs) {

@@ -53,51 +53,70 @@ DetectFourCardPack() {
     return false
 }
 
+GetCardLoadingBorderCoords(totalCardsInPack) {
+    return (GetConfiguredDisplayScale() = 125)
+        ? GetCardLoadingBorderCoords125(totalCardsInPack)
+        : GetCardLoadingBorderCoords100(totalCardsInPack)
+}
+
+GetCardLoadingBorderCoords100(totalCardsInPack) {
+    if (totalCardsInPack = 4) {
+        return [[96, 279, 116, 281]
+            ,[181, 279, 201, 281]
+            ,[96, 394, 116, 396]
+            ,[181, 394, 201, 396]]
+    }
+
+    if (totalCardsInPack = 6) {
+        return [[56, 279, 76, 281]
+            ,[139, 279, 159, 281]
+            ,[222, 279, 242, 281]
+            ,[56, 394, 76, 396]
+            ,[139, 394, 159, 396]
+            ,[222, 394, 242, 396]]
+    }
+
+    return [[56, 279, 76, 281]
+        ,[139, 279, 159, 281]
+        ,[222, 279, 242, 281]
+        ,[96, 394, 116, 396]
+        ,[181, 394, 201, 396]]
+}
+
+GetCardLoadingBorderCoords125(totalCardsInPack) {
+    if (totalCardsInPack = 4) {
+        return [[96, 284, 116, 286]
+            ,[181, 284, 201, 286]
+            ,[96, 399, 116, 401]
+            ,[181, 399, 201, 401]]
+    }
+
+    if (totalCardsInPack = 6) {
+        return [[56, 284, 76, 286]
+            ,[139, 284, 159, 286]
+            ,[222, 284, 242, 286]
+            ,[56, 399, 76, 401]
+            ,[139, 399, 159, 401]
+            ,[222, 399, 242, 401]]
+    }
+
+    return [[56, 284, 76, 286]
+        ,[139, 284, 159, 286]
+        ,[222, 284, 242, 286]
+        ,[96, 399, 116, 401]
+        ,[181, 399, 201, 401]]
+}
+
+GetLoadingBoxBorderCoords() {
+    return GetScaleProfileValue([[121, 269, 154, 272], [121, 297, 154, 300]]
+                               , [[121, 274, 154, 277], [121, 302, 154, 305]])
+}
+
 CheckCardLoading(totalCardsInPack){
     global session
 
     count := 0
-    if (GetConfiguredDisplayScale() = 125) {
-        if (totalCardsInPack = 4) {
-            borderCoords := [[96, 284, 116, 286]
-                ,[181, 284, 201, 286]
-                ,[96, 399, 116, 401]
-                ,[181, 399, 201, 401]]
-        } else if (totalCardsInPack = 6) {
-            borderCoords := [[56, 284, 76, 286]
-                ,[139, 284, 159, 286]
-                ,[222, 284, 242, 286]
-                ,[56, 399, 76, 401]
-                ,[139, 399, 159, 401]
-                ,[222, 399, 242, 401]]
-        } else {
-            borderCoords := [[56, 284, 76, 286]
-                ,[139, 284, 159, 286]
-                ,[222, 284, 242, 286]
-                ,[96, 399, 116, 401]
-                ,[181, 399, 201, 401]]
-        }
-    } else if (totalCardsInPack = 4) {
-        borderCoords := [[96, 279, 116, 281]  ; Card 1
-            ,[181, 279, 201, 281] ; Card 2
-            ,[96, 394, 116, 396] ; Card 3
-            ,[181, 394, 201, 396]] ; Card 4
-    } else if (totalCardsInPack = 6) {
-        totalCardsInPack := 6
-        borderCoords := [[56, 279, 76, 281]   ; Top row card 1
-            ,[139, 279, 159, 281] ; Top row card 2
-            ,[222, 279, 242, 281] ; Top row card 3
-            ,[56, 394, 76, 396]   ; Bottom row card 1
-            ,[139, 394, 159, 396] ; Bottom row card 2
-            ,[222, 394, 242, 396]] ; Bottom row card 3
-    } else {
-        ; 5-card pack
-        borderCoords := [[56, 279, 76, 281] ; Card 1
-            ,[139, 279, 159, 281] ; Card 2
-            ,[222, 279, 242, 281] ; Card 3
-            ,[96, 394, 116, 396] ; Card 4
-            ,[181, 394, 201, 396]] ; Card 5
-    }
+    borderCoords := GetCardLoadingBorderCoords(totalCardsInPack)
 
     pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
     for index, value in borderCoords {
@@ -125,8 +144,7 @@ AnalysisBorder(totalCardsInPack) {
     global session, isDevelopment, rarityCheckers
 
     currentPackInfo := {"isVerified": false, "CardSlot": [], "TypeCount": {}}
-    loadingBorderCoords := GetScaleProfileValue([[121, 269, 154, 272], [121, 297, 154, 300]]
-                                                , [[121, 274, 154, 277], [121, 302, 154, 305]])
+    loadingBorderCoords := GetLoadingBoxBorderCoords()
     pBitmap := 0
     Loop, {
         pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))

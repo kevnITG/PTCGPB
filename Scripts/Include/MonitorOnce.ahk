@@ -39,6 +39,8 @@ Loop %Instances% {
         LogToFile(msg, "Monitor.txt")
         
         scriptName := instanceNum . ".ahk"
+        coverHwnd := CaptureMuMuCoverWindow(instanceNum)
+        StoreMuMuCoverWindow(instanceNum, coverHwnd)
         
         killedAHK := killAHK(scriptName)
         killedInstance := killInstance(instanceNum)
@@ -61,7 +63,7 @@ Loop %Instances% {
             ;Command := "Scripts\" . scriptName
             ;Run, %Command%
             scriptPath := A_ScriptDir "\.." "\" scriptName
-            Run, "%A_AhkPath%" /restart "%scriptPath%
+            Run, "%A_AhkPath%" /restart "%scriptPath%"
         }
     }
 }
@@ -74,18 +76,9 @@ killAHK(scriptName := "")
     
     if(scriptName != "") {
         DetectHiddenWindows, On
-        WinGet, IDList, List, ahk_class AutoHotkey
-        Loop %IDList%
-        {
-            ID:=IDList%A_Index%
-            WinGetTitle, ATitle, ahk_id %ID%
-            if InStr(ATitle, "\" . scriptName) {
-                ; MsgBox, Killing: %ATitle%
-                WinKill, ahk_id %ID% ;kill
-                ; WinClose, %fullScriptPath% ahk_class AutoHotkey
-                killed := killed + 1
-            }
-        }
+        killedPIDs := {}
+        killed += killAHKWindowsByClass(scriptName, "AutoHotkey", killedPIDs)
+        killed += killAHKWindowsByClass(scriptName, "#32770", killedPIDs)
     }
     
     return killed
@@ -97,58 +90,58 @@ checkAHK(scriptName := "")
     
     if(scriptName != "") {
         DetectHiddenWindows, On
-        WinGet, IDList, List, ahk_class AutoHotkey
-        Loop %IDList%
-        {
-            ID:=IDList%A_Index%
-            WinGetTitle, ATitle, ahk_id %ID%
-            if InStr(ATitle, "\" . scriptName) {
+        seenPIDs := {}
+        cnt += countAHKWindowsByClass(scriptName, "AutoHotkey", seenPIDs)
+        cnt += countAHKWindowsByClass(scriptName, "#32770", seenPIDs)
+    }
+
+    return cnt
+}
+
+killAHKWindowsByClass(scriptName, winClass, killedPIDs)
+{
+    killed := 0
+    WinGet, IDList, List, ahk_class %winClass%
+    Loop %IDList%
+    {
+        ID := IDList%A_Index%
+        WinGetTitle, ATitle, ahk_id %ID%
+        if (isAHKScriptWindowTitle(ATitle, scriptName)) {
+            WinGet, ahkPID, PID, ahk_id %ID%
+            if (ahkPID && !killedPIDs.HasKey(ahkPID)) {
+                Process, Close, %ahkPID%
+                killedPIDs[ahkPID] := true
+                killed := killed + 1
+            }
+        }
+    }
+
+    return killed
+}
+
+countAHKWindowsByClass(scriptName, winClass, seenPIDs)
+{
+    cnt := 0
+    WinGet, IDList, List, ahk_class %winClass%
+    Loop %IDList%
+    {
+        ID := IDList%A_Index%
+        WinGetTitle, ATitle, ahk_id %ID%
+        if (isAHKScriptWindowTitle(ATitle, scriptName)) {
+            WinGet, ahkPID, PID, ahk_id %ID%
+            if (ahkPID && !seenPIDs.HasKey(ahkPID)) {
+                seenPIDs[ahkPID] := true
                 cnt := cnt + 1
             }
         }
     }
-    
+
     return cnt
 }
 
-killInstance(instanceNum := "")
+isAHKScriptWindowTitle(ATitle, scriptName)
 {
-    killed := 0
-    
-    pID := checkInstance(instanceNum)
-    if pID {
-        Process, Close, %pID%
-        killed := killed + 1
-    }
-    
-    return killed
-}
-
-checkInstance(instanceNum := "")
-{
-    ret := WinExist(instanceNum)
-    if(ret)
-    {
-        WinGet, temp_pid, PID, ahk_id %ret%
-        return temp_pid
-    }
-    
-    return ""
-}
-
-launchInstance(instanceNum := "")
-{
-    global mumuFolder
-    
-    if(instanceNum != "") {
-        mumuNum := getMumuInstanceNum(instanceNum, mumuFolder)
-        if(mumuNum != "") {
-            mumuExe := mumuFolder . "\shell\MuMuPlayer.exe"
-            if !FileExist(mumuExe)
-                mumuExe := mumuFolder . "\nx_main\MuMuNxMain.exe"
-            Run_(mumuExe, "-v " . mumuNum)
-        }
-    }
+    return (InStr(ATitle, "\" . scriptName) || ATitle = scriptName)
 }
 
 ~+F7::ExitApp

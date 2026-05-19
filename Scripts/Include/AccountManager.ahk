@@ -138,6 +138,7 @@ loadAccount() {
     CreateStatusMessage(currentAccountInfo, "AccountInfo", 0, 46, false)
     SetTimer, DestoryAccountInfoUI, -15000
     getMetaData()
+    PersistLoadedAccountForRecovery(loadFile)
 
     return loadFile
 }
@@ -154,15 +155,19 @@ DestoryAccountInfoUI(){
 ; MarkAccountAsUsed - Mark account as successfully used and remove from queue
 ;-------------------------------------------------------------------------------
 MarkAccountAsUsed() {
-    global session
+    global session, DeadCheck
 
     if (!session.get("currentLoadedAccountIndex") || !session.get("accountFileName")) {
         LogToFile("Warning: MarkAccountAsUsed called but no current account tracked")
         return
     }
 
+    if(DeadCheck = 1)
+        LogDebugToFile("MarkAccountAsUsed after cleanup start | account=" . session.get("accountFileName") . " | index=" . session.get("currentLoadedAccountIndex"))
+
     saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
     outputTxt := saveDir . "\list_current.txt"
+    foundByName := false
 
     ; Remove the account from list_current.txt
     if FileExist(outputTxt) {
@@ -171,19 +176,89 @@ MarkAccountAsUsed() {
 
         newListContent := ""
         Loop, % fileLines.MaxIndex() {
-            if (A_Index != session.get("currentLoadedAccountIndex"))
-                newListContent .= fileLines[A_Index] "`r`n"
+            if (fileLines[A_Index] = session.get("accountFileName")) {
+                foundByName := true
+                continue
+            }
+            newListContent .= fileLines[A_Index] "`r`n"
         }
 
-        FileDelete, %outputTxt%
-        FileAppend, %newListContent%, %outputTxt%
+        if (!foundByName) {
+            newListContent := ""
+            Loop, % fileLines.MaxIndex() {
+                if (A_Index != session.get("currentLoadedAccountIndex"))
+                    newListContent .= fileLines[A_Index] "`r`n"
+            }
+        }
+
+        if (foundByName || session.get("currentLoadedAccountIndex")) {
+            FileDelete, %outputTxt%
+            FileAppend, %newListContent%, %outputTxt%
+        }
     }
 
     ; Track as used with timestamp
     TrackUsedAccount(session.get("accountFileName"))
+    ClearLoadedAccountRecovery()
+
+    if(DeadCheck = 1)
+        LogDebugToFile("MarkAccountAsUsed after cleanup complete | account=" . session.get("accountFileName") . " | removedByName=" . foundByName)
 
     ; Reset tracking
     session.set("currentLoadedAccountIndex", 0)
+}
+
+PersistLoadedAccountForRecovery(loadedAccountPath := "") {
+    global session
+
+    if (loadedAccountPath = "")
+        loadedAccountPath := session.get("loadedAccount")
+
+    IniWrite, %loadedAccountPath%, % session.get("scriptIniFile"), Recovery, loadedAccount
+    IniWrite, % session.get("accountFileName"), % session.get("scriptIniFile"), Recovery, accountFileName
+    IniWrite, % session.get("currentLoadedAccountIndex"), % session.get("scriptIniFile"), Recovery, currentLoadedAccountIndex
+    IniWrite, % session.get("loadDir"), % session.get("scriptIniFile"), Recovery, loadDir
+}
+
+RestoreLoadedAccountForRecovery() {
+    global session
+
+    IniRead, loadedAccount, % session.get("scriptIniFile"), Recovery, loadedAccount,
+    IniRead, accountFileName, % session.get("scriptIniFile"), Recovery, accountFileName,
+    IniRead, currentLoadedAccountIndex, % session.get("scriptIniFile"), Recovery, currentLoadedAccountIndex, 0
+    IniRead, loadDir, % session.get("scriptIniFile"), Recovery, loadDir,
+
+    if(loadedAccount != "")
+        session.set("loadedAccount", loadedAccount)
+    if(accountFileName != "")
+        session.set("accountFileName", accountFileName)
+    if(currentLoadedAccountIndex != "")
+        session.set("currentLoadedAccountIndex", currentLoadedAccountIndex)
+    if(loadDir != "")
+        session.set("loadDir", loadDir)
+
+    return (accountFileName != "" && currentLoadedAccountIndex != 0)
+}
+
+ClearLoadedAccountRecovery() {
+    global session
+
+    IniDelete, % session.get("scriptIniFile"), Recovery
+}
+
+SetFriendCleanupPending(reason := "") {
+    global session
+
+    IniWrite, 1, % session.get("scriptIniFile"), UserSettings, friendCleanupPending
+    if(reason != "")
+        IniWrite, %reason%, % session.get("scriptIniFile"), Recovery, friendCleanupReason
+}
+
+ClearFriendCleanupPending() {
+    global session
+
+    IniWrite, 0, % session.get("scriptIniFile"), UserSettings, friendCleanupPending
+    IniDelete, % session.get("scriptIniFile"), Recovery, friendCleanupReason
 }
 
 ;-------------------------------------------------------------------------------
@@ -386,6 +461,7 @@ UpdateAccount() {
         FileMove, % session.get("accountFile"), %accountNewFile% ;TODO enable
         FileSetTime,, %accountNewFile%
         session.set("accountFileName", AccountNewName)
+        PersistLoadedAccountForRecovery()
     }
 
     updateTotalTime()
@@ -503,6 +579,7 @@ setMetaData() {
     accountNewFile := saveDir . "\" . AccountNewName
     FileMove, % session.get("accountFile"), %accountNewFile%
     session.set("accountFileName", AccountNewName)
+    PersistLoadedAccountForRecovery()
 }
 
 ;-------------------------------------------------------------------------------

@@ -105,6 +105,7 @@ needlesDict.Add(new Needle("Friend_DenyButtonInApproveSubmenu", "DeleteFriend", 
 needlesDict.Add(new Needle("Friend_RequestAlreadyClosedInApproveSubmenu", "RequestAlreadyClosed", new Coordinate(3, 330, 70, 345)))
 needlesDict.Add(new Needle("Friend_DisabledDenyAllRequestButtonInApproveSubmenu", "Accept", new Coordinate(190, 495, 202, 507)))
 needlesDict.Add(new Needle("Friend_BlankFriendSlotAreaInApproveSubmenu", "Approve", new Coordinate(177, 450, 190, 468)))
+needlesDict.Add(new Needle("FriendLimit", "FriendLimit", new Coordinate(221, 267, 228, 272)))
 
 ;==============================================================================================================================
 
@@ -206,6 +207,7 @@ needlesDict.Add(new Needle("Mission_MissionIconTopAreaInDetails", "Mission_dino2
 needlesDict.Add(new Needle("Mission_GoToDexButtonIcon", "DexMissions", new Coordinate(18, 210, 30, 222)))
 needlesDict.Add(new Needle("Mission_DailyMissionImage", "DailyMissions", new Coordinate(204, 190, 223, 197)))
 needlesDict.Add(new Needle("Mission_CompleteGotAllClaims", "GotAllMissions", new Coordinate(257, 417, 271, 428)))
+needlesDict.Add(new Needle("MissionDeck", "MissionDeck", new Coordinate(158, 104, 170, 117)))
 
 ;==============================================================================================================================
 
@@ -284,6 +286,7 @@ needlesDict.SetScale125("Pack_BackButtonInSelectPackScreen", new Coordinate(121,
 needlesDict.SetScale125("Create_CountryComboBoxButton", new Coordinate(105, 396, 121, 406))
 needlesDict.SetScale125("Mission_DailyMissionImage", new Coordinate(204, 195, 223, 202))
 needlesDict.SetScale125("Mission_GoToDexButtonIcon", new Coordinate(18, 215, 30, 227))
+needlesDict.SetScale125("MissionDeck", new Coordinate(150, 96, 180, 130))
 needlesDict.SetScale125("GPTest_FriendRequestButtonInUserDetails", new Coordinate(84, 397, 98, 410))
 needlesDict.SetScale125("GPTest_NotFavouriteInDetails", new Coordinate(245, 73, 260, 89))
 needlesDict.SetScale125("GPTest_FavouritedInDetails", new Coordinate(244, 73, 262, 88))
@@ -316,6 +319,7 @@ needlesDict.SetScale125("Common_SpeedMod1x", new Coordinate(20, 170, 24, 174))
 needlesDict.SetScale125("Pack_ResultAfterOpenPack", new Coordinate(170, 98, 270, 125))
 needlesDict.SetScale125("Pack_ReadyForOpenPack", new Coordinate(198, 273, 207, 287))
 needlesDict.SetScale125("Friend_AcceptButtonInApproveSubmenu", new Coordinate(225, 195, 250, 215))
+needlesDict.SetScale125("FriendLimit", new Coordinate(215, 260, 235, 280))
 needlesDict.SetScale125("GPTest_ReqeustCancelButtonInSearchResult", new Coordinate(188, 243, 221, 274))
 needlesDict.SetScale125("Create_TitleBottomBorderInWPSelectCard", new Coordinate(60, 130, 202, 142))
 needlesDict.SetScale125("Pack_PackPointButton", new Coordinate(233, 400, 264, 428))
@@ -333,7 +337,8 @@ needlesDict.SetScale125("Friend_RequestButtonInSearchResult", new Coordinate(165
 needlesDict.SetScale125("Friend_ReqeustButtonInFriendDetails", new Coordinate(70, 395, 100, 420))
 needlesDict.SetScale125("Menu_InventoryIconInMenu", new Coordinate(90, 260, 126, 290))
 ; Group reroll rate-limit recovery opens the menu and returns to title.
-; Keep the same managed needle names for 100/125; Scale125 images live in Scripts\Scale125.
+; Keep managed needle names shared; legacy Scale125 images are only used by
+; ResolveNeedlePath() for documented pixel-sensitive fallback exceptions.
 needlesDict.SetScale125("Menu_GoToTitleButton_Up", new Coordinate(20, 418, 55, 447))
 needlesDict.SetScale125("Menu_GoToTitleButton_Down", new Coordinate(20, 458, 60, 488))
 needlesDict.SetScale125("Menu_MiscMenuLeftTop", new Coordinate(0, 65, 45, 105))

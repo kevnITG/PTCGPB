@@ -111,6 +111,9 @@ startPreProcess(methodType){
     Loop, {
         skipGenericButtonFallback := false
 
+        if(methodType = "Inject Wonderpick 96P+" && DismissFriendFlowBlockingPopup("Entering Social"))
+            continue
+
         if(FindOrLoseImage(needleName, 0, failSafeTime, , true))
             break
 

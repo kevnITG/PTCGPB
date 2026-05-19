@@ -1,4 +1,4 @@
-﻿#SingleInstance on
+﻿#SingleInstance, Force
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0
 SetBatchLines, -1
@@ -74,7 +74,8 @@ session.set("vipListTrimMode", (!botConfig.get("vipListTrimMode")) ? "bottom" : 
 session.set("vipListTrimCount", (!botConfig.get("vipListTrimCount")) ? 60 : botConfig.get("vipListTrimCount"))
 (session.get("vipListTrimCount") = "" || session.get("vipListTrimCount") < 1) ? session.set("vipListTrimCount", 60)
 
-DirectlyPositionWindow()
+windowCoverHwnd := GetMuMuCoverWindowForMaintenance(session.get("winTitle"))
+DirectlyPositionWindow(windowCoverHwnd)
 Sleep, 1000
 
 setADBBaseInfo()
@@ -85,7 +86,7 @@ Sleep, 1000
 CreateStatusMessage("Disabling background services...")
 DisableBackgroundServices()
 
-resetWindows()
+resetWindows(windowCoverHwnd)
 MaxRetries := 10
 RetryCount := 0
 Loop {
@@ -109,6 +110,7 @@ Loop {
         DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1  ; HWND_BOTTOM
                 , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
         Gui, ToolBar:Show, NoActivate x%x4% y%y4%  w275 h30
+        RestoreMuMuCoverWindow(windowCoverHwnd, session.get("winTitle"))
         break
     }
     catch {
@@ -200,32 +202,9 @@ Loop {
                 Delay(1)
                 clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, failSafeTime, 80)
                 requestAlreadyClosed := FindOrLoseImage("Friend_RequestAlreadyClosedInApproveSubmenu", 0, failSafeTime)
-                if(FindOrLoseImage("Friend_FriendList99", 0, failSafeTime)) {
+                if(FindOrLoseImage("FriendLimit", 0, failSafeTime)) {
                     done := true
                     break
-                }
-                else if(FindOrLoseImage("Friend_AcceptButtonInApproveSubmenu", 0, failSafeTime)) {
-                    if (session.get("GPTest"))
-                        break
-                    Loop{
-                        if FindOrLoseImage("Friend_StuckMessageBackground", 0, failSafeTime){
-                            Delay(2)
-                        }else{
-                            adbClick(237, 202)
-                            Delay(1)
-                            if FindOrLoseImage("Friend_StuckMessageBackground", 0, failSafeTime){
-                                Loop{
-                                    if FindOrLoseImage("Friend_StuckMessageBackground", 1, failSafeTime){
-                                        break
-                                    }else{
-                                        Delay(1)
-                                    }
-                                }
-                                FindImageAndClick("Friend_StuckMessageBackground", 202, 202, , 1000)
-                            }
-                            break
-                        }
-                    }
                 }
                 else if(FindOrLoseImage("Common_Error", 0, failSafeTime)) {
                     ; Handle communication error
@@ -294,7 +273,10 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
     global session, needlesDict
     static lastStatusTime := 0
 
-    needleObj := needlesDict.Get(needleName)
+    needleObj := GetSearchNeedleObj(needleName, "FindOrLoseImage")
+    if (!IsObject(needleObj))
+        return false
+
     imageName := needleObj.imageName
 
     imagePath := A_ScriptDir . "\Needles\"
@@ -345,7 +327,10 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
 FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVariation := 20, sleepTime := "", skip := false, safeTime := 0) {
     global botConfig, session, needlesDict
 
-    needleObj := needlesDict.Get(needleName)
+    needleObj := GetSearchNeedleObj(needleName, "FindImageAndClick")
+    if (!IsObject(needleObj))
+        return false
+
     imageName := needleObj.imageName
 
     if (sleepTime = "") {
@@ -440,8 +425,8 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
     return confirmed
 }
 
-resetWindows(){
-    global botConfig
+resetWindows(coverHwnd := ""){
+    global botConfig, session
 
     windowMetrics := GetMumuWindowMetrics()
     scaleParam := windowMetrics.scaleParam
@@ -453,6 +438,8 @@ resetWindows(){
             SelectedMonitorIndex := RegExReplace(botConfig.get("SelectedMonitorIndex"), ":.*$")
             SysGet, Monitor, Monitor, %SelectedMonitorIndex%
             Title := session.get("winTitle")
+            if (!coverHwnd)
+                coverHwnd := GetMuMuCoverWindowForMaintenance(Title)
 
             instanceIndex := StrReplace(Title, "Main", "")
             if (instanceIndex = "")
@@ -469,6 +456,7 @@ resetWindows(){
             WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
             WinSet, Style, +0xC00000, %Title%
             WinSet, Redraw, , %Title%
+            RestoreMuMuCoverWindow(coverHwnd, Title)
             break
         }
         catch {
@@ -485,6 +473,9 @@ resetWindows(){
 
 restartGameInstance(reason, RL := true){
     global botConfig, session
+
+    if (InStr(reason, "Stuck at "))
+        SaveStuckScreenshot(reason)
 
     if(botConfig.get("heartBeatOwnerWebHookURL") != "")
         LogToDiscord(A_ScriptName . " instance has begin restart. Please verify that GodPack has not disappeared upon entering the main screen.\nReasion: " . reason,, true,,, botConfig.get("heartBeatOwnerWebHookURL"))
@@ -505,6 +496,30 @@ restartGameInstance(reason, RL := true){
         session.set("isDead", true)
         IniWrite, 1, % session.get("scriptIniFile"), Metrics, isDead
         SafeReload()
+    }
+}
+
+SaveStuckScreenshot(reason) {
+    global session
+
+    fileDir := A_ScriptDir . "\..\Screenshots\Stuck"
+    if !FileExist(fileDir)
+        FileCreateDir, %fileDir%
+
+    safeReason := RegExReplace(reason, "[\\/:*?""<>|]", "_")
+    safeReason := RegExReplace(safeReason, "\s+", "_")
+    safeReason := SubStr(safeReason, 1, 80)
+    filePath := fileDir . "\" . A_Now . "_inst" . session.get("scriptName") . "_" . safeReason . ".png"
+
+    hWnd := getMuMuHwnd(session.get("winTitle"))
+    if (!hWnd)
+        return
+
+    pBitmap := from_window(hWnd)
+    if (pBitmap) {
+        Gdip_SaveBitmapToFile(pBitmap, filePath)
+        Gdip_DisposeImage(pBitmap)
+        LogToFile("Saved stuck screenshot: " . filePath)
     }
 }
 
@@ -1992,7 +2007,7 @@ Gdip_ImageSearchProfile_wbb(pBitmapHaystack, pNeedle, ByRef OutputList=""
         , SearchDirection, Instances, LineDelim, CoordDelim)
 }
 
-DirectlyPositionWindow() {
+DirectlyPositionWindow(coverHwnd := "") {
     global botConfig, session
     
     windowMetrics := GetMumuWindowMetrics()
@@ -2005,6 +2020,8 @@ DirectlyPositionWindow() {
 
     ; Calculate position based on instance number
     Title := session.get("winTitle")
+    if (!coverHwnd)
+        coverHwnd := GetMuMuCoverWindowForMaintenance(Title)
 
     instanceIndex := StrReplace(Title, "Main", "")
     if (instanceIndex = "")
@@ -2025,6 +2042,7 @@ DirectlyPositionWindow() {
     WinSet, Redraw, , %Title%
 
     CreateStatusMessage("Positioned window at x:" . x . " y:" . y,,,, false)
+    RestoreMuMuCoverWindow(coverHwnd, Title)
 
     return true
 }
