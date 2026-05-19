@@ -124,6 +124,7 @@ needlesDict.Add(new Needle("Common_LevelUpBackground", "LevelUp", new Coordinate
 needlesDict.Add(new Needle("Common_UnknownButton2", "Button2", new Coordinate(95, 350, 195, 530)))
 needlesDict.Add(new Needle("StartupErrorX", "StartupErrorX", new Coordinate(124, 423, 155, 455))) ; ------------------------------ Finding
 needlesDict.Add(new Needle("Common_AlertForAppCrachDuringOpenPack", "closeduringpack", new Coordinate(241, 372, 269, 402)))
+needlesDict.Add(new Needle("TradeUnlocked", "TradeUnlocked", new Coordinate(114, 146, 163, 197)))
 
 ; Common - Error
 needlesDict.Add(new Needle("Common_Error", "Error", new Coordinate(12, 160, 52, 180)))

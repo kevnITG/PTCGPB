@@ -186,7 +186,7 @@ startPreProcess(methodType){
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 130, 473, 145, 488, searchVariation)
         if(vRet = 1){
             adbClick_wbb(137, 480)
-            Sleep, 10000
+            Sleep, 1000
         }
 
         Path = %imagePath%LevelUp.png
@@ -194,7 +194,15 @@ startPreProcess(methodType){
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 100, 86, 167, 116, searchVariation)
         if(vRet = 1){
             adbInputEvent("111") ;send ESC
-            Sleep, 10000
+            Sleep, 1000
+        }
+
+        Path = %imagePath%TradeUnlocked.png
+        pNeedle := GetNeedle(Path)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 114, 146, 163, 197, searchVariation)
+        if(vRet = 1){
+            adbInputEvent("111") ;send ESC
+            Sleep, 1000
         }
 
         Path = %imagePath%LanguageBox.png
@@ -202,7 +210,7 @@ startPreProcess(methodType){
         vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 8, 374, 30, 398, searchVariation)
         if(vRet = 1){
             adbInputEvent("111") ;send ESC
-            Sleep, 10000
+            Sleep, 1000
         }
 
         Path = %imagePath%Button.png

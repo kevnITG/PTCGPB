@@ -1355,9 +1355,7 @@ restartGameInstance(reason, RL := true) {
         }
         Sleep, 100
         AccountMetadata_CloseTempForInstance(session.get("scriptName"))
-        if (session.get("loadedAccount") || botConfig.get("deleteMethod") = "Create Bots (13P)") {
-            startPTCGPApp()
-        }
+        startPTCGPApp()
 
         if (RL) {
             LogToFile("Restarted game. Reason: " reason)
@@ -4636,6 +4634,11 @@ GoToMain() {
 
         if(FindOrLoseImage("Common_PopupXButtonInMain", 0, , , true)){
             adbClick_wbb(137, 480)
+            Delay(1)
+        }
+
+        if(FindOrLoseImage("TradeUnlocked", 0, , , true)){
+            adbInputEvent("111") ;send ESC
             Delay(1)
         }
 

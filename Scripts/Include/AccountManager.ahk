@@ -53,7 +53,8 @@ loadAccount() {
                 CreateStatusMessage("Loading first available account from list: " . cycle . " attempts")
                 loadFile := ""
                 foundValidAccount := false
-                foundIndex := 0
+                skippedIndexes := {}
+                skippedCount := 0
 
                 Loop, % fileLines.MaxIndex() {
                     currentFile := fileLines[A_Index]
@@ -67,12 +68,29 @@ loadAccount() {
                     if (!InStr(currentFile, "xml"))
                         continue
 
+                    accountMeta := AccountMetadata_Get(session.get("scriptName"), currentFile, testFile)
+                    if (!AccountEligibility_IsEligible(session.get("scriptName"), currentFile, testFile, accountMeta)) {
+                        skippedIndexes[A_Index] := true
+                        skippedCount++
+                        LogToFile("Skipped ineligible queued account before injection: " . currentFile)
+                        continue
+                    }
+
                     loadFile := testFile
                     session.set("accountFileName", currentFile)
                     foundValidAccount := true
-                    foundIndex := A_Index
-                    session.set("currentLoadedAccountIndex", A_Index)
+                    session.set("currentLoadedAccountIndex", A_Index - skippedCount)
                     break
+                }
+
+                if (skippedCount > 0) {
+                    newListContent := ""
+                    Loop, % fileLines.MaxIndex() {
+                        if (!skippedIndexes.HasKey(A_Index) && StrLen(fileLines[A_Index]) >= 5)
+                            newListContent .= fileLines[A_Index] "`r`n"
+                    }
+                    FileDelete, %outputTxt%
+                    FileAppend, %newListContent%, %outputTxt%
                 }
 
                 if (foundValidAccount)
@@ -687,6 +705,9 @@ AccountEligibility_IsEligible(instance, fileName, filePath, accountMeta := "") {
 
     if (method = "Inject Rewards")
         return AccountEligibility_InjectRewardsEligible(accountMeta)
+
+    if (method = "Inject Wonderpick 96P+" && accountMeta["packCount"] != "" && (accountMeta["packCount"] + 0) < (botConfig.get("injectWonderpickMinPacks") + 0))
+        return false
 
     if (method = "Inject 13P+" || method = "Inject Wonderpick 96P+")
         return AccountEligibility_InjectPackEligible(accountMeta, method)
