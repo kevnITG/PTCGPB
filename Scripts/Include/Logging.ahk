@@ -35,8 +35,8 @@ CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debug
     if (!timerReposition)
         timerReposition := Func("SetReposition")
 
-    if (Debug && Message != DEFAULT_STATUS_MESSAGE)
-        LogToFile(GuiName . ": " . Message)
+    if (Message != DEFAULT_STATUS_MESSAGE)
+        LogDebug(GuiName . ": " . Message)
 
     Cockpit_WriteLiveMetrics(Message)
 
@@ -187,6 +187,72 @@ LogToFile(message, logFile := "") {
     }
 }
 
+LogLevelValue(level) {
+    level := Trim(level)
+    StringLower, level, level
+    if (level = "error")
+        return 0
+    if (level = "warn" || level = "warning")
+        return 1
+    if (level = "info")
+        return 2
+    if (level = "debug")
+        return 3
+    if (level = "trace")
+        return 4
+    return 2
+}
+
+LogConfiguredLevel() {
+    global botConfig, Debug
+
+    configured := "info"
+    if (IsObject(botConfig)) {
+        configured := botConfig.get("logLevel")
+        if (configured = "")
+            configured := "info"
+        if (botConfig.get("verboseLogging") && LogLevelValue(configured) < LogLevelValue("debug"))
+            configured := "debug"
+    } else if (Debug) {
+        configured := "debug"
+    }
+    return configured
+}
+
+ShouldLog(level := "info") {
+    return LogLevelValue(level) <= LogLevelValue(LogConfiguredLevel())
+}
+
+LogMessage(level, message, logFile := "") {
+    level := Trim(level)
+    if (level = "")
+        level := "info"
+    StringLower, level, level
+    if (!ShouldLog(level))
+        return
+    LogToFile("[" . level . "] " . message, logFile)
+}
+
+LogError(message, logFile := "") {
+    LogMessage("error", message, logFile)
+}
+
+LogWarn(message, logFile := "") {
+    LogMessage("warn", message, logFile)
+}
+
+LogInfo(message, logFile := "") {
+    LogMessage("info", message, logFile)
+}
+
+LogDebug(message, logFile := "") {
+    LogMessage("debug", message, logFile)
+}
+
+LogTrace(message, logFile := "") {
+    LogMessage("trace", message, logFile)
+}
+
 GetActiveDiscordProfile() {
     global botConfig, discordWebhookURL, discordUserId, sendAccountXml
 
@@ -221,7 +287,7 @@ LogMissingDiscordWebhook(profileName) {
         return
 
     warnedProfiles[profileName] := true
-    LogToFile(profileName . " Discord webhook URL is not configured. Message was not sent.", "Discord.txt")
+    LogWarn(profileName . " Discord webhook URL is not configured. Message was not sent.", "Discord.txt")
     CreateStatusMessage(profileName . " Discord webhook missing.",,,, false)
 }
 
@@ -303,7 +369,7 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
                 ; Add the webhook
                 curlCommand := curlCommand . webhookURL
 
-                LogToFile(curlCommand, "Discord.txt")
+                LogDebug(curlCommand, "Discord.txt")
 
                 ; Send the message using curl
                 RunWait, %curlCommand%,, Hide

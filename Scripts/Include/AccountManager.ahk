@@ -72,7 +72,7 @@ loadAccount() {
                     if (!AccountEligibility_IsEligible(session.get("scriptName"), currentFile, testFile, accountMeta)) {
                         skippedIndexes[A_Index] := true
                         skippedCount++
-                        LogToFile("Skipped ineligible queued account before injection: " . currentFile)
+                        LogDebug("Skipped ineligible queued account before injection: " . currentFile)
                         continue
                     }
 
@@ -99,19 +99,19 @@ loadAccount() {
                 cycle++
 
                 if (cycle > 5) {  ; Reduced from 10 to 5 for faster failure
-                    LogToFile("No valid accounts found in list_current.txt after " . cycle . " attempts")
+                    LogInfo("No valid accounts found in list_current.txt after " . cycle . " attempts")
                     return false
                 }
 
                 ; Reduced delay between attempts
                 Sleep, 500  ; Reduced from Delay(1) which could be 250ms+
             } else {
-                LogToFile("list_current.txt is empty or doesn't exist")
+                LogInfo("list_current.txt is empty or doesn't exist")
                 return false
             }
         }
     } else {
-        LogToFile("list_current.txt file doesn't exist")
+        LogInfo("list_current.txt file doesn't exist")
         return false
     }
 
@@ -176,7 +176,7 @@ MarkAccountAsUsed() {
     global session
 
     if (!session.get("currentLoadedAccountIndex") || !session.get("accountFileName")) {
-        LogToFile("Warning: MarkAccountAsUsed called but no current account tracked")
+        LogWarn("MarkAccountAsUsed called but no current account tracked")
         return
     }
 
@@ -212,7 +212,7 @@ MarkAccountAsClaimed() {
     global session
 
     if (!session.get("currentLoadedAccountIndex") || !session.get("accountFileName")) {
-        LogToFile("Warning: MarkAccountAsClaimed called but no current account tracked")
+        LogWarn("MarkAccountAsClaimed called but no current account tracked")
         return
     }
 
@@ -235,8 +235,7 @@ MarkAccountAsClaimed() {
     }
 
     ; Do NOT call TrackUsedAccount - account stays available for pack-opening immediately
-    if(botConfig.get("verboseLogging"))
-        LogToFile("Marked account as claimed (no 24h lock): " . session.get("accountFileName"))
+    LogDebug("Marked account as claimed (no 24h lock): " . session.get("accountFileName"))
 
     ; Reset tracking
     session.set("currentLoadedAccountIndex", 0)
@@ -413,8 +412,7 @@ CleanupUsedAccounts() {
             accountFilePath := saveDir . "\" . fileName
             if (!FileExist(accountFilePath)) {
                 removedCount++
-                if(botConfig.get("verboseLogging"))
-                    LogToFile("Removed used account entry (file no longer exists): " . fileName)
+                LogDebug("Removed used account entry (file no longer exists): " . fileName)
                 continue
             }
 
@@ -426,8 +424,7 @@ CleanupUsedAccounts() {
             } else {
                 ; Account is older than 24 hours, remove it
                 removedCount++
-                if(botConfig.get("verboseLogging"))
-                    LogToFile("Removed stale used account: " . fileName . " (used: " . timestamp . ")")
+                LogDebug("Removed stale used account: " . fileName . " (used: " . timestamp . ")")
             }
         }
     }
@@ -438,8 +435,8 @@ CleanupUsedAccounts() {
         FileAppend, %cleanedContent%, %usedAccountsLog%
     }
 
-    if(botConfig.get("verboseLogging") && removedCount > 0)
-        LogToFile("Cleaned up used accounts: kept " . keptCount . ", removed " . removedCount)
+    if (removedCount > 0)
+        LogDebug("Cleaned up used accounts: kept " . keptCount . ", removed " . removedCount)
 }
 
 ;-------------------------------------------------------------------------------
@@ -797,7 +794,7 @@ CreateAccountList(instance) {
     ; First check: Do list files exist and are they not empty?
     if (!FileExist(outputTxt) || !FileExist(outputTxt_current)) {
         needRegeneration := true
-        LogToFile("List files don't exist, regenerating...")
+        LogInfo("List files don't exist, regenerating...")
     } else {
         ; Check if current list is empty or nearly empty
         FileRead, currentListContent, %outputTxt_current%
@@ -813,7 +810,7 @@ CreateAccountList(instance) {
 
         ; If list is empty or has very few accounts, force regeneration
         if (eligibleAccountsInList <= 1) {
-            LogToFile("Current list is empty or nearly empty, forcing regeneration...")
+            LogInfo("Current list is empty or nearly empty, forcing regeneration...")
             forceRegeneration := true
             needRegeneration := true
         } else {
@@ -841,7 +838,7 @@ CreateAccountList(instance) {
 
     helperPath := AccountMetadata_HelperPath()
     if (!FileExist(helperPath)) {
-        LogToFile("carddb.exe not found; cannot generate account schedule")
+        LogError("carddb.exe not found; cannot generate account schedule")
         return
     }
 
@@ -868,5 +865,5 @@ CreateAccountList(instance) {
 
     RunWait, %command%,, Hide
     if (ErrorLevel)
-        LogToFile("carddb schedule-accounts failed for instance " . instance)
+        LogError("carddb schedule-accounts failed for instance " . instance)
 }

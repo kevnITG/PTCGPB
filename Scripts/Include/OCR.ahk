@@ -466,7 +466,7 @@ CountShinedust() {
             }
         }
     } catch e {
-        LogToFile("Failed to OCR shinedust: " . e.message, "OCR.txt")
+        LogWarn("Failed to OCR shinedust: " . e.message, "OCR.txt")
         CreateStatusMessage("Failed to OCR shinedust.")
         Sleep, 2000
     }

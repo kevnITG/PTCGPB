@@ -203,7 +203,7 @@ if(firstRun) {
                 } else if(FindOrLoseImage("Common_Error", 0, failSafeTime)) {
                     ; Handle communication error
                     CreateStatusMessage("Error message detected. Clicking retry...",,,, false)
-                    LogToFile("Error message in Main " . session.get("scriptName") . ". Clicking retry...")
+                    LogWarn("Error message in Main " . session.get("scriptName") . ". Clicking retry...")
                     Sleep, 1000
                     adbClick(82, 389)  ; Click retry button
                     Sleep, 1000
@@ -213,7 +213,7 @@ if(firstRun) {
                 } else if(FindOrLoseImage("StartupErrorX", 0, failSafeTime)) {
                     ; Handle startup error with X button
                     CreateStatusMessage("Start-up error detected. Clearing and reloading...",,,, false)
-                    LogToFile("Start-up error in Main " . session.get("scriptName") . ". Reloading...")
+                    LogWarn("Start-up error in Main " . session.get("scriptName") . ". Reloading...")
                     Sleep, 2000
                     adbClick(139, 440)  ; Click X to close error
                     Sleep, 4000
@@ -308,7 +308,7 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
     else
         FSTime := 180
     if (safeTime >= FSTime) {
-        LogToFile("Instance " . session.get("scriptName") . " has been stuck at " . imageName . " for 90s. (EL: " . EL . ", sT: " . safeTime . ") Killing it...")
+        LogWarn("Instance " . session.get("scriptName") . " has been stuck at " . imageName . " for 90s. (EL: " . EL . ", sT: " . safeTime . ") Killing it...")
         restartGameInstance("Stuck at " . imageName . "...")
         session.set("failSafe", A_TickCount)
     }
@@ -374,7 +374,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
                 ElapsedTime := (A_TickCount - session.get("StartSkipTime")) // 1000
                 FSTime := 45
                 if (ElapsedTime >= FSTime || safeTime >= FSTime) {
-                    LogToFile("Instance " . session.get("scriptName") . " has been stuck at " . imageName . " for 90s. (EL: " . ElapsedTime . ", sT: " . safeTime . ") Killing it...")
+                    LogWarn("Instance " . session.get("scriptName") . " has been stuck at " . imageName . " for 90s. (EL: " . ElapsedTime . ", sT: " . safeTime . ") Killing it...")
                     restartGameInstance("Stuck at " . imageName . "...") ; change to reset the instance and delete data then reload script
                     session.set("StartSkipTime", A_TickCount)
                     session.set("failSafe", A_TickCount)
@@ -390,7 +390,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
         Gdip_DisposeImage(pBitmap)
         if (vRet = 1) {
             CreateStatusMessage("Error message in " . session.get("scriptName") . ". Clicking retry...")
-            LogToFile("Error message in " . session.get("scriptName") . ". Clicking retry...")
+            LogWarn("Error message in " . session.get("scriptName") . ". Clicking retry...")
             adbClick(82, 389)
             Delay(1)
             adbClick(139, 386)
@@ -473,7 +473,7 @@ restartGameInstance(reason, RL := true){
     adbWriteRaw("am start -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity")
     ;startPTCGPApp()
     if(RL) {
-        LogToFile("Restarted game. Reason: " reason)
+        LogInfo("Restarted game. Reason: " reason)
         session.set("isDead", true)
         IniWrite, 1, % session.get("scriptIniFile"), Metrics, isDead
         SafeReload()

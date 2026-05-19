@@ -526,7 +526,7 @@ showcaseLikes() {
     {
         showcaseID := filteredIDs[A_Index]
         ; Log for debugging
-        LogToFile("Processing showcase ID: " . showcaseID, "ShowcaseLog.txt")
+        LogInfo("Processing showcase ID: " . showcaseID, "ShowcaseLog.txt")
         Delay(2)
         ;TradeTutorialForShowcase()
         ;Delay(2)

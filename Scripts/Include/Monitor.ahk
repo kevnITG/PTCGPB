@@ -52,9 +52,9 @@ Loop {
         EnvSub, nowEpoch, 1970, seconds
 
         if(A_TickCount - lastReduceMemory > 120000) {
-            LogToFile("Memory reduction process start.", "Monitor.txt")
+            LogInfo("Memory reduction process start.", "Monitor.txt")
             ReduceVMMemory()
-            LogToFile("Memory reduction process complete.", "Monitor.txt")
+            LogInfo("Memory reduction process complete.", "Monitor.txt")
             lastReduceMemory := A_TickCount
         }
 
@@ -80,7 +80,7 @@ Loop {
         {
             ; msgbox, Killing Instance %instanceNum%! Last Run Completed %secondsSinceLastEnd% Seconds Ago
             msg := "Killing Instance " . instanceNum . "! Last Run Completed " . secondsSinceLastEnd . " Seconds Ago"
-            LogToFile(msg, "Monitor.txt")
+            LogInfo(msg, "Monitor.txt")
 
             scriptName := instanceNum . ".ahk"
 
@@ -111,7 +111,7 @@ Loop {
     }
 
     if (saveToGit && A_TickCount - lastGitCommit > 3600000) {
-        LogToFile("Git auto-commit start.", "Monitor.txt")
+        LogInfo("Git auto-commit start.", "Monitor.txt")
         gitRoot := A_ScriptDir . "\..\.."
         paths := []
         paths.Push({path: "Accounts/Saved", suffix: ".xml"})
@@ -146,12 +146,12 @@ ReduceVMMemory(){
 
             if (Success) {
                 ;ResultLine := "PID: " . PID . " | Before: " . Round(MemBefore, 1) . "KB | After: " . Round(MemAfter, 1) . "KB | Reduced size: " . Round(MemBefore-MemAfter, 1) . "KB`n"
-                ;LogToFile(ResultLine, "Development.txt")
+                ;LogInfo(ResultLine, "Development.txt")
                 CleanedCount++
             }
         }
     }
-    LogToFile("Total reduce memory count: " . CleanedCount, "Monitor.txt")
+    LogInfo("Total reduce memory count: " . CleanedCount, "Monitor.txt")
     return CleanedCount
 }
 

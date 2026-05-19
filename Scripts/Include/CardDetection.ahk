@@ -198,7 +198,7 @@ FindGodPack(invalidPack := false, cards := "") {
     normalBorders := currentPackInfo["TypeCount"]["normal"]
     if (normalBorders) {
         logMessage := "Instance: " . session.get("scriptName") " | Not a GP"
-        LogToFile(logMessage, "debug_cards.txt")
+        LogDebug(logMessage, "debug_cards.txt")
         CreateStatusMessage("Not a God Pack...",,,, false)
         return false
     }
@@ -215,11 +215,11 @@ FindGodPack(invalidPack := false, cards := "") {
         tempStarCount := currentPackInfo["TypeCount"]["fullart"] + currentPackInfo["TypeCount"]["rainbow"] + currentPackInfo["TypeCount"]["trainer"]
 
         logMessage := "Instance: " . session.get("scriptName") " | tempStarCount " . tempStarCount
-        LogToFile(logMessage, "debug_cards.txt")
+        LogDebug(logMessage, "debug_cards.txt")
 
         if (requiredStars > 0 && tempStarCount < requiredStars) {
             logMessage := "Instance: " . session.get("scriptName") " | passed check"
-            LogToFile(logMessage, "debug_cards.txt")
+            LogDebug(logMessage, "debug_cards.txt")
             CreateStatusMessage("Pack doesn't contain enough 2 stars...",,,, false)
             invalidPack := true
         }
@@ -231,7 +231,7 @@ FindGodPack(invalidPack := false, cards := "") {
         IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
     } else {
         logMessage := "Instance: " . session.get("scriptName") " | passed check"
-        LogToFile(logMessage, "debug_cards.txt")
+        LogDebug(logMessage, "debug_cards.txt")
         GodPackFound("Valid", cards)
     }
 
@@ -306,7 +306,7 @@ FoundStars(star, cards := "") {
                 }
             }
         } catch e {
-            LogToFile("Failed to OCR username: " . e.message, "OCR.txt")
+            LogWarn("Failed to OCR username: " . e.message, "OCR.txt")
         }
     }
 
@@ -342,7 +342,7 @@ FoundStars(star, cards := "") {
             logMessage .= "\n<@" . mentionId . ">"
     }
     LogToDiscord(logMessage, screenShot, true, (DiscordShouldSendAccountXml() ? accountFullPath : ""), fcScreenshot)
-    LogToFile(StrReplace(logMessage, "\n", " "), "GPlog.txt")
+    LogInfo(StrReplace(logMessage, "\n", " "), "GPlog.txt")
 }
 
 ;-------------------------------------------------------------------------------
@@ -417,7 +417,7 @@ GodPackFound(validity, cards := "") {
             }
         }
     } catch e {
-        LogToFile("Failed to OCR username: " . e.message, "OCR.txt")
+        LogWarn("Failed to OCR username: " . e.message, "OCR.txt")
     }
 
     if (FileExist(usernameScreenshotFile)) {
@@ -446,7 +446,7 @@ GodPackFound(validity, cards := "") {
     logMessage .= "\n[" . starCount . "/5][" . session.get("packsInPool") . "P][" . packDisplayName . "] "
     logMessage .= invalid . " God Pack found in instance: " . session.get("scriptName") . "\nFile name: " . accountFile . "\nBacking up to the Accounts\\GodPacks folder and continuing..."
 
-    LogToFile(StrReplace(logMessage, "\n", " "), "GPlog.txt")
+    LogInfo(StrReplace(logMessage, "\n", " "), "GPlog.txt")
 
     if (validity = "Valid") {
         LogToDiscord(logMessage, screenShot, true, (DiscordShouldSendAccountXml() ? accountFullPath : ""), fcScreenshot)
@@ -612,7 +612,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         ; verification
         if (!FileExist(savedXmlPath)) {
             CreateStatusMessage("Warning: Could not find account XML file for attachment", "", 0, 0, false)
-            LogToFile("FoundTradeable: Could not find XML file. accountFileName=" . session.get("accountFileName") . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
+            LogWarn("FoundTradeable: Could not find XML file. accountFileName=" . session.get("accountFileName") . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
             savedXmlPath := ""  ; Clear it so we don't try to attach a non-existent file
         }
     }
@@ -626,7 +626,7 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
     CreateStatusMessage("Tradeable cards found! Continuing...",,,, false)
 
     logMessage := statusMessage . " in instance: " . session.get("scriptName") . " (" . session.get("packsInPool") . " packs, " . dictionaryData[botConfig.get("defaultBotLanguage")][session.get("openPack")] . ") Screenshot file: " . screenShotFileName
-    LogToFile(logMessage, "S4T.txt")
+    LogInfo(logMessage, "S4T.txt")
 
     if (!botConfig.get("s4tSilent") && botConfig.get("s4tDiscordWebhookURL")) {
         packDetailsMessage := ""
@@ -818,7 +818,7 @@ CheckCardsSimple(result) {
 
             if (!FileExist(savedXmlPath)) {
                 CreateStatusMessage("Warning: Could not find account XML file for attachment", "", 0, 0, false)
-                LogToFile("FoundTradeable: Could not find XML file. accountFileName=" . accountFileName . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
+                LogWarn("FoundTradeable: Could not find XML file. accountFileName=" . accountFileName . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
                 savedXmlPath := ""
             }
         }
@@ -977,7 +977,7 @@ FoundTradeableNew(foundCards, pack := "", cards := "") {
 
         if (!FileExist(savedXmlPath)) {
             CreateStatusMessage("Warning: Could not find account XML file for attachment", "", 0, 0, false)
-            LogToFile("FoundTradeable: Could not find XML file. accountFileName=" . accountFileName . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
+            LogWarn("FoundTradeable: Could not find XML file. accountFileName=" . accountFileName . ", savedXmlPath=" . savedXmlPath, "S4T.txt")
             savedXmlPath := ""
         }
     }
@@ -1020,7 +1020,7 @@ FoundTradeableNew(foundCards, pack := "", cards := "") {
     CreateStatusMessage("Tradeable cards found! Continuing...",,,, false)
 
     logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . packName . ") Screenshot file: " . screenShotFileName
-    LogToFile(logMessage, "S4T.txt")
+    LogInfo(logMessage, "S4T.txt")
 
     if (!botConfig.get("s4tSilent") && botConfig.get("s4tDiscordWebhookURL")) {
         discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . packName . ")\n"

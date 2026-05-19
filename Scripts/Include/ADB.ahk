@@ -1,18 +1,33 @@
 #Include *i %A_LineFile%\..\Gdip_All.ahk
 
+ADB_RedactCommand(command) {
+    if (RegExMatch(command, "i)^input\s+text\s+"))
+        return "input text <redacted>"
+    return command
+}
+
+ADB_LogTrace(message) {
+    LogTrace("[" . A_ScriptName . "] " . message, "ADB.txt")
+}
+
 setADBBaseInfo(){
+    ADB_LogTrace("setADBBaseInfo started")
     mumuFolder := getMuMuFolder()
     if(mumuFolder == ""){
+        LogError("[" . A_ScriptName . "] MuMu folder could not be resolved while setting ADB base info", "ADB.txt")
         MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
         ExitApp
     }
     adbPath := findAdbPath(mumuFolder)
+    ADB_LogTrace("Resolved adbPath=" . adbPath)
 
     adbPort := findAdbPorts()
     if(!adbPort) {
+        LogError("[" . A_ScriptName . "] ADB port could not be resolved", "ADB.txt")
         Msgbox, Invalid port... Check the common issues section in the readme/github guide.
         ExitApp
     }
+    ADB_LogTrace("Resolved adbPort=" . adbPort)
 
     session.set("adbPort", adbPort)
     session.set("adbPath", adbPath)
@@ -20,6 +35,7 @@ setADBBaseInfo(){
 }
 
 KillADBProcesses() {
+    ADB_LogTrace("Killing adb.exe processes")
     ; Use AHK's Process command to close adb.exe
     Process, Close, adb.exe
     ; Fallback to taskkill for robustness
@@ -29,9 +45,11 @@ KillADBProcesses() {
 findAdbPorts() {
     global session
 
+    ADB_LogTrace("findAdbPorts scanning MuMu configs for scriptName=" . session.get("scriptName"))
     ; Initialize variables
     mumuFolder := getMuMuFolder()
     if(mumuFolder == ""){
+        LogError("[" . A_ScriptName . "] MuMu folder could not be resolved while finding ADB ports", "ADB.txt")
         MsgBox, 16, , Can't Find MuMu, try old MuMu installer in Discord #announcements, otherwise double check your folder path setting!`nDefault path is C:\Program Files\Netease
         ExitApp
     }
@@ -67,11 +85,13 @@ findAdbPorts() {
                 ; Parse the JSON for playerName
                 RegExMatch(extraConfigContent, """playerName"":\s*""(.*?)""", playerName)
                 if(playerName1 = session.get("scriptName")) {
+                    ADB_LogTrace("Matched MuMu playerName=" . playerName1 . " adbPort=" . adbPortValue)
                     return adbPortValue
                 }
             }
         }
     }
+    ADB_LogTrace("findAdbPorts finished without match")
 }
 
 ConnectAdb() {
@@ -83,15 +103,19 @@ ConnectAdb() {
     ip := "127.0.0.1:" . session.get("adbPort") ; Specify the connection IP:port
 
     CreateStatusMessage("Connecting to ADB...",,,, false)
+    ADB_LogTrace("ConnectAdb starting ip=" . ip . " maxRetries=" . MaxRetries)
 
     Loop %MaxRetries% {
         ; Attempt to connect using CmdRet
+        ADB_LogTrace("ConnectAdb attempt " . RetryCount . "/" . MaxRetries)
         connectionResult := CmdRet(session.get("adbPath") . " connect " . ip)
+        ADB_LogTrace("ConnectAdb result=" . Trim(connectionResult))
 
         ; Check for successful connection in the output
         if InStr(connectionResult, "connected to " . ip) {
             connected := true
             CreateStatusMessage("ADB connected successfully.",,,, false)
+            ADB_LogTrace("ConnectAdb connected successfully")
             return true
         } else {
             RetryCount++
@@ -100,11 +124,13 @@ ConnectAdb() {
         }
 
         if !connected {
+            ADB_LogTrace("ConnectAdb disconnect/reconnect cycle starting")
             disconnectionResult := CmdRet(session.get("adbPath") . " disconnect 127.0.0.1:" . session.get("adbPort"))
             connectionResult := CmdRet(session.get("adbPath") . " connect 127.0.0.1:" . session.get("adbPort"))
-            LogToFile("[" . A_ScriptName . "] ADB connection failed in ConnectAdb. Bot is reconnecting to ADB.(" . RetryCount . "/" . MaxRetries . ") Connection result: " . connectionResult, "ADB.txt")
+            LogWarn("[" . A_ScriptName . "] ADB connection failed in ConnectAdb. Bot is reconnecting to ADB.(" . RetryCount . "/" . MaxRetries . ") Connection result: " . connectionResult, "ADB.txt")
 
             if (RetryCount > MaxRetries) {
+                LogError("[" . A_ScriptName . "] ConnectAdb exceeded max retries", "ADB.txt")
                 if (Debug)
                     CreateStatusMessage("Failed to connect to ADB after multiple retries. Please check your emulator and port settings.")
                 else
@@ -119,6 +145,7 @@ DisableBackgroundServices() {
     global session
 
     deviceAddress := "127.0.0.1:" . session.get("adbPort")
+    ADB_LogTrace("DisableBackgroundServices started deviceAddress=" . deviceAddress)
     commands := []
     ;commands.Push("pm disable-user --user 0 ""com.google.android.gms/.chimera.PersistentIntentOperationService"" 2> /dev/null")
     ;commands.Push("pm disable-user --user 0 ""com.google.android.gms/com.google.android.location.reporting.service.ReportingAndroidService"" 2> /dev/null")
@@ -130,8 +157,9 @@ DisableBackgroundServices() {
 
     for index, command in commands {
         fullCommand := """" . session.get("adbPath") . """ -s " . deviceAddress . " shell " . command
+        ADB_LogTrace("DisableBackgroundServices command=" . command)
         result := CmdRet(fullCommand)
-        ;LogToFile("DisableService result (" . command . "): " . result, "ADB.txt")
+        ADB_LogTrace("DisableBackgroundServices result=" . Trim(result))
     }
 }
 
@@ -142,10 +170,12 @@ initializeAdbShell() {
     MaxRetries := 5
     BackoffTime := 1000  ; Initial backoff time in milliseconds
     MaxBackoff := 5000   ; Prevent excessive waiting
+    ADB_LogTrace("initializeAdbShell starting maxRetries=" . MaxRetries)
 
     Loop {
         try {
             if (!session.get("adbShell") || session.get("adbShell").Status != 0) {
+                ADB_LogTrace("initializeAdbShell creating new shell")
                 session.set("adbShell", "")  ; Reset before reattempting
 
                 ; Validate adbPath and adbPort
@@ -157,6 +187,7 @@ initializeAdbShell() {
                 }
 
                 ; Attempt to start adb shell
+                ADB_LogTrace("initializeAdbShell exec adb shell port=" . session.get("adbPort"))
                 session.set("adbShell", ComObjCreate("WScript.Shell").Exec(session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort") . " shell"))
 
                 ; Ensure adbShell is running before sending 'su'
@@ -165,7 +196,7 @@ initializeAdbShell() {
                     RetryCount++
                     disconnectionResult := CmdRet(session.get("adbPath") . " disconnect 127.0.0.1:" . session.get("adbPort"))
                     connectionResult := CmdRet(session.get("adbPath") . " connect 127.0.0.1:" . session.get("adbPort"))
-                    LogToFile("[" . A_ScriptName . "] ADB connection failed in initializeAdbShell. Bot is reconnecting to ADB.(" . RetryCount . "/" . MaxRetries . ") Connection result: " . connectionResult, "ADB.txt")
+                    LogWarn("[" . A_ScriptName . "] ADB connection failed in initializeAdbShell. Bot is reconnecting to ADB.(" . RetryCount . "/" . MaxRetries . ") Connection result: " . connectionResult, "ADB.txt")
 
                     if (RetryCount > MaxRetries) {
                         throw Exception("Failed to start ADB shell.")
@@ -176,6 +207,7 @@ initializeAdbShell() {
 
                 try {
                     RetryCount++
+                    ADB_LogTrace("initializeAdbShell requesting su")
                     session.get("adbShell").StdIn.WriteLine("su")
                 } catch e2 {
                     if (RetryCount > MaxRetries) {
@@ -186,11 +218,12 @@ initializeAdbShell() {
 
             ; If adbShell is running, break loop
             if (session.get("adbShell").Status = 0) {
+                ADB_LogTrace("initializeAdbShell ready pid=" . session.get("adbShell").ProcessID)
                 break
             }
         } catch e {
             errorMessage := IsObject(e) ? e.Message : e
-            LogToFile("[" . A_ScriptName . "] ADB Shell Error: " . errorMessage, "ADB.txt")
+            LogError("[" . A_ScriptName . "] ADB Shell Error: " . errorMessage, "ADB.txt")
 
             if (RetryCount >= MaxRetries) {
                 if (Debug)
@@ -204,6 +237,7 @@ initializeAdbShell() {
 
         Sleep, BackoffTime
         BackoffTime := Min(BackoffTime + 1000, MaxBackoff)  ; Limit backoff time
+        ADB_LogTrace("initializeAdbShell backing off nextDelay=" . BackoffTime)
     }
 }
 
@@ -212,17 +246,21 @@ waitUntilActivatePTCGPApp(){
 
     session.set("baseTime", A_TickCount)
     adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
+    ADB_LogTrace("waitUntilActivatePTCGPApp started")
     Loop, {
         result := CmdRet(adbCommand . " shell dumpsys window | grep -E 'mCurrentFocus'")
+        ADB_LogTrace("waitUntilActivatePTCGPApp focus=" . Trim(result))
         if (InStr(result, "jp.pokemon.pokemontcgp"))
             break
 
         Sleep, 200
         if((A_TickCount - session.get("baseTime")) > 10000){
+            LogWarn("[" . A_ScriptName . "] waitUntilActivatePTCGPApp timed out", "ADB.txt")
             return false
         }
     }
 
+    ADB_LogTrace("waitUntilActivatePTCGPApp detected active app")
     return true
 }
 
@@ -231,6 +269,7 @@ doesMissionUserPrefsExist() {
 
     adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
     result := Trim(CmdRet(adbCommand . " shell su -c '""test -f /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs && echo 1 || echo 0""'"), "`r`n`t ")
+    ADB_LogTrace("doesMissionUserPrefsExist result=" . result)
     return (result = "1")
 }
 
@@ -238,8 +277,10 @@ startPTCGPApp(){
     maxRetry := 5
     retryCount := 0
 
+    ADB_LogTrace("startPTCGPApp started")
     stateResult := isCurrentScreenHome()
     if(stateResult) {
+        ADB_LogTrace("startPTCGPApp home/outside-app state detected; starting app")
         adbWriteRaw("rm -f /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs")
         adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
     }
@@ -255,6 +296,7 @@ startPTCGPApp(){
 
         Sleep, 50
     }
+    ADB_LogTrace("startPTCGPApp finished retryCount=" . retryCount)
     DelayH(100)
 }
 
@@ -263,8 +305,10 @@ closePTCGPApp(){
     retryCount := 0
     stateResult := false
 
+    ADB_LogTrace("closePTCGPApp started")
     stateResult := isCurrentScreenHome()
     if(!stateResult) {
+        ADB_LogTrace("closePTCGPApp app active; returning to launcher/home state")
         adbWriteRaw("rm -f /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs")
         adbWriteRaw("am start -W -n jp.pokemon.pokemontcgp/com.unity3d.player.UnityPlayerActivity -f 0x10018000")
     }
@@ -280,6 +324,7 @@ closePTCGPApp(){
 
         Sleep, 50
     }
+    ADB_LogTrace("closePTCGPApp finished retryCount=" . retryCount)
     DelayH(100)
 }
 
@@ -288,6 +333,7 @@ isCurrentScreenHome(){
 
     adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
     result := CmdRet(adbCommand . " shell dumpsys window | grep -E 'mCurrentFocus'")
+    ADB_LogTrace("isCurrentScreenHome focus=" . Trim(result))
     if (!InStr(result, "jp.pokemon.pokemontcgp")){
         Sleep, 250
         return true
@@ -298,6 +344,7 @@ isCurrentScreenHome(){
 
 isTerminatePTCGPAppByADBShell(){
     result := adbWriteRaw("pidof jp.pokemon.pokemontcgp", true)
+    ADB_LogTrace("isTerminatePTCGPAppByADBShell pidResult=" . Trim(result))
     if (RegExMatch(result, "\d+")) {
         return false
     }
@@ -310,6 +357,7 @@ isTerminatePTCGPHelperApp(){
 
     adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
     result := CmdRet(adbCommand . " shell pidof ptcgpb")
+    ADB_LogTrace("isTerminatePTCGPHelperApp pidResult=" . Trim(result))
     if (RegExMatch(result, "\d+")) {
         return false
     }
@@ -322,6 +370,7 @@ isTerminatePTCGPApp(){
 
     adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
     result := CmdRet(adbCommand . " shell pidof jp.pokemon.pokemontcgp")
+    ADB_LogTrace("isTerminatePTCGPApp pidResult=" . Trim(result))
     if (RegExMatch(result, "\d+")) {
         return false
     }
@@ -330,6 +379,7 @@ isTerminatePTCGPApp(){
 }
 
 clearMissionCache() {
+    ADB_LogTrace("clearMissionCache")
     adbWriteRaw("rm -f /data/data/jp.pokemon.pokemontcgp/files/UserPreferences/v1/MissionUserPrefs")
     Sleep, 250
 }
@@ -341,6 +391,7 @@ adbEnsureShell() {
     Process, Exist, %pid%
 
     if (!ErrorLevel || session.get("adbShell").Status != 0) {
+        ADB_LogTrace("adbEnsureShell detected missing/dead shell; reinitializing")
         initializeAdbShell()
     }
 }
@@ -354,22 +405,28 @@ adbWriteRaw(command, isReturnning := false) {
 
     Loop {
         try {
+            ADB_LogTrace("adbWriteRaw send returning=" . (isReturnning ? 1 : 0) . " command=" . ADB_RedactCommand(command))
             session.get("adbShell").StdIn.WriteLine(command . ";echo done;")
             while !session.get("adbShell").StdOut.AtEndOfStream {
                 pid := session.get("adbShell").ProcessID
                 Process, Exist, %pid%
 
                 if (!ErrorLevel || session.get("adbShell").Status != 0) {
+                    ADB_LogTrace("adbWriteRaw detected dead shell while waiting for command")
                     initializeAdbShell()
                     break
                 }
 
                 line := session.get("adbShell").StdOut.ReadLine()
                 if (line = "done"){
-                    if(isReturnning)
+                    if(isReturnning) {
+                        ADB_LogTrace("adbWriteRaw done outputBytes=" . StrLen(result))
                         return result
-                    else
+                    }
+                    else {
+                        ADB_LogTrace("adbWriteRaw done")
                         return true
+                    }
                 }
                 else if(isReturnning)
                     result .= line . "`n"
@@ -387,10 +444,10 @@ adbWriteRaw(command, isReturnning := false) {
         } catch e {
             errorMessage := IsObject(e) ? e.Message : e
             retries++
-            LogToFile("[" . A_ScriptName . "] ADB write error(" . retries . "/" . MaxRetries . ") Command: " . command . ", Error: " . errorMessage, "ADB.txt")
+            LogWarn("[" . A_ScriptName . "] ADB write error(" . retries . "/" . MaxRetries . ") Command: " . ADB_RedactCommand(command) . ", Error: " . errorMessage, "ADB.txt")
             session.set("adbShell", "")
             if (retries >= MaxRetries){
-                LogToFile("[" . A_ScriptName . "] Reconnect to ADB Server. command: " . command, "ADB.txt")
+                LogInfo("[" . A_ScriptName . "] Reconnect to ADB Server. command: " . ADB_RedactCommand(command), "ADB.txt")
                 adbEnsureShell()
             }
             Sleep, 300
@@ -413,15 +470,18 @@ adbClick(X, Y) {
             , Round(X * convX)
             , Round((Y + offset) * convY))
     }
+    ADB_LogTrace("adbClick logical=(" . X . "," . Y . ") command=" . clickCommands[key])
     adbWriteRaw(clickCommands[key])
 }
 
 adbInput(name) {
+    ADB_LogTrace("adbInput chars=" . StrLen(name))
     adbWriteRaw("input text " . name)
     waitadb()
 }
 
 adbInputEvent(event) {
+    ADB_LogTrace("adbInputEvent event=" . event)
     if InStr(event, " ") {
         ; If the event uses a space, we use keycombination
         adbWriteRaw("input keycombination " . event)
@@ -434,6 +494,7 @@ adbInputEvent(event) {
 
 ; Simulates a swipe gesture on an Android device, swiping from one X/Y-coordinate to another.
 adbSwipe(params) {
+    ADB_LogTrace("adbSwipe params=" . params)
     adbWriteRaw("input swipe " . params)
     waitadb()
 }
@@ -442,6 +503,7 @@ adbSwipe(params) {
 ; Not currently supported.
 adbGesture(params) {
     ; Example params (a 2-second hold-drag from a lower to an upper Y-coordinate): 0 2000 138 380 138 90 138 90
+    ADB_LogTrace("adbGesture params=" . params)
     adbWriteRaw("input touchscreen gesture " . params)
     waitadb()
 }
@@ -458,10 +520,12 @@ adbTakeScreenshot(outputFile) {
 
     deviceAddress := "127.0.0.1:" . session.get("adbPort")
     baseCommand := """" . session.get("adbPath") . """ -s " . deviceAddress
+    ADB_LogTrace("adbTakeScreenshot outputFile=" . outputFile)
 
     hwnd := getMuMuHwnd(session.get("winTitle"))
     if (!hwnd) {
         command := baseCommand . " exec-out screencap -p > """ .  outputFile . """"
+        ADB_LogTrace("adbTakeScreenshot using exec-out fallback because hwnd missing")
         RunWait, %ComSpec% /c "%command%", , Hide
         return
     }
@@ -471,6 +535,7 @@ adbTakeScreenshot(outputFile) {
     if (!pBitmap || pBitmap = "") {
         deviceAddress := "127.0.0.1:" . session.get("adbPort")
         command := baseCommand . " exec-out screencap -p > """ .  outputFile . """"
+        ADB_LogTrace("adbTakeScreenshot using exec-out fallback because bitmap capture failed")
         RunWait, %ComSpec% /c "%command%", , Hide
         return
     }
@@ -481,12 +546,14 @@ adbTakeScreenshot(outputFile) {
     }
 
     result := Gdip_SaveBitmapToFile(pBitmap, outputFile)
+    ADB_LogTrace("adbTakeScreenshot GDI save result=" . result)
 
     Gdip_DisposeImage(pBitmap)
 
     if (!result || result = -1) {
         deviceAddress := "127.0.0.1:" . session.get("adbPort")
         command := baseCommand . " exec-out screencap -p > """ .  outputFile . """"
+        ADB_LogTrace("adbTakeScreenshot using exec-out fallback because save failed")
         RunWait, %ComSpec% /c "%command%", , Hide
         return
     }

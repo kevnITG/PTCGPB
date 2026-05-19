@@ -36,7 +36,7 @@ Loop %Instances% {
     {
         ; msgbox, Killing Instance %instanceNum%! Last Run Completed %secondsSinceLastEnd% Seconds Ago
         msg := "Killing Instance " . instanceNum . "! Last Run Completed " . secondsSinceLastEnd . " Seconds Ago"
-        LogToFile(msg, "Monitor.txt")
+        LogInfo(msg, "Monitor.txt")
 
         scriptName := instanceNum . ".ahk"
 

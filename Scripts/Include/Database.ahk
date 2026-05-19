@@ -232,21 +232,21 @@ GetTradesDatabaseStats() {
 ;-------------------------------------------------------------------------------
 SaveCroppedImage(sourceFile, destFile, x, y, w, h) {
     if (!FileExist(sourceFile)) {
-        LogToFile("SaveCroppedImage: Source file not found: " . sourceFile, "OCR.txt")
+        LogWarn("SaveCroppedImage: Source file not found: " . sourceFile, "OCR.txt")
         return false
     }
 
     pBitmap := Gdip_CreateBitmapFromFile(sourceFile)
 
     if (!pBitmap || pBitmap <= 0) {
-        LogToFile("SaveCroppedImage: Failed to load bitmap from: " . sourceFile, "OCR.txt")
+        LogWarn("SaveCroppedImage: Failed to load bitmap from: " . sourceFile, "OCR.txt")
         return false
     }
 
     Gdip_GetImageDimensions(pBitmap, imageWidth, imageHeight)
 
     if (x < 0 || y < 0 || x + w > imageWidth || y + h > imageHeight) {
-        LogToFile("SaveCroppedImage: Invalid crop coordinates - Image: " . imageWidth . "x" . imageHeight . ", Crop: " . x . "," . y . "," . w . "," . h, "OCR.txt")
+        LogWarn("SaveCroppedImage: Invalid crop coordinates - Image: " . imageWidth . "x" . imageHeight . ", Crop: " . x . "," . y . "," . w . "," . h, "OCR.txt")
         Gdip_DisposeImage(pBitmap)
         return false
     }
@@ -254,7 +254,7 @@ SaveCroppedImage(sourceFile, destFile, x, y, w, h) {
     pCroppedBitmap := Gdip_CloneBitmapArea(pBitmap, x, y, w, h)
 
     if (!pCroppedBitmap || pCroppedBitmap <= 0) {
-        LogToFile("SaveCroppedImage: Failed to crop bitmap", "OCR.txt")
+        LogWarn("SaveCroppedImage: Failed to crop bitmap", "OCR.txt")
         Gdip_DisposeImage(pBitmap)
         return false
     }
@@ -262,7 +262,7 @@ SaveCroppedImage(sourceFile, destFile, x, y, w, h) {
     saveResult := Gdip_SaveBitmapToFile(pCroppedBitmap, destFile)
 
     if (saveResult != 0) {
-        LogToFile("SaveCroppedImage: Failed to save cropped image to: " . destFile . " (Error: " . saveResult . ")", "OCR.txt")
+        LogWarn("SaveCroppedImage: Failed to save cropped image to: " . destFile . " (Error: " . saveResult . ")", "OCR.txt")
     }
 
     Gdip_DisposeImage(pCroppedBitmap)

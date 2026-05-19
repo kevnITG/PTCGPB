@@ -52,7 +52,7 @@ Agg_InitEngine() {
         ; Fresh bot session: ignore historical instance logs on first observation
         ; so stale STUCK lines from previous runs are not replayed into this session.
         g_aggIgnoreHistoricalLogs := true
-        LogToFile("Cockpit in-process Aggregator starting. sessionStartEpoch=" . g_aggSessionStartEpoch, "Aggregator.txt")
+        LogInfo("Cockpit in-process Aggregator starting. sessionStartEpoch=" . g_aggSessionStartEpoch, "Aggregator.txt")
         Agg_EmitEvent("info", "global", 0, "session", "Session started")
     }
 }
@@ -655,7 +655,7 @@ Agg_WriteState(instancesConfigured, instancesRunning, instancesStuck
 
     ok := CockpitState_Commit(b)
     if (!ok)
-        LogToFile("Cockpit in-process aggregator: failed to commit CockpitState.ini", "Aggregator.txt")
+        LogWarn("Cockpit in-process aggregator: failed to commit CockpitState.ini", "Aggregator.txt")
 }
 
 Agg_Max(a, b) {
@@ -941,7 +941,7 @@ Agg_LoadRuntimeState(sessionId) {
             , "livePacks": lp + 0, "totalRunSecCompleted": trc + 0, "gpFoundCount": gpc + 0 }
     }
 
-    LogToFile("Cockpit in-process Aggregator resumed session " . g_aggSessionId, "Aggregator.txt")
+    LogInfo("Cockpit in-process Aggregator resumed session " . g_aggSessionId, "Aggregator.txt")
     return true
 }
 

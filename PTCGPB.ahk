@@ -1419,6 +1419,21 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (botConfig.get("saveToGit") ? "Checked" : "") " vui_saveToGit_Popup gsaveToGit_Click x" . col2X . " y" . yPos2 . " " . sectionColor, Auto Save to Git (hourly)
     yPos2 += 30
 
+    logLevel := botConfig.get("logLevel")
+    StringLower, logLevel, logLevel
+    logLevelChoose := 3
+    if (logLevel = "error")
+        logLevelChoose := 1
+    else if (logLevel = "warn" || logLevel = "warning")
+        logLevelChoose := 2
+    else if (logLevel = "debug")
+        logLevelChoose := 4
+    else if (logLevel = "trace")
+        logLevelChoose := 5
+    Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%yPos2% %sectionColor%, Log Level
+    Gui, ToolsAndSystemSelect:Add, DropDownList, vui_logLevel_Popup choose%logLevelChoose% x300 y%yPos2% w85 Background2A2A2A cWhite, error|warn|info|debug|trace
+    yPos2 += 40
+
     Gui, ToolsAndSystemSelect:Font, s8 cWhite, Segoe UI
     xmlSortY := yPos2 - 5
     Gui, ToolsAndSystemSelect:Add, Button, x%col2X% y%xmlSortY% w170 h20 gRunXMLSortTool BackgroundTrans, XML pack counts
@@ -1464,6 +1479,7 @@ saveToolsAndSystemSettings:
     botConfig.set("clientLanguage", ui_clientLanguage_Popup, "ToolsAndSystem")
     botConfig.set("instanceLaunchDelay", ui_instanceLaunchDelay_Popup, "ToolsAndSystem")
     botConfig.set("autoLaunchMonitor", ui_autoLaunchMonitor_Popup, "ToolsAndSystem")
+    botConfig.set("logLevel", ui_logLevel_Popup, "ToolsAndSystem")
     currentDeleteMethod := botConfig.get("deleteMethod")
     GuiControlGet, selectedDeleteMethod, 1:, ui_deleteMethod
     if (selectedDeleteMethod != "")
@@ -1862,15 +1878,15 @@ BalanceXMLs:
         {
             instanceDir := saveDir . A_Index
             Loop, Files, %instanceDir%\*.xml
-        {
-            FileGetTime, fileModifiedTime, %A_LoopFileFullPath%, M
-            if (fileModifiedTime = "")
-                continue
-            fileModifiedTimeDiff := A_Now
-            EnvSub, fileModifiedTimeDiff, %fileModifiedTime%, Hours
-            if (fileModifiedTimeDiff >= 24)
-                counter++
-        }
+            {
+                FileGetTime, fileModifiedTime, %A_LoopFileFullPath%, M
+                if (fileModifiedTime = "")
+                    continue
+                fileModifiedTimeDiff := A_Now
+                EnvSub, fileModifiedTimeDiff, %fileModifiedTime%, Hours
+                if (fileModifiedTimeDiff >= 24)
+                    counter++
+            }
         }
 
         Tooltip
@@ -2218,10 +2234,10 @@ ResetAccountLists() {
     if (FileExist(resetListsPath)) {
         Run, %resetListsPath%,, Hide UseErrorLevel
         Sleep, 50
-        LogToFile("Account lists reset via ResetLists.ahk. New lists will be generated on next injection.")
+        LogInfo("Account lists reset via ResetLists.ahk. New lists will be generated on next injection.")
         CreateStatusMessage("Account lists reset. New lists will use current method settings.",,,, false)
     } else {
-        LogToFile("ERROR: ResetLists.ahk not found at: " . resetListsPath)
+        LogError("ResetLists.ahk not found at: " . resetListsPath)
 
         if (botConfig.get("debugMode")) {
             MsgBox, 0x40000, Reset list issue, ResetLists.ahk not found at:`n%resetListsPath%

@@ -29,21 +29,21 @@ CommitAndPushGit(gitRoot, logFile, pathsList) {
         }
 
         if (addPaths = "") {
-            LogToFile("No files to commit.", logFile)
+            LogInfo("No files to commit.", logFile)
             return True
         }
 
         RunWait, %ComSpec% /c git -C "%gitRoot%" add%addPaths% > "%tmpFile%" 2>&1,, Hide
         FileRead, addOutput, %tmpFile%
-        LogToFile("git add output: " . addOutput, logFile)
+        LogDebug("git add output: " . addOutput, logFile)
 
         ; Get staged changes
         RunWait, %ComSpec% /c git -C "%gitRoot%" diff --cached --name-status > "%tmpFile%" 2>&1,, Hide
         FileRead, diffOutput, %tmpFile%
-        LogToFile("git diff --cached --name-status output: " . diffOutput, logFile)
+        LogDebug("git diff --cached --name-status output: " . diffOutput, logFile)
 
         if (diffOutput = "") {
-            LogToFile("No changes to commit.", logFile)
+            LogInfo("No changes to commit.", logFile)
             return True
         }
 
@@ -89,24 +89,24 @@ CommitAndPushGit(gitRoot, logFile, pathsList) {
         }
 
         if (firstPart) {
-            LogToFile("No tracked changes staged. Skipping commit.", logFile)
+            LogInfo("No tracked changes staged. Skipping commit.", logFile)
             return True
         }
 
-        LogToFile("Committing: " . commitMsg, logFile)
+        LogInfo("Committing: " . commitMsg, logFile)
 
         ; Commit
         RunWait, %ComSpec% /c git -C "%gitRoot%" commit -m "%commitMsg%" > "%tmpFile%" 2>&1,, Hide
         FileRead, commitOutput, %tmpFile%
-        LogToFile("git commit output: " . commitOutput, logFile)
+        LogDebug("git commit output: " . commitOutput, logFile)
 
         try {
             ; Push
             RunWait, %ComSpec% /c git -C "%gitRoot%" push > "%tmpFile%" 2>&1,, Hide
             FileRead, pushOutput, %tmpFile%
-            LogToFile("git push output: " . pushOutput, logFile)
+            LogDebug("git push output: " . pushOutput, logFile)
         } catch pushError {
-            LogToFile("Git push error: " . pushError.Message, logFile)
+            LogError("Git push error: " . pushError.Message, logFile)
         }
 
         ; Append to git_history.csv
@@ -116,9 +116,9 @@ CommitAndPushGit(gitRoot, logFile, pathsList) {
         FormatTime, nowStr, %A_Now%, yyyy-MM-dd HH:mm:ss
         FileAppend, % nowStr . "," . commitMsg . "`n", %gitHistoryFile%
 
-        LogToFile("Git auto-commit complete.", logFile)
+        LogInfo("Git auto-commit complete.", logFile)
     } catch e {
-        LogToFile("Git auto-commit error: " . e.Message, logFile)
+        LogError("Git auto-commit error: " . e.Message, logFile)
         return False
     }
     return True

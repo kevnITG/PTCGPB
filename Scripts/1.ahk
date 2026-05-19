@@ -318,12 +318,12 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
 
         session.set("VRAMUsage", GetVRAMByScriptName(session.get("scriptName")))
         if(session.get("VRAMUsage").Usage > 1){
-            LogToFile("[" . A_ScriptName . "] GPU usage exceeds the threshold and restarts. VRAM Usage(" . session.get("VRAMUsage").Mode . "): " . session.get("VRAMUsage").Usage . " GB", "Restart.txt")
+            LogInfo("[" . A_ScriptName . "] GPU usage exceeds the threshold and restarts. VRAM Usage(" . session.get("VRAMUsage").Mode . "): " . session.get("VRAMUsage").Usage . " GB", "Restart.txt")
             CreateStatusMessage("Restarting Instance...",,,, false)
             restartInstance()
             DirectlyPositionWindow()
             CreateStatusMessage("Restart complete!",,,, false)
-            LogToFile("[" . A_ScriptName . "] Restart complete!", "Restart.txt")
+            LogInfo("[" . A_ScriptName . "] Restart complete!", "Restart.txt")
             session.set("loadedAccount", false)
         }
 
@@ -352,7 +352,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
                     ; Wait for eligible accounts to become available
                     ; Simple approach - just show wait message and sleep
                     CreateStatusMessage("No eligible accounts available for " . botConfig.get("deleteMethod") . ".`nWaiting 1 minute before checking again...", "NoEligibleAccount", 0, 0, false)
-                    LogToFile("No eligible accounts available for " . botConfig.get("deleteMethod") . ". Waiting 1 minute...")
+                    LogInfo("No eligible accounts available for " . botConfig.get("deleteMethod") . ". Waiting 1 minute...")
 
                     ; Check stopToggle immediately, then wait 1 minute before checking again
                     if (session.get("stopToggle")){
@@ -368,7 +368,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             }
 
             ; If we reach here, we have a valid loaded account for injection
-            LogToFile("Successfully loaded account for injection: " . session.get("accountFileName"))
+            LogInfo("Successfully loaded account for injection: " . session.get("accountFileName"))
             guiName := "NoEligibleAccount" . session.get("scriptName")
             Gui, %guiName%:+LastFoundExist
             if WinExist()
@@ -705,7 +705,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
         CreateStatusMessage(generateStatusText(), "AvgRuns", 0, 605, false, true)
 
         ; Log to file
-        LogToFile("Packs: " . session.get("packsThisRun") . " | Total time: " . session.get("mminutes") . "m " . session.get("sseconds") . "s | Avg: " . session.get("aminutes") . "m " . session.get("aseconds") . "s | Runs: " . session.get("rerolls"))
+        LogInfo("Packs: " . session.get("packsThisRun") . " | Total time: " . session.get("mminutes") . "m " . session.get("sseconds") . "s | Avg: " . session.get("aminutes") . "m " . session.get("aseconds") . "s | Runs: " . session.get("rerolls"))
 
         SendMetadataToPTCGPB(session.get("packsThisRun"))
 
@@ -725,16 +725,13 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             if (!session.get("keepAccount") || session.get("s4tFoundTradeable")) {
                 if (botConfig.get("deleteMethod") = "Inject Rewards" && !session.get("s4tFoundTradeable")) {
                     MarkAccountAsClaimed()  ; No 24h lock � account stays available for pack-opening
-                    if(botConfig.get("verboseLogging"))
-                        LogToFile("Marked injected account as claimed: " . session.get("accountFileName"))
+                    LogDebug("Marked injected account as claimed: " . session.get("accountFileName"))
                 } else {
                     MarkAccountAsUsed()  ; Remove account from queue
-                    if(botConfig.get("verboseLogging"))
-                        LogToFile("Marked injected account as used: " . session.get("accountFileName"))
+                    LogDebug("Marked injected account as used: " . session.get("accountFileName"))
                 }
             } else {
-                if(botConfig.get("verboseLogging"))
-                    LogToFile("Keeping injected account: " . session.get("accountFileName"))
+                LogDebug("Keeping injected account: " . session.get("accountFileName"))
             }
 
             ; Reset loadedAccount so it will be loaded fresh next iteration
@@ -839,9 +836,14 @@ GetCurrentDeviceAccountForMetadata() {
 
     deviceAccount := session.get("deviceAccount")
     if (deviceAccount = "") {
+        LogDebug("Device account missing in session; reading from XML metadata")
         deviceAccount := GetDeviceAccountFromXML()
-        if (deviceAccount != "")
+        if (deviceAccount != "") {
+            LogDebug("Resolved device account from XML for " . session.get("accountFileName"))
             session.set("deviceAccount", deviceAccount)
+        } else {
+            LogWarn("Could not resolve device account for " . session.get("accountFileName"))
+        }
     }
     return deviceAccount
 }
@@ -1018,7 +1020,7 @@ if(imageName = "CommunityShowcase") {
                 FileDelete, % session.get("loadedAccount")
                 IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
             }
-            LogToFile("Restarted game. Reason: No save data found")
+            LogInfo("Restarted game. Reason: No save data found")
             CleanupBeforeExit()
             SafeReload()
         }
@@ -1153,7 +1155,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
                     FileDelete, % session.get("loadedAccount")
                     IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
                 }
-                LogToFile("Restarted game. Reason: No save data found")
+                LogInfo("Restarted game. Reason: No save data found")
                 CleanupBeforeExit()
                 SafeReload()
             }
@@ -1293,7 +1295,7 @@ restartGameInstance(reason, RL := true) {
         logStr := "STUCK DETECTED - Reason: " . reason . " | injectMethod: " . (session.get("injectMethod") ? "true" : "false") . " | "
         logStr .= "loadedAccount: " . (session.get("loadedAccount") ? "true" : "false") . " | "
         logStr .= "accountFileName: " . session.get("accountFileName")
-        LogToFile(logStr)
+        LogInfo(logStr)
         SaveStuckScreenshot(reason)
         ; Persist recovery state before any stuck-triggered restart.
         ; This guarantees startup recovery removes friends before loading a new account.
@@ -1303,7 +1305,7 @@ restartGameInstance(reason, RL := true) {
     }
 
     if (RL = "GodPack") {
-        LogToFile("Restarted game. Reason: " reason)
+        LogInfo("Restarted game. Reason: " reason)
         IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
         if (!botConfig.get("groupRerollEnabled"))
             AppendFriendCodeToManualVipIds(session.get("friendCode"))
@@ -1314,7 +1316,7 @@ restartGameInstance(reason, RL := true) {
         Reload
     } else if (isStuck) {
         if(!checkInstance(session.get("scriptName"))){
-            LogToFile(" Found " . session.get("scriptName") . " instance down! start Instance")
+            LogInfo(" Found " . session.get("scriptName") . " instance down! start Instance")
             launchInstance(session.get("scriptName"))
         }
 
@@ -1323,14 +1325,14 @@ restartGameInstance(reason, RL := true) {
 
         ; Kill the entire MuMu instance
         CreateStatusMessage("Restarting Pocket App...",,,, false)
-        LogToFile("Restarting Pocket App " . session.get("scriptName") . " due to: " . reason)
+        LogInfo("Restarting Pocket App " . session.get("scriptName") . " due to: " . reason)
         ;restartInstance()
         closePTCGPApp()
         Sleep, 100
         AccountMetadata_CloseTempForInstance(session.get("scriptName"))
         startPTCGPApp()
         SendMetadataToPTCGPB(session.get("packsThisRun"))
-        LogToFile("Restarted MuMu instance. Reason: " reason)
+        LogInfo("Restarted MuMu instance. Reason: " reason)
 
         PersistStopAfterRunIfNeeded()
         CleanupBeforeExit()
@@ -1350,7 +1352,7 @@ restartGameInstance(reason, RL := true) {
         startPTCGPApp()
 
         if (RL) {
-            LogToFile("Restarted game. Reason: " reason)
+            LogInfo("Restarted game. Reason: " reason)
 
             PersistStopAfterRunIfNeeded()
             CleanupBeforeExit()
@@ -1385,7 +1387,7 @@ SaveStuckScreenshot(reason) {
     if (pBitmap) {
         Gdip_SaveBitmapToFile(pBitmap, filePath)
         Gdip_DisposeImage(pBitmap)
-        LogToFile("Saved stuck screenshot: " . filePath)
+        LogInfo("Saved stuck screenshot: " . filePath)
     }
 }
 
@@ -1523,44 +1525,63 @@ GetAccountCreationDate() {
     if (!session.get("injectMethod") || !session.get("loadedAccount") || session.get("accountFileName") = "")
         return false
 
+    LogDebug("GetAccountCreationDate started for " . session.get("accountFileName"))
     accountPath := A_ScriptDir . "\..\Accounts\Saved\" . session.get("scriptName") . "\" . session.get("accountFileName")
     accountMeta := AccountMetadata_Get(session.get("scriptName"), session.get("accountFileName"), accountPath)
     existingCreatedAt := accountMeta["createdAt"]
 
+    LogTrace("Ensuring ptcgpb helper exists before creation-date check", "ADB.txt")
     adbWriteRaw("mkdir -p /data/ptcgp &&  if [ ! -e /data/ptcgp/ptcgpb ]; then curl -L -o /data/ptcgp/ptcgpb https://leanny.github.io/ptcgpb-helper/ptcgpb-helper-android && chmod +x /data/ptcgp/ptcgpb; fi")
+    LogTrace("Running ptcgpb earliest for creation-date window", "ADB.txt")
     earliestOutput := adbWriteRaw("/data/ptcgp/ptcgpb earliest", true)
     earliestOutput := StrReplace(earliestOutput, "`r")
     earliestOutput := Trim(earliestOutput, "`n`t ")
-    if (!RegExMatch(earliestOutput, "(\d{9,12})", earliestMatch))
+    if (!RegExMatch(earliestOutput, "(\d{9,12})", earliestMatch)) {
+        LogWarn("GetAccountCreationDate could not parse earliest output for " . session.get("accountFileName") . ": " . earliestOutput)
         return false
+    }
 
     earliestUnix := earliestMatch1 + 0
     latestUnix := earliestUnix + 86400
+    LogDebug("Creation-date valid window for " . session.get("accountFileName") . ": earliestUnix=" . earliestUnix . ", latestUnix=" . latestUnix)
     normalizedExistingCreatedAt := AccountCreationDate_Normalize(existingCreatedAt)
     if (normalizedExistingCreatedAt != "") {
         existingCreatedAtUnix := AccountCreationDate_ToUnix(normalizedExistingCreatedAt)
         if (existingCreatedAtUnix >= earliestUnix && existingCreatedAtUnix <= latestUnix)
         {
             if (normalizedExistingCreatedAt != existingCreatedAt) {
+                LogDebug("Normalized account createdAt from Unix timestamp for " . session.get("accountFileName"))
                 accountMeta["createdAt"] := normalizedExistingCreatedAt
                 AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
             }
+            LogDebug("Using existing account createdAt for " . session.get("accountFileName"))
             return true
         }
+        LogDebug("Existing account createdAt outside expected range for " . session.get("accountFileName"))
     }
 
     creationDate := AccountCreationDate_FromUnix(latestUnix)
+    LogDebug("Defaulting createdAt to latest window bound for " . session.get("accountFileName") . ": " . creationDate)
 
     if (RegExMatch(session.get("accountFileName"), "^\d+P_(\d{14})_", fileMatch)) {
         fileCreationDate := fileMatch1
         fileCreationUnix := AccountCreationDate_ToUnix(fileCreationDate)
-        if (fileCreationUnix >= earliestUnix && fileCreationUnix <= latestUnix)
+        if (fileCreationUnix >= earliestUnix && fileCreationUnix <= latestUnix) {
             creationDate := fileCreationDate
+            LogDebug("Using createdAt from filename for " . session.get("accountFileName") . ": " . creationDate)
+        } else {
+            LogDebug("Filename createdAt outside expected range for " . session.get("accountFileName") . ": " . fileCreationDate)
+        }
     }
 
     accountMeta["deviceAccount"] := GetCurrentDeviceAccountForMetadata()
     accountMeta["createdAt"] := creationDate
-    return AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
+    saveOk := AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
+    if (saveOk)
+        LogInfo("Saved account createdAt for " . session.get("accountFileName") . ": " . creationDate)
+    else
+        LogWarn("Failed to save account createdAt for " . session.get("accountFileName"))
+    return saveOk
 }
 
 AccountCreationDate_Normalize(value) {
@@ -1587,27 +1608,37 @@ AccountCreationDate_ToUnix(creationDate) {
 GetHistoryOfAccount() {
     global session
     global botConfig
-    if (!botConfig.get("importHistory"))
+    if (!botConfig.get("importHistory")) {
+        LogDebug("Skipping account history import because Import History is disabled")
         return true
+    }
 
     if (!session.get("injectMethod") || !session.get("loadedAccount") || session.get("accountFileName") = "")
         return false
 
+    LogInfo("GetHistoryOfAccount started for " . session.get("accountFileName"))
     accountPath := A_ScriptDir . "\..\Accounts\Saved\" . session.get("scriptName") . "\" . session.get("accountFileName")
     accountMeta := AccountMetadata_Get(session.get("scriptName"), session.get("accountFileName"), accountPath)
 
     deviceAccount := GetCurrentDeviceAccountForMetadata()
-    if (deviceAccount = "")
+    if (deviceAccount = "") {
+        LogWarn("GetHistoryOfAccount skipped because device account could not be resolved for " . session.get("accountFileName"))
         return false
+    }
 
-    if (AccountEligibility_FlagIsSet(accountMeta, "H") && AccountMetadata_AccountHasPulls(deviceAccount))
+    if (AccountEligibility_FlagIsSet(accountMeta, "H") && AccountMetadata_AccountHasPulls(deviceAccount)) {
+        LogDebug("GetHistoryOfAccount skipped because history is already imported for " . session.get("accountFileName"))
         return true
+    }
 
     helperPath := AccountMetadata_HelperPath()
-    if (!FileExist(helperPath))
+    if (!FileExist(helperPath)) {
+        LogWarn("GetHistoryOfAccount skipped because carddb helper is missing at " . helperPath)
         return false
+    }
 
     CreateStatusMessage("Importing Pack History... Please wait a bit.")
+    LogDebug("Importing pack history for device account " . deviceAccount)
 
     safeName := RegExReplace(deviceAccount, "[^A-Za-z0-9_.-]", "_")
     filename := "history_" . safeName . ".txt"
@@ -1620,25 +1651,37 @@ GetHistoryOfAccount() {
     if (FileExist(localPath))
         FileDelete, %localPath%
 
+    LogTrace("Ensuring MissionUserPrefs exists before history import", "ADB.txt")
     ensureMissionUserPrefsExist()
 
     adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
+    LogTrace("Ensuring ptcgpb helper exists before history import", "ADB.txt")
     adbWriteRaw("mkdir -p /data/ptcgp &&  if [ ! -e /data/ptcgp/ptcgpb ]; then curl -L -o /data/ptcgp/ptcgpb https://leanny.github.io/ptcgpb-helper/ptcgpb-helper-android && chmod +x /data/ptcgp/ptcgpb; fi")
+    LogTrace("Clearing stale remote history files: " . remotePath . " and " . sdcardPath, "ADB.txt")
     adbWriteRaw("rm -f " . remotePath . " " . sdcardPath)
+    LogTrace("Running ptcgpb history export to " . remotePath, "ADB.txt")
     adbWriteRaw("/data/ptcgp/ptcgpb history --out " . remotePath)
+    LogTrace("Copying history export to sdcard path " . sdcardPath, "ADB.txt")
     adbWriteRaw("cp -f " . remotePath . " " . sdcardPath)
 
+    LogTrace("Pulling history file to " . localPath, "ADB.txt")
     RunWait, % """" . session.get("adbPath") . """ -s 127.0.0.1:" . session.get("adbPort") . " pull """ . sdcardPath . """ """ . localPath . """",, Hide
     adbWriteRaw("rm -f " . remotePath . " " . sdcardPath)
-    if (!FileExist(localPath))
+    if (!FileExist(localPath)) {
+        LogWarn("GetHistoryOfAccount failed because pulled history file was not created: " . localPath)
         return false
+    }
 
     root := getScriptBaseFolder()
+    LogDebug("Importing history file with carddb for device account " . deviceAccount)
     RunWait, % """" . helperPath . """ --root """ . root . """ import-history --device-account """ . deviceAccount . """ --input """ . localPath . """",, Hide
-    if (ErrorLevel)
+    if (ErrorLevel) {
+        LogWarn("GetHistoryOfAccount carddb import-history failed for " . session.get("accountFileName") . " ErrorLevel=" . ErrorLevel)
         return false
+    }
 
     FileDelete, %localPath%
+    LogInfo("GetHistoryOfAccount completed for " . session.get("accountFileName"))
     return true
 }
 
@@ -1714,10 +1757,10 @@ ReportPackRecognitionFailure(reason := "Card Recognition Failed, use fallback me
         localPathForMessage := StrReplace(snapshot.localPath, "\", "/")
         if (snapshot.exists) {
             message .= "\n" . snapshot.kind . ": " . localPathForMessage
-            LogToFile("Card recognition failure " . snapshot.kind . " MissionUserPrefs saved: " . snapshot.localPath, "debug_cards.txt")
+            LogWarn("Card recognition failure " . snapshot.kind . " MissionUserPrefs saved: " . snapshot.localPath, "debug_cards.txt")
         } else {
             message .= "\n" . snapshot.kind . ": missing (remote " . snapshot.remotePath . " was not available)"
-            LogToFile("Card recognition failure " . snapshot.kind . " MissionUserPrefs missing: " . snapshot.remotePath, "debug_cards.txt")
+            LogWarn("Card recognition failure " . snapshot.kind . " MissionUserPrefs missing: " . snapshot.remotePath, "debug_cards.txt")
         }
     }
 
@@ -1725,7 +1768,7 @@ ReportPackRecognitionFailure(reason := "Card Recognition Failed, use fallback me
     if (ownerWebhookURL != "")
         LogToDiscord(message,, false,,, ownerWebhookURL)
     else
-        LogToFile("Owner Discord webhook URL is not configured. Card recognition failure message was not sent.", "Discord.txt")
+        LogWarn("Owner Discord webhook URL is not configured. Card recognition failure message was not sent.", "Discord.txt")
 }
 
 RemoveOldFiles() {
@@ -1788,13 +1831,17 @@ EvaluatePackCount() {
 
     adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
 
+    LogTrace("EvaluatePackCount running ptcgpb packcount", "ADB.txt")
     output := GetStdout(adbCommand . " shell su -c ""sh -c '/data/ptcgp/ptcgpb packcount'""")
     output := StrReplace(output, "`r")
     output := Trim(output, "`n ")
 
-    if !RegExMatch(output, "^-?\d+$")
+    if !RegExMatch(output, "^-?\d+$") {
+        LogDebug("EvaluatePackCount returned non-numeric output: " . output)
         return 0
+    }
 
+    LogDebug("EvaluatePackCount result=" . output)
     return output + 0
 }
 
@@ -1841,7 +1888,7 @@ CheckPack(stopEarly := false) {
     LogToCardDatabase(result)
 
     logMessage := "Instance: " . session.get("scriptName") " | Stored to card database"
-    LogToFile(logMessage, "debug_cards.txt")
+    LogDebug(logMessage, "debug_cards.txt")
 
     if (stopEarly) {
         if (botConfig.get("s4tEnabled")) {
@@ -1872,7 +1919,7 @@ CheckPack(stopEarly := false) {
     skipCardDetection := (botConfig.get("deleteMethod") = "Create Bots (13P)" || botConfig.get("deleteMethod") = "Inject 13P+")
 
     logMessage := "Instance: " . session.get("scriptName") " | Skip Card Detection: " . skipCardDetection
-    LogToFile(logMessage, "debug_cards.txt")
+    LogDebug(logMessage, "debug_cards.txt")
 
     ; If not doing card detection and no friends and s4t disabled, just return early
     if(skipCardDetection && !session.get("friendIDs") && botConfig.get("FriendID") = "" && !botConfig.get("s4tEnabled"))
@@ -1923,7 +1970,7 @@ CheckPack(stopEarly := false) {
     logMessage := logMessage . "|" . foundCrown
     logMessage := logMessage . "|" . foundShiny1Star
     logMessage := logMessage . "|" . foundShiny2Star
-    LogToFile(logMessage, "debug_cards.txt")
+    LogDebug(logMessage, "debug_cards.txt")
 
     if (botConfig.get("s4tEnabled")) {
         tradeableList := []
@@ -1950,7 +1997,7 @@ CheckPack(stopEarly := false) {
         }
 
         logMessage := "Instance: " . session.get("scriptName") " | S4T Trandables: " . foundTradeable
-        LogToFile(logMessage, "debug_cards.txt")
+        LogDebug(logMessage, "debug_cards.txt")
 
         if (foundTradeable > 0) {
             FoundTradeableNew(foundCards, pack, cards)
@@ -1964,7 +2011,7 @@ CheckPack(stopEarly := false) {
     }
 
     logMessage := "Instance: " . session.get("scriptName") " | GP Check "
-    LogToFile(logMessage, "debug_cards.txt")
+    LogDebug(logMessage, "debug_cards.txt")
 
     foundLabel := false
 
@@ -1975,7 +2022,7 @@ CheckPack(stopEarly := false) {
     normalBorders := found1Dmnd + found2Dmnd + found3Dmnd + found4Dmnd
 
     logMessage := "Instance: " . session.get("scriptName") " | normalBorders: " . normalBorders
-    LogToFile(logMessage, "debug_cards.txt")
+    LogDebug(logMessage, "debug_cards.txt")
 
     ; Build currentPackInfo in session so GodPackFound can read starCount correctly
     synthPackInfo := {"isVerified": true, "CardSlot": [], "TypeCount": {}}
@@ -1991,14 +2038,14 @@ CheckPack(stopEarly := false) {
 
     if (foundInvalid && botConfig.get("InvalidCheck")) {
         logMessage := "Instance: " . session.get("scriptName") " | Invalid"
-        LogToFile(logMessage, "debug_cards.txt")
+        LogDebug(logMessage, "debug_cards.txt")
         ; Skip invalid packs if invalidcheck is active
         return
     }
 
     if (foundInvalid) {
         logMessage := "Instance: " . session.get("scriptName") " | Doing Invalid Check"
-        LogToFile(logMessage, "debug_cards.txt")
+        LogDebug(logMessage, "debug_cards.txt")
         ; Pack is invalid...
         foundInvalidGP := FindGodPack(true, cards) ; GP is never ignored
 
@@ -2800,10 +2847,10 @@ return
     delay := (rawDelay > 0) ? rawDelay // Delay : 0
     rec_LastTime := A_TickCount
     actionIdx := rec_Actions.Length() + 1
-    LogToFile("[Hook] Pushing action idx=" actionIdx " type=" type " x1=" devX1 " y1=" devY1 " x2=" devX2 " y2=" devY2 " ssPath=" ssPath, "recorder.txt")
+    LogDebug("[Hook] Pushing action idx=" actionIdx " type=" type " x1=" devX1 " y1=" devY1 " x2=" devX2 " y2=" devY2 " ssPath=" ssPath, "recorder.txt")
     rec_Actions.Push({type: type, x1: devX1, y1: devY1, x2: devX2, y2: devY2
         , duration: held, delay: delay, screenshot: ssPath, comment: "", code: ""})
-    LogToFile("[Hook] rec_Actions.Length()=" rec_Actions.Length() " last.screenshot=" rec_Actions[rec_Actions.Length()].screenshot, "recorder.txt")
+    LogDebug("[Hook] rec_Actions.Length()=" rec_Actions.Length() " last.screenshot=" rec_Actions[rec_Actions.Length()].screenshot, "recorder.txt")
     CreateStatusMessage("Recording: Capture`n" type " (" devX1 "," devY1 ")-(" devX2 "," devY2 ") dist=" dist)
 return
 */
@@ -3231,8 +3278,7 @@ DoTutorial() {
             Random, randomNum, 1, 500 ; Generate random number from 1 to 500
             username := botConfig.get("AccountName") . "-" . randomNum
             username := SubStr(username, 1, 14)  ; max character limit
-            if(botConfig.get("verboseLogging"))
-                LogToFile("Using AccountName: " . username)
+            LogDebug("Using AccountName: " . username)
         } else {
             fileName := A_ScriptDir . "\..\usernames.txt"
             if(FileExist(fileName))
@@ -3243,8 +3289,7 @@ DoTutorial() {
             Random, randomIndex, 1, name.MaxIndex()
             username := name[randomIndex]
             username := SubStr(username, 1, 14)  ; max character limit
-            if(botConfig.get("verboseLogging"))
-                LogToFile("Using random username: " . username)
+            LogDebug("Using random username: " . username)
         }
 
         adbInput(username)
@@ -3681,7 +3726,7 @@ SelectPack(HG := false) {
                 if (session.get("injectMethod") && session.get("loadedAccount") && session.get("friended")) {
                     IniWrite, 1, % session.get("scriptIniFile"), UserSettings, DeadCheck
                 }
-                LogToFile("[" . A_ScriptName . "] Stuck #1 in SelectPack.", "Restart.txt")
+                LogInfo("[" . A_ScriptName . "] Stuck #1 in SelectPack.", "Restart.txt")
                 restartGameInstance("Stuck at pack opening")
                 return
             } else {

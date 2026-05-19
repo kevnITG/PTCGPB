@@ -73,6 +73,25 @@ LogToFile(message, logFile := "") {
     } catch e {
     }
 }
+LogInfo(message, logFile := "") {
+    LogToFile("[info] " . message, logFile)
+}
+LogWarn(message, logFile := "") {
+    LogToFile("[warn] " . message, logFile)
+}
+LogError(message, logFile := "") {
+    LogToFile("[error] " . message, logFile)
+}
+LogDebug(message, logFile := "") {
+    global botConfig
+    if (IsObject(botConfig) && (botConfig.get("logLevel") = "debug" || botConfig.get("logLevel") = "trace" || botConfig.get("verboseLogging")))
+        LogToFile("[debug] " . message, logFile)
+}
+LogTrace(message, logFile := "") {
+    global botConfig
+    if (IsObject(botConfig) && botConfig.get("logLevel") = "trace")
+        LogToFile("[trace] " . message, logFile)
+}
 LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screenshotFile2 := "", altWebhookURL := "", altUserId := "") {
 }
 
@@ -139,7 +158,7 @@ Loop, %g_friendIdTotal% {
     if (A_Index = 1) {
         if (!SendFriendRequestFromMainMenu(fid)) {
             allFriendRequestsOk := false
-            LogToFile("SendFriendRequest failed for ID index " . A_Index . " / " . g_friendIdTotal)
+            LogWarn("SendFriendRequest failed for ID index " . A_Index . " / " . g_friendIdTotal)
         }
     } else {
         if (!PrepareNextFriendIdEntry()) {
@@ -149,7 +168,7 @@ Loop, %g_friendIdTotal% {
         }
         if (!SubmitFriendIdSearchAndWait(fid)) {
             allFriendRequestsOk := false
-            LogToFile("SendFriendRequest failed for ID index " . A_Index . " / " . g_friendIdTotal)
+            LogWarn("SendFriendRequest failed for ID index " . A_Index . " / " . g_friendIdTotal)
         }
     }
     Sleep, 1200
@@ -262,7 +281,7 @@ BuildFriendRequestIdList(settingsRaw, injectExtraRaw) {
         Loop, 10
             fixed.Push(list[A_Index])
         list := fixed
-        LogToFile("Friend request list truncated to 10 codes (had " . oldN . ").")
+        LogInfo("Friend request list truncated to 10 codes (had " . oldN . ").")
     }
     return list
 }

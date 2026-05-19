@@ -42,11 +42,11 @@ RecordingCapture() {
     if !FileExist(fileDir)
         FileCreateDir, %fileDir%
     filePath := fileDir . "\" . A_TickCount . "_rec.png"
-    LogToFile("[Capture] Generated filePath=" filePath, "recorder.txt")
+    LogDebug("[Capture] Generated filePath=" filePath, "recorder.txt")
     pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
     saveResult := Gdip_SaveBitmapToFile(pBitmap, filePath)
     fileExists := FileExist(filePath) ? "YES" : "NO"
-    LogToFile("[Capture] SaveResult=" saveResult " FileExists=" fileExists " path=" filePath, "recorder.txt")
+    LogDebug("[Capture] SaveResult=" saveResult " FileExists=" fileExists " path=" filePath, "recorder.txt")
     Gdip_DisposeImage(pBitmap)
     return filePath
 }
@@ -56,10 +56,10 @@ ReviewRecording() {
     global RecPreview, RecTitle, RecInfo, RecNeedle, RecChoiceWait, RecChoiceWaitGone, RecChoiceFC, RecCommentLbl, RecComment, RecBack, RecNext
     global rec_GrabDone, rec_ReviewIndex, rec_JumpToOutput, rec_ReturnToReview, rec_OutputDone, rec_ReviewHwnd
     actionCount := rec_Actions.Length()
-    LogToFile("[ReviewRecording] Called with actionCount=" actionCount, "recorder.txt")
+    LogDebug("[ReviewRecording] Called with actionCount=" actionCount, "recorder.txt")
     loop %actionCount% {
         a := rec_Actions[A_Index]
-        LogToFile("[ReviewRecording] Action[" A_Index "] type=" a.type " screenshot=" a.screenshot " x1=" a.x1 " y1=" a.y1, "recorder.txt")
+        LogDebug("[ReviewRecording] Action[" A_Index "] type=" a.type " screenshot=" a.screenshot " x1=" a.x1 " y1=" a.y1, "recorder.txt")
     }
     if (actionCount = 0) {
         MsgBox, No actions recorded.
@@ -96,9 +96,9 @@ ReviewRecording() {
 
             rec_IsScreenshotAction := (action.type = "screenshot")
 
-            LogToFile("[Review] Processing action i=" i " type=" action.type " screenshot=" action.screenshot " x1=" action.x1 " y1=" action.y1 " x2=" action.x2 " y2=" action.y2, "recorder.txt")
+            LogDebug("[Review] Processing action i=" i " type=" action.type " screenshot=" action.screenshot " x1=" action.x1 " y1=" action.y1 " x2=" action.x2 " y2=" action.y2, "recorder.txt")
             annotPath := AnnotateScreenshot(action.screenshot, action)
-            LogToFile("[Review] AnnotateScreenshot returned annotPath=" annotPath " for action i=" i, "recorder.txt")
+            LogDebug("[Review] AnnotateScreenshot returned annotPath=" annotPath " for action i=" i, "recorder.txt")
             GuiControl,, RecPreview, % annotPath
             GuiControl,, RecTitle,   % "Action " i " of " actionCount ": " action.type
 
@@ -150,7 +150,7 @@ ReviewRecording() {
             rec_ReviewDone   := false   ; reset AFTER drain; queue is empty, spin loop starts clean
             rec_ReviewBack   := false
             rec_JumpToOutput := false
-            LogToFile("[Review] Showing action " i " / " actionCount " type=" action.type " rec_ReviewDone=" rec_ReviewDone " rec_ReviewBack=" rec_ReviewBack " rec_JumpToOutput=" rec_JumpToOutput, "recorder.txt")
+            LogDebug("[Review] Showing action " i " / " actionCount " type=" action.type " rec_ReviewDone=" rec_ReviewDone " rec_ReviewBack=" rec_ReviewBack " rec_JumpToOutput=" rec_JumpToOutput, "recorder.txt")
 
             spinCount := 0
             while (!rec_ReviewDone) {
@@ -158,7 +158,7 @@ ReviewRecording() {
                 if (Mod(spinCount, 50) = 0) {
                     WinGetActiveTitle, dbgActiveWin
                     dbgExists := WinExist("ahk_id " rec_ReviewHwnd) ? "yes" : "no"
-                    LogToFile("[Review] Spinning i=" i " count=" spinCount " done=" rec_ReviewDone " activeWin=" dbgActiveWin " hwndExists=" dbgExists, "recorder.txt")
+                    LogDebug("[Review] Spinning i=" i " count=" spinCount " done=" rec_ReviewDone " activeWin=" dbgActiveWin " hwndExists=" dbgExists, "recorder.txt")
                 }
                 if (rec_GrabDone) {
                     rec_GrabDone := false
@@ -172,7 +172,7 @@ ReviewRecording() {
                 }
                 Delay(1)
             }
-            LogToFile("[Review] Loop exited action " i " rec_ReviewDone=" rec_ReviewDone " rec_ReviewBack=" rec_ReviewBack " rec_JumpToOutput=" rec_JumpToOutput " rec_ReviewAbort=" rec_ReviewAbort, "recorder.txt")
+            LogDebug("[Review] Loop exited action " i " rec_ReviewDone=" rec_ReviewDone " rec_ReviewBack=" rec_ReviewBack " rec_JumpToOutput=" rec_JumpToOutput " rec_ReviewAbort=" rec_ReviewAbort, "recorder.txt")
 
             if (rec_ReviewAbort)
                 break
@@ -217,16 +217,16 @@ ReviewRecording() {
 AnnotateScreenshot(srcPath, action) {
     static annotCache := {}
     static cacheId    := 0
-    LogToFile("[Annotate] Called srcPath=" srcPath " action.type=" action.type " action.x1=" action.x1 " action.y1=" action.y1, "recorder.txt")
+    LogDebug("[Annotate] Called srcPath=" srcPath " action.type=" action.type " action.x1=" action.x1 " action.y1=" action.y1, "recorder.txt")
     if (!srcPath || !FileExist(srcPath)) {
-        LogToFile("[Annotate] SKIP - srcPath empty or file missing: " srcPath, "recorder.txt")
+        LogDebug("[Annotate] SKIP - srcPath empty or file missing: " srcPath, "recorder.txt")
         return srcPath
     }
     if (annotCache.HasKey(srcPath)) {
-        LogToFile("[Annotate] CACHE HIT srcPath=" srcPath " returning=" annotCache[srcPath], "recorder.txt")
+        LogDebug("[Annotate] CACHE HIT srcPath=" srcPath " returning=" annotCache[srcPath], "recorder.txt")
         return annotCache[srcPath]
     }
-    LogToFile("[Annotate] CACHE MISS - generating annotation for srcPath=" srcPath, "recorder.txt")
+    LogDebug("[Annotate] CACHE MISS - generating annotation for srcPath=" srcPath, "recorder.txt")
     pOrig := Gdip_CreateBitmapFromFile(srcPath)
     if (!pOrig)
         return srcPath
@@ -291,7 +291,7 @@ AnnotateScreenshot(srcPath, action) {
     Gdip_SaveBitmapToFile(pAnnotated, tempPath)
     Gdip_DisposeImage(pAnnotated)
     annotCache[srcPath] := tempPath
-    LogToFile("[Annotate] Stored cache srcPath=" srcPath " -> tempPath=" tempPath " cacheId=" cacheId, "recorder.txt")
+    LogDebug("[Annotate] Stored cache srcPath=" srcPath " -> tempPath=" tempPath " cacheId=" cacheId, "recorder.txt")
     return tempPath
 }
 
@@ -356,7 +356,7 @@ StartStopRecording:
 return
 
 RecReviewBack:
-    LogToFile("[Label] RecReviewBack fired rec_ReviewDone=" rec_ReviewDone, "recorder.txt")
+    LogDebug("[Label] RecReviewBack fired rec_ReviewDone=" rec_ReviewDone, "recorder.txt")
     rec_ReviewBack := true
     Gui, RecReview:Submit, NoHide
     rec_ReviewComment := RecComment
@@ -374,11 +374,11 @@ RecReviewBack:
     rec_ScreenshotChoice := choices
 
     rec_ReviewDone := true
-    LogToFile("[Label] RecReviewBack done rec_ReviewDone=" rec_ReviewDone " rec_ReviewBack=" rec_ReviewBack " comment=" rec_ReviewComment, "recorder.txt")
+    LogDebug("[Label] RecReviewBack done rec_ReviewDone=" rec_ReviewDone " rec_ReviewBack=" rec_ReviewBack " comment=" rec_ReviewComment, "recorder.txt")
 return
 
 RecReviewNext:
-    LogToFile("[Label] RecReviewNext fired rec_ReviewDone=" rec_ReviewDone, "recorder.txt")
+    LogDebug("[Label] RecReviewNext fired rec_ReviewDone=" rec_ReviewDone, "recorder.txt")
     rec_ReviewBack := false
     Gui, RecReview:Submit, NoHide
     rec_ReviewComment := RecComment
@@ -396,7 +396,7 @@ RecReviewNext:
     rec_ScreenshotChoice := choices
 
     rec_ReviewDone := true
-    LogToFile("[Label] RecReviewNext done rec_ReviewDone=" rec_ReviewDone " rec_ReviewBack=" rec_ReviewBack " comment=" rec_ReviewComment, "recorder.txt")
+    LogDebug("[Label] RecReviewNext done rec_ReviewDone=" rec_ReviewDone " rec_ReviewBack=" rec_ReviewBack " comment=" rec_ReviewComment, "recorder.txt")
 return
 
 
@@ -419,12 +419,12 @@ RecGrabScreenshot:
 return
 
 RecReviewGuiClose:
-    LogToFile("[Label] RecReviewGuiClose fired rec_ReviewDone=" rec_ReviewDone " rec_ReviewAbort=" rec_ReviewAbort, "recorder.txt")
+    LogDebug("[Label] RecReviewGuiClose fired rec_ReviewDone=" rec_ReviewDone " rec_ReviewAbort=" rec_ReviewAbort, "recorder.txt")
     if (!rec_ReviewDone) {
         rec_ReviewAbort := true
         rec_ReviewDone  := true
     }
-    LogToFile("[Label] RecReviewGuiClose done rec_ReviewDone=" rec_ReviewDone " rec_ReviewAbort=" rec_ReviewAbort, "recorder.txt")
+    LogDebug("[Label] RecReviewGuiClose done rec_ReviewDone=" rec_ReviewDone " rec_ReviewAbort=" rec_ReviewAbort, "recorder.txt")
     Gui, RecReview:Destroy
 return
 
@@ -444,7 +444,7 @@ RecOutputSave:
 return
 
 RecReviewDone:
-    LogToFile("[Label] RecReviewDone fired rec_ReviewDone=" rec_ReviewDone, "recorder.txt")
+    LogDebug("[Label] RecReviewDone fired rec_ReviewDone=" rec_ReviewDone, "recorder.txt")
     Gui, RecReview:Submit, NoHide
     rec_ReviewComment := RecComment
 
@@ -461,7 +461,7 @@ RecReviewDone:
 
     rec_JumpToOutput := true
     rec_ReviewDone   := true
-    LogToFile("[Label] RecReviewDone done rec_ReviewDone=" rec_ReviewDone " rec_JumpToOutput=" rec_JumpToOutput, "recorder.txt")
+    LogDebug("[Label] RecReviewDone done rec_ReviewDone=" rec_ReviewDone " rec_JumpToOutput=" rec_JumpToOutput, "recorder.txt")
 return
 
 RecOutputBack:

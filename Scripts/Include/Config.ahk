@@ -52,6 +52,8 @@
         , "folderPath": "C:\Program Files\Netease"
         , "RowGap": 105
         , "debugMode": 0
+        , "logLevel": "info"
+        , "verboseLogging": 0
         , "stopPreference": ""
         , "stopPreferenceSingle": ""
         , "stopPreferenceMain": ""
