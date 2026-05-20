@@ -834,7 +834,7 @@ CheckCardsSimple(result) {
         synthScreenShot := ""
         if (filteredCards.MaxIndex() > 0) {
             highlightIds := hasWishlist ? Wishlist_MatchIds(wishlistMatches) : ""
-            if (GenerateSyntheticPackImage(filteredCards, synthScreenShot, highlightIds) && botConfig.get("s4tKeepSyntheticScreenshots")) {
+            if (GenerateSyntheticPackImage(filteredCards, synthScreenShot, highlightIds, 6) && botConfig.get("s4tKeepSyntheticScreenshots")) {
                 persistedGiftPath := PersistSyntheticScreenshot(synthScreenShot, "Tradeable", "Trades")
                 if (persistedGiftPath != "") {
                     if (FileExist(synthScreenShot))
@@ -866,7 +866,7 @@ CheckCardsSimple(result) {
     }
 }
 
-FoundTradeableNew(foundCards, pack := "", cards := "") {
+FoundTradeableNew(foundCards, pack := "", cards := "", rarity := "", isTenPackOpening := false) {
     global botConfig, session
     global screenShotFileName
 
@@ -990,10 +990,14 @@ FoundTradeableNew(foundCards, pack := "", cards := "") {
     screenShotFileName := ""
     isSyntheticImage := false
     ; Try to generate a synthetic image from card IDs (avoids storing real screenshots on disk)
-    if (IsObject(cards) && cards.MaxIndex() > 0) {
+    syntheticCards := IsObject(rarity) ? FilterCardsByS4T(cards, rarity) : cards
+    if (IsObject(rarity) && (!IsObject(syntheticCards) || syntheticCards.MaxIndex() = "") && hasWishlist)
+        syntheticCards := FilterCardsByWishlistMatches(cards, wishlistMatches)
+    if (IsObject(syntheticCards) && syntheticCards.MaxIndex() > 0) {
         synthPath := ""
         highlightIds := hasWishlist ? Wishlist_MatchIds(wishlistMatches) : ""
-        if (GenerateSyntheticPackImage(cards, synthPath, highlightIds)) {
+        synthCols := isTenPackOpening ? 6 : 3
+        if (GenerateSyntheticPackImage(syntheticCards, synthPath, highlightIds, synthCols)) {
             if (botConfig.get("s4tKeepSyntheticScreenshots")) {
                 persistedTradePath := PersistSyntheticScreenshot(synthPath, "Tradeable", "Trades")
                 if (persistedTradePath != "") {
@@ -1014,10 +1018,10 @@ FoundTradeableNew(foundCards, pack := "", cards := "") {
 
     LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName)
 
-    statusMessage := "Tradeable cards found"
+    statusMessage := isTenPackOpening ? "Tradeable cards found in 10-pack opening" : "Tradeable cards found"
     packName := (openPack != "") ? openPack : pack
 
-    CreateStatusMessage("Tradeable cards found! Continuing...",,,, false)
+    CreateStatusMessage(statusMessage . "! Continuing...",,,, false)
 
     logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . packName . ") Screenshot file: " . screenShotFileName
     LogInfo(logMessage, "S4T.txt")
@@ -1127,6 +1131,23 @@ FilterCardsByS4T(cards, rarity) {
     return filteredCards
 }
 
+FilterCardsByWishlistMatches(cards, wishlistMatches) {
+    filteredCards := []
+    if (!IsObject(cards) || !IsObject(wishlistMatches))
+        return filteredCards
+
+    wishlistIds := {}
+    For _, match in wishlistMatches
+        wishlistIds[match.id] := true
+
+    For _, cardId in cards {
+        if (wishlistIds.HasKey(cardId))
+            filteredCards.Push(cardId)
+    }
+
+    return filteredCards
+}
+
 ;-------------------------------------------------------------------------------
 ; ProcessPendingTradeables - Update all pending tradeable XMLs
 ;-------------------------------------------------------------------------------
@@ -1194,7 +1215,7 @@ ReleaseCardImageLock(hMutex) {
     DllCall("CloseHandle", "Ptr", hMutex)
 }
 
-GenerateSyntheticPackImage(cards, ByRef outputPath, highlightIds := "") {
+GenerateSyntheticPackImage(cards, ByRef outputPath, highlightIds := "", maxCols := 3) {
     global session
 
     outputPath := ""
@@ -1229,6 +1250,7 @@ GenerateSyntheticPackImage(cards, ByRef outputPath, highlightIds := "") {
     } else if (highlightIds != "" && !IsObject(highlightIds)) {
         highlightArg := " --highlight """ . highlightIds . """"
     }
+    colsArg := " --cols " . maxCols
 
     hCardImageLock := AcquireCardImageLock()
     if (!hCardImageLock) {
@@ -1236,14 +1258,16 @@ GenerateSyntheticPackImage(cards, ByRef outputPath, highlightIds := "") {
         return false
     }
 
-    RunWait, "%helperTool%" "%tmpFile%" "%outputPath%"%highlightArg%, %helperDir%, Hide
+    RunWait, "%helperTool%" "%tmpFile%" "%outputPath%"%highlightArg%%colsArg%, %helperDir%, Hide
     ReleaseCardImageLock(hCardImageLock)
     if (ErrorLevel) {
+        LogWarn("GenerateSyntheticPackImage failed. ErrorLevel=" . ErrorLevel . " outputPath=" . outputPath, "S4T.txt")
         outputPath := ""
         return false
     }
 
     if (!FileExist(outputPath)) {
+        LogWarn("GenerateSyntheticPackImage did not create outputPath=" . outputPath, "S4T.txt")
         outputPath := ""
         return false
     }
