@@ -154,7 +154,6 @@ async fn download_all(tasks: Vec<(String, PathBuf)>, max_conn: usize) -> Vec<boo
 const CARD_W: u32 = 200;
 const CARD_H: u32 = 280;
 const PADDING: u32 = 10;
-const BASE_COLS: u32 = 6;
 
 const BG: Rgba<u8> = Rgba([26, 26, 46, 255]);
 const PH_FILL: Rgba<u8> = Rgba([37, 37, 69, 255]);
@@ -165,21 +164,18 @@ const TEXT_COLOR: Rgba<u8> = Rgba([170, 170, 170, 255]);
 const WISHLIST_BADGE_BG: Rgba<u8> = Rgba([232, 37, 79, 255]);
 const WISHLIST_BADGE_RIM: Rgba<u8> = Rgba([255, 200, 210, 255]);
 const WISHLIST_HEART: Rgba<u8> = Rgba([255, 255, 255, 255]);
-// Sizes calibrated against the 6-col card width (CARD_W). When fewer columns
-// are requested the card is rendered larger, so we scale the badge by
-// card_w / CARD_W to keep the same visual proportion as on 6 cols.
-const WISHLIST_BADGE_RADIUS_BASE: f32 = 22.0;
-const WISHLIST_HEART_RADIUS_BASE: f32 = 14.0;
-const WISHLIST_BADGE_OFFSET_BASE: f32 = 26.0; // center offset from top-left corner
+const WISHLIST_BADGE_RADIUS: i32 = 22;
+const WISHLIST_HEART_RADIUS: f32 = 14.0;
+const WISHLIST_BADGE_OFFSET: i32 = 26; // center offset from top-left corner
 
-fn make_placeholder(card_id: &str, font: &FontArc, card_w: u32, card_h: u32) -> RgbaImage {
-    let mut img: RgbaImage = ImageBuffer::from_pixel(card_w, card_h, PH_FILL);
+fn make_placeholder(card_id: &str, font: &FontArc) -> RgbaImage {
+    let mut img: RgbaImage = ImageBuffer::from_pixel(CARD_W, CARD_H, PH_FILL);
 
     // Border
-    draw_hollow_rect_mut(&mut img, Rect::at(0, 0).of_size(card_w, card_h), PH_BORDER);
+    draw_hollow_rect_mut(&mut img, Rect::at(0, 0).of_size(CARD_W, CARD_H), PH_BORDER);
     draw_hollow_rect_mut(
         &mut img,
-        Rect::at(1, 1).of_size(card_w.saturating_sub(2), card_h.saturating_sub(2)),
+        Rect::at(1, 1).of_size(CARD_W - 2, CARD_H - 2),
         PH_BORDER,
     );
 
@@ -213,11 +209,11 @@ fn make_placeholder(card_id: &str, font: &FontArc, card_w: u32, card_h: u32) -> 
     let line2 = &label[split..];
 
     let total_h = line_h * 2 + 4;
-    let y_start = (card_h.saturating_sub(total_h)) / 2;
+    let y_start = (CARD_H.saturating_sub(total_h)) / 2;
 
     for (i, line) in [line1, line2].iter().enumerate() {
         let w = glyph_width(line).max(1);
-        let x = ((card_w.saturating_sub(w)) / 2) as i32;
+        let x = ((CARD_W.saturating_sub(w)) / 2) as i32;
         let y = (y_start + i as u32 * (line_h + 4)) as i32;
         draw_text_mut(&mut img, TEXT_COLOR, x, y, scale, font, line);
     }
@@ -232,16 +228,14 @@ fn composite(
     highlight: &HashSet<String>,
 ) -> RgbaImage {
     let total = cards.len();
-    let max_cols = max_cols.max(1);
+    // Fixed width: always use max_cols for canvas width
     let cols = max_cols as u32;
     let rows = total.div_ceil(max_cols) as u32;
 
-    // Keep the old 6-column canvas width even when fewer columns are requested.
-    let canvas_w = PADDING + BASE_COLS * (CARD_W + PADDING);
-    let card_w = (canvas_w.saturating_sub((cols + 1) * PADDING)) / cols;
-    let card_h = card_w * CARD_H / CARD_W;
+    // Fixed width canvas (based on max_cols)
+    let canvas_w = PADDING + cols * (CARD_W + PADDING);
     // Variable height (based on rows)
-    let canvas_h = PADDING + rows * (card_h + PADDING);
+    let canvas_h = PADDING + rows * (CARD_H + PADDING);
 
     let mut canvas: RgbaImage = ImageBuffer::from_pixel(canvas_w, canvas_h, BG);
 
@@ -265,37 +259,33 @@ fn composite(
 
         // Center cards horizontally when row is not full
         let unused_slots = max_cols - cards_in_row;
-        let center_offset = (unused_slots as u32 * (card_w + PADDING)) / 2;
+        let center_offset = (unused_slots as u32 * (CARD_W + PADDING)) / 2;
 
-        let x = PADDING + center_offset + col * (card_w + PADDING);
-        let y = PADDING + row * (card_h + PADDING);
+        let x = PADDING + center_offset + col * (CARD_W + PADDING);
+        let y = PADDING + row * (CARD_H + PADDING);
 
         let card_img: RgbaImage = match img_opt {
             Some(src) => {
                 // Resize to fit slot
                 let resized = image::imageops::resize(
                     src,
-                    card_w,
-                    card_h,
+                    CARD_W,
+                    CARD_H,
                     image::imageops::FilterType::Lanczos3,
                 );
                 resized
             }
-            None => make_placeholder(card_id, font, card_w, card_h),
+            None => make_placeholder(card_id, font),
         };
 
         image::imageops::overlay(&mut canvas, &card_img, x as i64, y as i64);
 
         if highlight.contains(card_id) {
-            let scale = card_w as f32 / CARD_W as f32;
-            let badge_radius = (WISHLIST_BADGE_RADIUS_BASE * scale).round() as i32;
-            let heart_radius = WISHLIST_HEART_RADIUS_BASE * scale;
-            let badge_offset = (WISHLIST_BADGE_OFFSET_BASE * scale).round() as i32;
-            let cx = x as i32 + badge_offset;
-            let cy = y as i32 + badge_offset;
-            draw_filled_circle_mut(&mut canvas, (cx, cy), badge_radius, WISHLIST_BADGE_BG);
-            draw_hollow_circle_mut(&mut canvas, (cx, cy), badge_radius, WISHLIST_BADGE_RIM);
-            draw_heart(&mut canvas, cx, cy, heart_radius, WISHLIST_HEART);
+            let cx = x as i32 + WISHLIST_BADGE_OFFSET;
+            let cy = y as i32 + WISHLIST_BADGE_OFFSET;
+            draw_filled_circle_mut(&mut canvas, (cx, cy), WISHLIST_BADGE_RADIUS, WISHLIST_BADGE_BG);
+            draw_hollow_circle_mut(&mut canvas, (cx, cy), WISHLIST_BADGE_RADIUS, WISHLIST_BADGE_RIM);
+            draw_heart(&mut canvas, cx, cy, WISHLIST_HEART_RADIUS, WISHLIST_HEART);
         }
     }
 

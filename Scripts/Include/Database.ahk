@@ -105,28 +105,9 @@ LogToCardDatabase(result) {
     if (deviceAccount = "")
         return false
 
-    timestamp := A_Now
-    FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
+    cards := result.cards
+    pack := result.pack
 
-    helperPath := CardDatabase_HelperPath()
-    if (!FileExist(helperPath))
-        return false
-
-    root := getScriptBaseFolder()
-
-    if (IsObject(result.pulls) && result.pulls.Length() > 1) {
-        success := true
-        for _, pull in result.pulls {
-            if (!LogSinglePullToCardDatabase(helperPath, root, deviceAccount, timestamp, pull.pack, pull.cards))
-                success := false
-        }
-        return success
-    }
-
-    return LogSinglePullToCardDatabase(helperPath, root, deviceAccount, timestamp, result.pack, result.cards)
-}
-
-LogSinglePullToCardDatabase(helperPath, root, deviceAccount, timestamp, pack, cards) {
     cardStr := ""
 
     if (IsObject(cards)) {
@@ -137,9 +118,14 @@ LogSinglePullToCardDatabase(helperPath, root, deviceAccount, timestamp, pack, ca
         }
     }
 
-    if (cardStr = "")
+    timestamp := A_Now
+    FormatTime, timestamp, %timestamp%, yyyy-MM-dd HH:mm:ss
+
+    helperPath := CardDatabase_HelperPath()
+    if (!FileExist(helperPath))
         return false
 
+    root := getScriptBaseFolder()
     RunWait, % """" . helperPath . """ --root """ . root . """ append-pull --device-account """ . deviceAccount . """ --timestamp """ . timestamp . """ --pack """ . pack . """ --cards """ . cardStr . """",, Hide
     return !ErrorLevel
 }

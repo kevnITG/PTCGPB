@@ -935,25 +935,12 @@ HomeAndMission(homeonly := 0, completeSecondMisson=false) {
     return Leveled
 }
 
-FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation := 20, notShowFinding := 0, coordImageName := "", coordEL := "", coordSafeTime := "") {
+FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation := 20, notShowFinding := 0) {
     global botConfig, session, needlesDict
     static lastStatusTime := 0
 
-    coordinateMode := (coordImageName != "")
-    if (coordinateMode) {
-        X1 := needleName
-        Y1 := EL
-        X2 := safeTime
-        Y2 := searchVariation
-        imageName := coordImageName
-        searchVariation := (notShowFinding = "" || notShowFinding = 0) ? 20 : notShowFinding
-        EL := (coordEL = "") ? 1 : coordEL
-        safeTime := (coordSafeTime = "") ? 0 : coordSafeTime
-        notShowFinding := 0
-    } else {
-        needleObj := needlesDict.Get(needleName)
-        imageName := needleObj.imageName
-    }
+    needleObj := needlesDict.Get(needleName)
+    imageName := needleObj.imageName
 
     if(botConfig.get("slowMotion")) {
         if(imageName = "speedmodMenu" || imageName = "One" || imageName = "Two" || imageName = "Three")
@@ -971,12 +958,10 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
     Path = %imagePath%%imageName%.png
     pNeedle := GetNeedle(Path)
 
-    if (!coordinateMode) {
-        X1 := needleObj.coords.startX
-        Y1 := needleObj.coords.startY
-        X2 := needleObj.coords.endX
-        Y2 := needleObj.coords.endY
-    }
+    X1 := needleObj.coords.startX
+    Y1 := needleObj.coords.startY
+    X2 := needleObj.coords.endX
+    Y2 := needleObj.coords.endY
 
     ; ImageSearch within the region
     vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, X1, Y1, X2, Y2, searchVariation)
@@ -1622,11 +1607,6 @@ AccountCreationDate_ToUnix(creationDate) {
 
 GetHistoryOfAccount() {
     global session
-    global botConfig
-    if (!botConfig.get("importHistory")) {
-        LogDebug("Skipping account history import because Import History is disabled")
-        return true
-    }
 
     if (!session.get("injectMethod") || !session.get("loadedAccount") || session.get("accountFileName") = "")
         return false
@@ -1767,7 +1747,7 @@ ReportPackRecognitionFailure(reason := "Card Recognition Failed, use fallback me
     preSnapshot := PullPackOpeningMissionUserPrefsSnapshot("pre", failedDir, uniquePrefix)
     postSnapshot := PullPackOpeningMissionUserPrefsSnapshot("post", failedDir, uniquePrefix)
 
-    message := reason . "\nVersion: 0.9.5\nPlease submit these files for the bug report as well."
+    message := reason . "\nVersion: 0.10.0\nPlease submit these files for the bug report as well."
     for _, snapshot in [preSnapshot, postSnapshot] {
         localPathForMessage := StrReplace(snapshot.localPath, "\", "/")
         if (snapshot.exists) {
@@ -1804,135 +1784,41 @@ ParsePackResultOutput(output) {
     output := StrReplace(output, "`r")
     output := Trim(output, "`n ")
     lines := StrSplit(output, "`n")
-    parsedLines := []
-    for _, line in lines {
-        line := Trim(line)
-        if (line != "")
-            parsedLines.Push(line)
-    }
-    lines := parsedLines
 
     if (lines.Length() < 3)
         return false
 
-    pulls := []
     cards := []
+    for _, val in StrSplit(lines[1], ",")
+        cards.Push(Trim(val))
+
+    pack := Trim(lines[2])
+
     rarity := []
-    packNames := []
-    raw_msg := ""
-
-    idx := 1
-    while (idx + 2 <= lines.Length()) {
-        pullCards := []
-        for _, val in StrSplit(lines[idx], ",") {
-            card := Trim(val)
-            if (card != "")
-                pullCards.Push(card)
-        }
-
-        pullPack := Trim(lines[idx + 1])
-
-        pullRarity := []
-        for _, val in StrSplit(lines[idx + 2], ",") {
-            pullRarity.Push(Trim(val) + 0)
-        }
-
-        if (pullCards.Length() = 0 || pullRarity.Length() = 0)
-            break
-
-        pullRaw := lines[idx] . "`n" . lines[idx + 1] . "`n" . lines[idx + 2]
-        pulls.Push({ cards: pullCards, pack: pullPack, rarity: pullRarity, raw: pullRaw })
-        packNames.Push(pullPack)
-
-        for _, card in pullCards
-            cards.Push(card)
-        for _, rare in pullRarity
-            rarity.Push(rare)
-
-        if (raw_msg != "")
-            raw_msg .= "`n"
-        raw_msg .= pullRaw
-
-        idx += 3
+    for _, val in StrSplit(lines[3], ",") {
+        rarity.Push(Trim(val) + 0)
     }
+    raw_msg := lines[1] . "\n" . lines[2] . "\n" . lines[3]
 
-    if (pulls.Length() = 0)
-        return false
-
-    pack := ""
-    for _, packName in packNames {
-        if (pack != "")
-            pack .= ", "
-        pack .= packName
-    }
-
-    return { cards: cards, pack: pack, rarity: rarity, raw: raw_msg, pulls: pulls }
-}
-
-UpdatePackCountAfterOpening(defaultOpenedPacks := 1) {
-    global session
-
-    expectedOpenedPacks := session.get("expectedPackOpenCount") + 0
-    if (expectedOpenedPacks >= 1 && expectedOpenedPacks <= 10)
-        defaultOpenedPacks := expectedOpenedPacks
-    session.set("expectedPackOpenCount", 1)
-
-    oldPackCount := session.get("accountOpenPacks") + 0
-    openedPackCount := defaultOpenedPacks
-    newPackCount := EvaluatePackCount()
-
-    if (newPackCount = 0) {
-        session.set("accountOpenPacks", oldPackCount + defaultOpenedPacks)
-    } else {
-        packDelta := newPackCount - oldPackCount
-        if (packDelta >= 1 && packDelta <= 10)
-            openedPackCount := packDelta
-
-        session.set("accountOpenPacks", newPackCount)
-
-        if (session.get("injectMethod") && session.get("loadedAccount") && session.get("accountFileName") != "") {
-            accountMeta := AccountMetadata_Get(session.get("scriptName"), session.get("accountFileName"), session.get("loadedAccount"))
-            accountMeta["deviceAccount"] := GetCurrentDeviceAccountForMetadata()
-            accountMeta["packCount"] := newPackCount
-            AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
-        }
-    }
-
-    if (session.get("injectMethod") && session.get("loadedAccount"))
-        UpdateAccount()
-
-    session.set("packsInPool", session.get("packsInPool") + openedPackCount)
-    session.set("packsThisRun", session.get("packsThisRun") + openedPackCount)
-
-    return openedPackCount
+    return { cards: cards, pack: pack, rarity: rarity, raw: raw_msg }
 }
 
 EvaluatePack() {
     global session
     adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
-    expectedOpenedPacks := session.get("expectedPackOpenCount") + 0
-    maxAttempts := expectedOpenedPacks > 1 ? 100 : 10
-    foundResult := false
-    Loop, %maxAttempts% {
+    Loop, 10 {
         RunWait, % adbCommand . " shell test -f /data/ptcgp/result.rc", , Hide
-        if (ErrorLevel = 0) {
-            foundResult := true
+        if (ErrorLevel = 0)
             break
-        }
         Sleep, 300
     }
-    if (foundResult && expectedOpenedPacks > 1)
-        Sleep, 1000
     adbWriteRaw("pkill -f /data/ptcgp/ptcgpb")
     waitadb()
 
     SavePackOpeningMissionUserPrefsSnapshot("post")
 
     output := GetStdout(adbCommand . " shell cat /data/ptcgp/result.rc")
-    parsedResult := ParsePackResultOutput(output)
-    if (!parsedResult && expectedOpenedPacks > 1)
-        LogDebug("EvaluatePack 10-pack parse failed. result.rc length=" . StrLen(output), "debug_cards.txt")
-    return parsedResult
+    return ParsePackResultOutput(output)
 }
 
 EvaluatePackCount() {
@@ -1969,17 +1855,13 @@ RecoverPack() {
 }
 
 CheckPack(stopEarly := false) {
-    expectedOpenedPacks := session.get("expectedPackOpenCount") + 0
     result := EvaluatePack()
     if (!result) {
         result := RecoverPack()
     }
     if (!result) {
         ReportPackRecognitionFailure()
-        if (!stopEarly && expectedOpenedPacks > 1) {
-            UpdatePackCountAfterOpening()
-        }
-        if (!stopEarly && expectedOpenedPacks <= 1) {
+        if (!stopEarly) {
             CheckPackFallback()
         }
         return
@@ -1991,10 +1873,7 @@ CheckPack(stopEarly := false) {
     if(rarity[1] = 0) {
         ; Fallback in case recognition failed
         ReportPackRecognitionFailure()
-        if (!stopEarly && expectedOpenedPacks > 1) {
-            UpdatePackCountAfterOpening()
-        }
-        if (!stopEarly && expectedOpenedPacks <= 1) {
+        if (!stopEarly) {
             CheckPackFallback()
         }
         return
@@ -2012,12 +1891,27 @@ CheckPack(stopEarly := false) {
         }
         return
     }
-    UpdatePackCountAfterOpening()
+    ; Update pack count.
+    new_packcount := EvaluatePackCount()
+    if (new_packcount = 0) {
+        session.set("accountOpenPacks", session.get("accountOpenPacks") + 1)
+    } else {
+        session.set("accountOpenPacks", new_packcount)
+        accountMeta := AccountMetadata_Get(session.get("scriptName"), session.get("accountFileName"), session.get("loadedAccount"))
+        accountMeta["deviceAccount"] := GetCurrentDeviceAccountForMetadata()
+        accountMeta["packCount"] := new_packcount
+        AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
+    }
+
+    if (session.get("injectMethod") && session.get("loadedAccount"))
+        UpdateAccount()
+
+    session.set("packsInPool", session.get("packsInPool") + 1)
+    session.set("packsThisRun", session.get("packsThisRun") + 1)
 
     ; NEW: Disable card detection for Create Bots and Inject 13P+
     ; Only run detection for Inject Wonderpick 96P+
     skipCardDetection := (botConfig.get("deleteMethod") = "Create Bots (13P)" || botConfig.get("deleteMethod") = "Inject 13P+")
-    multiPullResult := (IsObject(result.pulls) && result.pulls.Length() > 1) || cards.MaxIndex() > 6
 
     logMessage := "Instance: " . session.get("scriptName") " | Skip Card Detection: " . skipCardDetection
     LogDebug(logMessage, "debug_cards.txt")
@@ -2031,15 +1925,13 @@ CheckPack(stopEarly := false) {
 
     totalCardsInPack := cards.MaxIndex()
 
-    if (!multiPullResult) {
-        ; Wait for cards to render before checking.
-        Loop {
-            if (CheckCardLoading(totalCardsInPack) = 0)
-                break
-            Delay(1)
-        }
+    ; Wait for cards to render before checking.
+    Loop {
+        if (CheckCardLoading(totalCardsInPack) = 0)
+            break
         Delay(1)
     }
+    Delay(1)
 
     found1Dmnd       := CountOccurances(cards, rarity, 1)
     found2Dmnd       := CountOccurances(cards, rarity, 2)
@@ -2103,13 +1995,9 @@ CheckPack(stopEarly := false) {
         LogDebug(logMessage, "debug_cards.txt")
 
         if (foundTradeable > 0) {
-            FoundTradeableNew(foundCards, pack, cards, multiPullResult ? rarity : "", multiPullResult)
+            FoundTradeableNew(foundCards, pack, cards)
             ; Continue with the rest of the run in s4t mode; don't return early.
         }
-    }
-
-    if (multiPullResult) {
-        return false
     }
 
     ; Skip rest of card detection if this is Create Bots or Inject 13P+
@@ -2224,7 +2112,13 @@ CheckPackFallback() {
     currentPackIs6Card := false ; reset before each pack check
     currentPackIs6Card := false ; reset before each pack check
 
-    UpdatePackCountAfterOpening()
+    ; Update pack count.
+    session.set("accountOpenPacks", session.get("accountOpenPacks")+1)
+    if (session.get("injectMethod") && session.get("loadedAccount"))
+        UpdateAccount()
+
+    session.set("packsInPool", session.get("packsInPool") + 1)
+    session.set("packsThisRun", session.get("packsThisRun") + 1)
 
     ; NEW: Disable card detection for Create Bots and Inject 13P+
     ; Only run detection for Inject Wonderpick 96P+
@@ -3666,95 +3560,8 @@ ensureMissionUserPrefsExist() {
     }
 }
 
-FindHourglassOpenConfirmation(tenPackOpening, failSafeTime) {
-    if (tenPackOpening)
-        return (FindOrLoseImage(67, 446, 83, 468, , "HourglassPack10", 0, failSafeTime) || FindOrLoseImage(45, 446, 60, 465, , "HourGlassAndPokeGoldPack10", 0, failSafeTime) || FindOrLoseImage("Pack_PokeGoldImageAfterOpenPackClick", 0, failSafeTime) || FindOrLoseImage(66, 447, 84, 465, , "PokeGoldPackNoHourglasses", 0, failSafeTime))
-
-    return (FindOrLoseImage("Pack_HourglassImageAfterOpenPackClick", 0, failSafeTime) || FindOrLoseImage("Pack_HourglassAndPokeGoldImageAfterOpenPackClick", 0, failSafeTime) || FindOrLoseImage("Pack_PokeGoldImageAfterOpenPackClick", 0, failSafeTime) || FindOrLoseImage(66, 447, 84, 465, , "PokeGoldPackNoHourglasses", 0, failSafeTime))
-}
-
-FindHourglassOpenConfirmationClosed(tenPackOpening, failSafeTime) {
-    if (tenPackOpening)
-        return (FindOrLoseImage(67, 446, 83, 468, , "HourglassPack10", 1, failSafeTime) && FindOrLoseImage(45, 446, 60, 465, , "HourGlassAndPokeGoldPack10", 1, failSafeTime) && FindOrLoseImage("Pack_PokeGoldImageAfterOpenPackClick", 1, failSafeTime) && FindOrLoseImage(66, 447, 84, 465, , "PokeGoldPackNoHourglasses", 1, failSafeTime))
-
-    return (FindOrLoseImage("Pack_HourglassImageAfterOpenPackClick", 1, failSafeTime) && FindOrLoseImage("Pack_HourglassAndPokeGoldImageAfterOpenPackClick", 1, failSafeTime) && FindOrLoseImage("Pack_PokeGoldImageAfterOpenPackClick", 1, failSafeTime) && FindOrLoseImage(66, 447, 84, 465, , "PokeGoldPackNoHourglasses", 1, failSafeTime))
-}
-
-RecoverPackOpeningToMainIfNeeded(caller := "") {
-    global session
-
-    foundRecoveryScreen := false
-
-    if (FindOrLoseImage("Common_AlertForAppCrachDuringOpenPack", 0, 0, , true)) {
-        adbClick_wbb(139, 371)
-        Delay(2)
-        foundRecoveryScreen := true
-    }
-
-    if (!foundRecoveryScreen) {
-        foundRecoveryScreen := FindOrLoseImage("Create_NintendoLink", 0, 0, , true)
-        if (!foundRecoveryScreen)
-            foundRecoveryScreen := FindOrLoseImage("Create_DownloadAlertWindow", 0, 0, , true)
-        if (!foundRecoveryScreen)
-            foundRecoveryScreen := FindOrLoseImage("Create_DownloadComplete", 0, 0, , true)
-        if (!foundRecoveryScreen)
-            foundRecoveryScreen := FindOrLoseImage("Create_CinematicBackground", 0, 0, , true)
-        if (!foundRecoveryScreen)
-            foundRecoveryScreen := FindOrLoseImage("Create_WelcomePopup", 0, 0, , true)
-        if (!foundRecoveryScreen)
-            foundRecoveryScreen := FindOrLoseImage("StartupErrorX", 0, 0, , true)
-        if (!foundRecoveryScreen)
-            foundRecoveryScreen := FindOrLoseImage("Common_ShopButtonInMain", 0, 0, , true)
-    }
-
-    if (!foundRecoveryScreen)
-        return false
-
-    LogInfo("Pack opening error recovery from " . caller . ": returning to selected pack screen", "Restart.txt")
-    session.set("failSafe", A_TickCount)
-    failSafeTime := 0
-
-    Loop {
-        if (FindOrLoseImage("Common_ShopButtonInMain", 0, 0, , true)) {
-            GoToMain()
-            return true
-        }
-
-        if (FindOrLoseImage("Common_AlertForAppCrachDuringOpenPack", 0, 0, , true)) {
-            adbClick_wbb(139, 371)
-        } else if (FindOrLoseImage("StartupErrorX", 0, 0, , true)) {
-            adbClick_wbb(140, 439)
-        } else if (FindOrLoseImage("Create_DownloadAlertWindow", 0, 0, , true)) {
-            adbClick_wbb(203, 364)
-        } else if (FindOrLoseImage("Create_DownloadComplete", 0, 0, , true)) {
-            adbClick_wbb(140, 370)
-        } else if (FindOrLoseImage("Create_NintendoLink", 0, 0, , true)) {
-            adbClick_wbb(140, 460)
-        } else if (FindOrLoseImage("Create_WelcomePopup", 0, 0, , true)) {
-            adbClick_wbb(253, 506)
-        } else if (FindOrLoseImage("Create_CinematicBackground", 0, 0, , true)) {
-            adbClick_wbb(253, 506)
-        } else {
-            adbClick_wbb(140, 460)
-        }
-
-        Delay(1)
-        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-        CreateStatusMessage("Recovering pack opening`n(" . failSafeTime . "/90 seconds)")
-        if (failSafeTime > 90) {
-            restartGameInstance("Stuck recovering pack opening error")
-            return false
-        }
-    }
-}
-
 SelectPack(HG := false) {
     global session
-
-    if(HG = "HGPack" || HG = "HGPack10")
-        session.set("packOpeningRecoveryPack", HG)
-    else
-        session.set("packOpeningRecoveryPack", "")
 
     ; define constants
     mapPackX := {"Left":60, "Middle":140, "Right":215}
@@ -3839,8 +3646,7 @@ SelectPack(HG := false) {
     if(HG = "Tutorial") {
         FindImageAndClick("Create_InfoIconInStandByOpenPack", 180, 436, , 500) ;stop at hourglasses tutorial 2 180 to 203?
     }
-    else if(HG = "HGPack" || HG = "HGPack10") {
-        tenPackOpening := (HG = "HGPack10")
+    else if(HG = "HGPack") {
         session.set("failSafe", A_TickCount)
         failSafeTime := 0
         Loop{
@@ -3857,32 +3663,26 @@ SelectPack(HG := false) {
         session.set("failSafe", A_TickCount)
         failSafeTime := 0
         Loop {
-            if (RecoverPackOpeningToMainIfNeeded("SelectPackConfirmation")) {
-                SelectPack(HG)
-                return
-            }
-            if(FindHourglassOpenConfirmation(tenPackOpening, failSafeTime)) {
+            if(FindOrLoseImage("Pack_HourglassImageAfterOpenPackClick", 0, failSafeTime)) {
+                break
+            }else if(FindOrLoseImage("Pack_HourglassAndPokeGoldImageAfterOpenPackClick", 0, failSafeTime)) {
+                break
+            }else if(FindOrLoseImage("Pack_PokeGoldImageAfterOpenPackClick", 0, failSafeTime)) {
                 break
             }else if(FindOrLoseImage("Pack_NotEnoughItemsForOpenPack", 0)) {
                 session.set("cantOpenMorePacks", 1)
             }
             if(session.get("cantOpenMorePacks"))
                 return
-            openButtonX := tenPackOpening ? 70 : 161
-            adbClick_wbb(openButtonX, 423)
+            adbClick_wbb(161, 423)
             Delay(1)
             failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-            statusText := tenPackOpening ? "Waiting for HourglassPack10" : "Waiting for HourglassPack3"
-            CreateStatusMessage(statusText . "`n(" . failSafeTime . "/45 seconds)")
+            CreateStatusMessage("Waiting for HourglassPack3`n(" . failSafeTime . "/45 seconds)")
         }
         session.set("failSafe", A_TickCount)
         failSafeTime := 0
         Loop {
-            if (RecoverPackOpeningToMainIfNeeded("SelectPackConfirmationClosed")) {
-                SelectPack(HG)
-                return
-            }
-            if(FindHourglassOpenConfirmationClosed(tenPackOpening, failSafeTime)) {
+            if(FindOrLoseImage("Pack_HourglassImageAfterOpenPackClick", 1, failSafeTime)) {
                 break
             }
             adbClick_wbb(205, 458)
@@ -3938,25 +3738,14 @@ SelectPack(HG := false) {
     }
 }
 
-PackOpening(tenPackOpening := false) {
+PackOpening() {
     global session
     if (isTerminatePTCGPHelperApp()) {
         InitPackOpening()
     }
-    recoveryPack := tenPackOpening ? "HGPack10" : session.get("packOpeningRecoveryPack")
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
-    failsafeClickExecuted := false
     Loop {
-        if(recoveryPack != "" && RecoverPackOpeningToMainIfNeeded("PackOpening")) {
-            SelectPack(recoveryPack)
-            if(session.get("cantOpenMorePacks"))
-                return
-            session.set("failSafe", A_TickCount)
-            failSafeTime := 0
-            failsafeClickExecuted := false
-            continue
-        }
         adbClick_wbb(146, 434)
         Delay(0.2)
         adbClick_wbb(170, 455)
@@ -4025,8 +3814,7 @@ PackOpening(tenPackOpening := false) {
         Delay(1)
     }
 
-    resultNeedle := tenPackOpening ? "Gift_ResultAfterOpenPack" : "Pack_ResultAfterOpenPack"
-    FindImageAndClick(resultNeedle, 252, 505, 5, 25) ;skip through cards until results opening screen
+    FindImageAndClick("Pack_ResultAfterOpenPack", 252, 505, 5, 25) ;skip through cards until results opening screen
 
     CheckPack()
     SetLastPackPulledNow()
@@ -4060,12 +3848,11 @@ PackOpening(tenPackOpening := false) {
     }
 }
 
-HourglassOpening(HG := false, NEIRestart := true, tenPackOpening := false) {
+HourglassOpening(HG := false, NEIRestart := true) {
     global botConfig, session
     if (isTerminatePTCGPHelperApp()) {
         InitPackOpening()
     }
-    recoveryPack := tenPackOpening ? "HGPack10" : "HGPack"
     if(!HG) {
         Delay(3)
         adbClick_wbb(146, 441) ; 146 440
@@ -4094,17 +3881,12 @@ HourglassOpening(HG := false, NEIRestart := true, tenPackOpening := false) {
     if(!session.get("packMethod")) {
         session.set("failSafe", A_TickCount)
         failSafeTime := 0
-        failsafeClickExecuted := false
-        recoveredPackOpening := false
         Loop {
-            if (RecoverPackOpeningToMainIfNeeded("HourglassOpeningConfirmation")) {
-                SelectPack(recoveryPack)
-                if(session.get("cantOpenMorePacks"))
-                    return
-                recoveredPackOpening := true
+            if(FindOrLoseImage("Pack_HourglassImageAfterOpenPackClick", 0, failSafeTime)) {
                 break
-            }
-            if(FindHourglassOpenConfirmation(tenPackOpening, failSafeTime)) {
+            }else if(FindOrLoseImage("Pack_HourglassAndPokeGoldImageAfterOpenPackClick", 0, failSafeTime)) {
+                break
+            }else if(FindOrLoseImage("Pack_PokeGoldImageAfterOpenPackClick", 0, failSafeTime)) {
                 break
             }else if(FindOrLoseImage("Pack_NotEnoughItemsForOpenPack", 0)) {
                 session.set("cantOpenMorePacks", 1)
@@ -4127,44 +3909,23 @@ HourglassOpening(HG := false, NEIRestart := true, tenPackOpening := false) {
                 restartGameInstance("Stuck waiting for HourglassPack")
                 return
             }
-            openButtonX := tenPackOpening ? 70 : 146
-            adbClick_wbb(openButtonX, 434)
+            adbClick_wbb(146, 434)
             Delay(1)
-            statusText := tenPackOpening ? "Waiting for HourglassPack10" : "Waiting for HourglassPack"
-            CreateStatusMessage(statusText . "`n(" . failSafeTime . "/45 seconds)")
+            CreateStatusMessage("Waiting for HourglassPack`n(" . failSafeTime . "/45 seconds)")
         }
-        if(!recoveredPackOpening) {
-            session.set("failSafe", A_TickCount)
-            failSafeTime := 0
-            Loop {
-                if (RecoverPackOpeningToMainIfNeeded("HourglassOpeningConfirmationClosed")) {
-                    SelectPack(recoveryPack)
-                    if(session.get("cantOpenMorePacks"))
-                        return
-                    recoveredPackOpening := true
-                    break
-                }
-                if(FindHourglassOpenConfirmationClosed(tenPackOpening, failSafeTime)) {
-                    break
-                }
-                adbClick_wbb(205, 458)
-                Delay(1)
-                failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-                CreateStatusMessage("Waiting for HourglassPack2`n(" . failSafeTime . "/45 seconds)")
+        session.set("failSafe", A_TickCount)
+        failSafeTime := 0
+        Loop {
+            if(FindOrLoseImage("Pack_HourglassImageAfterOpenPackClick", 1, failSafeTime)) {
+                break
             }
+            adbClick_wbb(205, 458)
+            Delay(1)
+            failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+            CreateStatusMessage("Waiting for HourglassPack2`n(" . failSafeTime . "/45 seconds)")
         }
     }
-    session.set("failSafe", A_TickCount)
-    failSafeTime := 0
     Loop {
-        if(RecoverPackOpeningToMainIfNeeded("HourglassOpeningPackReady")) {
-            SelectPack(recoveryPack)
-            if(session.get("cantOpenMorePacks"))
-                return
-            session.set("failSafe", A_TickCount)
-            failSafeTime := 0
-            continue
-        }
         adbClick_wbb(146, 434)
         Delay(1)
         adbClick_wbb(170, 455)
@@ -4177,9 +3938,7 @@ HourglassOpening(HG := false, NEIRestart := true, tenPackOpening := false) {
             return
 
         if(FindOrLoseImage("Common_ShopButtonInMain", 0, failSafeTime)){
-            SelectPack(recoveryPack)
-            session.set("failSafe", A_TickCount)
-            failSafeTime := 0
+            SelectPack("HGPack")
         }
 
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
@@ -4219,8 +3978,7 @@ HourglassOpening(HG := false, NEIRestart := true, tenPackOpening := false) {
         Delay(1)
     }
 
-    resultNeedle := tenPackOpening ? "Gift_ResultAfterOpenPack" : "Pack_ResultAfterOpenPack"
-    FindImageAndClick(resultNeedle, 252, 505, 5, 25) ;skip through cards until results opening screen
+    FindImageAndClick("Pack_ResultAfterOpenPack", 252, 505, 5, 25) ;skip through cards until results opening screen
 
     CheckPack()
     SetLastPackPulledNow()
@@ -4691,11 +4449,6 @@ DoWonderPick() {
 SpendAllHourglass() {
     global botConfig, session
 
-    if (botConfig.get("deleteMethod") = "Inject 13P+") {
-        SpendAllHourglassInject13P()
-        return
-    }
-
     ; GoToMain()
     ; GetAllRewards(false, true)
     GoToMain()
@@ -4722,62 +4475,6 @@ SpendAllHourglass() {
 
         if(session.get("cantOpenMorePacks") || (!session.get("friendIDs") && botConfig.get("FriendID") = "" && session.get("accountOpenPacks") >= session.get("maxAccountPackNum")))
             break
-    }
-}
-
-CanContinuePackOpening() {
-    global botConfig, session
-    return !session.get("cantOpenMorePacks") && (session.get("friendIDs") || botConfig.get("FriendID") != "" || session.get("accountOpenPacks") < session.get("maxAccountPackNum"))
-}
-
-ResetTenPackFallbackState() {
-    global session
-
-    if (FindOrLoseImage("Pack_NotEnoughItemsForOpenPack", 0, 0)) {
-        adbInputEvent("111")
-        Delay(1)
-    }
-    session.set("cantOpenMorePacks", 0)
-}
-
-SpendAllHourglassInject13P() {
-    global botConfig, session
-
-    GoToMain()
-    session.set("cantOpenMorePacks", 0)
-
-    SelectPack("HGPack10")
-    if (!session.get("cantOpenMorePacks")) {
-        session.set("expectedPackOpenCount", 10)
-        PackOpening(true)
-        session.set("expectedPackOpenCount", 1)
-    }
-
-    while (CanContinuePackOpening()) {
-        session.set("expectedPackOpenCount", 10)
-        HourglassOpening(true, true, true)
-        session.set("expectedPackOpenCount", 1)
-    }
-
-    if (!session.get("cantOpenMorePacks"))
-        return
-
-    ResetTenPackFallbackState()
-
-    if (!CanContinuePackOpening())
-        return
-
-    GoToMain()
-    SelectPack("HGPack")
-    if(session.get("cantOpenMorePacks"))
-        return
-
-    PackOpening()
-    if(!CanContinuePackOpening())
-        return
-
-    while (CanContinuePackOpening()) {
-        HourglassOpening(true)
     }
 }
 
