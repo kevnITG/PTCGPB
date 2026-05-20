@@ -44,7 +44,7 @@ OnError("ErrorHandler")
 githubUser := "kevnITG"
     ,repoName := "PTCGPB"
     ,localVersion := "v9.6.4"
-    ,modVersion := "v0.9.6"
+    ,modVersion := "v0.10.0"
     ,scriptFolder := A_ScriptDir
     ,zipPath := A_Temp . "\update.zip"
     ,extractPath := A_Temp . "\update"
@@ -1319,8 +1319,6 @@ ShowToolsAndSystemSettings:
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (botConfig.get("slowMotion") ? "Checked" : "") " vui_slowMotion_Popup x" . col1X . " y" . yPos . " cWhite", No Speedmod Menu Clicks
     yPos += leftStep
     Gui, ToolsAndSystemSelect:Add, Checkbox, % (botConfig.get("useSoloIdsFile") ? "Checked" : "") " vui_UseSoloIdsFile_Popup x" . col1X . " y" . yPos . " cWhite", Use ids.txt in Solo Reroll
-    yPos += leftStep
-    Gui, ToolsAndSystemSelect:Add, Checkbox, % (botConfig.get("importHistory") ? "Checked" : "") " vui_importHistory_Popup x" . col1X . " y" . yPos . " cWhite", Import History
     yPos += 31
 
     sectionColor := "cWhite"
@@ -1468,7 +1466,6 @@ saveToolsAndSystemSettings:
     botConfig.set("claimDailyMission", ui_claimDailyMission_Popup, "ToolsAndSystem")
     botConfig.set("slowMotion", ui_slowMotion_Popup, "ToolsAndSystem")
     botConfig.set("useSoloIdsFile", ui_UseSoloIdsFile_Popup, "ToolsAndSystem")
-    botConfig.set("importHistory", ui_importHistory_Popup, "ToolsAndSystem")
     botConfig.set("claimSpecialMissions", ui_claimSpecialMissions_Popup, "ToolsAndSystem")
     botConfig.set("wonderpickForEventMissions", ui_wonderpickForEventMissions_Popup, "ToolsAndSystem")
 

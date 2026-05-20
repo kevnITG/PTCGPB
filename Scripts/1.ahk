@@ -1607,11 +1607,6 @@ AccountCreationDate_ToUnix(creationDate) {
 
 GetHistoryOfAccount() {
     global session
-    global botConfig
-    if (!botConfig.get("importHistory")) {
-        LogDebug("Skipping account history import because Import History is disabled")
-        return true
-    }
 
     if (!session.get("injectMethod") || !session.get("loadedAccount") || session.get("accountFileName") = "")
         return false
