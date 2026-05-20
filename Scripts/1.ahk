@@ -1531,7 +1531,8 @@ GetAccountCreationDate() {
     existingCreatedAt := accountMeta["createdAt"]
 
     LogTrace("Ensuring ptcgpb helper exists before creation-date check", "ADB.txt")
-    adbWriteRaw("mkdir -p /data/ptcgp &&  if [ ! -e /data/ptcgp/ptcgpb ]; then curl -L -o /data/ptcgp/ptcgpb https://leanny.github.io/ptcgpb-helper/ptcgpb-helper-android && chmod +x /data/ptcgp/ptcgpb; fi")
+    if (!EnsurePTCGPBHelperInstalled())
+        return false
     LogTrace("Running ptcgpb earliest for creation-date window", "ADB.txt")
     earliestOutput := adbWriteRaw("/data/ptcgp/ptcgpb earliest", true)
     earliestOutput := StrReplace(earliestOutput, "`r")
@@ -1605,6 +1606,97 @@ AccountCreationDate_ToUnix(creationDate) {
     return unixTimestamp + 0
 }
 
+EnsurePTCGPBHelperInstalled() {
+    global session
+
+    remotePath := "/data/ptcgp/ptcgpb"
+    safeScriptName := RegExReplace(session.get("scriptName"), "[^A-Za-z0-9_.-]", "_")
+    if (safeScriptName = "")
+        safeScriptName := A_ScriptName
+    remoteTmpPath := "/data/ptcgp/ptcgpb." . safeScriptName . ".tmp"
+    sdcardTmpPath := "/sdcard/ptcgpb-helper." . safeScriptName . ".tmp"
+    helperUrl := "https://leanny.github.io/ptcgpb-helper/ptcgpb-helper-android"
+    localPath := A_Temp . "\ptcgpb-helper-android." . safeScriptName
+    minHelperSize := 2500000
+
+    adbWriteRaw("mkdir -p /data/ptcgp")
+    remoteSize := Trim(StrReplace(adbWriteRaw("if [ -x " . remotePath . " ]; then wc -c < " . remotePath . "; else echo 0; fi", true), "`r"), "`n`t ")
+    remoteSize := RegExReplace(remoteSize, "[^\d]")
+    if (remoteSize >= minHelperSize) {
+        LogTrace("ptcgpb helper already exists on device size=" . remoteSize, "ADB.txt")
+        return true
+    }
+    if (remoteSize > 0) {
+        LogWarn("Removing incomplete ptcgpb helper from device size=" . remoteSize)
+        adbWriteRaw("rm -f " . remotePath)
+    }
+
+    LogInfo("ptcgpb helper missing on device; downloading on Windows host")
+    if (!DownloadPTCGPBHelperToFile(helperUrl, localPath)) {
+        LogWarn("Failed to download ptcgpb helper on Windows host")
+        return false
+    }
+
+    FileGetSize, helperSize, %localPath%
+    if (helperSize < minHelperSize) {
+        LogWarn("Downloaded ptcgpb helper is unexpectedly small: " . helperSize . " bytes")
+        return false
+    }
+
+    adbCommand := """" . session.get("adbPath") . """ -s 127.0.0.1:" . session.get("adbPort")
+    LogTrace("Pushing ptcgpb helper to " . sdcardTmpPath, "ADB.txt")
+    RunWait, % adbCommand . " push """ . localPath . """ " . sdcardTmpPath,, Hide
+    if (ErrorLevel) {
+        LogWarn("Failed to push ptcgpb helper to device. ErrorLevel=" . ErrorLevel)
+        return false
+    }
+
+    adbWriteRaw("cp -f " . sdcardTmpPath . " " . remoteTmpPath . " && mv -f " . remoteTmpPath . " " . remotePath . " && chmod 777 " . remotePath . " && rm -f " . sdcardTmpPath)
+    remoteSize := Trim(StrReplace(adbWriteRaw("if [ -x " . remotePath . " ]; then wc -c < " . remotePath . "; else echo 0; fi", true), "`r"), "`n`t ")
+    remoteSize := RegExReplace(remoteSize, "[^\d]")
+    if (remoteSize < minHelperSize) {
+        LogWarn("ptcgpb helper install verification failed size=" . remoteSize)
+        return false
+    }
+
+    LogInfo("ptcgpb helper installed via Windows download and adb push")
+    return true
+}
+
+DownloadPTCGPBHelperToFile(url, localPath) {
+    try {
+        RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
+        RegRead, proxyServer, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyServer
+
+        whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+        if (proxyEnabled)
+            whr.SetProxy(2, proxyServer)
+        whr.SetTimeouts(10000, 10000, 30000, 120000)
+        whr.Open("GET", url, false)
+        whr.Send()
+
+        if (whr.Status != 200) {
+            LogWarn("ptcgpb helper host download returned HTTP status " . whr.Status)
+            return false
+        }
+
+        if (FileExist(localPath))
+            FileDelete, %localPath%
+
+        stream := ComObjCreate("ADODB.Stream")
+        stream.Type := 1
+        stream.Open()
+        stream.Write(whr.ResponseBody)
+        stream.SaveToFile(localPath, 2)
+        stream.Close()
+        return FileExist(localPath)
+    } catch e {
+        errorMessage := IsObject(e) ? e.Message : e
+        LogWarn("ptcgpb helper host download failed: " . errorMessage)
+        return false
+    }
+}
+
 GetHistoryOfAccount() {
     global session
     global botConfig
@@ -1656,7 +1748,8 @@ GetHistoryOfAccount() {
 
     adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
     LogTrace("Ensuring ptcgpb helper exists before history import", "ADB.txt")
-    adbWriteRaw("mkdir -p /data/ptcgp &&  if [ ! -e /data/ptcgp/ptcgpb ]; then curl -L -o /data/ptcgp/ptcgpb https://leanny.github.io/ptcgpb-helper/ptcgpb-helper-android && chmod +x /data/ptcgp/ptcgpb; fi")
+    if (!EnsurePTCGPBHelperInstalled())
+        return false
     LogTrace("Clearing stale remote history files: " . remotePath . " and " . sdcardPath, "ADB.txt")
     adbWriteRaw("rm -f " . remotePath . " " . sdcardPath)
     LogTrace("Running ptcgpb history export to " . remotePath, "ADB.txt")
@@ -1688,7 +1781,8 @@ GetHistoryOfAccount() {
 InitPackOpening(full := false) {
     global session
     adbCommand := session.get("adbPath") . " -s 127.0.0.1:" . session.get("adbPort")
-    adbWriteRaw("mkdir -p /data/ptcgp &&  if [ ! -e /data/ptcgp/ptcgpb ]; then curl -L -o /data/ptcgp/ptcgpb https://leanny.github.io/ptcgpb-helper/ptcgpb-helper-android && chmod +x /data/ptcgp/ptcgpb; fi")
+    if (!EnsurePTCGPBHelperInstalled())
+        return false
     adbWriteRaw("rm -f /data/ptcgp/result.rc")
     adbWriteRaw("pkill -f /data/ptcgp/ptcgpb")
 
