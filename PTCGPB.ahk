@@ -2246,6 +2246,24 @@ ResetAccountLists() {
 }
 
 ; =================== Logic - Start bot function ===================
+ConfirmDiagnosticLogLevelForRun() {
+    global botConfig
+
+    logLevel := botConfig.get("logLevel")
+    StringLower, logLevel, logLevel
+    if (logLevel != "debug" && logLevel != "trace")
+        return true
+
+    MsgBox, 0x34, Log Level Warning, % "Current Log Level is '" . logLevel . "'.`n`nDebug and trace logging should only be used for debugging because it can slow down the bot while enabled.`n`nClick Yes to switch Log Level back to 'info' before starting.`nClick No to keep '" . logLevel . "' for this run."
+    IfMsgBox, Yes
+    {
+        botConfig.set("logLevel", "info", "ToolsAndSystem")
+        botConfig.saveConfigToSettings("ToolsAndSystem")
+    }
+
+    return true
+}
+
 StartBot() {
     global botConfig, dict, localVersion, githubUser, modVersion, modRepoUser, rerollTime, PackGuiBuild, botMetadata, typeMsg
         , g_botStarted
@@ -2257,6 +2275,9 @@ StartBot() {
         MsgBox, 0x40000,, ERROR: bot folder path is too long or contains blank spaces. Move to a shorter path without spaces such as C:\PTCGPB
         return
     }
+
+    if (!ConfirmDiagnosticLogLevelForRun())
+        return
 
     ResetAccountLists()
 
