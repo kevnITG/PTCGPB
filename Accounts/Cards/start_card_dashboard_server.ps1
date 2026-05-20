@@ -280,9 +280,57 @@ function Read-IniSection {
     return $result
 }
 
+function Resolve-MumuBaseFolder {
+    param(
+        [Parameter(Mandatory = $true)][string]$InjectIniPath,
+        [Parameter(Mandatory = $true)][string]$SettingsIniPath
+    )
+
+    $injectSettings = Read-IniSection -IniPath $InjectIniPath -Section "UserSettings"
+    $settingsIniSettings = Read-IniSection -IniPath $SettingsIniPath -Section "ToolsAndSystem"
+    $candidates = New-Object System.Collections.Generic.List[object]
+
+    if ($injectSettings.ContainsKey("folderPath") -and -not [string]::IsNullOrWhiteSpace($injectSettings["folderPath"])) {
+        $candidates.Add([pscustomobject]@{
+            Path = [string]$injectSettings["folderPath"]
+            Source = "Accounts\InjectAccount.ini"
+        })
+    }
+    if ($settingsIniSettings.ContainsKey("folderPath") -and -not [string]::IsNullOrWhiteSpace($settingsIniSettings["folderPath"])) {
+        $candidates.Add([pscustomobject]@{
+            Path = [string]$settingsIniSettings["folderPath"]
+            Source = "Settings.ini"
+        })
+    }
+    $candidates.Add([pscustomobject]@{
+        Path = "C:\Program Files\Netease"
+        Source = "default"
+    })
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate.Path -PathType Container) {
+            return [pscustomobject]@{
+                Path = $candidate.Path
+                Source = $candidate.Source
+                InjectSettings = $injectSettings
+            }
+        }
+    }
+
+    return [pscustomobject]@{
+        Path = $candidates[0].Path
+        Source = $candidates[0].Source
+        InjectSettings = $injectSettings
+    }
+}
+
 function Resolve-MumuFolder {
     param([Parameter(Mandatory = $true)][string]$BaseFolder)
+    if (Test-Path -LiteralPath (Join-Path $BaseFolder "vms") -PathType Container) {
+        return $BaseFolder
+    }
     $candidates = @(
+        "MuMu",
         "MuMuPlayerGlobal-12.0",
         "MuMu Player 12",
         "MuMuPlayer-12.0",
@@ -336,16 +384,14 @@ function Invoke-ListInstances {
     param([Parameter(Mandatory = $true)]$Context)
     $accountsDir = Join-Path $resolvedRoot "Accounts"
     $iniPath = Join-Path $accountsDir "InjectAccount.ini"
-    $settings = Read-IniSection -IniPath $iniPath -Section "UserSettings"
-    $folderPath = if ($settings.ContainsKey("folderPath") -and -not [string]::IsNullOrWhiteSpace($settings["folderPath"])) {
-        $settings["folderPath"]
-    } else {
-        "C:\Program Files\Netease"
-    }
+    $settingsPath = Join-Path $resolvedRoot "Settings.ini"
+    $folderConfig = Resolve-MumuBaseFolder -InjectIniPath $iniPath -SettingsIniPath $settingsPath
+    $settings = $folderConfig.InjectSettings
+    $folderPath = $folderConfig.Path
     if (-not (Test-Path -LiteralPath $folderPath -PathType Container)) {
         Write-JsonResponse -Context $Context -StatusCode 404 -Payload @{
             ok = $false
-            error = "MuMu base folder not found: $folderPath. Update folderPath in Accounts\InjectAccount.ini."
+            error = "MuMu base folder not found. Checked Accounts\InjectAccount.ini, Settings.ini [ToolsAndSystem] folderPath, and the default C:\Program Files\Netease."
         }
         return
     }
@@ -357,6 +403,7 @@ function Invoke-ListInstances {
     Write-JsonResponse -Context $Context -StatusCode 200 -Payload @{
         ok = $true
         folderPath = $folderPath
+        folderPathSource = $folderConfig.Source
         defaultInstance = if ($settings.ContainsKey("winTitle")) { $settings["winTitle"] } else { "" }
         injectExtraFriendIds = $injectExtraFriendIds
         instances = $instances
@@ -388,12 +435,9 @@ function Invoke-LaunchInstance {
 
     $accountsDir = Join-Path $resolvedRoot "Accounts"
     $iniPath = Join-Path $accountsDir "InjectAccount.ini"
-    $settings = Read-IniSection -IniPath $iniPath -Section "UserSettings"
-    $folderPath = if ($settings.ContainsKey("folderPath") -and -not [string]::IsNullOrWhiteSpace($settings["folderPath"])) {
-        $settings["folderPath"]
-    } else {
-        "C:\Program Files\Netease"
-    }
+    $settingsPath = Join-Path $resolvedRoot "Settings.ini"
+    $folderConfig = Resolve-MumuBaseFolder -InjectIniPath $iniPath -SettingsIniPath $settingsPath
+    $folderPath = $folderConfig.Path
     $mumuFolder = Resolve-MumuFolder -BaseFolder $folderPath
     if (-not $mumuFolder) {
         Write-JsonResponse -Context $Context -StatusCode 404 -Payload @{ ok = $false; error = "MuMu folder not found under $folderPath." }
