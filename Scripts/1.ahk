@@ -1042,7 +1042,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
             confirmed := vPosXY
         } else {
             ElapsedTime := (A_TickCount - session.get("StartSkipTime")) // 1000
-            if(imageName = "Country")
+            if(imageName = "Country" || imageName = "Social" || imageName = "Points")
                 FSTime := 90
             else if(imageName = "Missions" || imageName = "DailyMissions" || imageName = "DexMissions")
                 FSTime := 60
@@ -1243,6 +1243,9 @@ restartGameInstance(reason, RL := true) {
     if (RL = "GodPack") {
         LogToFile("Restarted game. Reason: " reason)
         IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
+        ; Valid GP keeps friends by design; do not let startup recovery remove them.
+        ClearFriendCleanupPending()
+        session.set("friended", false)
         if (!botConfig.get("groupRerollEnabled"))
             AppendFriendCodeToManualVipIds(session.get("friendCode"))
         SendMetadataToPTCGPB(session.get("packsThisRun"))

@@ -1972,7 +1972,7 @@ StartBot() {
                 discMessage .= selectMsg
                 
                 if(botConfig.get("groupRerollEnabled") || (!botConfig.get("groupRerollEnabled") && botConfig.get("heartBeatOwnerWebHookURL") = ""))
-                    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatWebhookURL"))
+                    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatWebhookURL"),, false)
                 
                 if(botConfig.get("heartBeatOwnerWebHookURL")){
                     FormatTime, currentTime, , yyyy-MM-dd HH:mm:ss
@@ -2005,7 +2005,7 @@ StartBot() {
 
                     discMessage .= "\n--------------------------------------------------"
 
-                    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatOwnerWebHookURL"))
+                    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatOwnerWebHookURL"),, false)
                 }
 
                 if (botConfig.get("debugMode")) {
@@ -2051,7 +2051,7 @@ SendAllInstancesOfflineStatus() {
     discMessage .= selectMsg
     discMessage .= "\n\n All instances marked as OFFLINE"
     
-    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatWebhookURL"))
+    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatWebhookURL"),, false)
 }
 
 ReceiveData(wParam, lParam) {

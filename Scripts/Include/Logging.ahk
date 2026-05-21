@@ -267,7 +267,7 @@ PruneLogArchives(archiveDir, nameNoExt, ext) {
     }
 }
 
-LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screenshotFile2 := "", altWebhookURL := "", altUserId := "") {
+LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screenshotFile2 := "", altWebhookURL := "", altUserId := "", logSuccessfulDelivery := true) {
     discordPing := ""
 
     if (ping) {
@@ -294,6 +294,7 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
     if (webhookURL != "") {
         MaxRetries := 3
         RetryCount := 0
+        discordTraceId := CreateDiscordTraceId()
         try {
         RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
         RegRead, proxyServer, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyServer
@@ -309,7 +310,7 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
 
         payloadFile := CreateDiscordPayloadFile(discordPing . message)
         if (payloadFile = "") {
-            LogToFile("Discord send failed before curl: could not create payload file | webhook=" . RedactDiscordWebhookURL(webhookURL), "Discord.txt")
+            LogToFile("Discord send failed before curl: could not create payload file | trace=" . discordTraceId . " | webhook=" . RedactDiscordWebhookURL(webhookURL), "Discord.txt")
             return
         }
 
@@ -350,7 +351,8 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
                 ; Add the webhook
                 curlCommand := curlCommand . """" . webhookURL . """"
 
-                LogDebugToFile("Discord send attempt | attempt=" . RetryCount . "/" . MaxRetries . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | messageLen=" . StrLen(message), "Discord.txt")
+                if(logSuccessfulDelivery)
+                    LogToFile("Discord send attempt | trace=" . discordTraceId . " | attempt=" . RetryCount . "/" . MaxRetries . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | messageLen=" . StrLen(message), "Discord.txt")
 
                 ; Send the message using curl
                 if (IsFunc("CmdRet")) {
@@ -363,17 +365,19 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
 
                 httpStatus := GetDiscordCurlHttpStatus(curlResult)
                 if (httpStatus >= 200 && httpStatus < 300) {
-                    LogDebugToFile("Discord send complete | status=" . httpStatus . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | messageLen=" . StrLen(message), "Discord.txt")
+                    if(logSuccessfulDelivery || RetryCount > 1)
+                        LogToFile("Discord send complete | trace=" . discordTraceId . " | status=" . httpStatus . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | messageLen=" . StrLen(message), "Discord.txt")
                     break
                 }
 
-                LogToFile("Discord send failed | attempt=" . RetryCount . "/" . MaxRetries . " | status=" . httpStatus . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | result=" . TrimDiscordCurlResult(curlResult), "Discord.txt")
+                LogToFile("Discord send failed | trace=" . discordTraceId . " | attempt=" . RetryCount . "/" . MaxRetries . " | status=" . httpStatus . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | result=" . TrimDiscordCurlResult(curlResult), "Discord.txt")
             }
             catch e {
-                LogToFile("Discord send exception | attempt=" . RetryCount . "/" . MaxRetries . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | error=" . FormatDiscordException(e), "Discord.txt")
+                LogToFile("Discord send exception | trace=" . discordTraceId . " | attempt=" . RetryCount . "/" . MaxRetries . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | error=" . FormatDiscordException(e), "Discord.txt")
             }
 
             if (RetryCount >= MaxRetries) {
+                LogToFile("Discord send exhausted | trace=" . discordTraceId . " | attempts=" . RetryCount . " | webhook=" . RedactDiscordWebhookURL(webhookURL), "Discord.txt")
                 CreateStatusMessage("Failed to send discord message.")
                 break
             }
@@ -382,6 +386,12 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
 
         FileDelete, %payloadFile%
     }
+}
+
+CreateDiscordTraceId() {
+    static sequence := 0
+    sequence++
+    return A_Now . "_" . DllCall("GetCurrentProcessId") . "_" . A_TickCount . "_" . sequence
 }
 
 CreateDiscordPayloadFile(content) {

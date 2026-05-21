@@ -152,10 +152,6 @@ AddFriends(renew := false, getFC := false) {
                 waitSendResult := A_TickCount
                 interceptProc := true
                 Loop{
-                    if(!isSendReqeest && FindOrLoseImage("Friend_RequestButtonInSearchResult", 0, failSafeTime) && (A_TickCount - waitSendResult) > 1000){
-                        adbClick_wbb(243, 258)
-                        isSendReqeest := true
-                    }
                     Delay(0.25)
                     if(FindOrLoseImage("Friend_WithdrawButton", 0, failSafeTime))
                         break
@@ -167,6 +163,14 @@ AddFriends(renew := false, getFC := false) {
                     }
                     else if(FindOrLoseImage("Friend_CannotFriendRequest", 0, failSafeTime))
                         break
+                    if(!isSendReqeest
+                        && (A_TickCount - waitSendResult) > 2500
+                        && FindOrLoseImage("Friend_RequestButtonInSearchResult", 0, failSafeTime, 40, true)
+                        && !FindOrLoseImage("Friend_WithdrawButton", 0, failSafeTime, , true)
+                        && !FindOrLoseImage("Friend_AcceptedButtonInSearchResult", 0, failSafeTime, , true)) {
+                        adbClick_wbb(243, 258)
+                        isSendReqeest := true
+                    }
                     if ((A_TickCount - waitSendResult) > 10000)
                         break
                 }
@@ -221,19 +225,25 @@ AddFriends(renew := false, getFC := false) {
         menuClickX := GetScaleProfileValue(240, 245)
         menuClickY := GetScaleProfileValue(494, 520)
         menuOpenSleepTime := GetScaleProfileValue(botConfig.get("Delay"), 1000)
-        FindImageAndClick("Menu_InventoryIconInMenu", menuClickX, menuClickY, , menuOpenSleepTime)
+        inventoryIconPos := FindImageAndClick("Menu_InventoryIconInMenu", menuClickX, menuClickY, , menuOpenSleepTime)
         menuSettleDelay := GetScaleProfileValue(0, 1)
         if(menuSettleDelay > 0)
             Delay(menuSettleDelay)
-        miscClickX := 105
-        miscClickY := 435
-        ; Stability patch: this coordinate opens Misc in the hamburger menu, but becomes Go To Title after navigation.
+
+        if(!inventoryIconPos) {
+            restartGameInstance("Stuck at InSubMenu...")
+            return false
+        }
+
+        StringSplit, inventoryIconCoord, inventoryIconPos, `,
+        miscClickX := inventoryIconCoord1 + GetScaleProfileValue(8, 7)
+        miscClickY := inventoryIconCoord2 + GetScaleProfileValue(170, 167)
+        ; Anchor the Misc tap to the visible inventory icon so 125-scale menu drift cannot hit Trade.
         adbClick_wbb(miscClickX, miscClickY)
         miscWaitStart := A_TickCount
         Loop {
             if(FindOrLoseImage("Menu_GoToTitleButton_Up", 0, , 60, true)
-                || FindOrLoseImage("Menu_GoToTitleButton_Down", 0, , 60, true)
-                || FindOrLoseImage("Menu_MiscMenuLeftTop", 0, , 20, true))
+                || FindOrLoseImage("Menu_GoToTitleButton_Down", 0, , 60, true))
                 break
 
             if((A_TickCount - miscWaitStart) > 5000) {
