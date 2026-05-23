@@ -317,12 +317,50 @@ CompareIndicesByPacksDesc(packs, a, b) {
 ;-------------------------------------------------------------------------------
 ; SafeReload - Restart the script without race conditions
 ;-------------------------------------------------------------------------------
-; Use AutoHotkey's built-in Reload path so the current process coordinates
-; shutdown before the replacement instance reaches #SingleInstance.
-; Launching a new process before ExitApp can race with OnExit/ADB cleanup and
-; trigger "older instance already running" prompts.
-SafeReload() {
+; Use AutoHotkey's built-in Reload path. Keep a small diagnostic trail, but do
+; not spawn a separate replacement process from this common reload helper.
+SafeReload(reason := "") {
+    static reloadInProgress := false
+
+    if (reloadInProgress) {
+        LogReloadMessage("SafeReload re-entered; exiting current process | reason=" . reason)
+        ExitApp
+    }
+
+    reloadInProgress := true
+    currentPID := DllCall("GetCurrentProcessId", "UInt")
+    LogReloadMessage("SafeReload requested | script=" . A_ScriptName . " | pid=" . currentPID . " | reason=" . reason)
+
+    if(IsFunc("CleanupBeforeExit")) {
+        OnExit("CleanupBeforeExit", 0)
+        cleanupFn := Func("CleanupBeforeExit")
+        cleanupFn.Call()
+    }
+
     Reload
+    Sleep, 1000
+    if (ErrorLevel) {
+        LogReloadMessage("Built-in Reload returned ErrorLevel=" . ErrorLevel . " | reason=" . reason)
+        reloadInProgress := false
+    }
+}
+
+LogReloadMessage(message) {
+    if (IsFunc("LogToFile")) {
+        logFn := Func("LogToFile")
+        logFn.Call(message, "Reload.txt")
+        return
+    }
+
+    logDir := A_ScriptDir . "\..\Logs"
+    if (!FileExist(logDir) && FileExist(A_ScriptDir . "\..\..\Logs"))
+        logDir := A_ScriptDir . "\..\..\Logs"
+    if (!FileExist(logDir))
+        FileCreateDir, %logDir%
+
+    logFile := logDir . "\Reload.txt"
+    FormatTime, now,, yyyy-MM-dd HH:mm:ss
+    FileAppend, % "[" . now . "] " . message . "`n", %logFile%
 }
 
 LogUtilityMessage(message) {
@@ -451,12 +489,20 @@ InitializeHiddenConsole() {
     if (!DllCall("GetConsoleWindow", "Ptr"))
         DllCall("AllocConsole")
 
-    consoleHwnd := DllCall("GetConsoleWindow", "Ptr")
-    if (consoleHwnd)
-        DllCall("ShowWindow", "Ptr", consoleHwnd, "Int", 0)
+    DllCall("SetConsoleTitle", "Str", A_ScriptFullPath)
+    HideAllocatedConsole()
+    SetTimer, HideAllocatedConsole, -1000
 
     if (previousHwnd && WinExist("ahk_id " . previousHwnd))
         DllCall("SetForegroundWindow", "Ptr", previousHwnd)
+}
+
+HideAllocatedConsole() {
+    consoleHwnd := DllCall("GetConsoleWindow", "Ptr")
+    if (consoleHwnd) {
+        DllCall("ShowWindow", "Ptr", consoleHwnd, "Int", 0)
+        WinHide, ahk_id %consoleHwnd%
+    }
 }
 
 GetScriptIniPathByName(scriptName) {

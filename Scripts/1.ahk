@@ -245,21 +245,23 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
     Delay(1)
     startPreProcess(botConfig.get("deleteMethod"))
     RemoveFriends()
-    if(session.get("injectMethod") && session.get("loadedAccount") && !session.get("keepAccount")) {
-        MarkAccountAsUsed()
+    if(session.get("injectMethod") && session.get("loadedAccount")) {
+        LogToFile("Recovery cleanup complete. Keeping recovered account in queue unless its XML was already updated: " . session.get("accountFileName"))
+        ClearLoadedAccountRecovery()
         session.set("loadedAccount", false)
+        session.set("currentLoadedAccountIndex", 0)
     }
     DeadCheck := 0
     IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
     createAccountList(session.get("scriptName"))
     CleanupBeforeExit()
-    SafeReload()
+    SafeReload("DeadCheck friend cleanup complete")
 } else if(DeadCheck = 1 && botConfig.get("deleteMethod") = "Create Bots (13P)") {
     CreateStatusMessage("New account creation is stuck! Deleting account...")
     Delay(5)
     menuDeleteStart()
     CleanupBeforeExit()
-    SafeReload()
+    SafeReload("DeadCheck create bots cleanup complete")
 } else {
     ; in injection mode, we dont need to reload
 
@@ -959,7 +961,7 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
             }
             LogToFile("Restarted game. Reason: No save data found")
             CleanupBeforeExit()
-            SafeReload()
+            SafeReload("No save data found")
         }
     }
 
@@ -1109,7 +1111,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
                 }
                 LogToFile("Restarted game. Reason: No save data found")
                 CleanupBeforeExit()
-                SafeReload()
+                SafeReload("No save data found")
             }
         }
 
@@ -1252,7 +1254,7 @@ restartGameInstance(reason, RL := true) {
 
         PersistStopAfterRunIfNeeded()
         CleanupBeforeExit()
-        Reload
+        SafeReload("GodPack restart")
     } else if (isStuck) {
         if(!checkInstance(session.get("scriptName"))){
             LogToFile(" Found " . session.get("scriptName") . " instance down! start Instance")
@@ -1274,7 +1276,7 @@ restartGameInstance(reason, RL := true) {
 
         PersistStopAfterRunIfNeeded()
         CleanupBeforeExit()
-        SafeReload()
+        SafeReload("Stuck restart: " . reason)
     } else {
         ; Non-stuck restart: just restart the Pokemon app, not the whole MuMu instance
         closePTCGPApp()
@@ -1292,7 +1294,7 @@ restartGameInstance(reason, RL := true) {
 
             PersistStopAfterRunIfNeeded()
             CleanupBeforeExit()
-            SafeReload()
+            SafeReload("Restart game: " . reason)
         }
 
         if (session.get("stopToggle")) {
@@ -1879,7 +1881,7 @@ return
 
 ReloadScript:
     CleanupBeforeExit()
-    SafeReload()
+    SafeReload("Toolbar reload")
 return
 
 TestScript:
@@ -2138,7 +2140,7 @@ Return
 ; ===== HOTKEYS =====
 ~+F5::
     CleanupBeforeExit()
-    SafeReload()
+    SafeReload("Shift+F5")
 return
 ~+F6::Pause
 ~+F7::

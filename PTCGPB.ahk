@@ -1471,14 +1471,18 @@ BalanceXMLs:
         if !FileExist(saveDir)
             FileCreateDir, %saveDir%
         
-        tmpDir := A_ScriptDir "\Accounts\Saved\tmp"
-        if !FileExist(tmpDir)
-            FileCreateDir, %tmpDir%
+        tmpRoot := A_ScriptDir "\Accounts\Saved\tmp"
+        if !FileExist(tmpRoot)
+            FileCreateDir, %tmpRoot%
+
+        FormatTime, balanceRunId,, yyyyMMddHHmmss
+        tmpDir := tmpRoot . "\balance_" . balanceRunId . "_" . A_TickCount
+        FileCreateDir, %tmpDir%
         
         Tooltip, Moving Files and Folders to tmp
         Loop, Files, %saveDir%*, D 
         {
-            if (A_LoopFilePath == tmpDir)
+            if (A_LoopFilePath == tmpRoot)
                 continue
             dest := tmpDir . "\" . A_LoopFileName
             
@@ -1558,6 +1562,9 @@ BalanceXMLs:
             if (instance > botConfig.get("Instances"))
                 instance := 1
         }
+
+        ToolTip, Restoring preserved files
+        RestorePreservedSavedReadmes(tmpDir, saveDir)
         
         instanceOneDir := saveDir . "1"
         counter := 0
@@ -1575,6 +1582,24 @@ BalanceXMLs:
         MsgBox, 0x40000, XML Balance, % "Done balancing XMLs between " botConfig.get("Instances") " instances`n" counter " XMLs past 24 hours per instance"
     }
 return
+
+RestorePreservedSavedReadmes(tmpDir, saveDir) {
+    Loop, Files, %tmpDir%\*, FR
+    {
+        if (A_LoopFileName != "readme.md")
+            continue
+
+        relativePath := SubStr(A_LoopFileFullPath, StrLen(tmpDir) + 2)
+        if (!RegExMatch(relativePath, "i)^(\d+)\\readme\.md$", readmeMatch))
+            continue
+
+        restorePath := saveDir . readmeMatch1 . "\readme.md"
+        SplitPath, restorePath,, restoreDir
+        if !FileExist(restoreDir)
+            FileCreateDir, %restoreDir%
+        FileMove, %A_LoopFileFullPath%, %restorePath%, 1
+    }
+}
 
 ; =================== Logic - Launch All Mumu Button Action ===================
 LaunchAllMumu:

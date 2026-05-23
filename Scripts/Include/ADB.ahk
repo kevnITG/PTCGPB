@@ -109,7 +109,7 @@ ConnectAdb() {
                     CreateStatusMessage("Failed to connect to ADB after multiple retries. Please check your emulator and port settings.")
                 else
                     CreateStatusMessage("Failed to connect to ADB.",,,, false)
-                Reload
+                SafeReload("ADB connect failed")
             }
         }
     }

@@ -79,6 +79,8 @@ killAHK(scriptName := "")
         killedPIDs := {}
         killed += killAHKWindowsByClass(scriptName, "AutoHotkey", killedPIDs)
         killed += killAHKWindowsByClass(scriptName, "#32770", killedPIDs)
+        killed += killAHKWindowsByClass(scriptName, "ConsoleWindowClass", killedPIDs)
+        killed += killAHKProcessesByCommandLine(scriptName, killedPIDs)
     }
     
     return killed
@@ -93,6 +95,8 @@ checkAHK(scriptName := "")
         seenPIDs := {}
         cnt += countAHKWindowsByClass(scriptName, "AutoHotkey", seenPIDs)
         cnt += countAHKWindowsByClass(scriptName, "#32770", seenPIDs)
+        cnt += countAHKWindowsByClass(scriptName, "ConsoleWindowClass", seenPIDs)
+        cnt += countAHKProcessesByCommandLine(scriptName, seenPIDs)
     }
 
     return cnt
@@ -129,6 +133,47 @@ countAHKWindowsByClass(scriptName, winClass, seenPIDs)
         WinGetTitle, ATitle, ahk_id %ID%
         if (isAHKScriptWindowTitle(ATitle, scriptName)) {
             WinGet, ahkPID, PID, ahk_id %ID%
+            if (ahkPID && !seenPIDs.HasKey(ahkPID)) {
+                seenPIDs[ahkPID] := true
+                cnt := cnt + 1
+            }
+        }
+    }
+
+    return cnt
+}
+
+killAHKProcessesByCommandLine(scriptName, killedPIDs)
+{
+    killed := 0
+    scriptNeedle := "\" . scriptName
+
+    for process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId, Name, CommandLine from Win32_Process Where Name like 'AutoHotkey%'")
+    {
+        commandLine := process.CommandLine
+        if(commandLine != "" && InStr(commandLine, scriptNeedle)) {
+            ahkPID := process.ProcessId
+            if (ahkPID && !killedPIDs.HasKey(ahkPID)) {
+                Process, Close, %ahkPID%
+                killedPIDs[ahkPID] := true
+                killed := killed + 1
+            }
+        }
+    }
+
+    return killed
+}
+
+countAHKProcessesByCommandLine(scriptName, seenPIDs)
+{
+    cnt := 0
+    scriptNeedle := "\" . scriptName
+
+    for process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId, Name, CommandLine from Win32_Process Where Name like 'AutoHotkey%'")
+    {
+        commandLine := process.CommandLine
+        if(commandLine != "" && InStr(commandLine, scriptNeedle)) {
+            ahkPID := process.ProcessId
             if (ahkPID && !seenPIDs.HasKey(ahkPID)) {
                 seenPIDs[ahkPID] := true
                 cnt := cnt + 1

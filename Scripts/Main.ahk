@@ -215,7 +215,7 @@ Loop {
                     Sleep, 1000
                     adbClick(139, 386) ; Click OK/confirm
                     Sleep, 1000
-                    SafeReload()
+                    SafeReload("Main communication error")
                 } else if(FindOrLoseImage("StartupErrorX", 0, failSafeTime)) {
                     ; Handle startup error with X button
                     CreateStatusMessage("Start-up error detected. Clearing and reloading...",,,, false)
@@ -223,7 +223,7 @@ Loop {
                     Sleep, 2000
                     adbClick(139, 440)  ; Click X to close error
                     Sleep, 4000
-                    SafeReload()
+                    SafeReload("Main startup error")
                 } else if(requestAlreadyClosed || clickButton) {
                     okClickSpacing := botConfig.get("Delay") * 2
                     if (okClickSpacing < 700)
@@ -495,7 +495,7 @@ restartGameInstance(reason, RL := true){
         LogToFile("Restarted game. Reason: " reason)
         session.set("isDead", true)
         IniWrite, 1, % session.get("scriptIniFile"), Metrics, isDead
-        SafeReload()
+        SafeReload("Main restart game: " . reason)
     }
 }
 
@@ -722,7 +722,7 @@ VipTrimGuiEscape:
 return
 
 ReloadScript:
-    SafeReload()
+    SafeReload("Main toolbar reload")
 return
 
 TestScript:
@@ -752,7 +752,7 @@ ToggleTestScript() {
     }
 }
 
-~+F5::SafeReload()
+~+F5::SafeReload("Main Shift+F5")
 ~+F6::Pause
 ~+F10::
     Gosub, StopScript
