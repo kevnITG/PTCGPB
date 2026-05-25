@@ -1,4 +1,4 @@
-﻿#SingleInstance on
+﻿#SingleInstance, Force
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0
 SetBatchLines, -1
@@ -35,9 +35,7 @@ CoordMode, Pixel, Screen
 #Include Database.ahk
 #Include Crinity_UnofficialPatch.ahk
 
-; Allocate and hide the console window to reduce flashing
-DllCall("AllocConsole")
-WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
+InitializeHiddenConsole()
 
 pToken := Gdip_Startup()
 
@@ -87,6 +85,7 @@ session.set("vipListTrimMode", (!botConfig.get("vipListTrimMode")) ? "bottom" : 
 session.set("vipListTrimCount", (!botConfig.get("vipListTrimCount")) ? 60 : botConfig.get("vipListTrimCount"))
 (session.get("vipListTrimCount") = "" || session.get("vipListTrimCount") < 1) ? session.set("vipListTrimCount", 60)
 
+windowCoverHwnd := GetMuMuCoverWindowForMaintenance(session.get("winTitle"))
 DirectlyPositionWindow()
 Sleep, 1000
 
@@ -99,6 +98,7 @@ CreateStatusMessage("Disabling background services...")
 DisableBackgroundServices()
 
 resetWindows()
+RestoreMuMuCoverWindow(windowCoverHwnd, session.get("winTitle"))
 MaxRetries := 10
 RetryCount := 0
 Loop {
@@ -127,6 +127,7 @@ Loop {
                 , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
         Gui, ToolBar:Show, NoActivate x%x4% y%y4% w275 h30
         UpdateGPTestButtonLabel()
+        RestoreMuMuCoverWindow(windowCoverHwnd, session.get("winTitle"))
         break
     }
     catch {
@@ -214,7 +215,7 @@ if(firstRun) {
                     Sleep, 1000
                     adbClick(139, 386) ; Click OK/confirm
                     Sleep, 1000
-                    SafeReload()
+                    SafeReload("Main communication error")
                 } else if(FindOrLoseImage("StartupErrorX", 0, failSafeTime)) {
                     ; Handle startup error with X button
                     CreateStatusMessage("Start-up error detected. Clearing and reloading...",,,, false)
@@ -222,7 +223,7 @@ if(firstRun) {
                     Sleep, 2000
                     adbClick(139, 440)  ; Click X to close error
                     Sleep, 4000
-                    SafeReload()
+                    SafeReload("Main startup error")
                 } else if(requestAlreadyClosed || clickButton) {
                     okClickSpacing := botConfig.get("Delay") * 2
                     if (okClickSpacing < 700)
@@ -465,6 +466,9 @@ resetWindows(){
 restartGameInstance(reason, RL := true){
     global botConfig, session
 
+    if (InStr(reason, "Stuck at "))
+        SaveStuckScreenshot(reason)
+
     if(botConfig.get("heartBeatOwnerWebHookURL") != "")
         LogToDiscord(A_ScriptName . " instance has begin restart. Please verify that GodPack has not disappeared upon entering the main screen.\nReasion: " . reason,, true,,, botConfig.get("heartBeatOwnerWebHookURL"))
 
@@ -483,7 +487,31 @@ restartGameInstance(reason, RL := true){
         LogInfo("Restarted game. Reason: " reason)
         session.set("isDead", true)
         IniWrite, 1, % session.get("scriptIniFile"), Metrics, isDead
-        SafeReload()
+        SafeReload("Main restart game: " . reason)
+    }
+}
+
+SaveStuckScreenshot(reason) {
+    global session
+
+    fileDir := A_ScriptDir . "\..\Screenshots\Stuck"
+    if !FileExist(fileDir)
+        FileCreateDir, %fileDir%
+
+    safeReason := RegExReplace(reason, "[\\/:*?""<>|]", "_")
+    safeReason := RegExReplace(safeReason, "\s+", "_")
+    safeReason := SubStr(safeReason, 1, 80)
+    filePath := fileDir . "\" . A_Now . "_inst" . session.get("scriptName") . "_" . safeReason . ".png"
+
+    hWnd := getMuMuHwnd(session.get("winTitle"))
+    if (!hWnd)
+        return
+
+    pBitmap := from_window(hWnd)
+    if (pBitmap) {
+        Gdip_SaveBitmapToFile(pBitmap, filePath)
+        Gdip_DisposeImage(pBitmap)
+        LogInfo("Saved stuck screenshot: " . filePath)
     }
 }
 
@@ -687,7 +715,7 @@ ImportCollectionScript:
 return
 
 ReloadScript:
-    SafeReload()
+    SafeReload("Main toolbar reload")
 return
 
 TestScript:
@@ -848,7 +876,7 @@ GPTestDropdownGuiEscape:
     DestroyGPTestDropdown()
 return
 
-~+F5::SafeReload()
+~+F5::SafeReload("Main Shift+F5")
 ~+F6::Pause
 ~+F10::
     Gosub, StopScript
@@ -895,12 +923,6 @@ GetNeedle(Path) {
         return pNeedle
     }
 }
-
-; ^e::
-; msgbox ss
-; pToken := Gdip_Startup()
-; Screenshot()
-; return
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ; ~~~ GP Test Mode Everying Below ~~~
