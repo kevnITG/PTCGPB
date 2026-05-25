@@ -441,18 +441,20 @@ adbEnsureShell() {
     }
 }
 
-adbWriteRaw(command, isReturnning := false) {
+adbWriteRaw(command, isReturnning := false, timeoutMs := 60000) {
     global session
     retries := 0
     MaxRetries := 3
     loopCount := 0
-    result := ""
 
     Loop {
+        result := ""
+        line := ""
+        startTime := A_TickCount
         try {
-            ADB_LogTrace("adbWriteRaw send returning=" . (isReturnning ? 1 : 0) . " command=" . ADB_RedactCommand(command))
+            ADB_LogTrace("adbWriteRaw send returning=" . (isReturnning ? 1 : 0) . " timeoutMs=" . timeoutMs . " command=" . ADB_RedactCommand(command))
             session.get("adbShell").StdIn.WriteLine(command . ";echo done;")
-            while !session.get("adbShell").StdOut.AtEndOfStream {
+            Loop {
                 pid := session.get("adbShell").ProcessID
                 Process, Exist, %pid%
 
@@ -462,7 +464,31 @@ adbWriteRaw(command, isReturnning := false) {
                     break
                 }
 
-                line := session.get("adbShell").StdOut.ReadLine()
+                if (timeoutMs > 0 && (A_TickCount - startTime) > timeoutMs) {
+                    ADB_LogTrace("adbWriteRaw timeout elapsedMs=" . (A_TickCount - startTime) . " command=" . ADB_RedactCommand(command))
+                    try {
+                        session.get("adbShell").Terminate()
+                    } catch e2 {
+                    }
+                    session.set("adbShell", "")
+                    initializeAdbShell()
+                    return isReturnning ? result : false
+                }
+
+                if (session.get("adbShell").StdOut.AtEndOfStream) {
+                    Sleep, 50
+                    continue
+                }
+
+                ch := session.get("adbShell").StdOut.Read(1)
+                if (ch = "`r")
+                    continue
+
+                if (ch != "`n") {
+                    line .= ch
+                    continue
+                }
+
                 if (line = "done"){
                     if(isReturnning) {
                         ADB_LogTrace("adbWriteRaw done outputBytes=" . StrLen(result))
@@ -475,6 +501,8 @@ adbWriteRaw(command, isReturnning := false) {
                 }
                 else if(isReturnning)
                     result .= line . "`n"
+
+                line := ""
 
                 Sleep, 50
             }
