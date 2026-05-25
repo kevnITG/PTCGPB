@@ -411,6 +411,12 @@ CountShinedust() {
             Sleep, 1000
             adbInputEvent("111")
             Sleep, 1000
+            ; still present
+            if FindOrLoseImage("Shinedust_CloseButtonInDetailWindow", 0, failSafeTime) || FindOrLoseImage("Shinedust_CloseButtonInDetailWindow2", 0, failSafeTime) {
+                Sleep, 1000
+                adbClick(140, 372)
+                Sleep, 1000
+            }
         }
     }
 
