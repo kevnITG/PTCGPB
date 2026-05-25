@@ -16,6 +16,7 @@ Scripts/*.ini
 Accounts/Saved/**/*.xml
 Accounts/Saved/metadata.json
 Accounts/Saved/**/metadata.json
+Accounts/Saved/tmp/**
 Accounts/Cards/metadata.json
 Accounts/Cards/database_cache/
 Accounts/Cards/*.tmp

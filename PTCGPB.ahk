@@ -1774,14 +1774,18 @@ BalanceXMLs:
         if !FileExist(saveDir)
             FileCreateDir, %saveDir%
 
-        tmpDir := A_ScriptDir "\Accounts\Saved\tmp"
-        if !FileExist(tmpDir)
-            FileCreateDir, %tmpDir%
+        tmpRoot := A_ScriptDir "\Accounts\Saved\tmp"
+        if !FileExist(tmpRoot)
+            FileCreateDir, %tmpRoot%
+
+        FormatTime, balanceRunId,, yyyyMMddHHmmss
+        tmpDir := tmpRoot . "\balance_" . balanceRunId . "_" . A_TickCount
+        FileCreateDir, %tmpDir%
 
         Tooltip, Moving Files and Folders to tmp
         Loop, Files, %saveDir%*, D
         {
-            if (A_LoopFilePath == tmpDir)
+            if (A_LoopFilePath == tmpRoot)
                 continue
             dest := tmpDir . "\" . A_LoopFileName
 
@@ -1876,6 +1880,9 @@ BalanceXMLs:
         ToolTip, Updating metadata indexes...please wait
         AccountMetadata_BulkMoveToInstances(metadataMoves)
 
+        ToolTip, Restoring preserved files
+        RestorePreservedSavedReadmes(tmpDir, saveDir)
+
         counter := 0
         ToolTip, Counting XMLs older than 24 hours...
         Loop, % botConfig.get("Instances")
@@ -1897,6 +1904,24 @@ BalanceXMLs:
         MsgBox, 0x40000, XML Balance, % XMLBalanceResultMessage(botConfig.get("Instances"), counter)
     }
 return
+
+RestorePreservedSavedReadmes(tmpDir, saveDir) {
+    Loop, Files, %tmpDir%\*, FR
+    {
+        if (A_LoopFileName != "readme.md")
+            continue
+
+        relativePath := SubStr(A_LoopFileFullPath, StrLen(tmpDir) + 2)
+        if (!RegExMatch(relativePath, "i)^(\d+)\\readme\.md$", readmeMatch))
+            continue
+
+        restorePath := saveDir . readmeMatch1 . "\readme.md"
+        SplitPath, restorePath,, restoreDir
+        if !FileExist(restoreDir)
+            FileCreateDir, %restoreDir%
+        FileMove, %A_LoopFileFullPath%, %restorePath%, 1
+    }
+}
 
 XMLBalanceResultMessage(instances, eligibleCount) {
     instances += 0
