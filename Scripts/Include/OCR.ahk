@@ -407,7 +407,7 @@ CountShinedust() {
         ; be careful moving this. intentionally chosen to avoid
         ; accidentally clicking a pack on the homescreen (clicks between instead.)
         Sleep, 3000
-        if FindOrLoseImage("Shinedust_CloseButtonInDetailWindow", 0, failSafeTime) {
+        if FindOrLoseImage("Shinedust_CloseButtonInDetailWindow", 0, failSafeTime) || FindOrLoseImage("Shinedust_CloseButtonInDetailWindow2", 0, failSafeTime) {
             Sleep, 1000
             adbInputEvent("111")
             Sleep, 1000
