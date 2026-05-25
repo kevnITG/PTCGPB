@@ -1212,13 +1212,15 @@ FavoriteVipFriends() {
                     }
                     rateLimitHit := false
                     FindImageAndClick("Friend_RemoveConfirmButtonInFriendDetails", 145, 407, , 500)
+                    removeWaitStart := A_TickCount
+                    interceptProc := true
                     Loop {
+                        removeWaitTime := (A_TickCount - removeWaitStart) // 1000
                         adbClick_wbb(200, 372)
-                        if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0))
+                        if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0, removeWaitTime))
                             break
-                        if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0)) {
+                        if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0, removeWaitTime)) {
                             CreateStatusMessage("Rate limit hit. Recovering...",,,, false)
-                            interceptProc := true
                             Loop, 5 {
                                 adbClick_wbb(139, 371)
                                 Sleep, 500
@@ -1250,6 +1252,7 @@ FavoriteVipFriends() {
                         }
                         Delay(1)
                     }
+                    interceptProc := false
                     if (rateLimitHit)
                         continue 2
                     Delay(1)
@@ -1348,7 +1351,7 @@ FavoriteVipFriends() {
 ; Removes non-favourited friends starting from the bottom of the list.
 ; Stops when a favourited (VIP) friend is encountered.
 RemoveNonVipFriends() {
-    global session
+    global session, interceptProc
 
     ; Navigate to Social screen
     session.set("failSafe", A_TickCount)
@@ -1515,11 +1518,14 @@ RemoveNonVipFriends() {
             }
             rateLimitHit := false
             FindImageAndClick("Friend_RemoveConfirmButtonInFriendDetails", 145, 407, , 500)
+            removeWaitStart := A_TickCount
+            interceptProc := true
             Loop {
+                removeWaitTime := (A_TickCount - removeWaitStart) // 1000
                 adbClick_wbb(200, 372)
-                if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0))
+                if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0, removeWaitTime))
                     break
-                if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0)) {
+                if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0, removeWaitTime)) {
                     CreateStatusMessage("Rate limit hit. Recovering...",,,, false)
                     Loop, 5 {
                         adbClick_wbb(139, 371)
@@ -1554,6 +1560,7 @@ RemoveNonVipFriends() {
                 }
                 Delay(1)
             }
+            interceptProc := false
             if (rateLimitHit)
                 continue
             FindImageAndClick("Friend_AddButtonInFriendList", 143, 507, , 1500)
@@ -1566,11 +1573,18 @@ RemoveNonVipFriends() {
             session.set("A_gptest", 0)
             session.set("autotest", A_TickCount)
             ToggleTestScript()
+        } else {
+            session.set("triggerTestNeeded", false)
+            CreateStatusMessage("GP Test cleanup done. Waiting.",,,, false)
+            return
         }
         CreateStatusMessage("Ready to test.",,,, false)
     } else if (session.get("A_gptest") && session.get("autoUseGPTest")) {
         session.set("A_gptest", 0)
         ToggleTestScript()
+    } else {
+        session.set("triggerTestNeeded", false)
+        CreateStatusMessage("GP Test cleanup done. Waiting.",,,, false)
     }
 }
 

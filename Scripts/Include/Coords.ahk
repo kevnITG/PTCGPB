@@ -56,6 +56,7 @@ needlesDict.Add(new Needle("Friend_BottomDarkHomeIcon", "Home", new Coordinate(2
 needlesDict.Add(new Needle("Friend_ActivatedClearAllButton", "clearAll", new Coordinate(191, 493, 200, 509)))
 needlesDict.Add(new Needle("Friend_FriendListEmpty", "empty", new Coordinate(42, 163, 66, 185)))
 needlesDict.Add(new Needle("Friend_HamburgerMenuButtonInIntro", "MainHamburgerMenuButton", new Coordinate(241, 68, 258, 84)))
+needlesDict.Add(new Needle("Friend_SocialHubFriendButton", "Friend2", new Coordinate(20, 440, 70, 500)))
 
 ; Friend - Search
 needlesDict.Add(new Needle("Friend_SearchFriendButton", "FriendSearchButton", new Coordinate(20, 435, 35, 450)))

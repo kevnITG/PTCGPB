@@ -371,6 +371,11 @@ GodPackFound(validity, cards := "", alreadyAtHome := false) {
     IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
 
     if(validity = "Valid") {
+        ; A valid GP must keep friend requests even if a previous stuck recovery flag survived.
+        DeadCheck := 0
+        ClearFriendCleanupPending()
+        session.set("friended", false)
+        LogInfo("Valid God Pack found; friend cleanup state cleared before notification | account=" . session.get("accountFileName"), "GroupReroll.txt")
         Praise := ["Congrats!", "Congratulations!", "GG!", "Whoa!", "Praise Helix!", "Way to go!", "You did it!", "Awesome!", "Nice!", "Cool!", "You deserve it!", "Keep going!", "This one has to be live!", "No duds, no duds, no duds!", "Fantastic!", "Bravo!", "Excellent work!", "Impressive!", "You're amazing!", "Well done!", "You're crushing it!", "Keep up the great work!", "You're unstoppable!", "Exceptional!", "You nailed it!", "Hats off to you!", "Sweet!", "Kudos!", "Phenomenal!", "Boom! Nailed it!", "Marvelous!", "Outstanding!", "Legendary!", "Youre a rock star!", "Unbelievable!", "Keep shining!", "Way to crush it!", "You're on fire!", "Killing it!", "Top-notch!", "Superb!", "Epic!", "Cheers to you!", "Thats the spirit!", "Magnificent!", "Youre a natural!", "Gold star for you!", "You crushed it!", "Incredible!", "Shazam!", "You're a genius!", "Top-tier effort!", "This is your moment!", "Powerful stuff!", "Wicked awesome!", "Props to you!", "Big win!", "Yesss!", "Champion vibes!", "Spectacular!"]
         invalid := ""
     } else {
