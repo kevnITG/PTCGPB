@@ -94,6 +94,51 @@ findAdbPorts() {
     ADB_LogTrace("findAdbPorts finished without match")
 }
 
+RefreshAdbConnectionAfterInstanceRestart(timeoutMs = 30000) {
+    global session
+
+    startTick := A_TickCount
+    oldPort := session.get("adbPort")
+    lastPort := oldPort
+
+    Loop {
+        newPort := findAdbPorts()
+        if (newPort) {
+            if (newPort != lastPort) {
+                LogInfo("[" . A_ScriptName . "] ADB port refreshed after instance restart: " . lastPort . " -> " . newPort, "ADB.txt")
+                lastPort := newPort
+            }
+
+            session.set("adbPort", newPort)
+            ip := "127.0.0.1:" . newPort
+            if (oldPort && oldPort != newPort)
+                CmdRet(session.get("adbPath") . " disconnect 127.0.0.1:" . oldPort)
+
+            connectionResult := CmdRet(session.get("adbPath") . " connect " . ip)
+            if (InStr(connectionResult, "connected to " . ip) || InStr(connectionResult, "already connected to " . ip)) {
+                shellResult := CmdRet(session.get("adbPath") . " -s " . ip . " shell echo ready")
+                if (InStr(shellResult, "ready")) {
+                    session.set("adbShell", "")
+                    initializeAdbShell()
+                    LogInfo("[" . A_ScriptName . "] ADB reconnected after instance restart on " . ip, "ADB.txt")
+                    return true
+                }
+            }
+
+            LogDebug("[" . A_ScriptName . "] Waiting for ADB after instance restart on " . ip . ". Connection result: " . connectionResult, "ADB.txt")
+        } else {
+            LogDebug("[" . A_ScriptName . "] Waiting for ADB port after instance restart.", "ADB.txt")
+        }
+
+        if ((A_TickCount - startTick) > timeoutMs) {
+            LogWarn("[" . A_ScriptName . "] Failed to refresh ADB after instance restart within " . timeoutMs . "ms.", "ADB.txt")
+            return false
+        }
+
+        Sleep, 2000
+    }
+}
+
 ConnectAdb() {
     global session
 
@@ -135,7 +180,7 @@ ConnectAdb() {
                     CreateStatusMessage("Failed to connect to ADB after multiple retries. Please check your emulator and port settings.")
                 else
                     CreateStatusMessage("Failed to connect to ADB.",,,, false)
-                Reload
+                SafeReload("ADB connect failed")
             }
         }
     }

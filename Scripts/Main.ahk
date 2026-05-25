@@ -1,4 +1,4 @@
-﻿#SingleInstance on
+﻿#SingleInstance, Force
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0
 SetBatchLines, -1
@@ -35,9 +35,7 @@ CoordMode, Pixel, Screen
 #Include Database.ahk
 #Include Crinity_UnofficialPatch.ahk
 
-; Allocate and hide the console window to reduce flashing
-DllCall("AllocConsole")
-WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
+InitializeHiddenConsole()
 
 pToken := Gdip_Startup()
 
@@ -87,6 +85,7 @@ session.set("vipListTrimMode", (!botConfig.get("vipListTrimMode")) ? "bottom" : 
 session.set("vipListTrimCount", (!botConfig.get("vipListTrimCount")) ? 60 : botConfig.get("vipListTrimCount"))
 (session.get("vipListTrimCount") = "" || session.get("vipListTrimCount") < 1) ? session.set("vipListTrimCount", 60)
 
+windowCoverHwnd := GetMuMuCoverWindowForMaintenance(session.get("winTitle"))
 DirectlyPositionWindow()
 Sleep, 1000
 
@@ -99,6 +98,7 @@ CreateStatusMessage("Disabling background services...")
 DisableBackgroundServices()
 
 resetWindows()
+RestoreMuMuCoverWindow(windowCoverHwnd, session.get("winTitle"))
 MaxRetries := 10
 RetryCount := 0
 Loop {
@@ -127,6 +127,7 @@ Loop {
                 , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
         Gui, ToolBar:Show, NoActivate x%x4% y%y4% w275 h30
         UpdateGPTestButtonLabel()
+        RestoreMuMuCoverWindow(windowCoverHwnd, session.get("winTitle"))
         break
     }
     catch {
@@ -214,7 +215,7 @@ if(firstRun) {
                     Sleep, 1000
                     adbClick(139, 386) ; Click OK/confirm
                     Sleep, 1000
-                    SafeReload()
+                    SafeReload("Main communication error")
                 } else if(FindOrLoseImage("StartupErrorX", 0, failSafeTime)) {
                     ; Handle startup error with X button
                     CreateStatusMessage("Start-up error detected. Clearing and reloading...",,,, false)
@@ -222,7 +223,7 @@ if(firstRun) {
                     Sleep, 2000
                     adbClick(139, 440)  ; Click X to close error
                     Sleep, 4000
-                    SafeReload()
+                    SafeReload("Main startup error")
                 } else if(requestAlreadyClosed || clickButton) {
                     okClickSpacing := botConfig.get("Delay") * 2
                     if (okClickSpacing < 700)
@@ -465,6 +466,9 @@ resetWindows(){
 restartGameInstance(reason, RL := true){
     global botConfig, session
 
+    if (InStr(reason, "Stuck at "))
+        SaveStuckScreenshot(reason)
+
     if(botConfig.get("heartBeatOwnerWebHookURL") != "")
         LogToDiscord(A_ScriptName . " instance has begin restart. Please verify that GodPack has not disappeared upon entering the main screen.\nReasion: " . reason,, true,,, botConfig.get("heartBeatOwnerWebHookURL"))
 
@@ -483,7 +487,31 @@ restartGameInstance(reason, RL := true){
         LogInfo("Restarted game. Reason: " reason)
         session.set("isDead", true)
         IniWrite, 1, % session.get("scriptIniFile"), Metrics, isDead
-        SafeReload()
+        SafeReload("Main restart game: " . reason)
+    }
+}
+
+SaveStuckScreenshot(reason) {
+    global session
+
+    fileDir := A_ScriptDir . "\..\Screenshots\Stuck"
+    if !FileExist(fileDir)
+        FileCreateDir, %fileDir%
+
+    safeReason := RegExReplace(reason, "[\\/:*?""<>|]", "_")
+    safeReason := RegExReplace(safeReason, "\s+", "_")
+    safeReason := SubStr(safeReason, 1, 80)
+    filePath := fileDir . "\" . A_Now . "_inst" . session.get("scriptName") . "_" . safeReason . ".png"
+
+    hWnd := getMuMuHwnd(session.get("winTitle"))
+    if (!hWnd)
+        return
+
+    pBitmap := from_window(hWnd)
+    if (pBitmap) {
+        Gdip_SaveBitmapToFile(pBitmap, filePath)
+        Gdip_DisposeImage(pBitmap)
+        LogInfo("Saved stuck screenshot: " . filePath)
     }
 }
 
@@ -687,7 +715,7 @@ ImportCollectionScript:
 return
 
 ReloadScript:
-    SafeReload()
+    SafeReload("Main toolbar reload")
 return
 
 TestScript:
@@ -848,7 +876,7 @@ GPTestDropdownGuiEscape:
     DestroyGPTestDropdown()
 return
 
-~+F5::SafeReload()
+~+F5::SafeReload("Main Shift+F5")
 ~+F6::Pause
 ~+F10::
     Gosub, StopScript
@@ -895,12 +923,6 @@ GetNeedle(Path) {
         return pNeedle
     }
 }
-
-; ^e::
-; msgbox ss
-; pToken := Gdip_Startup()
-; Screenshot()
-; return
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ; ~~~ GP Test Mode Everying Below ~~~
@@ -1212,13 +1234,15 @@ FavoriteVipFriends() {
                     }
                     rateLimitHit := false
                     FindImageAndClick("Friend_RemoveConfirmButtonInFriendDetails", 145, 407, , 500)
+                    removeWaitStart := A_TickCount
+                    interceptProc := true
                     Loop {
+                        removeWaitTime := (A_TickCount - removeWaitStart) // 1000
                         adbClick_wbb(200, 372)
-                        if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0))
+                        if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0, removeWaitTime))
                             break
-                        if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0)) {
+                        if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0, removeWaitTime)) {
                             CreateStatusMessage("Rate limit hit. Recovering...",,,, false)
-                            interceptProc := true
                             Loop, 5 {
                                 adbClick_wbb(139, 371)
                                 Sleep, 500
@@ -1250,6 +1274,7 @@ FavoriteVipFriends() {
                         }
                         Delay(1)
                     }
+                    interceptProc := false
                     if (rateLimitHit)
                         continue 2
                     Delay(1)
@@ -1348,7 +1373,7 @@ FavoriteVipFriends() {
 ; Removes non-favourited friends starting from the bottom of the list.
 ; Stops when a favourited (VIP) friend is encountered.
 RemoveNonVipFriends() {
-    global session
+    global session, interceptProc
 
     ; Navigate to Social screen
     session.set("failSafe", A_TickCount)
@@ -1515,11 +1540,14 @@ RemoveNonVipFriends() {
             }
             rateLimitHit := false
             FindImageAndClick("Friend_RemoveConfirmButtonInFriendDetails", 145, 407, , 500)
+            removeWaitStart := A_TickCount
+            interceptProc := true
             Loop {
+                removeWaitTime := (A_TickCount - removeWaitStart) // 1000
                 adbClick_wbb(200, 372)
-                if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0))
+                if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0, removeWaitTime))
                     break
-                if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0)) {
+                if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0, removeWaitTime)) {
                     CreateStatusMessage("Rate limit hit. Recovering...",,,, false)
                     Loop, 5 {
                         adbClick_wbb(139, 371)
@@ -1554,6 +1582,7 @@ RemoveNonVipFriends() {
                 }
                 Delay(1)
             }
+            interceptProc := false
             if (rateLimitHit)
                 continue
             FindImageAndClick("Friend_AddButtonInFriendList", 143, 507, , 1500)
@@ -1566,11 +1595,18 @@ RemoveNonVipFriends() {
             session.set("A_gptest", 0)
             session.set("autotest", A_TickCount)
             ToggleTestScript()
+        } else {
+            session.set("triggerTestNeeded", false)
+            CreateStatusMessage("GP Test cleanup done. Waiting.",,,, false)
+            return
         }
         CreateStatusMessage("Ready to test.",,,, false)
     } else if (session.get("A_gptest") && session.get("autoUseGPTest")) {
         session.set("A_gptest", 0)
         ToggleTestScript()
+    } else {
+        session.set("triggerTestNeeded", false)
+        CreateStatusMessage("GP Test cleanup done. Waiting.",,,, false)
     }
 }
 

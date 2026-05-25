@@ -93,12 +93,17 @@ AddFriends(renew := false, getFC := false) {
     if(!getFC && !friendIDsAvailable && botConfig.get("FriendID") = "")
         return false
 
-    if (!getFC)
+    if (!getFC) {
         session.set("friended", true)
+        SetFriendCleanupPending("AddFriends started")
+    }
 
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
     Loop {
+        if (DismissFriendFlowBlockingPopup("Waiting for Social"))
+            continue
+
         adbClick_wbb(143, 518)
         if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime)) {
             break
@@ -113,10 +118,12 @@ AddFriends(renew := false, getFC := false) {
             continue
         else if(!renew && !getFC) {
             Delay(3)
-            clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, , 80)
-            if(clickButton) {
-                StringSplit, pos, clickButton, `,  ; Split at ", "
-                adbClick_wbb(pos1, pos2)
+            if (!ShouldSkipGenericButtonInSocialWait()) {
+                clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, , 80)
+                if(clickButton) {
+                    StringSplit, pos, clickButton, `,  ; Split at ", "
+                    adbClick_wbb(pos1, pos2)
+                }
             }
         }
         else if(FindOrLoseImage("Create_TutorialUseResourceForOpenPack", 0)) {
@@ -178,13 +185,14 @@ AddFriends(renew := false, getFC := false) {
         }
         session.set("failSafe", A_TickCount)
         failSafeTime := 0
+        skipCurrentID := false
         Loop {
             isContinue := false
             isSendReqeest := false
-            Delay(1)
-            adbInput(value)
-            Delay(1)
-            adbClick_wbb(187, 365)
+            if(!SubmitFriendIDSearch(value, friendIDIdx, n)) {
+                skipCurrentID := true
+                break
+            }
             Delay(1)
             if(FindOrLoseImage("Friend_RequestButtonInSearchResult", 0, failSafeTime, 80)) {
                 adbClick_wbb(243, 258)
@@ -193,21 +201,30 @@ AddFriends(renew := false, getFC := false) {
                 waitSendResult := A_TickCount
                 interceptProc := true
                 Loop{
-                    if(!isSendReqeest && FindOrLoseImage("Friend_RequestButtonInSearchResult", 0, failSafeTime) && (A_TickCount - waitSendResult) > 1000){
-                        adbClick_wbb(243, 258)
-                        isSendReqeest := true
-                    }
                     Delay(0.25)
                     if(FindOrLoseImage("Friend_WithdrawButton", 0, failSafeTime))
                         break
                     else if(FindOrLoseImage("Friend_AcceptedButtonInSearchResult", 0, failSafeTime))
                         break
                     else if(interceptErrorCheck("ADD")){
-                        isContinue := true
+                        skipCurrentID := true
+                        LogToFile("Skipping friend ID after ADD error | index=" . friendIDIdx)
                         break
                     }
                     else if(FindOrLoseImage("Friend_CannotFriendRequest", 0, failSafeTime))
                         break
+                    else if(FindOrLoseImage("FriendLimit", 0, failSafeTime)) {
+                        LogToFile("Skipping friend ID because friend request limit/full state was detected | index=" . friendIDIdx)
+                        break
+                    }
+                    if(!isSendReqeest
+                        && (A_TickCount - waitSendResult) > 2500
+                        && FindOrLoseImage("Friend_RequestButtonInSearchResult", 0, failSafeTime, 40, true)
+                        && !FindOrLoseImage("Friend_WithdrawButton", 0, failSafeTime, , true)
+                        && !FindOrLoseImage("Friend_AcceptedButtonInSearchResult", 0, failSafeTime, , true)) {
+                        adbClick_wbb(243, 258)
+                        isSendReqeest := true
+                    }
                     if ((A_TickCount - waitSendResult) > 10000)
                         break
                 }
@@ -216,6 +233,17 @@ AddFriends(renew := false, getFC := false) {
             }
             else if(FindOrLoseImage("Friend_WithdrawButton", 0, failSafeTime))
                 break
+            else if(FindOrLoseImage("Friend_CannotFriendRequest", 0, failSafeTime))
+                break
+            else if(FindOrLoseImage("FriendLimit", 0, failSafeTime)) {
+                LogToFile("Skipping friend ID because friend request limit/full state was detected | index=" . friendIDIdx)
+                break
+            }
+            else if(interceptErrorCheck("ADD")) {
+                skipCurrentID := true
+                LogToFile("Skipping friend ID after ADD error | index=" . friendIDIdx)
+                break
+            }
             else if(FindOrLoseImage("Friend_AcceptedButtonInSearchResult", 0, failSafeTime)) {
                 if(renew){
                     FindImageAndClick("Friend_RemoveConfirmButtonInSearchResult", 193, 258)
@@ -233,6 +261,9 @@ AddFriends(renew := false, getFC := false) {
             failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
             CreateStatusMessage("Processing add friends for `n(" . failSafeTime . "/45 seconds)")
         }
+
+        if(skipCurrentID)
+            LogDebug("Skipped friend ID during AddFriends | index=" . friendIDIdx)
 
         if(isContinue)
             continue
@@ -258,9 +289,31 @@ AddFriends(renew := false, getFC := false) {
 
     ; ratelimit, only use this route when number of added ids is 6-10, 16-20, etc
     if (Mod(n - 1, 10) >= 5) {
-        FindImageAndClick("Menu_InventoryIconInMenu", 240, 494)
-        FindImageAndClick("Menu_MiscMenuLeftTop", 105, 435, , 750)
+        inventoryIconPos := FindImageAndClick("Menu_InventoryIconInMenu", 240, 494)
         DelayH(600)
+
+        if(!inventoryIconPos) {
+            restartGameInstance("Stuck at InSubMenu...")
+            return false
+        }
+
+        StringSplit, inventoryIconCoord, inventoryIconPos, `,
+        miscClickX := inventoryIconCoord1 + 8
+        miscClickY := inventoryIconCoord2 + 170
+        adbClick_wbb(miscClickX, miscClickY)
+
+        miscWaitStart := A_TickCount
+        Loop {
+            if(FindOrLoseImage("Menu_GoToTitleButton_Up", 0, , 60, true)
+                || FindOrLoseImage("Menu_GoToTitleButton_Down", 0, , 60, true))
+                break
+
+            if((A_TickCount - miscWaitStart) > 5000) {
+                restartGameInstance("Stuck at InSubMenu...")
+                return false
+            }
+            Delay(0.25)
+        }
 
         clickX := 137
         clickY := 430
@@ -304,8 +357,13 @@ AddFriends(renew := false, getFC := false) {
 RemoveFriends() {
     global botConfig, session, interceptProc, DeadCheck
 
+    cleanupAccount := session.get("accountFileName")
+    LogInfo("RemoveFriends start | account=" . cleanupAccount)
+    LogDebug("RemoveFriends start detail | account=" . cleanupAccount . " | friended=" . session.get("friended") . " | DeadCheck=" . DeadCheck . " | deleteMethod=" . botConfig.get("deleteMethod") . " | useSoloIdsFile=" . botConfig.get("useSoloIdsFile"))
+
     ; Only allow RemoveFriends in Inject Wonderpick 96P+ mode
     if (botConfig.get("deleteMethod") != "Inject Wonderpick 96P+" && !botConfig.get("useSoloIdsFile")) {
+        LogInfo("RemoveFriends skipped: unsupported delete method | account=" . cleanupAccount . " | deleteMethod=" . botConfig.get("deleteMethod") . " | useSoloIdsFile=" . botConfig.get("useSoloIdsFile"))
         session.set("friended", false)
         return false
     }
@@ -313,8 +371,14 @@ RemoveFriends() {
     session.set("friendIDs", ReadFile("ids"))
 
     if(!session.get("friendIDs") && botConfig.get("FriendID") = "") {
-        session.set("friended", false)
-        return false
+        if (!session.get("friended") && DeadCheck != 1) {
+            LogInfo("RemoveFriends skipped: no friend IDs and no cleanup pending | account=" . cleanupAccount . " | DeadCheck=" . DeadCheck)
+            session.set("friended", false)
+            return false
+        }
+
+        LogInfo("Friend IDs unavailable during RemoveFriends; continuing because cleanup is pending | account=" . cleanupAccount . " | DeadCheck=" . DeadCheck)
+        LogInfo("Friend IDs unavailable during RemoveFriends; continuing because cleanup is pending | account=" . cleanupAccount . " | DeadCheck=" . DeadCheck, "GroupReroll.txt")
     }
 
     session.set("packsInPool", 0) ; if friends are removed, clear the pool
@@ -324,6 +388,9 @@ RemoveFriends() {
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
     Loop {
+        if (DismissFriendFlowBlockingPopup("Waiting for Social"))
+            continue
+
         adbClick_wbb(143, 518)
         if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime))
             break
@@ -349,10 +416,12 @@ RemoveFriends() {
 
             adbClick_wbb(203, 436) ; 203 436
         } else if(!renew && !getFC && DeadCheck = 1) {
-            clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, , 80)
-            if(clickButton) {
-                StringSplit, pos, clickButton, `,  ; Split at ", "
-                adbClick_wbb(pos1, pos2)
+            if (!ShouldSkipGenericButtonInSocialWait()) {
+                clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, , 80)
+                if(clickButton) {
+                    StringSplit, pos, clickButton, `,  ; Split at ", "
+                    adbClick_wbb(pos1, pos2)
+                }
             }
         }
         Sleep, 500
@@ -369,6 +438,9 @@ RemoveFriends() {
     failSafeTime := 0
     interceptProc := true
     Loop{
+        if (DismissFriendFlowBlockingPopup("Waiting for clearAll"))
+            continue
+
         if (FindOrLoseImage("Friend_ActivatedClearAllButton", 0, failSafeTime))
             break
         adbClick(205, 510)
@@ -395,6 +467,9 @@ RemoveFriends() {
         failSafeTime := 0
         accepted := false
         Loop {
+            if (DismissFriendFlowBlockingPopup("Waiting for friend details"))
+                continue
+
             adbClick(58, 190)
             Delay(1)
             if(FindOrLoseImage("Friend_AcceptedButtonInFriendDetails", 0, failSafeTime)){
@@ -422,6 +497,9 @@ RemoveFriends() {
             interceptProc := true
             isContinue := false
             Loop, {
+                if (DismissFriendFlowBlockingPopup("Confirming friend removal"))
+                    continue
+
                 adbClick(200, 372)
                 Delay(0.5)
                 if(FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0))
@@ -439,6 +517,9 @@ RemoveFriends() {
         failSafeTime := 0
         ; Either find "Add" (expected), or if we accidentally went back too many pages to "Social", go back into friends.
         Loop {
+            if (DismissFriendFlowBlockingPopup("Returning to friend list"))
+                continue
+
             adbClick(143, 507)
             Sleep, 750
             if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime)) {
@@ -455,8 +536,11 @@ RemoveFriends() {
 
     ; Exit friend removal process
     CreateStatusMessage("Friend removal completed. Processed " . friendsProcessed . " friends. Returning to main...",,,, false)
+    LogInfo("RemoveFriends complete | account=" . cleanupAccount . " | processed=" . friendsProcessed . " | DeadCheckBeforeClear=" . DeadCheck)
     IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
+    ClearFriendCleanupPending()
     session.set("friended", false)
+    LogDebug("RemoveFriends cleanup state cleared | account=" . cleanupAccount . " | processed=" . friendsProcessed)
     CreateStatusMessage("Friends removed successfully!",,,, false)
 
     if(session.get("stopToggle")) {
@@ -485,13 +569,13 @@ ReEnterSocial(prevAction){
     global interceptProc
     reEnterStart := A_TickCount
     Loop {
+        if (DismissFriendFlowBlockingPopup("Re-entering Social"))
+            continue
+
         adbClick_wbb(143, 518)
         reEnterElapsed := (A_TickCount - reEnterStart) // 1000
         if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, reEnterElapsed)) {
             break
-        }
-        else if(FindOrLoseImage("Common_PopupXButtonInMain", 0, , , true)){
-            adbClick_wbb(137, 480)
         }
         Delay(0.25)
     }
@@ -561,6 +645,47 @@ showcaseLikes() {
 ;-------------------------------------------------------------------------------
 ; EraseInput - Clear friend code input field
 ;-------------------------------------------------------------------------------
+SubmitFriendIDSearch(value, num := 0, total := 0) {
+    global session
+
+    Loop, 3 {
+        if(num)
+            CreateStatusMessage("Entering friend ID " . num . "/" . total . " (" . A_Index . "/3)",,,, false)
+
+        FindImageAndClick("Friend_FriendIDInputReady", 138, 265, , 1000)
+        adbInputEvent("59 122 67")
+        Delay(0.25)
+        adbInput(value)
+        Delay(1)
+        adbClick_wbb(187, 365)
+
+        submitStart := A_TickCount
+        Loop {
+            if(FindOrLoseImage("Friend_RequestButtonInSearchResult", 0, , 80, true)
+                || FindOrLoseImage("Friend_WithdrawButton", 0, , , true)
+                || FindOrLoseImage("Friend_AcceptedButtonInSearchResult", 0, , , true)
+                || FindOrLoseImage("Friend_CannotFriendRequest", 0, , , true)
+                || FindOrLoseImage("FriendLimit", 0, , , true)
+                || FindOrLoseImage("Common_Error", 0, , , true))
+                return true
+
+            if(!FindOrLoseImage("Friend_SearchFriendWindowCancelButtonCorner", 0, , , true))
+                return true
+
+            if((A_TickCount - submitStart) > 2000)
+                break
+
+            Delay(0.25)
+        }
+
+        LogToFile("Friend ID input did not submit; retrying | index=" . num . " | try=" . A_Index)
+        EraseInput(num, total)
+    }
+
+    LogToFile("Friend ID input failed after retries | index=" . num)
+    return false
+}
+
 EraseInput(num := 0, total := 0) {
     global session
 
@@ -575,7 +700,58 @@ EraseInput(num := 0, total := 0) {
         adbInputEvent("59 122 67") ; Press Shift + Home + Backspace
         if(FindOrLoseImage("Friend_InputFormBlank", 0, failSafeTime))
             break
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+        if(failSafeTime > 10) {
+            LogToFile("EraseInput timeout | index=" . num)
+            break
+        }
     }
+}
+
+ShouldSkipGenericButtonInSocialWait() {
+    reason := ""
+    if (FindOrLoseImage("Common_ActivatedHomeInMainMenu", 0, , , true))
+        reason := "home active"
+    else if (FindOrLoseImage("Friend_BottomDarkHomeIcon", 0, , , true))
+        reason := "bottom home"
+    else if (FindOrLoseImage("Common_ShopButtonInMain", 0, , , true))
+        reason := "home shop"
+    else if (FindOrLoseImage("WonderPick_WonderPickButtonInHome", 0, , , true))
+        reason := "home wonderpick"
+    else if (FindOrLoseImage("Pack_PackPointButton", 0, , , true))
+        reason := "pack points"
+    else if (FindOrLoseImage("Pack_BackButtonInSelectPackScreen", 0, , , true))
+        reason := "pack select"
+    else if (FindOrLoseImage("Pack_ReadyForOpenPack", 0, , , true))
+        reason := "ready open pack"
+    else if (FindOrLoseImage("Pack_HourglassImageAfterOpenPackClick", 0, , , true))
+        reason := "hourglass pack"
+    else if (FindOrLoseImage("Pack_HourglassAndPokeGoldImageAfterOpenPackClick", 0, , , true))
+        reason := "hourglass/gold pack"
+    else if (FindOrLoseImage("Pack_PokeGoldImageAfterOpenPackClick", 0, , , true))
+        reason := "gold pack"
+
+    return (reason != "")
+}
+
+DismissFriendFlowBlockingPopup(context := "") {
+    if (!FindOrLoseImage("Common_PopupXButtonInMain", 0, , , true))
+        return false
+
+    LogDebug("Dismissed friend flow blocking popup | context=" . context)
+
+    if (context != "")
+        CreateStatusMessage("Closing popup during friend flow`n" . context,,,, false)
+    else
+        CreateStatusMessage("Closing popup during friend flow",,,, false)
+
+    adbClick_wbb(137, 480)
+    Delay(1)
+    return true
+}
+
+IsSocialHubReadyForFriends() {
+    return FindOrLoseImage("Friend_SocialHubFriendButton", 0, , 20, true)
 }
 
 GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
@@ -585,7 +761,17 @@ GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
     failSafeTime := 0
     mainLoopBreak := false
     Loop {
+        if (DismissFriendFlowBlockingPopup("Goto friends screen"))
+            continue
+
         if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime, , true)) {
+            if(!IsSocialHubReadyForFriends()) {
+                failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+                Delay(0.5)
+                CreateStatusMessage("Waiting for Social hub`n(" . failSafeTime . "/45 seconds)")
+                continue
+            }
+
             ; If main screen(social): Click friends button
             adbClick_wbb(38, 460)
         }
@@ -597,6 +783,9 @@ GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
         else if(FindOrLoseImage("Friend_SearchFriendButton", 0, failSafeTime, , true)) {
             if(!isKeepSearch){
                 Loop {
+                    if (DismissFriendFlowBlockingPopup("Leaving friend search"))
+                        continue
+
                     if(FindOrLoseImage("Friend_SearchFriendButton", 0, failSafeTime, , true)) {
                         adbInputEvent("111") ;send ESC
                     }
@@ -605,6 +794,11 @@ GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
                         break
                     }
                     Delay(2)
+                    failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+                    if (failSafeTime > 45) {
+                        restartGameInstance("Stuck at Goto friends screen")
+                        return
+                    }
                 }
             }
             else
@@ -624,6 +818,10 @@ GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
         Delay(0.25)
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
         CreateStatusMessage("Goto friends screen`n(" . failSafeTime . "/45 seconds)")
+        if (failSafeTime > 45) {
+            restartGameInstance("Stuck at Goto friends screen")
+            return
+        }
     }
 }
 
@@ -636,7 +834,6 @@ getFriendCode(alreadyAtHome := false) {
     CreateStatusMessage("Getting friend code...",,,, false)
     if (!alreadyAtHome) {
         Sleep, 2000
-        FindImageAndClick("Pack_SkipButtonAfterOpenPack", 146, 494) ;click on next until skip button appears
         session.set("failSafe", A_TickCount)
         failSafeTime := 0
         Loop {

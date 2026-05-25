@@ -1,4 +1,4 @@
-﻿#SingleInstance on
+﻿#SingleInstance, Force
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0
 SetBatchLines, -1
@@ -34,9 +34,7 @@ pToken := Gdip_Startup()
 #Include SpecialEvent.ahk
 #Include Crinity_UnofficialPatch.ahk
 
-; Allocate and hide the console window to reduce flashing
-DllCall("AllocConsole")
-WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
+InitializeHiddenConsole()
 
 ; Register OnExit handler to clean up ADB shell properly when script exits
 ; DISABLED - was causing Reload delays due to blocking ADB shell communication
@@ -126,6 +124,17 @@ if(botConfig.get("deleteMethod") != "Inject Wonderpick 96P+")
     session.set("packMethod", 0)
 
 IniRead, DeadCheck, % session.get("scriptIniFile"), UserSettings, DeadCheck, 0
+IniRead, friendCleanupPending, % session.get("scriptIniFile"), UserSettings, friendCleanupPending, 0
+if (friendCleanupPending = 1) {
+    DeadCheck := 1
+    IniWrite, 1, % session.get("scriptIniFile"), UserSettings, DeadCheck
+    session.set("friended", true)
+    IniRead, friendCleanupReason, % session.get("scriptIniFile"), Recovery, friendCleanupReason,
+    LogInfo("Friend cleanup pending found at startup. Entering cleanup recovery. Reason: " . friendCleanupReason, "GroupReroll.txt")
+}
+if (DeadCheck = 1)
+    RestoreLoadedAccountForRecovery()
+
 IniRead, rerollsValue, % session.get("scriptIniFile"), Metrics, rerolls, 0
 IniRead, rerollStartTimeValue, % session.get("scriptIniFile"), Metrics, rerollStartTime, -1
 
@@ -142,6 +151,7 @@ if(botConfig.get("heartBeat"))
 
 SetTimer, RefreshAccountLists, 3600000  ; Refresh Account list every hour
 
+windowCoverHwnd := GetMuMuCoverWindowForMaintenance(session.get("winTitle"))
 DirectlyPositionWindow()
 Sleep, 500
 setADBBaseInfo()
@@ -152,6 +162,7 @@ CreateStatusMessage("Disabling background services...")
 DisableBackgroundServices()
 
 resetWindows()
+RestoreMuMuCoverWindow(windowCoverHwnd, session.get("winTitle"))
 MaxRetries := 10
 RetryCount := 0
 Loop {
@@ -175,6 +186,7 @@ Loop {
         DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1  ; HWND_BOTTOM
             , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
         Gui, Show, NoActivate x%x4% y%y4%  w275 h30
+        RestoreMuMuCoverWindow(windowCoverHwnd, session.get("winTitle"))
         break
     }
     catch {
@@ -250,9 +262,11 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
         }
     }
     RemoveFriends()
-    if(session.get("injectMethod") && session.get("loadedAccount") && !session.get("keepAccount")) {
-        MarkAccountAsUsed()
+    if(session.get("injectMethod") && session.get("loadedAccount")) {
+        LogToFile("Recovery cleanup complete. Keeping recovered account in queue unless its XML was already updated: " . session.get("accountFileName"))
+        ClearLoadedAccountRecovery()
         session.set("loadedAccount", false)
+        session.set("currentLoadedAccountIndex", 0)
     }
     DeadCheck := 0
     IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
@@ -322,7 +336,9 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             LogInfo("[" . A_ScriptName . "] GPU usage exceeds the threshold and restarts. VRAM Usage(" . session.get("VRAMUsage").Mode . "): " . session.get("VRAMUsage").Usage . " GB", "Restart.txt")
             CreateStatusMessage("Restarting Instance...",,,, false)
             restartInstance()
+            RefreshAdbConnectionAfterInstanceRestart(45000)
             DirectlyPositionWindow()
+            RestoreMuMuCoverWindow(GetMuMuCoverWindowForMaintenance(session.get("winTitle")), session.get("winTitle"))
             CreateStatusMessage("Restart complete!",,,, false)
             LogInfo("[" . A_ScriptName . "] Restart complete!", "Restart.txt")
             session.set("loadedAccount", false)
@@ -1050,7 +1066,7 @@ if(imageName = "CommunityShowcase") {
             }
             LogInfo("Restarted game. Reason: No save data found")
             CleanupBeforeExit()
-            SafeReload()
+            SafeReload("No save data found")
         }
     }
 
@@ -1130,7 +1146,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
             confirmed := vPosXY
         } else {
             ElapsedTime := (A_TickCount - session.get("StartSkipTime")) // 1000
-            if(imageName = "Country")
+            if(imageName = "Country" || imageName = "Social" || imageName = "Points")
                 FSTime := 90
             else if(imageName = "Missions" || imageName = "DailyMissions" || imageName = "DexMissions")
                 FSTime := 60
@@ -1185,7 +1201,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
                 }
                 LogInfo("Restarted game. Reason: No save data found")
                 CleanupBeforeExit()
-                SafeReload()
+                SafeReload("No save data found")
             }
         }
 
@@ -1329,19 +1345,22 @@ restartGameInstance(reason, RL := true) {
         ; This guarantees startup recovery removes friends before loading a new account.
         if (session.get("injectMethod") && session.get("loadedAccount") && session.get("friended")) {
             IniWrite, 1, % session.get("scriptIniFile"), UserSettings, DeadCheck
+            SetFriendCleanupPending("Stuck recovery: " . reason)
+            LogInfo("Friend cleanup pending set for stuck recovery. Reason: " . reason, "GroupReroll.txt")
         }
     }
 
     if (RL = "GodPack") {
         LogInfo("Restarted game. Reason: " reason)
         IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
+        ClearFriendCleanupPending()
         if (!botConfig.get("groupRerollEnabled"))
             AppendFriendCodeToManualVipIds(session.get("friendCode"))
         SendMetadataToPTCGPB(session.get("packsThisRun"))
 
         PersistStopAfterRunIfNeeded()
         CleanupBeforeExit()
-        Reload
+        SafeReload("GodPack restart")
     } else if (isStuck) {
         if(!checkInstance(session.get("scriptName"))){
             LogInfo(" Found " . session.get("scriptName") . " instance down! start Instance")
@@ -1364,7 +1383,7 @@ restartGameInstance(reason, RL := true) {
 
         PersistStopAfterRunIfNeeded()
         CleanupBeforeExit()
-        SafeReload()
+        SafeReload("Stuck restart: " . reason)
     } else {
         ; Non-stuck restart: just restart the Pokemon app, not the whole MuMu instance
         closePTCGPApp()
@@ -1384,7 +1403,7 @@ restartGameInstance(reason, RL := true) {
 
             PersistStopAfterRunIfNeeded()
             CleanupBeforeExit()
-            SafeReload()
+            SafeReload("Restart game: " . reason)
         }
 
         if (session.get("stopToggle")) {
@@ -2716,7 +2735,7 @@ return
 
 ReloadScript:
     CleanupBeforeExit()
-    SafeReload()
+    SafeReload("Toolbar reload")
 return
 
 TestScript:
@@ -2975,7 +2994,7 @@ Return
 ; ===== HOTKEYS =====
 ~+F5::
     CleanupBeforeExit()
-    SafeReload()
+    SafeReload("Shift+F5")
 return
 ~+F6::Pause
 ~+F7::
@@ -3857,6 +3876,7 @@ SelectPack(HG := false) {
 
     packx := getPackCoordXInHome()
     packy := HomeScreenAllPackY
+    enteredPackScreenFromHome := false
 
     ensureMissionUserPrefsExist()
     InitPackOpening()
@@ -3894,9 +3914,11 @@ SelectPack(HG := false) {
             failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
             CreateStatusMessage("Waiting for Points`n(" . failSafeTime . "/90 seconds)")
         }
+        enteredPackScreenFromHome := true
     }
 
-    FindImageAndClick("Pack_PackPointButton", packx, packy, , 1000)
+    if (!enteredPackScreenFromHome)
+        FindImageAndClick("Pack_PackPointButton", packx, packy, , 1000)
 
     if(!session.get("isSkipSelectExpansion")) {
         FindImageAndClick("Pack_ScrollInSelectExpansion", 248, 459, , 300)
@@ -5187,8 +5209,3 @@ CleanupBeforeExit(){
     allSpecialEventDispose()
     GetGPUMemoryByPDH(-1, true)
 }
-
-^e::
-    pToken := Gdip_Startup()
-    Screenshot_dev()
-return
