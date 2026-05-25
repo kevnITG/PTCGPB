@@ -24,8 +24,15 @@ GetDeviceAccountFromXML() {
     deviceAccount := ""
 
     if (session.get("loadDir") && session.get("accountFileName")) {
+        xmlPath := session.get("loadDir") . "\" . session.get("accountFileName")
+        deviceAccount := AccountMetadata_GetDeviceAccountFromFile(xmlPath)
+        if (deviceAccount != "")
+            return deviceAccount
+
         targetClean := RegExReplace(session.get("accountFileName"), "^\d+P_", "")
         targetClean := RegExReplace(targetClean, "_\d+(\([^)]+\))?\.xml$", "")
+        matchedDeviceAccount := ""
+        matchCount := 0
 
         Loop, Files, % session.get("loadDir") . "\*.xml"
         {
@@ -33,16 +40,18 @@ GetDeviceAccountFromXML() {
             currentClean := RegExReplace(currentClean, "_\d+(\([^)]+\))?\.xml$", "")
 
             if (currentClean = targetClean) {
-                xmlPath := session.get("loadDir") . "\" . A_LoopFileName
-                FileRead, xmlContent, %xmlPath%
-
-                if (RegExMatch(xmlContent, "i)<string name=""deviceAccount"">([^<]+)</string>", match)) {
-                    deviceAccount := match1
-                    return deviceAccount
-                }
-                break
+                matchCount++
+                fallbackPath := session.get("loadDir") . "\" . A_LoopFileName
+                fallbackDeviceAccount := AccountMetadata_GetDeviceAccountFromFile(fallbackPath)
+                if (fallbackDeviceAccount != "")
+                    matchedDeviceAccount := fallbackDeviceAccount
             }
         }
+
+        if (matchCount = 1 && matchedDeviceAccount != "")
+            return matchedDeviceAccount
+        if (matchCount > 1)
+            LogWarn("Ambiguous XML match for " . session.get("accountFileName") . " in " . session.get("loadDir") . "; falling back to current device XML.")
     }
 
     tempDir := A_ScriptDir . "\temp"

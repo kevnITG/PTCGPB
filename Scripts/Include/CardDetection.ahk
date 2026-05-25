@@ -478,6 +478,56 @@ PersistSyntheticScreenshot(sourcePath, fileType := "Valid", subDir := "") {
 
     return targetPath
 }
+
+CardDetection_ResolveSavedXml(saveDir, ByRef accountFileName, expectedDeviceAccount := "") {
+    if (saveDir = "" || accountFileName = "")
+        return ""
+
+    exactPath := saveDir . "\" . accountFileName
+    if (FileExist(exactPath))
+        return exactPath
+
+    if (!InStr(accountFileName, "_"))
+        return ""
+
+    parts := StrSplit(accountFileName, "_")
+    if (parts.Length() < 2)
+        return ""
+
+    timestampPattern := parts[2]
+    candidateCount := 0
+    matchedCount := 0
+    matchedPath := ""
+    matchedName := ""
+
+    Loop, Files, %saveDir%\*%timestampPattern%*.xml
+    {
+        candidateCount++
+        if (expectedDeviceAccount != "") {
+            candidateDeviceAccount := AccountMetadata_GetDeviceAccountFromFile(A_LoopFileFullPath)
+            if (candidateDeviceAccount != expectedDeviceAccount)
+                continue
+        }
+
+        matchedCount++
+        matchedPath := A_LoopFileFullPath
+        matchedName := A_LoopFileName
+    }
+
+    if (matchedCount = 1) {
+        accountFileName := matchedName
+        return matchedPath
+    }
+
+    if (candidateCount > 0) {
+        if (expectedDeviceAccount = "")
+            LogWarn("XML timestamp fallback for " . accountFileName . " is unvalidated; candidates=" . candidateCount, "S4T.txt")
+        else
+            LogWarn("XML timestamp fallback for " . accountFileName . " is ambiguous or mismatched; candidates=" . candidateCount . ", deviceMatches=" . matchedCount, "S4T.txt")
+    }
+
+    return ""
+}
 ;-------------------------------------------------------------------------------
 ; FoundTradeable - Process found tradeable cards
 ;-------------------------------------------------------------------------------
@@ -580,30 +630,10 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         ; Inject mode: Use the current accountFileName (which may have new name due to pack count)
         ; and construct the full path from it
         saveDir := A_ScriptDir "\..\Accounts\Saved\" . session.get("scriptName")
-        savedXmlPath := saveDir . "\" . session.get("accountFileName")
-
-        ; Verify the file exists at this path
-        if (!FileExist(savedXmlPath)) {
-            ; If the direct path doesn't work, search for it by the timestamp portion
-            ; Extract timestamp from filename between first and last underscore
-
-            if (InStr(session.get("accountFileName"), "_")) {
-                parts := StrSplit(session.get("accountFileName"), "_")
-                if (parts.Length() >= 2) {
-                    ; parts[1] = pack count (e.g., "91P")
-                    ; parts[2] = timestamp (e.g., "20250101120000")
-                    timestampPattern := parts[2]
-
-                    ; Search the directory for files containing this timestamp
-                    Loop, Files, %saveDir%\*%timestampPattern%*.xml
-                    {
-                        savedXmlPath := A_LoopFileFullPath
-                        session.set("accountFileName", A_LoopFileName)
-                        break  ; Use the first match
-                    }
-                }
-            }
-        }
+        accountFileName := session.get("accountFileName")
+        savedXmlPath := CardDetection_ResolveSavedXml(saveDir, accountFileName, deviceAccount)
+        if (savedXmlPath != "")
+            session.set("accountFileName", accountFileName)
 
         ; verification
         if (!FileExist(savedXmlPath)) {
@@ -775,23 +805,9 @@ CheckCardsSimple(result) {
             session.get("s4tPendingTradeables").Push(tradeableData)
         } else {
             saveDir := A_ScriptDir "\..\Accounts\Saved\" . scriptName
-            savedXmlPath := saveDir . "\" . accountFileName
-
-            if (!FileExist(savedXmlPath)) {
-                if (InStr(accountFileName, "_")) {
-                    parts := StrSplit(accountFileName, "_")
-                    if (parts.Length() >= 2) {
-                        timestampPattern := parts[2]
-                        Loop, Files, %saveDir%\*%timestampPattern%*.xml
-                        {
-                            savedXmlPath := A_LoopFileFullPath
-                            accountFileName := A_LoopFileName
-                            session.set("accountFileName", accountFileName)
-                            break
-                        }
-                    }
-                }
-            }
+            savedXmlPath := CardDetection_ResolveSavedXml(saveDir, accountFileName, deviceAccount)
+            if (savedXmlPath != "")
+                session.set("accountFileName", accountFileName)
 
             if (!FileExist(savedXmlPath)) {
                 CreateStatusMessage("Warning: Could not find account XML file for attachment", "", 0, 0, false)
@@ -931,23 +947,9 @@ FoundTradeableNew(foundCards, pack := "", cards := "", rarity := "", isTenPackOp
         session.get("s4tPendingTradeables").Push(tradeableData)
     } else {
         saveDir := A_ScriptDir "\..\Accounts\Saved\" . scriptName
-        savedXmlPath := saveDir . "\" . accountFileName
-
-        if (!FileExist(savedXmlPath)) {
-            if (InStr(accountFileName, "_")) {
-                parts := StrSplit(accountFileName, "_")
-                if (parts.Length() >= 2) {
-                    timestampPattern := parts[2]
-                    Loop, Files, %saveDir%\*%timestampPattern%*.xml
-                    {
-                        savedXmlPath := A_LoopFileFullPath
-                        accountFileName := A_LoopFileName
-                        session.set("accountFileName", accountFileName)
-                        break
-                    }
-                }
-            }
-        }
+        savedXmlPath := CardDetection_ResolveSavedXml(saveDir, accountFileName, deviceAccount)
+        if (savedXmlPath != "")
+            session.set("accountFileName", accountFileName)
 
         if (!FileExist(savedXmlPath)) {
             CreateStatusMessage("Warning: Could not find account XML file for attachment", "", 0, 0, false)

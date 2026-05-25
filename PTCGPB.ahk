@@ -1867,10 +1867,14 @@ BalanceXMLs:
             StringSplit, parts, A_LoopField, %A_Tab%
             tmpFile := parts2
             toDir := saveDir . "\" . instance
+            movedDeviceAccount := AccountMetadata_GetDeviceAccountFromFile(tmpFile)
 
             FileMove, %tmpFile%, %toDir%, 1
             SplitPath, tmpFile, movedFileName
-            metadataMoves.Push({"fileName": movedFileName, "instance": instance})
+            moveData := {"fileName": movedFileName, "instance": instance}
+            if (movedDeviceAccount != "")
+                moveData["deviceAccount"] := movedDeviceAccount
+            metadataMoves.Push(moveData)
 
             instance++
             if (instance > botConfig.get("Instances"))
