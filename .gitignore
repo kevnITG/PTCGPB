@@ -50,3 +50,5 @@ SpecialEvents/PastEvents
 *.py
 carddb_balance.log
 Cargo.lock
+
+.vscode

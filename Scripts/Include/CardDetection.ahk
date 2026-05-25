@@ -288,7 +288,8 @@ FoundStars(star, cards := "") {
     ; Try synthetic image from card IDs, fallback to real screenshot
     isSyntheticGP := false
     screenShot := ""
-    if (IsObject(cards) && cards.MaxIndex() > 0) {
+    ; force synthetic screenshots for multi packs
+    if (IsObject(cards) && cards.MaxIndex() > 0 && (botConfig.get("s4tUseSyntheticScreenshots") = "1" || cards.MaxIndex() > 6)) {
         synthGPPath := ""
         highlightIds := isWishlist ? Wishlist_MatchIds(wishlistMatches) : ""
         if (GenerateSyntheticPackImage(cards, synthGPPath, highlightIds)) {
@@ -391,7 +392,7 @@ GodPackFound(validity, cards := "", alreadyAtHome := false) {
     ; Try synthetic image from card IDs, fallback to real screenshot
     isSyntheticGP := false
     screenShot := ""
-    if (IsObject(cards) && cards.MaxIndex() > 0) {
+    if (IsObject(cards) && cards.MaxIndex() > 0 && (botConfig.get("s4tUseSyntheticScreenshots") = "1" || cards.MaxIndex() > 6)) {
         synthGPPath := ""
         if (GenerateSyntheticPackImage(cards, synthGPPath)) {
             persistedGPPath := PersistSyntheticScreenshot(synthGPPath, validity)
@@ -664,9 +665,9 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
         ; shared builder via count-only fallback: Discord format stays consistent
         ; with the modern paths, just without per-card names.
         foundCards := { "3Diamond": found3Dmnd, "4Diamond": found4Dmnd, "1Star": found1Star
-                      , "Crown": foundCrown, "Immersive": foundImmersive
-                      , "Shiny1Star": foundShiny1Star, "Shiny2Star": foundShiny2Star
-                      , "Trainer": foundTrainer, "Rainbow": foundRainbow, "FullArt": foundFullArt }
+            , "Crown": foundCrown, "Immersive": foundImmersive
+            , "Shiny1Star": foundShiny1Star, "Shiny2Star": foundShiny2Star
+            , "Trainer": foundTrainer, "Rainbow": foundRainbow, "FullArt": foundFullArt }
         packDetailsMessage := CardName_BuildFoundBlock("", "", foundCards)
 
         discordMessage := S4T_BuildDiscordHeader("Pack Opening results", session.get("scriptName"), session.get("packsInPool"), session.get("openPack"), Chr(0x1F4E6)) . "\n"
@@ -977,7 +978,7 @@ FoundTradeableNew(foundCards, pack := "", cards := "", rarity := "", isTenPackOp
     syntheticCards := (isTenPackOpening && IsObject(rarity)) ? FilterCardsByS4T(cards, rarity) : cards
     if (isTenPackOpening && IsObject(rarity) && (!IsObject(syntheticCards) || syntheticCards.MaxIndex() = "") && hasWishlist)
         syntheticCards := FilterCardsByWishlistMatches(cards, wishlistMatches)
-    if (IsObject(syntheticCards) && syntheticCards.MaxIndex() > 0) {
+    if (IsObject(syntheticCards) && syntheticCards.MaxIndex() > 0 && (botConfig.get("s4tUseSyntheticScreenshots") = "1" || cards.MaxIndex() > 6)) {
         synthPath := ""
         highlightIds := hasWishlist ? Wishlist_MatchIds(wishlistMatches) : ""
         synthCols := isTenPackOpening ? 6 : 3

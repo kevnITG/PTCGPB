@@ -33,21 +33,17 @@ CardName_DownloadIfMissing(localPath, url) {
         FileCreateDir, %destDir%
 
     text := ""
-    try {
-        whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-        RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
-        RegRead, proxyServer, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyServer
-        if (proxyEnabled)
-            whr.SetProxy(2, proxyServer)
-        whr.Open("GET", url, true)
-        whr.Send()
-        whr.WaitForResponse()
-        if (whr.Status != 200)
-            return false
-        text := whr.ResponseText
-    } catch {
+    whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+    RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
+    RegRead, proxyServer, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyServer
+    if (proxyEnabled)
+        whr.SetProxy(2, proxyServer)
+    whr.Open("GET", url, true)
+    whr.Send()
+    whr.WaitForResponse()
+    if (whr.Status != 200)
         return false
-    }
+    text := whr.ResponseText
 
     if (text = "" || SubStr(LTrim(text, " `t`r`n"), 1, 1) != "{")
         return false
@@ -61,19 +57,16 @@ CardName_EnsureLoaded() {
     global session
     if (IsObject(session.get("cardNameMap")))
         return
-
     nameMap := {}
     cardmasterPath := CardName_CardmasterPath()
     localePath     := CardName_LocalisationPath()
 
     CardName_DownloadIfMissing(cardmasterPath, CardName_CardmasterUrl())
     CardName_DownloadIfMissing(localePath, CardName_LocalisationUrl())
-
     if (!FileExist(cardmasterPath) || !FileExist(localePath)) {
         session.set("cardNameMap", nameMap)
         return
     }
-
     FileRead, cardmasterJson, %cardmasterPath%
     FileRead, localeJson, %localePath%
 

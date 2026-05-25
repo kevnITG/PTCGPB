@@ -1190,7 +1190,8 @@ UpdateS4TButtonText() {
 
 ShowS4TSettings:
     Gui, Submit, NoHide
-    PTCGPB_PopupRightOfCtl("ui_S4TButton", 200, 12, popupX, popupY)
+    s4tPopupW := 285
+    PTCGPB_PopupRightOfCtl("ui_S4TButton", s4tPopupW, 12, popupX, popupY)
 
     Gui, S4TSettingsSelect:Destroy
     Gui, S4TSettingsSelect:New, +ToolWindow -MaximizeBox -MinimizeBox +LastFound, Save for Trade Settings
@@ -1242,6 +1243,9 @@ ShowS4TSettings:
     Gui, S4TSettingsSelect:Add, Checkbox, % (botConfig.get("s4tKeepSyntheticScreenshots") ? "Checked" : "") " vui_s4tKeepSyntheticScreenshots_Popup x15 y" . yPos . " " . sectionColor, Save Screenshots
     yPos += 20
 
+    Gui, S4TSettingsSelect:Add, Checkbox, % (botConfig.get("s4tUseSyntheticScreenshots") ? "Checked" : "") " vui_s4tUseSyntheticScreenshots_Popup x15 y" . yPos . " " . sectionColor, Use Synthetic Screenshots where possible
+    yPos += 20
+
     Gui, S4TSettingsSelect:Add, Checkbox, % (botConfig.get("ocrShinedust") ? "Checked" : "") " vui_ocrShinedust_Popup x15 y" . yPos . " " . sectionColor, Track Shinedust
     yPos += 25
 
@@ -1249,7 +1253,7 @@ ShowS4TSettings:
     Gui, S4TSettingsSelect:Add, Button, x105 y%yPos% w70 h30 gCancelS4TSettings, Cancel
     yPos += 40
 
-    Gui, S4TSettingsSelect:Show, x%popupX% y%popupY% w200 h%yPos%
+    Gui, S4TSettingsSelect:Show, x%popupX% y%popupY% w%s4tPopupW% h%yPos%
 return
 
 ApplyS4TSettings:
@@ -1282,6 +1286,7 @@ saveS4T:
     botConfig.set("s4tWP", ui_s4tWP_Popup, "SaveForTrade")
     botConfig.set("s4tWPMinCards", ui_s4tWPMinCards_Popup, "SaveForTrade")
     botConfig.set("s4tKeepSyntheticScreenshots", ui_s4tKeepSyntheticScreenshots_Popup, "SaveForTrade")
+    botConfig.set("s4tUseSyntheticScreenshots", ui_s4tUseSyntheticScreenshots_Popup, "SaveForTrade")
     botConfig.set("ocrShinedust", ui_ocrShinedust_Popup, "SaveForTrade")
 
     if (ui_s4tWPMinCards_Popup < 1)
