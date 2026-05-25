@@ -22,6 +22,7 @@ CoordMode, Pixel, Screen
 #Include AccountMetadata.ahk
 #Include Database.ahk
 #Include Wishlist.ahk
+#Include CardNames.ahk
 #Include CardDetection.ahk
 #Include AccountManager.ahk
 #Include FriendManager.ahk
@@ -31,6 +32,7 @@ CoordMode, Pixel, Screen
 #Include Error.ahk
 
 #Include Utils.ahk
+#Include Database.ahk
 #Include Crinity_UnofficialPatch.ahk
 
 ; Allocate and hide the console window to reduce flashing
@@ -101,12 +103,14 @@ MaxRetries := 10
 RetryCount := 0
 Loop {
     try {
-        WinGetPos, x, y, Width, Height, % session.get("winTitle")
-        sleep, 2000
         OwnerWND := getMuMuHwnd(session.get("winTitle"))
+        if (!OwnerWND)
+            throw Exception("MuMu client window not found")
+        WinGetPos, x, y, Width, Height, % "ahk_id " . OwnerWND
+        sleep, 1000
         x4 := x + 4
-        y4 := y + Height - 4 + 2
-        buttonWidth := 50
+        y4 := y + 529
+        buttonWidth := 45
 
         Gui, ToolBar:New, +Owner%OwnerWND% -AlwaysOnTop +ToolWindow -Caption +LastFound -DPIScale
         Gui, ToolBar:Default
@@ -115,13 +119,14 @@ Loop {
         Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 0) . " y0 w" . buttonWidth . " h25 gReloadScript", Reload  (Shift+F5)
         Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 1) . " y0 w" . buttonWidth . " h25 gPauseScript", Pause (Shift+F6)
         Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 2) . " y0 w" . buttonWidth . " h25 gResumeScript", Resume (Shift+F6)
-        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 3) . " y0 w" . buttonWidth . " h25 gTestScript hwndhGPTestButton", GP Test (Shift+F9)
-        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 4) . " y0 w" . buttonWidth . " h25 gStopScript", Stop (Shift+F10)
+        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 3) . " y0 w" . buttonWidth . " h25 gTestScript vToolbarBtnGpTest hwndhGPTestButton", GP Test (Shift+F9)
+        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 4) . " y0 w" . buttonWidth . " h25 gImportCollectionScript", Import Collection
+        Gui, ToolBar:Add, Button, % "x" . (buttonWidth * 5) . " y0 w" . buttonWidth . " h25 gStopScript", Stop (Shift+F10)
         gpTestButtonHwnd := hGPTestButton
-        UpdateGPTestButtonLabel()
         DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1  ; HWND_BOTTOM
                 , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
-        Gui, ToolBar:Show, NoActivate x%x4% y%y4%  w275 h30
+        Gui, ToolBar:Show, NoActivate x%x4% y%y4% w275 h30
+        UpdateGPTestButtonLabel()
         break
     }
     catch {
@@ -262,6 +267,8 @@ if(firstRun) {
     }
 }
 return
+
+#Include HistoryImport.ahk
 
 FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation := 20, notShowFinding := 0) {
     global session, needlesDict
@@ -675,6 +682,10 @@ VipTrimGuiEscape:
     session.set("vipTrimDialogDone", true)
 return
 
+ImportCollectionScript:
+    ImportMainCollection(session.get("scriptName"))
+return
+
 ReloadScript:
     SafeReload()
 return
@@ -777,8 +788,8 @@ UpdateGPTestButtonLabel() {
     global gpTestButtonHwnd, session
     if (!gpTestButtonHwnd)
         return
-    buttonText := session.get("GPTest") ? "Stop GP Test (Shift+F9)" : "GP Test (Shift+F9)"
-    DllCall("User32.dll\SetWindowText", "Ptr", gpTestButtonHwnd, "Str", buttonText)
+    buttonText := session.get("GPTest") ? "Stop GPT (Shift+F9)" : "GP Test (Shift+F9)"
+    GuiControl, ToolBar:, ToolbarBtnGpTest, %buttonText%
 }
 
 PromptManualGPTestMode() {
@@ -987,6 +998,7 @@ FavoriteVipFriends() {
     ; Always reload from file as it survives bot restarts.
     session.set("gptest_nonFriends", {})
     session.set("gptest_alreadyFavourited", {})
+    cacheHadInvalidCodes := false
     gptestedFile := A_ScriptDir . "\..\FriendsGPTested_" . session.get("scriptName") . ".txt"
     if FileExist(gptestedFile) {
         Loop, Read, %gptestedFile%
@@ -996,13 +1008,23 @@ FavoriteVipFriends() {
             ; F: prefix indicates code was tested and is already favourited.
             if (SubStr(line, 1, 2) = "N:") {
                 parts := StrSplit(SubStr(line, 3), "|")
-                session.get("gptest_nonFriends")["_" . parts[1]] := {Name: parts[2], Time: parts[3]}
+                code := NormalizeFriendCode(parts[1])
+                if (code != "")
+                    session.get("gptest_nonFriends")["_" . code] := {Name: parts[2], Time: parts[3]}
+                else
+                    cacheHadInvalidCodes := true
             } else if (SubStr(line, 1, 2) = "F:") {
                 parts := StrSplit(SubStr(line, 3), "|")
-                session.get("gptest_alreadyFavourited")["_" . parts[1]] := {Name: parts[2], Time: parts[3]}
+                code := NormalizeFriendCode(parts[1])
+                if (code != "")
+                    session.get("gptest_alreadyFavourited")["_" . code] := {Name: parts[2], Time: parts[3]}
+                else
+                    cacheHadInvalidCodes := true
             }
         }
     }
+    if (cacheHadInvalidCodes)
+        SaveGPTestedCache()
 
     ; Download and load VIP list
     CreateStatusMessage("Downloading vip_ids.txt.",,,, false)
@@ -1017,8 +1039,11 @@ FavoriteVipFriends() {
     ; Build vipCodeSet from the FULL remote list before any trimming.
     ; This ensures out-of-trim accounts are never mistaken for ex-VIPs during cache pruning.
     vipCodeSet := {}
-    for _, vipFriend in vipFriendsArray
-        vipCodeSet[vipFriend.Code] := true
+    for _, vipFriend in vipFriendsArray {
+        vipCode := NormalizeFriendCode(vipFriend.Code)
+        if (vipCode != "")
+            vipCodeSet[vipCode] := true
+    }
 
     ; If the remote list is large, trim it to a manageable subset (manual VIPs are never trimmed)
     if (vipFriendsArray.MaxIndex() > 60) {
@@ -1039,12 +1064,25 @@ FavoriteVipFriends() {
     if FileExist(manualVipFile) {
         manualVipFriendsArray := GetFriendAccountsFromFile(manualVipFile, includesIdsAndNames)
         vipFriendsArray.push(manualVipFriendsArray*)
-        for _, vipFriend in manualVipFriendsArray
-            vipCodeSet[vipFriend.Code] := true
+        for _, vipFriend in manualVipFriendsArray {
+            vipCode := NormalizeFriendCode(vipFriend.Code)
+            if (vipCode != "")
+                vipCodeSet[vipCode] := true
+        }
     }
 
     if (!vipFriendsArray.MaxIndex()) {
         CreateStatusMessage("No accounts found in vip_ids.txt. Aborting FavoriteVipFriends...",,,, false)
+        return
+    }
+
+    validVipCodeCount := 0
+    for _, vipFriend in vipFriendsArray {
+        if (NormalizeFriendCode(vipFriend.Code) != "")
+            validVipCodeCount++
+    }
+    if (validVipCodeCount = 0) {
+        CreateStatusMessage("No valid 16-digit VIP codes found. Aborting FavoriteVipFriends...",,,, false)
         return
     }
 
@@ -1070,7 +1108,9 @@ FavoriteVipFriends() {
     ; We can move to non favourite removal if so
     allCached := true
     for _, vipFriend in vipFriendsArray {
-        vipCode := vipFriend.Code
+        vipCode := NormalizeFriendCode(vipFriend.Code)
+        if (vipCode = "")
+            continue
         if (!session.get("gptest_nonFriends").HasKey("_" . vipCode) && !session.get("gptest_alreadyFavourited").HasKey("_" . vipCode)) {
             allCached := false
             break
@@ -1102,9 +1142,13 @@ FavoriteVipFriends() {
     allVips := []
     for _, code in toRemove
         allVips.Push({isRemoval: 1, Code: code, Name: session.get("gptest_alreadyFavourited")["_" . code].Name})
-    for _, vipFriend in vipFriendsArray
-        if (!session.get("gptest_nonFriends").HasKey("_" . vipFriend.Code) && !session.get("gptest_alreadyFavourited").HasKey("_" . vipFriend.Code))
-            allVips.Push({isRemoval: 0, Code: vipFriend.Code, Friend: vipFriend})
+    for _, vipFriend in vipFriendsArray {
+        vipCode := NormalizeFriendCode(vipFriend.Code)
+        if (vipCode = "")
+            continue
+        if (!session.get("gptest_nonFriends").HasKey("_" . vipCode) && !session.get("gptest_alreadyFavourited").HasKey("_" . vipCode))
+            allVips.Push({isRemoval: 0, Code: vipCode, Friend: vipFriend})
+    }
 
     n := allVips.MaxIndex()
     for index, vip in allVips {
@@ -1250,10 +1294,11 @@ FavoriteVipFriends() {
                     session.get("gptest_nonFriends")["_" . vipCode] := {Name: vip.Friend.Name, Time: checkedAt}
                 }
                 SaveGPTestedCache()
-                if (index < n)
+                if (index < n) {
                     FindImageAndClick("Friend_SearchFriendWindowCancelButtonCorner", 143, 518, , 1000)
                     FindImageAndClick("Friend_FriendIDInputReady", 138, 265, , 1000)
                     EraseInput(index, n)
+                }
                 continue 2 ; already back at search input ? skip the nav block below
             }
             ; Pending friend request from the account: either VIP that we weren't able to befriend in time,
@@ -1444,8 +1489,12 @@ RemoveNonVipFriends() {
             CreateStatusMessage("VIP not favourited: " . friendAccount.ToString() . "`nFavouring...",,,, false)
             adbClick(252, 81) ; click favourite star
             Delay(1)
-            FormatTime, checkedAt, , yyyy-MM-dd HH:mm
-            session.get("gptest_alreadyFavourited")["_" . friendAccount.Code] := {Name: friendAccount.Name, Time: checkedAt}
+            matchedCode := NormalizeFriendCode(matchedFriend.Code)
+            if (matchedCode != "") {
+                FormatTime, checkedAt, , yyyy-MM-dd HH:mm
+                matchedName := (matchedFriend.Name != "" ? matchedFriend.Name : friendAccount.Name)
+                session.get("gptest_alreadyFavourited")["_" . matchedCode] := {Name: matchedName, Time: checkedAt}
+            }
             SaveGPTestedCache()
             FindImageAndClick("Friend_AddButtonInFriendList", 143, 507, , 1500)
             Delay(2)
@@ -1534,16 +1583,31 @@ SaveGPTestedCache() {
     filePath := A_ScriptDir . "\..\FriendsGPTested_" . session.get("scriptName") . ".txt"
     FileDelete, %filePath%
     FileAppend, # F: = VIP already starred in-game | N: = not a friend / code not found`n# Format: TYPE:code|name|checked_at`n, %filePath%
+    invalidNonFriends := []
     for key, entry in session.get("gptest_nonFriends") {
-        code := SubStr(key, 2)
+        code := NormalizeFriendCode(SubStr(key, 2))
+        if (code = "") {
+            invalidNonFriends.Push(key)
+            continue
+        }
         line := code . "|" . entry.Name . "|" . entry.Time
         FileAppend, N:%line%`n, %filePath%
     }
+    for _, key in invalidNonFriends
+        session.get("gptest_nonFriends").Delete(key)
+
+    invalidAlreadyFavourited := []
     for key, entry in session.get("gptest_alreadyFavourited") {
-        code := SubStr(key, 2)
+        code := NormalizeFriendCode(SubStr(key, 2))
+        if (code = "") {
+            invalidAlreadyFavourited.Push(key)
+            continue
+        }
         line := code . "|" . entry.Name . "|" . entry.Time
         FileAppend, F:%line%`n, %filePath%
     }
+    for _, key in invalidAlreadyFavourited
+        session.get("gptest_alreadyFavourited").Delete(key)
 }
 
 ; Shows a pop-up when the remote VIP list has > 60 accounts, letting the user choose
@@ -1659,7 +1723,7 @@ ParseFriendInfo(ByRef friendCode, ByRef friendName, ByRef parseFriendCodeResult,
 
         ; Parse friend identifiers
         if (!parseFriendCodeResult)
-            parseFriendCodeResult := ParseFriendInfoLoop(fullScreenshotFile, 265, 57, 240, 28, "0123456789", "^\d{14,17}$", friendCode)
+            parseFriendCodeResult := ParseFriendInfoLoop(fullScreenshotFile, 265, 57, 240, 28, "0123456789", "^\d{16}$", friendCode)
         if (includesIdsAndNames && !parseFriendNameResult)
             parseFriendNameResult := ParseFriendInfoLoop(fullScreenshotFile, 107, 427, 325, 46, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", "^[a-zA-Z0-9]{5,20}$", friendName)
         if (parseFriendCodeResult && (!includesIdsAndNames || parseFriendNameResult))
@@ -1793,9 +1857,7 @@ GetFriendAccountsFromFile(filePath, ByRef includesIdsAndNames) {
             friendCode := Trim(line)
         }
 
-        friendCode := RegExReplace(friendCode, "\D") ; Clean the string (just in case)
-        if (!RegExMatch(friendCode, "^\d{14,17}$")) ; Only accept valid IDs
-            friendCode := ""
+        friendCode := NormalizeFriendCode(friendCode)
         if (friendCode = "" && friendName = "")
             continue
 
@@ -1808,6 +1870,11 @@ GetFriendAccountsFromFile(filePath, ByRef includesIdsAndNames) {
         }
     }
     return friendList
+}
+
+NormalizeFriendCode(friendCode) {
+    clean := RegExReplace(friendCode, "\D")
+    return RegExMatch(clean, "^\d{16}$") ? clean : ""
 }
 
 ; Compares two friend accounts to check if they match based on their code and/or name.

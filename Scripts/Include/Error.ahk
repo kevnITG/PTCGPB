@@ -44,9 +44,18 @@ procError_Common(){
 
 procError_Cache(){
     global botConfig
+    static lastClickAttempt := 0
+
+    if (lastClickAttempt = 0 || A_TickCount - lastClickAttempt > 30000) {
+        lastClickAttempt := A_TickCount
+        CreateStatusMessage("Cache error detected. Clicking X to close popup...",,,, false)
+        adbClick_wbb(137, 430)
+        Sleep, 2500
+        return
+    }
 
     if(botConfig.get("heartBeatOwnerWebHookURL") != "")
-        LogToDiscord(A_ScriptName . " It appears a cache deletion error message appeared on the instance. Delete the instance, then copy it and reload the script.",, true,,, botConfig.get("heartBeatOwnerWebHookURL"))
+        LogToDiscord(A_ScriptName . " It appears a cache deletion error message appeared on the instance, and the X close click did not recover it. Delete the instance, then copy it and reload the script.",, true,,, botConfig.get("heartBeatOwnerWebHookURL"))
 
     Pause, On
     return

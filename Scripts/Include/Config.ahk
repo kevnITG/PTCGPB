@@ -61,7 +61,8 @@
         , "ocrLanguage": "en"
         , "waitAfterBulkLaunch": 40000
         , "WishlistCheck": 0
-        , "s4tWishlist": 0}
+        , "s4tWishlist": 0
+        , "saveAccountFriendInfo": 0}
 
     generalSettings := {}
     packSettings := {}

@@ -14,6 +14,28 @@
 ; Used by: Main bot loop for friend management and trading setup
 ;===============================================================================
 
+; Windows clipboard is global, lock only around clear/click/read (per attempt, ~0.5s).
+AccountFriendInfo_AcquireClipboardLock(timeoutMs := 800) {
+    lockName := "Global\PTCGPB_FriendCodeClipboard"
+    hMutex := DllCall("CreateMutex", "Ptr", 0, "Int", false, "Str", lockName, "Ptr")
+    if (!hMutex)
+        return 0
+
+    waitResult := DllCall("WaitForSingleObject", "Ptr", hMutex, "UInt", timeoutMs, "UInt")
+    if (waitResult != 0 && waitResult != 0x80) {
+        DllCall("CloseHandle", "Ptr", hMutex)
+        return 0
+    }
+    return hMutex
+}
+
+AccountFriendInfo_ReleaseClipboardLock(hMutex) {
+    if (!hMutex)
+        return
+    DllCall("ReleaseMutex", "Ptr", hMutex)
+    DllCall("CloseHandle", "Ptr", hMutex)
+}
+
 TryDismissSocialFirstTutorial(failSafeTime := 0) {
     if (failSafeTime < 5 || Mod(failSafeTime, 2) != 0)
         return false
@@ -52,22 +74,27 @@ TryHandleTradeTutorial(failSafeTime := 0) {
 AddFriends(renew := false, getFC := false) {
     global botConfig, session, interceptProc
 
-    ; Only allow AddFriends in Inject Wonderpick 96P+ mode
-    if (botConfig.get("deleteMethod") != "Inject Wonderpick 96P+")
+    ; Friend adding is Inject Wonderpick-only; own friend-code lookup is allowed wherever the caller explicitly asks for it.
+    if (!getFC && botConfig.get("deleteMethod") != "Inject Wonderpick 96P+")
         return false
 
-    if (botConfig.get("groupRerollEnabled") || botConfig.get("useSoloIdsFile")) {
-        session.set("friendIDs", ReadFile("ids"))
+    if (!getFC && (botConfig.get("groupRerollEnabled") || botConfig.get("useSoloIdsFile"))) {
+        friendIDs := ReadFile("ids")
+        if (!friendIDs)
+            friendIDs := []
+        session.set("friendIDs", friendIDs)
 
         if(!HasVal(session.get("friendIDs"), botConfig.get("FriendID")) && botConfig.get("FriendID") != "")
             session.get("friendIDs").Push(botConfig.get("FriendID"))
-    } else {
+    } else if (!getFC) {
         session.set("friendIDs", false)
     }
-    if(!getFC && !session.get("friendIDs") && botConfig.get("FriendID") = "")
+    friendIDsAvailable := IsObject(session.get("friendIDs")) && session.get("friendIDs").MaxIndex()
+    if(!getFC && !friendIDsAvailable && botConfig.get("FriendID") = "")
         return false
 
-    session.set("friended", true)
+    if (!getFC)
+        session.set("friended", true)
 
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
@@ -75,6 +102,10 @@ AddFriends(renew := false, getFC := false) {
         adbClick_wbb(143, 518)
         if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime)) {
             break
+        }
+        else if(FindOrLoseImage("Common_PopupXButtonInMain", 0, , , true)){
+            adbClick_wbb(137, 480)
+            Delay(1)
         }
         else if(TryHandleTradeTutorial(failSafeTime))
             continue
@@ -103,42 +134,19 @@ AddFriends(renew := false, getFC := false) {
             adbClick_wbb(203, 436) ; 203 436
         }
         failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-        CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
+        if (getFC)
+            CreateStatusMessage("Retrieving account info`nOpening Social (" . failSafeTime . "/90 seconds)")
+        else
+            CreateStatusMessage("Waiting for Social`n(" . failSafeTime . "/90 seconds)")
     }
 
     GoToFriendsList(true, false)
 
-    if(getFC) {
-        Delay(3)
+    if(getFC)
+        return AccountFriendInfo_CopyFriendCodeFromCurrentScreen()
 
-        Clipboard := ""
-        friendCode := ""
-        copyStartX := 214
-        copyY := 202
-        copyStepX := 2
-        maxCopyAttempts := 10
-
-        ; Try the copy button area from left to right until clipboard yields a valid code.
-        Loop, %maxCopyAttempts% {
-            clickX := copyStartX + ((A_Index - 1) * copyStepX)
-            adbClick_wbb(clickX, copyY)
-            ClipWait, 1
-            copiedValue := RegExReplace(Clipboard, "\D", "")
-            if (RegExMatch(copiedValue, "^\d{14,17}$")) {
-                friendCode := copiedValue
-                break
-            }
-            Clipboard := ""
-            Sleep, 120
-        }
-        Delay(1)
-
-        session.set("friendCode", friendCode)
-        return session.get("friendCode")
-    }
-    else {
-        IniWrite, 1, % session.get("scriptIniFile"), UserSettings, DeadCheck
-    }
+    EnsureAccountFriendInfo("Inject Wonderpick 96P+", true)
+    IniWrite, 1, % session.get("scriptIniFile"), UserSettings, DeadCheck
 
     ; start adding friends
     if(!session.get("friendIDs")){
@@ -319,6 +327,10 @@ RemoveFriends() {
         adbClick_wbb(143, 518)
         if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime))
             break
+        else if(FindOrLoseImage("Common_PopupXButtonInMain", 0, , , true)){
+            adbClick_wbb(137, 480)
+            Delay(1)
+        }
         else if(TryHandleTradeTutorial(failSafeTime))
             continue
         else if(TryDismissSocialFirstTutorial(failSafeTime))
@@ -618,35 +630,252 @@ GoToFriendsList(isKeepSearch := false, skipTutorialProc := false) {
 ;-------------------------------------------------------------------------------
 ; getFriendCode - Get friend code from current account
 ;-------------------------------------------------------------------------------
-getFriendCode() {
+getFriendCode(alreadyAtHome := false) {
     global session
 
     CreateStatusMessage("Getting friend code...",,,, false)
-    Sleep, 2000
-    FindImageAndClick("Pack_SkipButtonAfterOpenPack", 146, 494) ;click on next until skip button appears
-    session.set("failSafe", A_TickCount)
-    failSafeTime := 0
-    Loop {
-        Delay(1)
-        if(FindOrLoseImage("Pack_SkipButtonAfterOpenPack", 0, failSafeTime)) {
-            adbClick_wbb(239, 497)
-        } else if(FindOrLoseImage("Pack_NextButtonAfterOpenPack", 0, failSafeTime)) {
-            adbClick_wbb(146, 494) ;146, 494
-        } else if(FindOrLoseImage("Next2", 0, failSafeTime)) {
-            adbClick_wbb(146, 494) ;146, 494
-        } else if(FindOrLoseImage("Pack_BackButtonInSelectPackScreen", 0, failSafeTime)) {
-            break
-        } else if(FindOrLoseImage("Friend_BottomDarkHomeIcon", 0, failSafeTime)) {
-            break
-        } else {
-            adbclick_wbb(146, 494)
+    if (!alreadyAtHome) {
+        Sleep, 2000
+        FindImageAndClick("Pack_SkipButtonAfterOpenPack", 146, 494) ;click on next until skip button appears
+        session.set("failSafe", A_TickCount)
+        failSafeTime := 0
+        Loop {
+            Delay(1)
+            if(FindOrLoseImage("Pack_SkipButtonAfterOpenPack", 0, failSafeTime)) {
+                adbClick_wbb(239, 497)
+            } else if(FindOrLoseImage("Pack_NextButtonAfterOpenPack", 0, failSafeTime)) {
+                adbClick_wbb(146, 494) ;146, 494
+            } else if(FindOrLoseImage("Next2", 0, failSafeTime)) {
+                adbClick_wbb(146, 494) ;146, 494
+            } else if(FindOrLoseImage("Pack_BackButtonInSelectPackScreen", 0, failSafeTime)) {
+                break
+            } else if(FindOrLoseImage("Friend_BottomDarkHomeIcon", 0, failSafeTime)) {
+                break
+            } else {
+                adbclick_wbb(146, 494)
+            }
+            failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+            CreateStatusMessage("Waiting for Home`n(" . failSafeTime . "/45 seconds)")
+            if(failSafeTime > 45)
+                restartGameInstance("Stuck at Home")
         }
-        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-        CreateStatusMessage("Waiting for Home`n(" . failSafeTime . "/45 seconds)")
-        if(failSafeTime > 45)
-            restartGameInstance("Stuck at Home")
     }
     session.set("friendCode", AddFriends(false, true))
 
     return session.get("friendCode")
+}
+
+AccountFriendInfo_CopyFriendCodeFromCurrentScreen() {
+    global session
+
+    CreateStatusMessage("Retrieving account info`nCopying Friend Code...",,,, false)
+    Delay(3)
+
+    friendCode := ""
+    copyStartX := 214
+    copyY := 202
+    copyStepX := 2
+    maxCopyAttempts := 10
+
+    ; Try the copy button area from left to right until clipboard yields a valid code.
+    Loop, %maxCopyAttempts% {
+        CreateStatusMessage("Retrieving account info`nCopying Friend Code (" . A_Index . "/" . maxCopyAttempts . ")")
+        clickX := copyStartX + ((A_Index - 1) * copyStepX)
+
+        hLock := AccountFriendInfo_AcquireClipboardLock(800)
+        if (!hLock) {
+            Sleep, 40
+            continue
+        }
+
+        Clipboard := ""
+        adbClick_wbb(clickX, copyY)
+        ClipWait, 0.5
+        copiedValue := RegExReplace(Clipboard, "\D", "")
+        Clipboard := ""
+        AccountFriendInfo_ReleaseClipboardLock(hLock)
+
+        if (RegExMatch(copiedValue, "^\d{16}$")) {
+            friendCode := copiedValue
+            break
+        }
+        Sleep, 120
+    }
+    Delay(1)
+
+    session.set("friendCode", friendCode)
+    if (friendCode != "")
+        CreateStatusMessage("Retrieving account info`nFriend Code copied",,,, false)
+    return session.get("friendCode")
+}
+
+;-------------------------------------------------------------------------------
+; EnsureAccountFriendInfo - Persist own account name + friend code once per account
+;-------------------------------------------------------------------------------
+EnsureAccountFriendInfo(methodType := "", alreadyOnFriendSearch := false, force := false) {
+    global botConfig, session, DeadCheck
+
+    if (!force && !botConfig.get("saveAccountFriendInfo"))
+        return false
+    if (DeadCheck = 1)
+        return false
+    if (methodType = "")
+        methodType := botConfig.get("deleteMethod")
+    if (methodType = "Create Bots (13P)" && !force)
+        return false
+    if (!force && (!session.get("injectMethod") || !session.get("loadedAccount")))
+        return false
+
+    accountFileName := session.get("accountFileName")
+    if (accountFileName = "")
+        return false
+
+    deviceAccount := AccountFriendInfo_GetDeviceAccount()
+    if (deviceAccount = "")
+        return false
+
+    if (session.get("accountFriendInfoChecked") = deviceAccount)
+        return false
+    session.set("accountFriendInfoChecked", deviceAccount)
+
+    CreateStatusMessage("Retrieving account info`nChecking saved metadata...",,,, false)
+
+    accountSourcePath := session.get("loadedAccount")
+    if (accountSourcePath = "" && methodType = "Create Bots (13P)")
+        accountSourcePath := A_ScriptDir . "\..\Accounts\Saved\" . session.get("scriptName") . "\" . accountFileName
+
+    accountMeta := AccountMetadata_Get(session.get("scriptName"), accountFileName, accountSourcePath)
+    existingName := Trim(accountMeta["accountName"])
+    existingFriendCode := RegExReplace(accountMeta["friendCode"], "\D", "")
+    if (existingName != "" && existingName != "Unknown" && RegExMatch(existingFriendCode, "^\d{16}$")) {
+        session.set("accountName", existingName)
+        session.set("friendCode", existingFriendCode)
+        return true
+    }
+
+    CreateStatusMessage("Retrieving account info`nMissing name or Friend Code",,,, false)
+
+    if (alreadyOnFriendSearch)
+        friendCode := AccountFriendInfo_CopyFriendCodeFromCurrentScreen()
+    else {
+        CreateStatusMessage("Retrieving account info`nGoing to Friends profile...",,,, false)
+        friendCode := AddFriends(false, true)
+    }
+
+    cleanFriendCode := RegExReplace(friendCode, "\D", "")
+    if (!RegExMatch(cleanFriendCode, "^\d{16}$"))
+        cleanFriendCode := existingFriendCode
+
+    accountName := AccountFriendInfo_ReadNameFromFriendProfile()
+    if (accountName = "" || accountName = "Unknown")
+        accountName := existingName
+
+    if (!alreadyOnFriendSearch && methodType != "Create Bots (13P)")
+        AccountFriendInfo_ReturnToMain()
+
+    if ((accountName = "" || accountName = "Unknown") && !RegExMatch(cleanFriendCode, "^\d{16}$")) {
+        LogWarn("Could not retrieve account friend info for " . accountFileName)
+        return false
+    }
+
+    accountMeta["deviceAccount"] := deviceAccount
+    if (accountName != "" && accountName != "Unknown")
+        accountMeta["accountName"] := accountName
+    if (RegExMatch(cleanFriendCode, "^\d{16}$"))
+        accountMeta["friendCode"] := cleanFriendCode
+
+    CreateStatusMessage("Retrieving account info`nSaving to account JSON...",,,, false)
+    saved := AccountMetadata_SaveAccount(session.get("scriptName"), accountFileName, accountMeta)
+    if (saved) {
+        session.set("accountName", accountMeta["accountName"])
+        session.set("friendCode", accountMeta["friendCode"])
+        CreateStatusMessage("Retrieving account info`nSaved name and Friend Code",,,, false)
+        LogInfo("Saved account friend info for " . accountFileName)
+    } else {
+        CreateStatusMessage("Retrieving account info`nSave failed",,,, false)
+        LogWarn("Failed to save account friend info for " . accountFileName)
+    }
+    return saved
+}
+
+AccountFriendInfo_GetDeviceAccount() {
+    global session
+
+    deviceAccount := session.get("deviceAccount")
+    if (deviceAccount != "")
+        return deviceAccount
+
+    deviceAccount := GetDeviceAccountFromXML()
+
+    if (deviceAccount != "")
+        session.set("deviceAccount", deviceAccount)
+    return deviceAccount
+}
+
+AccountFriendInfo_ReadNameFromFriendProfile(statusPrefix := "Retrieving account info", initialSleepMs := 5000) {
+    global session
+
+    CreateStatusMessage(statusPrefix . "`nReading account name...",,,, false)
+    if (initialSleepMs > 0)
+        Sleep, %initialSleepMs%
+
+    tempDir := A_ScriptDir . "\..\Screenshots\temp"
+    if !FileExist(tempDir)
+        FileCreateDir, %tempDir%
+
+    usernameScreenshotFile := tempDir . "\" . session.get("scriptName") . "_Username.png"
+    CreateStatusMessage(statusPrefix . "`nTaking name screenshot...",,,, false)
+    adbTakeScreenshot(usernameScreenshotFile)
+    Sleep, 100
+
+    username := ""
+    try {
+        if (IsFunc("ocr")) {
+            CreateStatusMessage(statusPrefix . "`nRunning OCR on name...",,,, false)
+            playerName := ""
+            allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+_"
+            usernamePattern := "[\w-_]+"
+
+            if (RefinedOCRText(usernameScreenshotFile, 145, 235, 250, 35, allowedUsernameChars, usernamePattern, playerName))
+                username := playerName
+        }
+    } catch e {
+        LogWarn("Failed to OCR account name: " . e.message, "OCR.txt")
+    }
+
+    if (FileExist(usernameScreenshotFile))
+        FileDelete, %usernameScreenshotFile%
+
+    return Trim(username)
+}
+
+AccountFriendInfo_ReturnToMain() {
+    global session
+
+    CreateStatusMessage("Retrieving account info`nReturning Home...",,,, false)
+    session.set("failSafe", A_TickCount)
+    failSafeTime := 0
+    Loop, {
+        adbClick_wbb(143, 518)
+        Delay(3)
+        if(FindOrLoseImage("Common_ActivatedSocialInMainMenu", 0, failSafeTime))
+            break
+        else if(FindOrLoseImage("Friend_SearchFriendWindowCancelButtonCorner", 0, failSafeTime))
+            adbClick_wbb(80, 365)
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+        CreateStatusMessage("Retrieving account info`nReturning to Social (" . failSafeTime . "/45 seconds)")
+    }
+
+    Loop {
+        if(FindOrLoseImage("Friend_BottomDarkHomeIcon", 0))
+            break
+        else {
+            CreateStatusMessage("Retrieving account info`nOpening Home from Social...",,,, false)
+            adbClick_wbb(40, 516)
+            Delay(0.1)
+            adbClick_wbb(175, 445)
+            DelayH(500)
+        }
+    }
+    session.set("accountFriendInfoReturnedHome", true)
 }

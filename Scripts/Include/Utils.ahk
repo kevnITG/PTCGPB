@@ -757,19 +757,42 @@ AppendGPlog(message) {
 
 ;-------------------------------------------------------------------------------
 ; AppendFriendCodeToManualVipIds - solo reroll path: persist GP account for Main GP Test
-; Same format as manual_vip_ids.txt (see GetFriendAccountsFromFile in Main.ahk).
+; Uses the same "code | name | stars/5" format as vip_ids.txt when metadata exists.
 ;-------------------------------------------------------------------------------
 AppendFriendCodeToManualVipIds(friendCodeRaw) {
+    global session
+
     if (friendCodeRaw = "" || friendCodeRaw = "Unknown")
         return
     clean := RegExReplace(friendCodeRaw, "\D", "")
-    if (!RegExMatch(clean, "^\d{14,17}$")) {
+    if (!RegExMatch(clean, "^\d{16}$")) {
         AppendGPlog("AppendFriendCodeToManualVipIds: skip invalid code: " . friendCodeRaw)
         return
     }
+
+    name := ""
+    starCount := ""
+    if (IsObject(session)) {
+        if (session.get("manualVipValidity") = "Invalid") {
+            AppendGPlog("Solo reroll: skipped manual_vip_ids.txt append for invalid GP: " . clean)
+            return
+        }
+        name := Trim(session.get("manualVipName"))
+        starCount := Trim(session.get("manualVipStarCount"))
+    }
+    if (name = "Unknown")
+        name := ""
+
+    lineToWrite := clean
+    if (RegExMatch(starCount, "^\d+$"))
+        lineToWrite := clean . " | " . name . " | " . starCount . "/5"
+
     manualPath := A_ScriptDir . "\..\manual_vip_ids.txt"
     if FileExist(manualPath) {
         FileRead, existing, %manualPath%
+        found := false
+        updated := false
+        newContent := ""
         Loop, Parse, existing, `n, `r
         {
             line := Trim(A_LoopField)
@@ -781,12 +804,28 @@ AppendFriendCodeToManualVipIds(friendCodeRaw) {
             } else {
                 lineDigits := RegExReplace(line, "\D", "")
             }
-            if (lineDigits = clean)
+            if (lineDigits = clean) {
+                found := true
+                if (!InStr(line, " | ") && lineToWrite != clean) {
+                    line := lineToWrite
+                    updated := true
+                }
+            }
+            newContent .= line . "`n"
+        }
+        if (found) {
+            if (updated) {
+                FileDelete, %manualPath%
+                FileAppend, %newContent%, %manualPath%
+                AppendGPlog("Solo reroll: updated manual_vip_ids.txt: " . lineToWrite)
+            }
+            else
                 return
+            return
         }
     }
-    FileAppend, %clean%`n, %manualPath%
-    AppendGPlog("Solo reroll: appended to manual_vip_ids.txt: " . clean)
+    FileAppend, %lineToWrite%`n, %manualPath%
+    AppendGPlog("Solo reroll: appended to manual_vip_ids.txt: " . lineToWrite)
 }
 
 HasVal(haystack, needle) {

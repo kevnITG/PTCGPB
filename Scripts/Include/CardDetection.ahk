@@ -194,6 +194,7 @@ FindGodPack(invalidPack := false, cards := "") {
     global botConfig, session
 
     currentPackInfo := session.get("currentPackInfo")
+
     ; Check for normal borders.
     normalBorders := currentPackInfo["TypeCount"]["normal"]
     if (normalBorders) {
@@ -239,6 +240,38 @@ FindGodPack(invalidPack := false, cards := "") {
 }
 
 ;-------------------------------------------------------------------------------
+; CardDetection_UseSavedAccountFriendInfo - Reuse metadata before opening Social
+;-------------------------------------------------------------------------------
+CardDetection_UseSavedAccountFriendInfo(ByRef username, ByRef friendCode) {
+    global botConfig, session
+
+    username := ""
+    friendCode := ""
+
+    if (botConfig.get("deleteMethod") != "Inject Wonderpick 96P+")
+        return false
+    if (!session.get("injectMethod") || !session.get("loadedAccount") || session.get("accountFileName") = "")
+        return false
+
+    accountMeta := AccountMetadata_Get(session.get("scriptName"), session.get("accountFileName"), session.get("loadedAccount"))
+    savedFriendCode := RegExReplace(accountMeta["friendCode"], "\D", "")
+    if (!RegExMatch(savedFriendCode, "^\d{16}$"))
+        return false
+
+    savedName := Trim(accountMeta["accountName"])
+    if (savedName != "" && savedName != "Unknown")
+        username := savedName
+
+    friendCode := savedFriendCode
+    session.set("friendCode", friendCode)
+    if (username != "")
+        session.set("accountName", username)
+
+    CreateStatusMessage("Card notification`nUsing saved account info...",,,, false)
+    return true
+}
+
+;-------------------------------------------------------------------------------
 ; FoundStars - Process found star/special cards
 ;-------------------------------------------------------------------------------
 FoundStars(star, cards := "") {
@@ -277,41 +310,21 @@ FoundStars(star, cards := "") {
     username := ""
 
     accountFile := saveAccount(star, accountFullPath, "")
-    friendCode := getFriendCode()
-    session.set("friendCode", friendCode)
+    fcScreenshot := ""
+    usedSavedFriendInfo := CardDetection_UseSavedAccountFriendInfo(username, friendCode)
+    if (!usedSavedFriendInfo) {
+        friendCode := getFriendCode()
+        session.set("friendCode", friendCode)
 
-    Sleep, 5000
-    fcScreenshot := Screenshot("FRIENDCODE")
+        Sleep, 5000
+        fcScreenshot := Screenshot("FRIENDCODE")
 
-    tempDir := A_ScriptDir . "\..\Screenshots\temp"
-    if !FileExist(tempDir)
-        FileCreateDir, %tempDir%
-
-    usernameScreenshotFile := tempDir . "\" . session.get("scriptName") . "_Username.png"
-    adbTakeScreenshot(usernameScreenshotFile)
-    Sleep, 100
-
-    if(star = "Crown" || star = "Immersive" || star = "Shiny")
+        if(star = "Crown" || star = "Immersive" || star = "Shiny")
+            RemoveFriends()
+        else
+            username := AccountFriendInfo_ReadNameFromFriendProfile("Card notification", 0)
+    } else if(star = "Crown" || star = "Immersive" || star = "Shiny") {
         RemoveFriends()
-    else {
-        ; OCR username
-        try {
-            if (IsFunc("ocr")) {
-                playerName := ""
-                allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+_"
-                usernamePattern := "[\w-_]+"
-
-                if(RefinedOCRText(usernameScreenshotFile, 145, 235, 250, 35, allowedUsernameChars, usernamePattern, playerName)) {
-                    username := playerName
-                }
-            }
-        } catch e {
-            LogWarn("Failed to OCR username: " . e.message, "OCR.txt")
-        }
-    }
-
-    if (FileExist(usernameScreenshotFile)) {
-        FileDelete, %usernameScreenshotFile%
     }
 
     ; Validate before saving metadata
@@ -348,11 +361,12 @@ FoundStars(star, cards := "") {
 ;-------------------------------------------------------------------------------
 ; GodPackFound - Process found god pack
 ;-------------------------------------------------------------------------------
-GodPackFound(validity, cards := "") {
+GodPackFound(validity, cards := "", alreadyAtHome := false) {
     global botConfig, session, DeadCheck, dictionaryData
 
     currentPackInfo := session.get("currentPackInfo")
     username := ""
+    session.set("manualVipValidity", validity)
 
     IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
 
@@ -392,36 +406,15 @@ GodPackFound(validity, cards := "") {
 
     accountFile := saveAccount(validity, accountFullPath, "")
 
-    friendCode := getFriendCode()
-    session.set("friendCode", friendCode)
+    fcScreenshot := ""
+    if (!CardDetection_UseSavedAccountFriendInfo(username, friendCode)) {
+        friendCode := getFriendCode(alreadyAtHome)
+        session.set("friendCode", friendCode)
 
-    Sleep, 5000
-    fcScreenshot := Screenshot("FRIENDCODE")
+        Sleep, 5000
+        fcScreenshot := Screenshot("FRIENDCODE")
 
-    tempDir := A_ScriptDir . "\..\Screenshots\temp"
-    if !FileExist(tempDir)
-        FileCreateDir, %tempDir%
-
-    usernameScreenshotFile := tempDir . "\" . session.get("scriptName") . "_Username.png"
-    adbTakeScreenshot(usernameScreenshotFile)
-    Sleep, 100
-
-    try {
-        if (IsFunc("ocr")) {
-            playerName := ""
-            allowedUsernameChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+_"
-            usernamePattern := "[\w-_]+"
-
-            if(RefinedOCRText(usernameScreenshotFile, 145, 235, 250, 35, allowedUsernameChars, usernamePattern, playerName)) {
-                username := playerName
-            }
-        }
-    } catch e {
-        LogWarn("Failed to OCR username: " . e.message, "OCR.txt")
-    }
-
-    if (FileExist(usernameScreenshotFile)) {
-        FileDelete, %usernameScreenshotFile%
+        username := AccountFriendInfo_ReadNameFromFriendProfile("Card notification", 0)
     }
 
     ; Validate before saving
@@ -435,6 +428,9 @@ GodPackFound(validity, cards := "") {
     try packDisplayName := dictionaryData[botConfig.get("defaultBotLanguage")][openPack]
     if (packDisplayName = "")
         packDisplayName := (openPack != "" ? openPack : "Unknown Pack")
+
+    session.set("manualVipName", username)
+    session.set("manualVipStarCount", starCount)
 
     CreateStatusMessage(Interjection . (invalid ? " " . invalid : "") . " God Pack found!",,,, false)
 
@@ -629,36 +625,19 @@ FoundTradeable(found3Dmnd := 0, found4Dmnd := 0, found1Star := 0, foundGimmighou
     LogInfo(logMessage, "S4T.txt")
 
     if (!botConfig.get("s4tSilent") && botConfig.get("s4tDiscordWebhookURL")) {
-        packDetailsMessage := ""
-        if (found3Dmnd > 0)
-            packDetailsMessage .= "Three Diamond (x" . found3Dmnd . "), "
-        if (found4Dmnd > 0)
-            packDetailsMessage .= "Four Diamond EX (x" . found4Dmnd . "), "
-        if (found1Star > 0)
-            packDetailsMessage .= "One Star (x" . found1Star . "), "
-        if (foundGimmighoul > 0)
-            packDetailsMessage .= "Gimmighoul (x" . foundGimmighoul . "), "
-        if (foundCrown > 0)
-            packDetailsMessage .= "Crown (x" . foundCrown . "), "
-        if (foundImmersive > 0)
-            packDetailsMessage .= "Immersive (x" . foundImmersive . "), "
-        if (foundShiny1Star > 0)
-            packDetailsMessage .= "Shiny 1-Star (x" . foundShiny1Star . "), "
-        if (foundShiny2Star > 0)
-            packDetailsMessage .= "Shiny 2-Star (x" . foundShiny2Star . "), "
-        if (foundTrainer > 0)
-            packDetailsMessage .= "Trainer (x" . foundTrainer . "), "
-        if (foundRainbow > 0)
-            packDetailsMessage .= "Rainbow (x" . foundRainbow . "), "
-        if (foundFullArt > 0)
-            packDetailsMessage .= "Full Art (x" . foundFullArt . "), "
+        ; Legacy path has only count vars (no card IDs/rarity array). Reuse the
+        ; shared builder via count-only fallback: Discord format stays consistent
+        ; with the modern paths, just without per-card names.
+        foundCards := { "3Diamond": found3Dmnd, "4Diamond": found4Dmnd, "1Star": found1Star
+                      , "Crown": foundCrown, "Immersive": foundImmersive
+                      , "Shiny1Star": foundShiny1Star, "Shiny2Star": foundShiny2Star
+                      , "Trainer": foundTrainer, "Rainbow": foundRainbow, "FullArt": foundFullArt }
+        packDetailsMessage := CardName_BuildFoundBlock("", "", foundCards)
 
-        packDetailsMessage := RTrim(packDetailsMessage, ", ")
-
-        discordMessage := statusMessage . " in instance: " . session.get("scriptName")
-        discordMessage .= " (" . session.get("packsInPool") . " packs, " . session.get("openPack") . ")\n"
-        discordMessage .= "Found: " . packDetailsMessage . "\n"
-        discordMessage .= "Screenshot File name: " . session.get("accountFileName") . "\nContinuing..."
+        discordMessage := S4T_BuildDiscordHeader("Pack Opening results", session.get("scriptName"), session.get("packsInPool"), session.get("openPack"), Chr(0x1F4E6)) . "\n"
+        if (packDetailsMessage != "")
+            discordMessage .= "\n" . packDetailsMessage . "\n\n"
+        discordMessage .= "File name: " . session.get("accountFileName")
 
         ; Prepare XML file path for attachment
         xmlFileToSend := ""
@@ -726,6 +705,8 @@ CheckCardsSimple(result) {
 
         scriptName := session.get("scriptName")
         winTitle := session.get("winTitle")
+        packsInPool := session.get("packsInPool")
+        openPack := session.get("openPack")
         loadDir := session.get("loadDir")
         accountFileName := session.get("accountFileName")
 
@@ -752,7 +733,6 @@ CheckCardsSimple(result) {
         foundTradeable := 0
         cardTypes := []
         cardCounts := []
-        packDetailsMessage := ""
 
         for _, type in order {
             count := foundCards.HasKey(type) ? foundCards[type] : 0
@@ -761,15 +741,12 @@ CheckCardsSimple(result) {
             if (count > 0) {
                 cardTypes.Push(type)
                 cardCounts.Push(count)
-
-                ; Wishlist gets its own inline line below, not lumped into "Found: ..."
-                if (type != "Wishlist") {
-                    if (packDetailsMessage != "")
-                        packDetailsMessage .= ", "
-                    packDetailsMessage .= displayNames[type] . " (x" . count . ")"
-                }
             }
         }
+
+        ; Build the Discord rarity summary with per-rarity emoji + card names.
+        ; CardName_BuildFoundBlock handles the cards/rarity-missing case gracefully.
+        packDetailsMessage := CardName_BuildFoundBlock(cards, rarity, foundCards)
         deviceAccount := GetDeviceAccountFromXML()
         savedXmlPath := ""
 
@@ -834,7 +811,7 @@ CheckCardsSimple(result) {
         synthScreenShot := ""
         if (filteredCards.MaxIndex() > 0) {
             highlightIds := hasWishlist ? Wishlist_MatchIds(wishlistMatches) : ""
-            if (GenerateSyntheticPackImage(filteredCards, synthScreenShot, highlightIds) && botConfig.get("s4tKeepSyntheticScreenshots")) {
+            if (GenerateSyntheticPackImage(filteredCards, synthScreenShot, highlightIds, 6) && botConfig.get("s4tKeepSyntheticScreenshots")) {
                 persistedGiftPath := PersistSyntheticScreenshot(synthScreenShot, "Tradeable", "Trades")
                 if (persistedGiftPath != "") {
                     if (FileExist(synthScreenShot))
@@ -845,9 +822,10 @@ CheckCardsSimple(result) {
         }
 
         if (!botConfig.get("s4tSilent") && botConfig.get("s4tDiscordWebhookURL")) {
-            discordMessage := statusMessage . " in instance: " . scriptName . "\n"
+            packName := (openPack != "") ? openPack : pack
+            discordMessage := S4T_BuildDiscordHeader("Gift Pack Opening results", scriptName, packsInPool, packName, Chr(0x1F381)) . "\n"
             if (packDetailsMessage != "")
-                discordMessage .= "Found: " . packDetailsMessage . "\n"
+                discordMessage .= "\n" . packDetailsMessage . "\n\n"
             if (hasWishlist) {
                 sparkle := Chr(0x2728)
                 discordMessage .= sparkle . " WISHLIST: " . Wishlist_FormatNames(wishlistMatches) . " " . sparkle . "\n"
@@ -866,7 +844,7 @@ CheckCardsSimple(result) {
     }
 }
 
-FoundTradeableNew(foundCards, pack := "", cards := "") {
+FoundTradeableNew(foundCards, pack := "", cards := "", rarity := "", isTenPackOpening := false) {
     global botConfig, session
     global screenShotFileName
 
@@ -903,7 +881,6 @@ FoundTradeableNew(foundCards, pack := "", cards := "") {
     foundTradeable := 0
     cardTypes := []
     cardCounts := []
-    packDetailsMessage := ""
 
     for _, type in order {
         count := foundCards.HasKey(type) ? foundCards[type] : 0
@@ -912,15 +889,12 @@ FoundTradeableNew(foundCards, pack := "", cards := "") {
         if (count > 0) {
             cardTypes.Push(type)
             cardCounts.Push(count)
-
-            ; Wishlist gets its own inline line below, not lumped into "Found: ..."
-            if (type != "Wishlist") {
-                if (packDetailsMessage != "")
-                    packDetailsMessage .= ", "
-                packDetailsMessage .= displayNames[type] . " (x" . count . ")"
-            }
         }
     }
+
+    ; Build the Discord rarity summary with per-rarity emoji + card names.
+    ; CardName_BuildFoundBlock handles the cards/rarity-missing case gracefully.
+    packDetailsMessage := CardName_BuildFoundBlock(cards, rarity, foundCards)
 
     if (botConfig.get("s4tWP") && botConfig.get("s4tWPMinCards") = 2 && foundTradeable < 2) {
         CreateStatusMessage("s4t: insufficient cards (" . foundTradeable . "/2)",,,, false)
@@ -989,11 +963,18 @@ FoundTradeableNew(foundCards, pack := "", cards := "") {
 
     screenShotFileName := ""
     isSyntheticImage := false
-    ; Try to generate a synthetic image from card IDs (avoids storing real screenshots on disk)
-    if (IsObject(cards) && cards.MaxIndex() > 0) {
+    ; Try to generate a synthetic image from card IDs (avoids storing real screenshots on disk).
+    ; Only multi-pull (10-pack) needs s4t filtering on the synth image — single-pull packs
+    ; show all 5 cards regardless of rarity. The rarity array itself is always honored for
+    ; the webhook name lookup (CardName_BuildFoundBlock).
+    syntheticCards := (isTenPackOpening && IsObject(rarity)) ? FilterCardsByS4T(cards, rarity) : cards
+    if (isTenPackOpening && IsObject(rarity) && (!IsObject(syntheticCards) || syntheticCards.MaxIndex() = "") && hasWishlist)
+        syntheticCards := FilterCardsByWishlistMatches(cards, wishlistMatches)
+    if (IsObject(syntheticCards) && syntheticCards.MaxIndex() > 0) {
         synthPath := ""
         highlightIds := hasWishlist ? Wishlist_MatchIds(wishlistMatches) : ""
-        if (GenerateSyntheticPackImage(cards, synthPath, highlightIds)) {
+        synthCols := isTenPackOpening ? 6 : 3
+        if (GenerateSyntheticPackImage(syntheticCards, synthPath, highlightIds, synthCols)) {
             if (botConfig.get("s4tKeepSyntheticScreenshots")) {
                 persistedTradePath := PersistSyntheticScreenshot(synthPath, "Tradeable", "Trades")
                 if (persistedTradePath != "") {
@@ -1014,23 +995,25 @@ FoundTradeableNew(foundCards, pack := "", cards := "") {
 
     LogToTradesDatabase(deviceAccount, cardTypes, cardCounts, screenShotFileName)
 
-    statusMessage := "Tradeable cards found"
+    statusMessage := isTenPackOpening ? "Tradeable cards found in 10-pack opening" : "Tradeable cards found"
     packName := (openPack != "") ? openPack : pack
 
-    CreateStatusMessage("Tradeable cards found! Continuing...",,,, false)
+    CreateStatusMessage(statusMessage . "! Continuing...",,,, false)
 
     logMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . packName . ") Screenshot file: " . screenShotFileName
     LogInfo(logMessage, "S4T.txt")
 
     if (!botConfig.get("s4tSilent") && botConfig.get("s4tDiscordWebhookURL")) {
-        discordMessage := statusMessage . " in instance: " . scriptName . " (" . packsInPool . " packs, " . packName . ")\n"
+        headerTitle := isTenPackOpening ? "10-Packs Opening results" : "Pack Opening results"
+        headerEmoji := Chr(0x1F4E6)
+        discordMessage := S4T_BuildDiscordHeader(headerTitle, scriptName, packsInPool, packName, headerEmoji) . "\n"
         if (packDetailsMessage != "")
-            discordMessage .= "Found: " . packDetailsMessage . "\n"
+            discordMessage .= "\n" . packDetailsMessage . "\n\n"
         if (hasWishlist) {
             sparkle := Chr(0x2728)
             discordMessage .= sparkle . " WISHLIST: " . Wishlist_FormatNames(wishlistMatches) . " " . sparkle . "\n"
         }
-        discordMessage .= "File name: " . accountFileName . "\nContinuing..."
+        discordMessage .= "File name: " . accountFileName
 
         xmlFileToSend := ""
         if (botConfig.get("s4tSendAccountXml") && savedXmlPath && FileExist(savedXmlPath))
@@ -1044,6 +1027,27 @@ FoundTradeableNew(foundCards, pack := "", cards := "") {
         FileDelete, %screenShot%
 
     return
+}
+
+S4T_BuildDiscordHeader(title, scriptName, packsInPool := "", packName := "", emoji := "") {
+    separator := " " . Chr(0x00B7) . " "
+    header := ""
+    if (emoji != "")
+        header .= emoji . " "
+    header .= title . separator . "Instance: " . scriptName
+
+    details := ""
+    if (packsInPool != "")
+        details .= packsInPool . " packs"
+    if (packName != "") {
+        if (details != "")
+            details .= separator
+        details .= packName
+    }
+    if (details != "")
+        header .= " (" . details . ")"
+
+    return header
 }
 
 ;-------------------------------------------------------------------------------
@@ -1127,6 +1131,23 @@ FilterCardsByS4T(cards, rarity) {
     return filteredCards
 }
 
+FilterCardsByWishlistMatches(cards, wishlistMatches) {
+    filteredCards := []
+    if (!IsObject(cards) || !IsObject(wishlistMatches))
+        return filteredCards
+
+    wishlistIds := {}
+    For _, match in wishlistMatches
+        wishlistIds[match.id] := true
+
+    For _, cardId in cards {
+        if (wishlistIds.HasKey(cardId))
+            filteredCards.Push(cardId)
+    }
+
+    return filteredCards
+}
+
 ;-------------------------------------------------------------------------------
 ; ProcessPendingTradeables - Update all pending tradeable XMLs
 ;-------------------------------------------------------------------------------
@@ -1194,7 +1215,7 @@ ReleaseCardImageLock(hMutex) {
     DllCall("CloseHandle", "Ptr", hMutex)
 }
 
-GenerateSyntheticPackImage(cards, ByRef outputPath, highlightIds := "") {
+GenerateSyntheticPackImage(cards, ByRef outputPath, highlightIds := "", maxCols := 3) {
     global session
 
     outputPath := ""
@@ -1229,6 +1250,7 @@ GenerateSyntheticPackImage(cards, ByRef outputPath, highlightIds := "") {
     } else if (highlightIds != "" && !IsObject(highlightIds)) {
         highlightArg := " --highlight """ . highlightIds . """"
     }
+    colsArg := " --cols " . maxCols
 
     hCardImageLock := AcquireCardImageLock()
     if (!hCardImageLock) {
@@ -1236,14 +1258,16 @@ GenerateSyntheticPackImage(cards, ByRef outputPath, highlightIds := "") {
         return false
     }
 
-    RunWait, "%helperTool%" "%tmpFile%" "%outputPath%"%highlightArg%, %helperDir%, Hide
+    RunWait, "%helperTool%" "%tmpFile%" "%outputPath%"%highlightArg%%colsArg%, %helperDir%, Hide
     ReleaseCardImageLock(hCardImageLock)
     if (ErrorLevel) {
+        LogWarn("GenerateSyntheticPackImage failed. ErrorLevel=" . ErrorLevel . " outputPath=" . outputPath, "S4T.txt")
         outputPath := ""
         return false
     }
 
     if (!FileExist(outputPath)) {
+        LogWarn("GenerateSyntheticPackImage did not create outputPath=" . outputPath, "S4T.txt")
         outputPath := ""
         return false
     }

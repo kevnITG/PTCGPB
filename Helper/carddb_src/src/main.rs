@@ -96,6 +96,30 @@ enum Command {
         #[arg(long)]
         input: PathBuf,
     },
+    ImportRegistry {
+        #[arg(long)]
+        device_account: String,
+        #[arg(long)]
+        input: PathBuf,
+        #[arg(long)]
+        instance: String,
+        #[arg(long, conflicts_with = "into")]
+        name: Option<String>,
+        #[arg(long, conflicts_with = "name")]
+        into: Option<String>,
+    },
+    ImportCollection {
+        #[arg(long)]
+        device_account: String,
+        #[arg(long)]
+        input: PathBuf,
+        #[arg(long)]
+        instance: String,
+        #[arg(long, conflicts_with = "into")]
+        name: Option<String>,
+        #[arg(long, conflicts_with = "name")]
+        into: Option<String>,
+    },
     FormatAccount {
         #[arg(long)]
         device_account: String,
@@ -255,6 +279,34 @@ fn run(cli: Cli) -> Result<()> {
             device_account,
             input,
         } => import_history(&cli.root, &device_account, &input),
+        Command::ImportRegistry {
+            device_account,
+            input,
+            instance,
+            name,
+            into,
+        } => import_collection(
+            &cli.root,
+            &device_account,
+            &input,
+            &instance,
+            name.as_deref(),
+            into.as_deref(),
+        ),
+        Command::ImportCollection {
+            device_account,
+            input,
+            instance,
+            name,
+            into,
+        } => import_collection(
+            &cli.root,
+            &device_account,
+            &input,
+            &instance,
+            name.as_deref(),
+            into.as_deref(),
+        ),
         Command::FormatAccount { device_account } => format_account(&cli.root, &device_account),
         Command::AppendPull {
             device_account,
@@ -285,6 +337,29 @@ fn cards_dir(root: &Path) -> PathBuf {
 
 fn account_files_dir(root: &Path) -> PathBuf {
     cards_dir(root).join("accounts")
+}
+
+fn collections_dir(root: &Path) -> PathBuf {
+    cards_dir(root).join("collections")
+}
+
+fn is_collection_path(path: &Path) -> bool {
+    path.parent()
+        .and_then(Path::file_name)
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.eq_ignore_ascii_case("collections"))
+}
+
+fn collection_key_from_display_name(display_name: &str) -> String {
+    let trimmed = display_name.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+    safe_file_name(trimmed)
+}
+
+fn collection_file_path(root: &Path, collection_key: &str) -> PathBuf {
+    collections_dir(root).join(format!("{}.json", safe_file_name(collection_key)))
 }
 
 fn saved_dir(root: &Path) -> PathBuf {
@@ -345,6 +420,27 @@ fn account_key_from_file(path: &Path) -> Option<String> {
     path.file_stem().map(|s| s.to_string_lossy().to_string())
 }
 
+fn collect_dashboard_json_paths(dir: &Path, bucket: &str, paths: &mut Vec<(String, PathBuf)>) -> Result<()> {
+    if !dir.exists() {
+        return Ok(());
+    }
+    for entry in fs::read_dir(dir).with_context(|| format!("Could not read {:?}", dir))? {
+        let path = entry?.path();
+        if path
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| e.eq_ignore_ascii_case("json"))
+        {
+            let file_name = path
+                .file_name()
+                .map(|s| s.to_string_lossy().to_string())
+                .unwrap_or_default();
+            paths.push((format!("{bucket}/{file_name}"), path));
+        }
+    }
+    Ok(())
+}
+
 fn build_dashboard_cache(
     root: &Path,
     output: &Path,
@@ -353,38 +449,19 @@ fn build_dashboard_cache(
     source_count: usize,
     source_bytes: u64,
 ) -> Result<()> {
-    let dir = account_files_dir(root);
     let mut paths = Vec::new();
-    if dir.exists() {
-        for entry in fs::read_dir(&dir).with_context(|| format!("Could not read {:?}", dir))? {
-            let path = entry?.path();
-            if path
-                .extension()
-                .and_then(|e| e.to_str())
-                .is_some_and(|e| e.eq_ignore_ascii_case("json"))
-            {
-                paths.push(path);
-            }
-        }
-    }
-    paths.sort_by(|a, b| {
-        a.file_name()
-            .map(|s| s.to_string_lossy())
-            .cmp(&b.file_name().map(|s| s.to_string_lossy()))
-    });
+    collect_dashboard_json_paths(&account_files_dir(root), "accounts", &mut paths)?;
+    collect_dashboard_json_paths(&collections_dir(root), "collections", &mut paths)?;
+    paths.sort_by(|a, b| a.0.cmp(&b.0));
 
     let mut accounts = Vec::with_capacity(paths.len());
     let mut skipped = Vec::new();
 
-    for path in paths {
-        let file_name = path
-            .file_name()
-            .map(|s| s.to_string_lossy().to_string())
-            .unwrap_or_default();
-        match load_dashboard_account_document(&path, &file_name) {
+    for (source_file_name, path) in paths {
+        match load_dashboard_account_document(&path, &source_file_name) {
             Ok(doc) => accounts.push(doc),
             Err(err) => skipped.push(json!({
-                "file": file_name,
+                "file": source_file_name,
                 "error": err.to_string(),
             })),
         }
@@ -394,7 +471,7 @@ fn build_dashboard_cache(
     let skipped_count = skipped.len();
     let payload = json!({
         "ok": true,
-        "source": "Accounts/Cards/accounts",
+        "source": "Accounts/Cards/accounts+collections",
         "accountCount": account_count,
         "skippedCount": skipped_count,
         "skipped": skipped,
@@ -450,7 +527,38 @@ fn load_dashboard_account_document(path: &Path, file_name: &str) -> Result<Value
     if obj.get("pulls").map_or(true, Value::is_null) {
         obj.insert("pulls".to_owned(), json!([]));
     }
+    if obj.get("registeredCards").map_or(true, Value::is_null) {
+        obj.insert("registeredCards".to_owned(), json!([]));
+    }
     obj.insert("sourceFileName".to_owned(), json!(file_name));
+    if is_collection_path(path) {
+        obj.insert("sourceType".to_owned(), json!("collection"));
+        let collection_id_blank = obj
+            .get("collectionId")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .unwrap_or("")
+            .is_empty();
+        if collection_id_blank {
+            obj.insert("collectionId".to_owned(), json!(fallback_account));
+        }
+        let display_name_blank = obj
+            .get("displayName")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .unwrap_or("")
+            .is_empty();
+        if display_name_blank {
+            let collection_id = obj
+                .get("collectionId")
+                .and_then(Value::as_str)
+                .unwrap_or(&fallback_account);
+            obj.insert("displayName".to_owned(), json!(collection_id));
+        }
+        if obj.get("pulls").and_then(Value::as_array).is_some_and(|pulls| !pulls.is_empty()) {
+            obj.insert("pulls".to_owned(), json!([]));
+        }
+    }
     Ok(value)
 }
 
@@ -912,7 +1020,8 @@ fn load_account_document(path: &Path, device_account: &str) -> Result<Value> {
     Ok(json!({
         "deviceAccount": device_account,
         "metadata": {},
-        "pulls": []
+        "pulls": [],
+        "registeredCards": []
     }))
 }
 
@@ -2736,6 +2845,155 @@ fn import_history(root: &Path, device_account: &str, input: &Path) -> Result<()>
 
     set_doc_flag(&mut doc, "H");
     write_account_document(root, device_account, &doc)?;
+    Ok(())
+}
+
+fn registered_cards_from_history_line(line: &str) -> Vec<String> {
+    let line = line.trim().trim_start_matches('\u{feff}');
+    if line.is_empty() {
+        return Vec::new();
+    }
+    let Some((_timestamp, cards_text)) = line.split_once('|') else {
+        return Vec::new();
+    };
+    cards_text
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+fn load_collection_document(path: &Path, collection_key: &str, display_name: &str) -> Result<Value> {
+    if path.exists() {
+        let text = fs::read_to_string(path)?;
+        let mut value: Value = serde_json::from_str(text.trim_start_matches('\u{feff}'))
+            .with_context(|| format!("Could not parse {:?}", path))?;
+        if !value.is_object() {
+            value = json!({});
+        }
+        let obj = value.as_object_mut().expect("object");
+        obj.entry("collectionId".to_owned())
+            .or_insert_with(|| json!(collection_key));
+        obj.entry("displayName".to_owned())
+            .or_insert_with(|| json!(display_name));
+        obj.entry("metadata".to_owned())
+            .or_insert_with(|| json!({}));
+        obj.entry("registeredCards".to_owned())
+            .or_insert_with(|| json!([]));
+        return Ok(value);
+    }
+
+    Ok(json!({
+        "collectionId": collection_key,
+        "displayName": display_name,
+        "deviceAccount": "",
+        "metadata": {},
+        "registeredCards": []
+    }))
+}
+
+fn write_collection_document(root: &Path, collection_key: &str, doc: &Value) -> Result<()> {
+    let path = collection_file_path(root, collection_key);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let tmp = path.with_extension("json.tmp");
+    fs::write(&tmp, serde_json::to_string_pretty(doc)? + "\n")?;
+    fs::rename(tmp, path)?;
+    Ok(())
+}
+
+fn import_collection(
+    root: &Path,
+    device_account: &str,
+    input: &Path,
+    instance: &str,
+    name: Option<&str>,
+    into: Option<&str>,
+) -> Result<()> {
+    if device_account.trim().is_empty() {
+        anyhow::bail!("device-account is required.");
+    }
+
+    let (collection_key, display_name) = match (name, into) {
+        (Some(name), None) => {
+            let display_name = name.trim();
+            if display_name.is_empty() {
+                anyhow::bail!("Collection name cannot be empty.");
+            }
+            let collection_key = collection_key_from_display_name(display_name);
+            if collection_key.is_empty() {
+                anyhow::bail!("Collection name is not valid for a file name.");
+            }
+            (collection_key, display_name.to_owned())
+        }
+        (None, Some(into_key)) => {
+            let collection_key = collection_key_from_display_name(into_key);
+            if collection_key.is_empty() {
+                anyhow::bail!("Collection target is not valid.");
+            }
+            let path = collection_file_path(root, &collection_key);
+            if !path.exists() {
+                anyhow::bail!(
+                    "Collection file does not exist: {}",
+                    path.display()
+                );
+            }
+            let doc = load_collection_document(&path, &collection_key, into_key)?;
+            let display_name = doc
+                .get("displayName")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(str::to_owned)
+                .unwrap_or_else(|| collection_key.clone());
+            (collection_key, display_name)
+        }
+        (Some(_), Some(_)) => anyhow::bail!("Use either --name or --into, not both."),
+        (None, None) => anyhow::bail!("Provide --name for a new collection or --into for an existing one."),
+    };
+
+    let collection_path = collection_file_path(root, &collection_key);
+    if name.is_some() && collection_path.exists() {
+        anyhow::bail!(
+            "A collection file already exists: {}",
+            collection_path.display()
+        );
+    }
+
+    let mut doc = load_collection_document(&collection_path, &collection_key, &display_name)?;
+    let mut card_ids: HashSet<String> = HashSet::new();
+
+    if input.exists() {
+        let text = fs::read_to_string(input)
+            .with_context(|| format!("Could not read registry history file {:?}", input))?;
+        for line in text.lines() {
+            for card in registered_cards_from_history_line(line) {
+                card_ids.insert(card);
+            }
+        }
+    }
+
+    let mut registered_cards: Vec<String> = card_ids.into_iter().collect();
+    registered_cards.sort();
+
+    let now = Local::now().format("%Y%m%d%H%M%S").to_string();
+    if !doc["metadata"].is_object() {
+        doc["metadata"] = json!({});
+    }
+    doc["collectionId"] = json!(collection_key);
+    doc["displayName"] = json!(display_name);
+    doc["deviceAccount"] = json!(device_account.trim());
+    if !instance.trim().is_empty() {
+        doc["metadata"]["instance"] = json!(instance.trim());
+    }
+    doc["metadata"]["registryImportedAt"] = json!(now);
+    doc["metadata"]["registryCardCount"] = json!(registered_cards.len());
+    set_doc_flag(&mut doc, "R");
+    doc["registeredCards"] = json!(registered_cards);
+
+    write_collection_document(root, &collection_key, &doc)?;
     Ok(())
 }
 

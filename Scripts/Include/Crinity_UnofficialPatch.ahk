@@ -105,6 +105,7 @@ startPreProcess(methodType){
         clickX := getPackCoordXInHome()
         clickY := 203
     }
+
     findImageName .= "`n(Selected pack: " . session.get("openPack") . ")"
 
     imagePath := A_ScriptDir . "\Needles\"

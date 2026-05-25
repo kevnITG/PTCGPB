@@ -212,6 +212,8 @@ AccountMetadata_NewAccount(instance, fileName) {
     account["deviceAccount"] := ""
     account["instance"] := instance
     account["fileName"] := fileName
+    account["accountName"] := ""
+    account["friendCode"] := ""
     account["packCount"] := 0
     account["createdAt"] := "0"
     account["lastPackPulled"] := 0
@@ -299,18 +301,23 @@ AccountMetadata_WriteAccountUnlocked(deviceAccount, account) {
         FileCreateDir, %dir%
 
     pullsJson := "[]"
+    registeredCardsJson := "[]"
     if (FileExist(path)) {
         FileRead, oldJson, %path%
         pullsJson := AccountMetadata_ExtractArrayValue(oldJson, "pulls")
         if (pullsJson = "")
             pullsJson := "[]"
+        registeredCardsJson := AccountMetadata_ExtractArrayValue(oldJson, "registeredCards")
+        if (registeredCardsJson = "")
+            registeredCardsJson := "[]"
     }
 
     tempPath := path . ".tmp"
     jsonText := "{`r`n"
     jsonText .= "  ""deviceAccount"": """ . AccountMetadata_Escape(deviceAccount) . """,`r`n"
     jsonText .= "  ""metadata"": " . AccountMetadata_SerializeAccount(account) . ",`r`n"
-    jsonText .= "  ""pulls"": " . pullsJson . "`r`n"
+    jsonText .= "  ""pulls"": " . pullsJson . ",`r`n"
+    jsonText .= "  ""registeredCards"": " . registeredCardsJson . "`r`n"
     jsonText .= "}`r`n"
 
     if FileExist(tempPath)
@@ -485,6 +492,10 @@ AccountMetadata_ParseBool(json, key, defaultValue := 0) {
 AccountMetadata_ParseAccount(accountJson) {
     account := AccountMetadata_NewAccount(AccountMetadata_ParseString(accountJson, "instance"), AccountMetadata_ParseString(accountJson, "fileName"))
     account["deviceAccount"] := AccountMetadata_ParseString(accountJson, "deviceAccount")
+    account["accountName"] := AccountMetadata_ParseString(accountJson, "accountName")
+    if (account["accountName"] = "")
+        account["accountName"] := AccountMetadata_ParseString(accountJson, "name")
+    account["friendCode"] := AccountMetadata_ParseString(accountJson, "friendCode")
     account["packCount"] := AccountMetadata_ParseNumber(accountJson, "packCount", account["packCount"])
     account["createdAt"] := AccountMetadata_NormalizeCreatedAt(AccountMetadata_ParseString(accountJson, "createdAt", AccountMetadata_ParseNumber(accountJson, "createdAt", account["createdAt"])))
     account["lastPackPulled"] := AccountMetadata_ParseString(accountJson, "lastPackPulled", AccountMetadata_ParseNumber(accountJson, "lastPackPulled", 0))
@@ -552,6 +563,10 @@ AccountMetadata_SerializeAccount(account, indent := "") {
         AccountMetadata_AppendJsonString(json, firstField, "instance", account["instance"], "      ")
     if (account["fileName"] != "")
         AccountMetadata_AppendJsonString(json, firstField, "fileName", account["fileName"], "      ")
+    if (account["accountName"] != "")
+        AccountMetadata_AppendJsonString(json, firstField, "accountName", account["accountName"], "      ")
+    if (account["friendCode"] != "")
+        AccountMetadata_AppendJsonString(json, firstField, "friendCode", account["friendCode"], "      ")
 
     if (account["packCount"] != "" && (account["packCount"] + 0) != 0)
         AccountMetadata_AppendJsonNumber(json, firstField, "packCount", account["packCount"] + 0, "      ")
@@ -703,6 +718,13 @@ AccountMetadata_MergeAccount(baseAccount, patchAccount) {
         baseAccount["instance"] := patchAccount["instance"]
     if (patchAccount["fileName"] != "")
         baseAccount["fileName"] := patchAccount["fileName"]
+    if (patchAccount["accountName"] != "" && patchAccount["accountName"] != "Unknown")
+        baseAccount["accountName"] := patchAccount["accountName"]
+    if (patchAccount["friendCode"] != "" && patchAccount["friendCode"] != "Unknown") {
+        cleanFriendCode := RegExReplace(patchAccount["friendCode"], "\D", "")
+        if (RegExMatch(cleanFriendCode, "^\d{16}$"))
+            baseAccount["friendCode"] := cleanFriendCode
+    }
 
     if (patchAccount["packCount"] != "" && (patchAccount["packCount"] + 0) > 0)
         baseAccount["packCount"] := patchAccount["packCount"] + 0

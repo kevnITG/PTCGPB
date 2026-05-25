@@ -332,8 +332,9 @@ function Resolve-MumuFolder {
     $candidates = @(
         "MuMu",
         "MuMuPlayerGlobal-12.0",
-        "MuMu Player 12",
+        "MuMuPlayerGlobal",
         "MuMuPlayer-12.0",
+        "MuMu Player 12",
         "MuMuPlayer",
         "MuMuPlayer-12",
         "MuMuPlayer12"
@@ -616,21 +617,41 @@ function Get-TextSha256 {
 }
 
 function Get-DashboardAccountManifest {
-    param([Parameter(Mandatory = $true)][string]$AccountsDataDir)
+    param(
+        [Parameter(Mandatory = $true)][string]$AccountsDataDir,
+        [string]$CollectionsDataDir = ""
+    )
 
-    $files = @(Get-ChildItem -LiteralPath $AccountsDataDir -Filter "*.json" -File -ErrorAction SilentlyContinue | Sort-Object Name)
+    $entries = New-Object System.Collections.Generic.List[object]
     $manifestBuilder = New-Object System.Text.StringBuilder
     $totalLength = [int64]0
 
-    foreach ($file in $files) {
-        $totalLength += [int64]$file.Length
-        [void]$manifestBuilder.Append($file.Name).Append("|").Append($file.Length).Append("|").Append($file.LastWriteTimeUtc.Ticks).Append("`n")
+    $dirs = @(
+        @{ Bucket = "accounts"; Path = $AccountsDataDir }
+    )
+    if ($CollectionsDataDir -and (Test-Path -LiteralPath $CollectionsDataDir -PathType Container)) {
+        $dirs += @{ Bucket = "collections"; Path = $CollectionsDataDir }
+    }
+
+    foreach ($dirInfo in $dirs) {
+        $bucket = [string]$dirInfo.Bucket
+        $dirPath = [string]$dirInfo.Path
+        $files = @(Get-ChildItem -LiteralPath $dirPath -Filter "*.json" -File -ErrorAction SilentlyContinue | Sort-Object Name)
+        foreach ($file in $files) {
+            $sourceName = $bucket + "/" + $file.Name
+            $totalLength += [int64]$file.Length
+            [void]$manifestBuilder.Append($sourceName).Append("|").Append($file.Length).Append("|").Append($file.LastWriteTimeUtc.Ticks).Append("`n")
+            $entries.Add([pscustomobject]@{
+                File = $file
+                SourceName = $sourceName
+            })
+        }
     }
 
     return [pscustomobject]@{
-        Files = $files
+        Files = $entries
         Signature = Get-TextSha256 -Text $manifestBuilder.ToString()
-        Count = $files.Count
+        Count = $entries.Count
         TotalLength = $totalLength
     }
 }
@@ -668,9 +689,13 @@ function Add-DashboardJsonDefaults {
         throw "Account JSON is not an object."
     }
 
+    $isCollection = $FileName -like "collections/*"
+    $leafName = [System.IO.Path]::GetFileName($FileName)
+    $stemName = [System.IO.Path]::GetFileNameWithoutExtension($leafName)
+
     $extraFields = New-Object System.Collections.Generic.List[string]
     if ($trimmed -notmatch '(?i)"deviceAccount"\s*:') {
-        $deviceAccount = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
+        $deviceAccount = $stemName
         $extraFields.Add('"deviceAccount":' + (ConvertTo-JsonStringLiteral -Value $deviceAccount))
     }
     if ($trimmed -notmatch '(?i)"metadata"\s*:') {
@@ -679,8 +704,22 @@ function Add-DashboardJsonDefaults {
     if ($trimmed -notmatch '(?i)"pulls"\s*:') {
         $extraFields.Add('"pulls":[]')
     }
+    if ($trimmed -notmatch '(?i)"registeredCards"\s*:') {
+        $extraFields.Add('"registeredCards":[]')
+    }
     if ($trimmed -notmatch '(?i)"sourceFileName"\s*:') {
         $extraFields.Add('"sourceFileName":' + (ConvertTo-JsonStringLiteral -Value $FileName))
+    }
+    if ($isCollection) {
+        if ($trimmed -notmatch '(?i)"sourceType"\s*:') {
+            $extraFields.Add('"sourceType":"collection"')
+        }
+        if ($trimmed -notmatch '(?i)"collectionId"\s*:') {
+            $extraFields.Add('"collectionId":' + (ConvertTo-JsonStringLiteral -Value $stemName))
+        }
+        if ($trimmed -notmatch '(?i)"displayName"\s*:') {
+            $extraFields.Add('"displayName":' + (ConvertTo-JsonStringLiteral -Value $stemName))
+        }
     }
 
     if ($extraFields.Count -eq 0) {
@@ -720,10 +759,12 @@ function New-DashboardAccountsPayload {
     $skipped = New-Object System.Collections.Generic.List[object]
     $accountCount = 0
 
-    foreach ($file in $Files) {
+    foreach ($entry in $Files) {
         try {
+            $file = $entry.File
+            $sourceName = [string]$entry.SourceName
             $text = [System.IO.File]::ReadAllText($file.FullName)
-            $documentJson = Add-DashboardJsonDefaults -JsonText $text -FileName $file.Name
+            $documentJson = Add-DashboardJsonDefaults -JsonText $text -FileName $sourceName
             if ($accountCount -gt 0) {
                 [void]$accountsBuilder.Append(",")
             }
@@ -731,7 +772,7 @@ function New-DashboardAccountsPayload {
             $accountCount++
         } catch {
             $skipped.Add([pscustomobject]@{
-                File = $file.Name
+                File = $sourceName
                 Error = $_.Exception.Message
             })
         }
@@ -739,7 +780,7 @@ function New-DashboardAccountsPayload {
 
     $skippedJson = Convert-SkippedFilesToJson -SkippedFiles $skipped
     $payloadBuilder = New-Object System.Text.StringBuilder
-    [void]$payloadBuilder.Append('{"ok":true,"source":"Accounts/Cards/accounts","accountCount":')
+    [void]$payloadBuilder.Append('{"ok":true,"source":"Accounts/Cards/accounts+collections","accountCount":')
     [void]$payloadBuilder.Append($accountCount)
     [void]$payloadBuilder.Append(',"skippedCount":')
     [void]$payloadBuilder.Append($skipped.Count)
@@ -793,19 +834,19 @@ function Invoke-LoadAccountData {
 
     $cardsDir = Join-Path $resolvedRoot "Accounts\Cards"
     $accountsDataDir = Join-Path $cardsDir "accounts"
+    $collectionsDataDir = Join-Path $cardsDir "collections"
     if (-not (Test-Path -LiteralPath $accountsDataDir -PathType Container)) {
-        Write-JsonResponse -Context $Context -StatusCode 404 -Payload @{
-            ok = $false
-            error = "Accounts folder not found: $accountsDataDir"
-        }
-        return
+        New-Item -ItemType Directory -Path $accountsDataDir -Force | Out-Null
+    }
+    if (-not (Test-Path -LiteralPath $collectionsDataDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $collectionsDataDir -Force | Out-Null
     }
 
     $cacheDir = Join-Path $cardsDir "database_cache"
     $cachePath = Join-Path $cacheDir "accounts-data.cache.json"
     $cacheMetaPath = Join-Path $cacheDir "accounts-data.cache.meta.json"
     New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
-    $manifest = Get-DashboardAccountManifest -AccountsDataDir $accountsDataDir
+    $manifest = Get-DashboardAccountManifest -AccountsDataDir $accountsDataDir -CollectionsDataDir $collectionsDataDir
 
     if (Test-DashboardAccountsCache -CachePath $cachePath -MetaPath $cacheMetaPath -Manifest $manifest) {
         try {
@@ -1126,6 +1167,10 @@ try {
             $response = $context.Response
             $response.StatusCode = 200
             $response.ContentType = $contentType
+            if ($extension -eq ".html" -or $extension -eq ".htm") {
+                $response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                $response.Headers["Pragma"] = "no-cache"
+            }
             $response.ContentLength64 = $bytes.Length
             $response.OutputStream.Write($bytes, 0, $bytes.Length)
             $response.OutputStream.Close()

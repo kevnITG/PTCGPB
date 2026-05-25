@@ -107,7 +107,7 @@ needlesDict.Add(new Needle("Shinedust_CloseButtonInDetailWindow", "wrongItem", n
 ; Receive Gift
 needlesDict.Add(new Needle("Gift_ClaimAllButton", "ClaimAll", new Coordinate(170, 434, 216, 447)))
 needlesDict.Add(new Needle("Gift_ReceivedWindowRightBorder", "GiftReceiveWindowBorder", new Coordinate(260, 200, 265, 205)))
-needlesDict.Add(new Needle("Gift_ResultAfterOpenPack", "OpeningGift", new Coordinate(167, 494, 178, 505)))
+needlesDict.Add(new Needle("Gift_ResultAfterOpenPack", "OpeningMultiple", new Coordinate(167, 494, 178, 505)))
 needlesDict.Add(new Needle("Gift_Claimable", "Claimable", new Coordinate(22, 105, 27, 112)))
 needlesDict.Add(new Needle("Gift_ClaimedAll", "ClaimedAll", new Coordinate(257, 410, 267, 435)))
 
@@ -175,8 +175,11 @@ needlesDict.Add(new Needle("Pack_BackButtonInSelectPackScreen", "ConfirmPack", n
 needlesDict.Add(new Needle("Pack_AnimationToReadyOpenPack", "Skip2", new Coordinate(235, 492, 250, 510)))
 needlesDict.Add(new Needle("Pack_NotEnoughItemsForOpenPack", "notenoughitems", new Coordinate(92, 294, 115, 312)))
 needlesDict.Add(new Needle("Pack_PokeGoldImageAfterOpenPackClick", "PokeGoldPack", new Coordinate(75, 448, 83, 456)))
+needlesDict.Add(new Needle("Pack_PokeGoldNoHourglassesImageAfterOpenPackClick", "PokeGoldPackNoHourglasses", new Coordinate(66, 447, 84, 465)))
 needlesDict.Add(new Needle("Pack_HourglassImageAfterOpenPackClick", "HourglassPack", new Coordinate(70, 446, 83, 465)))
+needlesDict.Add(new Needle("Pack_Hourglass10ImageAfterOpenPackClick", "HourglassPack10", new Coordinate(67, 446, 83, 468)))
 needlesDict.Add(new Needle("Pack_HourglassAndPokeGoldImageAfterOpenPackClick", "HourGlassAndPokeGoldPack", new Coordinate(49, 444, 65, 469)))
+needlesDict.Add(new Needle("Pack_HourglassAndPokeGold10ImageAfterOpenPackClick", "HourGlassAndPokeGoldPack10", new Coordinate(45, 446, 60, 465)))
 needlesDict.Add(new Needle("Pack_PackImageBlankAreaForLunala", "PackNotExistInSelectPackScreen", new Coordinate(205, 320, 220, 335)))
 needlesDict.Add(new Needle("Pack_GetItemDialogAfterOpenPack", "GetItemDialogAfterOpenPackLeftSide", new Coordinate(0, 335, 20, 350)))
 
