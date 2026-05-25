@@ -1405,7 +1405,15 @@ SaveStuckScreenshot(reason) {
     safeReason := RegExReplace(reason, "[\\/:*?""<>|]", "_")
     safeReason := RegExReplace(safeReason, "\s+", "_")
     safeReason := SubStr(safeReason, 1, 80)
-    filePath := fileDir . "\" . A_Now . "_inst" . session.get("scriptName") . "_" . safeReason . ".png"
+
+    deviceAccount := GetCurrentDeviceAccountForMetadata()
+    if (deviceAccount = "")
+        deviceAccount := "unknown_device_account"
+    safeDeviceAccount := RegExReplace(deviceAccount, "[\\/:*?""<>|]", "_")
+    safeDeviceAccount := RegExReplace(safeDeviceAccount, "\s+", "_")
+    safeDeviceAccount := SubStr(safeDeviceAccount, 1, 80)
+
+    filePath := fileDir . "\" . A_Now . "_inst" . session.get("scriptName") . "_" . safeDeviceAccount . "_" . safeReason . ".png"
 
     hWnd := getMuMuHwnd(session.get("winTitle"))
     if (!hWnd)
