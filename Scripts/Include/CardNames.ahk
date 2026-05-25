@@ -7,12 +7,54 @@
 ; Also owns the bot-rarity emoji table used in Discord messages.
 ;===============================================================================
 
+CardName_CardmasterUrl() {
+    return "https://leanny.github.io/pocket_tcg_resources/data/cardmaster.json"
+}
+
+CardName_LocalisationUrl() {
+    return "https://leanny.github.io/pocket_tcg_resources/data/en_US.json"
+}
+
 CardName_CardmasterPath() {
     return getScriptBaseFolder() . "\Helper\cardmaster.json"
 }
 
 CardName_LocalisationPath() {
     return getScriptBaseFolder() . "\Helper\en_US.json"
+}
+
+; Download JSON into Helper\ when missing (same sources as the card dashboard).
+CardName_DownloadIfMissing(localPath, url) {
+    if (FileExist(localPath))
+        return true
+
+    SplitPath, localPath, , destDir
+    if (destDir != "" && !FileExist(destDir))
+        FileCreateDir, %destDir%
+
+    text := ""
+    try {
+        whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+        RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
+        RegRead, proxyServer, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyServer
+        if (proxyEnabled)
+            whr.SetProxy(2, proxyServer)
+        whr.Open("GET", url, true)
+        whr.Send()
+        whr.WaitForResponse()
+        if (whr.Status != 200)
+            return false
+        text := whr.ResponseText
+    } catch {
+        return false
+    }
+
+    if (text = "" || SubStr(LTrim(text, " `t`r`n"), 1, 1) != "{")
+        return false
+
+    FileDelete, %localPath%
+    FileAppend, %text%, %localPath%, UTF-8
+    return FileExist(localPath)
 }
 
 CardName_EnsureLoaded() {
@@ -23,6 +65,9 @@ CardName_EnsureLoaded() {
     nameMap := {}
     cardmasterPath := CardName_CardmasterPath()
     localePath     := CardName_LocalisationPath()
+
+    CardName_DownloadIfMissing(cardmasterPath, CardName_CardmasterUrl())
+    CardName_DownloadIfMissing(localePath, CardName_LocalisationUrl())
 
     if (!FileExist(cardmasterPath) || !FileExist(localePath)) {
         session.set("cardNameMap", nameMap)
