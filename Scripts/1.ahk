@@ -258,6 +258,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             accountMeta := AccountMetadata_Get(session.get("scriptName"), session.get("accountFileName"), session.get("loadedAccount"))
             accountMeta["deviceAccount"] := GetCurrentDeviceAccountForMetadata()
             accountMeta["packCount"] := new_packcount
+            session.set("accountOpenPacks", new_packcount)
             AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
         }
     }
@@ -432,7 +433,6 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
             if (session.get("accountFriendInfoReturnedHome"))
                 GoToMain()
         }
-
         if (session.get("injectMethod") && session.get("loadedAccount") && session.get("deviceAccount") != "") {
             AccountMetadata_SetLastLoggedInNow(session.get("deviceAccount"), session.get("scriptName"), session.get("accountFileName"))
             SetSpendHourglassMetadataFlag()
@@ -443,6 +443,7 @@ if(DeadCheck = 1 && botConfig.get("deleteMethod") != "Create Bots (13P)") {
                 accountMeta := AccountMetadata_Get(session.get("scriptName"), session.get("accountFileName"), session.get("loadedAccount"))
                 accountMeta["deviceAccount"] := GetCurrentDeviceAccountForMetadata()
                 accountMeta["packCount"] := new_packcount
+                session.set("accountOpenPacks", new_packcount)
                 AccountMetadata_SaveAccount(session.get("scriptName"), session.get("accountFileName"), accountMeta)
 
                 if(botConfig.get("deleteMethod") = "Inject Wonderpick 96P+" && new_packcount < botConfig.get("injectWonderpickMinPacks")) {
@@ -1632,37 +1633,31 @@ EnsurePTCGPBHelperInstalled() {
 }
 
 DownloadPTCGPBHelperToFile(url, localPath) {
-    try {
-        RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
-        RegRead, proxyServer, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyServer
+    RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
+    RegRead, proxyServer, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyServer
 
-        whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-        if (proxyEnabled)
-            whr.SetProxy(2, proxyServer)
-        whr.SetTimeouts(10000, 10000, 30000, 120000)
-        whr.Open("GET", url, false)
-        whr.Send()
+    whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+    if (proxyEnabled)
+        whr.SetProxy(2, proxyServer)
+    whr.SetTimeouts(10000, 10000, 30000, 120000)
+    whr.Open("GET", url, false)
+    whr.Send()
 
-        if (whr.Status != 200) {
-            LogWarn("ptcgpb helper host download returned HTTP status " . whr.Status)
-            return false
-        }
-
-        if (FileExist(localPath))
-            FileDelete, %localPath%
-
-        stream := ComObjCreate("ADODB.Stream")
-        stream.Type := 1
-        stream.Open()
-        stream.Write(whr.ResponseBody)
-        stream.SaveToFile(localPath, 2)
-        stream.Close()
-        return FileExist(localPath)
-    } catch e {
-        errorMessage := IsObject(e) ? e.Message : e
-        LogWarn("ptcgpb helper host download failed: " . errorMessage)
+    if (whr.Status != 200) {
+        LogWarn("ptcgpb helper host download returned HTTP status " . whr.Status)
         return false
     }
+
+    if (FileExist(localPath))
+        FileDelete, %localPath%
+
+    stream := ComObjCreate("ADODB.Stream")
+    stream.Type := 1
+    stream.Open()
+    stream.Write(whr.ResponseBody)
+    stream.SaveToFile(localPath, 2)
+    stream.Close()
+    return FileExist(localPath)
 }
 
 GetAccountCreationDate() {
@@ -1917,7 +1912,37 @@ ReportPackRecognitionFailure(reason := "Card Recognition Failed, use fallback me
 }
 
 RemoveOldFiles() {
-    adbWriteRaw("rm -f /data/ptcgp/ptcgpb")
+    remotePath := "/data/ptcgp/ptcgpb"
+    exists := Trim(StrReplace(adbWriteRaw("if [ -f " . remotePath . " ]; then echo 1; else echo 0; fi", true), "`r"), "`n`t ")
+    if (exists != "1") {
+        LogTrace("RemoveOldFiles skipped because ptcgpb helper does not exist", "ADB.txt")
+        return
+    }
+
+    versionOutput := adbWriteRaw(remotePath . " --version", true)
+    if (!RegExMatch(versionOutput, "(\d+)\.(\d+)\.(\d+)", versionMatch)) {
+        LogWarn("RemoveOldFiles skipped because ptcgpb helper version could not be parsed: " . Trim(versionOutput), "ADB.txt")
+        return
+    }
+
+    if (IsPtcgpbVersionLessThan(versionMatch1, versionMatch2, versionMatch3, 0, 9, 0)) {
+        LogInfo("RemoveOldFiles deleting old ptcgpb helper version " . versionMatch1 . "." . versionMatch2 . "." . versionMatch3, "ADB.txt")
+        adbWriteRaw("rm -f " . remotePath)
+    } else {
+        LogTrace("RemoveOldFiles kept ptcgpb helper version " . versionMatch1 . "." . versionMatch2 . "." . versionMatch3, "ADB.txt")
+    }
+}
+
+IsPtcgpbVersionLessThan(major, minor, patch, minMajor, minMinor, minPatch) {
+    major += 0
+    minor += 0
+    patch += 0
+
+    if (major != minMajor)
+        return major < minMajor
+    if (minor != minMinor)
+        return minor < minMinor
+    return patch < minPatch
 }
 
 GetStdout(cmd) {
