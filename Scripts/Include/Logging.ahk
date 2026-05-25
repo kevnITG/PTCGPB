@@ -49,12 +49,6 @@ CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debug
         guiheight := 25
     }
 
-    coverHwnd := ""
-    try {
-        if (IsObject(session))
-            coverHwnd := CaptureMuMuCoverWindow(session.get("winTitle"))
-    }
-		
     try {
 
         ; Check if GUI with this name already exists.
@@ -87,7 +81,6 @@ CreateStatusMessage(Message, GuiName := "StatusMessage", X := 0, Y := 565, debug
         }
         SetTextAndResize(hwnds[GuiName], Message)
         Gui, %GuiName%:Show, NoActivate  w%guiWidth% h%guiheight%
-        RestoreMuMuCoverWindow(coverHwnd)
 
         ; Clear any previous timers.
         SetTimer, % resetStatusFunc, Off

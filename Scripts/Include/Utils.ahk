@@ -493,8 +493,17 @@ InitializeHiddenConsole() {
     HideAllocatedConsole()
     SetTimer, HideAllocatedConsole, -1000
 
-    if (previousHwnd && WinExist("ahk_id " . previousHwnd))
-        DllCall("SetForegroundWindow", "Ptr", previousHwnd)
+    RestorePreviousForegroundWindow(previousHwnd)
+}
+
+RestorePreviousForegroundWindow(previousHwnd) {
+    if (!previousHwnd || !DllCall("IsWindow", "Ptr", previousHwnd) || !DllCall("IsWindowVisible", "Ptr", previousHwnd))
+        return false
+
+    if (DllCall("IsIconic", "Ptr", previousHwnd))
+        return false
+
+    return DllCall("SetForegroundWindow", "Ptr", previousHwnd)
 }
 
 HideAllocatedConsole() {
