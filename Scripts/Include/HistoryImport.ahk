@@ -174,7 +174,8 @@ ExportGameHistoryToFile(ByRef localPath) {
         FileDelete, %localPath%
 
     LogTrace("Ensuring ptcgpb helper exists before history export", "ADB.txt")
-    adbWriteRaw("mkdir -p /data/ptcgp &&  if [ ! -e /data/ptcgp/ptcgpb ]; then curl -L -o /data/ptcgp/ptcgpb https://leanny.github.io/ptcgpb-helper/ptcgpb-helper-android && chmod +x /data/ptcgp/ptcgpb; fi")
+    if (!EnsurePTCGPBHelperInstalled())
+        return false
     LogTrace("Clearing stale remote history files: " . remotePath . " and " . sdcardPath, "ADB.txt")
     adbWriteRaw("rm -f " . remotePath . " " . sdcardPath)
     LogTrace("Running ptcgpb history export to " . remotePath, "ADB.txt")
