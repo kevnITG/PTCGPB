@@ -291,7 +291,7 @@ LogMissingDiscordWebhook(profileName) {
     CreateStatusMessage(profileName . " Discord webhook missing.",,,, false)
 }
 
-LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screenshotFile2 := "", altWebhookURL := "", altUserId := "") {
+LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screenshotFile2 := "", altWebhookURL := "", altUserId := "", logSuccessfulDelivery := true) {
     profile := GetActiveDiscordProfile()
     discordPing := ""
 
@@ -319,8 +319,9 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
     }
 
     if (webhookURL != "") {
-        MaxRetries := 10
+        MaxRetries := 3
         RetryCount := 0
+        discordTraceId := CreateDiscordTraceId()
         try {
             RegRead, proxyEnabled, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyEnable
             RegRead, proxyServer, HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings, ProxyServer
@@ -328,21 +329,29 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
             ProxyEnable := false
             ProxyServer := ""
         }
-        if (proxyEnabled) {
-            curlChar := "curl -k -x " . proxyServer . "/ "
+        if (proxyEnabled && proxyServer != "") {
+            curlChar := "curl.exe -k -sS --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 60 -o NUL -w ""HTTP_STATUS:%{http_code}"" -x """ . proxyServer . """ "
         } else {
-            curlChar := "curl -k "
+            curlChar := "curl.exe -k -sS --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 60 -o NUL -w ""HTTP_STATUS:%{http_code}"" "
         }
+
+        payloadFile := CreateDiscordPayloadFile(discordPing . message)
+        if (payloadFile = "") {
+            LogToFile("Discord send failed before curl | trace=" . discordTraceId . " | reason=could not create payload file | webhook=" . RedactDiscordWebhookURL(webhookURL), "Discord.txt")
+            return
+        }
+
         Loop {
+            RetryCount++
             try {
                 ; Base command
-                curlCommand := curlChar
-                    . "-F ""payload_json={\""content\"":\""" . discordPing . message . "\""};type=application/json;charset=UTF-8"" "
+                curlCommand := curlChar . "-F ""payload_json=<" . payloadFile . ";type=application/json;charset=UTF-8"" "
 
                 ; If an screenshot or xml file is provided, send it
                 sendScreenshot1 := screenshotFile != "" && FileExist(screenshotFile)
                 sendScreenshot2 := screenshotFile2 != "" && FileExist(screenshotFile2)
                 sendXmlFile := xmlFile != "" && FileExist(xmlFile)
+                fileCount := sendScreenshot1 + sendScreenshot2 + sendXmlFile
                 if (sendScreenshot1 + sendScreenshot2 + sendXmlFile > 1) {
                     fileIndex := 0
                     if (sendScreenshot1) {
@@ -367,23 +376,99 @@ LogToDiscord(message, screenshotFile := "", ping := false, xmlFile := "", screen
                         curlCommand := curlCommand . "-F ""file=@" . xmlFile . """ "
                 }
                 ; Add the webhook
-                curlCommand := curlCommand . webhookURL
+                curlCommand := curlCommand . """" . webhookURL . """"
 
-                LogDebug(curlCommand, "Discord.txt")
+                if (logSuccessfulDelivery)
+                    LogDebug("Discord send attempt | trace=" . discordTraceId . " | attempt=" . RetryCount . "/" . MaxRetries . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | messageLen=" . StrLen(message), "Discord.txt")
 
                 ; Send the message using curl
-                RunWait, %curlCommand%,, Hide
-                break
-            }
-            catch {
-                RetryCount++
-                if (RetryCount >= MaxRetries) {
-                    CreateStatusMessage("Failed to send discord message.")
+                if (IsFunc("CmdRet")) {
+                    cmdFn := Func("CmdRet")
+                    curlResult := cmdFn.Call(curlCommand)
+                } else {
+                    RunWait, %curlCommand%,, Hide
+                    curlResult := "HTTP_STATUS:" . ErrorLevel
+                }
+
+                httpStatus := GetDiscordCurlHttpStatus(curlResult)
+                if (httpStatus >= 200 && httpStatus < 300) {
+                    if (logSuccessfulDelivery || RetryCount > 1)
+                        LogDebug("Discord send complete | trace=" . discordTraceId . " | status=" . httpStatus . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | messageLen=" . StrLen(message), "Discord.txt")
                     break
                 }
-                Sleep, 250
+
+                LogToFile("Discord send failed | trace=" . discordTraceId . " | attempt=" . RetryCount . "/" . MaxRetries . " | status=" . httpStatus . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | files=" . fileCount . " | result=" . TrimDiscordCurlResult(curlResult), "Discord.txt")
             }
-            Sleep, 250
+            catch e {
+                LogToFile("Discord send exception | trace=" . discordTraceId . " | attempt=" . RetryCount . "/" . MaxRetries . " | webhook=" . RedactDiscordWebhookURL(webhookURL) . " | error=" . FormatDiscordException(e), "Discord.txt")
+            }
+
+            if (RetryCount >= MaxRetries) {
+                CreateStatusMessage("Failed to send discord message.")
+                break
+            }
+            Sleep, % 1000 * RetryCount
         }
+
+        FileDelete, %payloadFile%
     }
+}
+
+CreateDiscordTraceId() {
+    static sequence := 0
+    sequence++
+    return A_Now . "_" . DllCall("GetCurrentProcessId") . "_" . A_TickCount . "_" . sequence
+}
+
+CreateDiscordPayloadFile(content) {
+    payloadJson := "{""content"":""" . DiscordEscapeJson(content) . """}"
+    payloadFile := A_Temp . "\ptcgpb_discord_payload_" . DllCall("GetCurrentProcessId") . "_" . A_TickCount . ".json"
+
+    FileDelete, %payloadFile%
+    FileAppend, %payloadJson%, %payloadFile%, UTF-8-RAW
+    if (ErrorLevel || !FileExist(payloadFile))
+        return ""
+
+    return payloadFile
+}
+
+DiscordEscapeJson(text) {
+    text := StrReplace(text, "\n", "`n")
+    text := StrReplace(text, Chr(92), Chr(92) . Chr(92))
+    text := StrReplace(text, Chr(34), Chr(92) . Chr(34))
+    text := StrReplace(text, "`r", "")
+    text := StrReplace(text, "`n", Chr(92) . "n")
+    text := StrReplace(text, "`t", Chr(92) . "t")
+    return text
+}
+
+GetDiscordCurlHttpStatus(curlResult) {
+    if RegExMatch(curlResult, "HTTP_STATUS:(\d{3})", match)
+        return match1 + 0
+    return 0
+}
+
+TrimDiscordCurlResult(curlResult) {
+    curlResult := StrReplace(curlResult, "`r", " ")
+    curlResult := StrReplace(curlResult, "`n", " ")
+    curlResult := Trim(curlResult)
+
+    if (StrLen(curlResult) > 500)
+        curlResult := SubStr(curlResult, 1, 500) . "..."
+
+    return curlResult
+}
+
+RedactDiscordWebhookURL(webhookURL) {
+    return RegExReplace(webhookURL, "i)(/api/webhooks/[^/\s]+/)[^?\s]+", "$1<redacted>")
+}
+
+FormatDiscordException(e) {
+    if (IsObject(e)) {
+        if (e.Message != "")
+            return e.Message
+        if (e.What != "")
+            return e.What
+    }
+    return e
 }
