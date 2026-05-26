@@ -34,6 +34,7 @@ CoordMode, Pixel, Screen
 #Include Utils.ahk
 #Include Database.ahk
 #Include Crinity_UnofficialPatch.ahk
+#Include PTCGPHelper.ahk
 
 InitializeHiddenConsole()
 
@@ -143,6 +144,8 @@ Loop {
 }
 
 initializeAdbShell()
+RemoveOldFiles()
+
 CreateStatusMessage("Initializing bot...",,,, false)
 if(session.get("isDead")){
     closePTCGPApp()
