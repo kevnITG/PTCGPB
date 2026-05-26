@@ -3958,17 +3958,9 @@ SelectPack(HG := false) {
     }
     else if(HG = "HGPack" || HG = "HGPack10") {
         tenPackOpening := (HG = "HGPack10")
-        session.set("failSafe", A_TickCount)
-        failSafeTime := 0
-        Loop{
-            if (FindOrLoseImage("Pack_PackPointButton", 1)) {
-                break
-            }
-            Delay(1)
-            adbClick_wbb(140, 260)  ; Upper pack click
-            Delay(1)
-            failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-        }
+        openPackCoord := session.get("packCoordinates")[session.get("openPack")]
+        if (IsObject(openPackCoord))
+            openPackCoord.tapPackPreviewUntilPointsGone()
         Delay(1)
 
         session.set("failSafe", A_TickCount)
@@ -4008,17 +4000,9 @@ SelectPack(HG := false) {
             CreateStatusMessage("Waiting for HourglassPack4`n(" . failSafeTime . "/45 seconds)")
         }
     } else {
-        session.set("failSafe", A_TickCount)
-        failSafeTime := 0
-        Loop{
-            if (FindOrLoseImage("Pack_PackPointButton", 1)) {
-                break
-            }
-            Delay(1)
-            adbClick_wbb(140, 260)  ; Upper pack click
-            Delay(1)
-            failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-        }
+        openPackCoord := session.get("packCoordinates")[session.get("openPack")]
+        if (IsObject(openPackCoord))
+            openPackCoord.tapPackPreviewUntilPointsGone()
         Delay(1)
 
         session.set("failSafe", A_TickCount)
