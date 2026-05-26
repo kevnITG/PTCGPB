@@ -169,7 +169,7 @@ needlesDict.Add(new Needle("Pack_PackPointButton", "Points", new Coordinate(238,
 needlesDict.Add(new Needle("Pack_ScrollInSelectExpansion", "SelectExpansion", new Coordinate(119, 138, 157, 146)))
 needlesDict.Add(new Needle("Pack_ActivatedBSeriesTab", "ExpansionSeries", new Coordinate(96, 447, 112, 467)))
 needlesDict.Add(new Needle("Pack_SkipButtonAfterOpenPack", "Skip", new Coordinate(245, 495, 256, 507)))
-needlesDict.Add(new Needle("Pack_ResultAfterOpenPack", "Opening", new Coordinate(175, 96, 267, 115)))
+needlesDict.Add(new Needle("Pack_ResultAfterOpenPack", "Opening", new Coordinate(54, 96, 73, 115)))
 needlesDict.Add(new Needle("Pack_ReadyForOpenPack", "Pack", new Coordinate(198, 271, 202, 282)))
 needlesDict.Add(new Needle("Pack_NextButtonAfterOpenPack", "Next", new Coordinate(131, 74, 140, 84)))
 needlesDict.Add(new Needle("Next2", "Next2", new Coordinate(131, 74, 140, 84)))  ; ------------------------------ Finding
