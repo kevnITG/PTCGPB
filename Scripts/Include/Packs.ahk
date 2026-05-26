@@ -1,4 +1,4 @@
-﻿class PackCoordinate {
+class PackCoordinate {
     __New(packName, seriesType, expansionXPos, expansionYPos, dragType) {
         this.packName := packName
         this.seriesType := seriesType
@@ -53,27 +53,69 @@
         Delay(2)
     }
 
+    getHourglassDetailTapCoords(ByRef tapX, ByRef tapY) {
+        tapX := 140
+        tapY := 320
+    }
+
+    tapPackPreviewUntilPointsGone() {
+        global session
+
+        this.getHourglassDetailTapCoords(tapX, tapY)
+
+        session.set("failSafe", A_TickCount)
+        failSafeTime := 0
+        Loop {
+            Delay(1)
+            if(FindOrLoseImage("Pack_PackPointButton", 0, failSafeTime))
+                break
+            failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+            if (failSafeTime >= 45)
+                return false
+        }
+
+        session.set("failSafe", A_TickCount)
+        failSafeTime := 0
+        Loop {
+            adbClick_wbb(tapX, tapY)
+            Delay(1)
+            if(FindOrLoseImage("Pack_PackPointButton", 1, failSafeTime))
+                return true
+            failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+            if (failSafeTime >= 45)
+                return false
+        }
+    }
+
     additionalAction(){
-        if(this.packName = "Lunala"){
-            session.set("failSafe", A_TickCount)
-            failSafeTime := 0
-            Loop{
-                Delay(1)
-                if(FindOrLoseImage("Pack_PackPointButton", 0, failSafeTime)){
-                    break
-                }
-                failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-            }
-            session.set("failSafe", A_TickCount)
-            failSafeTime := 0
-            Loop{
-                adbClick_wbb(210, 320)
-                Delay(1)
-                if(FindOrLoseImage("Pack_PackImageBlankAreaForLunala", 0, failSafeTime)){
-                    break
-                }
-                failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
-            }
+        if(this.packName = "Lunala")
+            this.lunalaAdditionalAction()
+    }
+
+    lunalaAdditionalAction() {
+        global session
+
+        session.set("failSafe", A_TickCount)
+        failSafeTime := 0
+        Loop {
+            Delay(1)
+            if(FindOrLoseImage("Pack_PackPointButton", 0, failSafeTime))
+                break
+            failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+            if (failSafeTime >= 45)
+                return
+        }
+
+        session.set("failSafe", A_TickCount)
+        failSafeTime := 0
+        Loop {
+            adbClick_wbb(210, 320)
+            Delay(1)
+            if(FindOrLoseImage("Pack_PackImageBlankAreaForLunala", 0, failSafeTime))
+                return
+            failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+            if (failSafeTime >= 45)
+                return
         }
     }
 }
