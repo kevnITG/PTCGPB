@@ -203,6 +203,10 @@ Loop {
                 clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, failSafeTime, 80)
                 requestAlreadyClosed := FindOrLoseImage("Friend_RequestAlreadyClosedInApproveSubmenu", 0, failSafeTime)
                 if(FindOrLoseImage("FriendLimit", 0, failSafeTime)) {
+                    if (botConfig.get("blockedFriendRequestHotfix")) {
+                        if (HandleBlockedFriendRequest(failSafeTime))
+                            Break, 2
+                    }
                     done := true
                     break
                 }
@@ -268,6 +272,53 @@ Loop {
     }
 }
 return
+
+HandleBlockedFriendRequest(ByRef failSafeTime) {
+    global session
+
+    CreateStatusMessage("Blocked friend request detected. Denying...",,,, false)
+    LogToFile("Blocked friend request detected in Main " . session.get("scriptName") . ". Denying top request...")
+
+    WaitForFriendLimitNoticeToClear(failSafeTime)
+
+    if (FindOrLoseImage("Friend_DenyButtonInApproveSubmenu", 0, failSafeTime, 20, 1)) {
+        adbClick(202, 210)
+        if (WaitForFriendLimitNotice(failSafeTime))
+            WaitForFriendLimitNoticeToClear(failSafeTime)
+        return true
+    }
+
+    LogToFile("Blocked friend request handling skipped in Main " . session.get("scriptName") . ": deny button not found.")
+    return false
+}
+
+WaitForFriendLimitNotice(ByRef failSafeTime, maxSeconds := 3) {
+    global session
+
+    startTime := A_TickCount
+    Loop {
+        if (FindOrLoseImage("FriendLimit", 0, failSafeTime, 20, 1))
+            return true
+        if ((A_TickCount - startTime) >= maxSeconds * 1000)
+            return false
+        Delay(0.25)
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+    }
+}
+
+WaitForFriendLimitNoticeToClear(ByRef failSafeTime, maxSeconds := 10) {
+    global session
+
+    startTime := A_TickCount
+    Loop {
+        if (!FindOrLoseImage("FriendLimit", 0, failSafeTime, 20, 1))
+            return true
+        if ((A_TickCount - startTime) >= maxSeconds * 1000)
+            return false
+        Delay(0.5)
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+    }
+}
 
 FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation := 20, notShowFinding := 0) {
     global session, needlesDict
