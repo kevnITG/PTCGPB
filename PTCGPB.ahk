@@ -59,7 +59,11 @@ OnMessage(0x4A, "ReceiveData")
 
 if not A_IsAdmin
 {
-    Run *RunAs "%A_ScriptFullPath%"
+    try {
+        Run *RunAs "%A_ScriptFullPath%"
+    } catch {
+        MsgBox, 48, PTCGPB, Administrator permission is required to run PTCGPB.`n`nPlease launch it again and approve the permission prompt.
+    }
     ExitApp
 }
 
@@ -81,11 +85,19 @@ botConfig.loadSettingsToConfig("ALL")
 
 SetTimer, ShowSwipeSpeedToolTip, 50
 
+displayScaleSetting := botConfig.get("DisplayScale")
+if (displayScaleSetting = "")
+    displayScaleSetting := "Auto"
+configuredDisplayScale := GetConfiguredDisplayScale()
+if (displayScaleSetting = "Auto")
+    displayScaleLabel := "Auto (resolved to " . configuredDisplayScale . "%)"
+else
+    displayScaleLabel := displayScaleSetting . "%"
 hasInvalidScale := false
 
 monitorScaleList := GetAllMonitorScales()
 For idx, scaleValue in monitorScaleList {
-    if(scaleValue != 100){
+    if(scaleValue != configuredDisplayScale){
         hasInvalidScale := true
         break
     }
@@ -94,10 +106,11 @@ For idx, scaleValue in monitorScaleList {
 if (hasInvalidScale) {
     msgTitle := "Display Scale Warning"
     msgText := "WARNING: Display scale issue detected!`n`n"
-             . "To ensure the program works correctly, ALL monitors must be set to 100% scale in Windows settings.`n`n"
-             . "Please change your display scale to 100% and restart the program.`n`n"
-             . "[!] If you are ABSOLUTELY SURE all your monitors are already at 100% (script detection error), you can choose to ignore this warning.`n`n"
-             . "Do you want to ignore this warning and continue anyway?"
+             . "PTCGPB needs one matching display scale for coordinates and image search.`n"
+             . "Set the bot Display Scale and every Windows monitor to the same value (100% or 125%).`n`n"
+             . "Bot Display Scale: " displayScaleLabel "`n`n"
+             . "Restart the program after changing scale settings.`n`n"
+             . "Continue anyway?"
     
     MsgBox, 308, %msgTitle%, %msgText%
     
@@ -312,7 +325,12 @@ NextStep:
     Gui, Font, s12 cWhite Bold
     Gui, Add, Text, x621 y20 w155 h50 Left BackgroundTrans cWhite, % dict["title_main"]
     Gui, Font, s10 cWhite Bold
-    Gui, Add, Text, x621 y20 w155 h150 Left BackgroundTrans cWhite, % "`n" localVersion "`n(for Scale 100%)`n`nModder: Crinity " modVersion 
+    displayScaleCaption := botConfig.get("DisplayScale")
+    if (displayScaleCaption = "" || displayScaleCaption = "Auto")
+        displayScaleCaption := "Auto/" . GetConfiguredDisplayScale() . "%"
+    else
+        displayScaleCaption := displayScaleCaption . "%"
+    Gui, Add, Text, x621 y20 w155 h150 Left BackgroundTrans cWhite, % "`n" localVersion "`n(Scale " displayScaleCaption ")`n`nModder: Crinity " modVersion
 
     Gui, Add, Picture, gBuyMeCoffee x625 y130 w150, %A_ScriptDir%\GUI\Images\support_me_on_kofi.png
 
@@ -1123,6 +1141,17 @@ ShowToolsAndSystemSettings:
     SelectedMonitorIndex := RegExReplace(botConfig.get("SelectedMonitorIndex"), ":.*$")
     Gui, ToolsAndSystemSelect:Add, DropDownList, x%col2X% y%yPos2% w100 vui_SelectedMonitorIndex_Popup Choose%SelectedMonitorIndex% Background2A2A2A cWhite, %MonitorOptions%
     yPos2 += 25
+
+    displayScaleList := "Auto|100|125"
+    displayScaleChoose := 1
+    if (botConfig.get("DisplayScale") = "100")
+        displayScaleChoose := 2
+    else if (botConfig.get("DisplayScale") = "125")
+        displayScaleChoose := 3
+    displayScaleTextY := yPos2 + 2
+    Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%displayScaleTextY% %sectionColor%, Display Scale
+    Gui, ToolsAndSystemSelect:Add, DropDownList, x325 y%yPos2% w60 vui_DisplayScale_Popup Choose%displayScaleChoose% Background2A2A2A cWhite, %displayScaleList%
+    yPos2 += 25
     
     rowGapY := yPos2 + 2
     Gui, ToolsAndSystemSelect:Add, Text, x%col2X% y%rowGapY% %sectionColor%, % dict["Txt_RowGap"]
@@ -1222,6 +1251,7 @@ saveToolsAndSystemSettings:
     botConfig.set("wonderpickForEventMissions", ui_wonderpickForEventMissions_Popup, "ToolsAndSystem")
     
     botConfig.set("SelectedMonitorIndex", ui_SelectedMonitorIndex_Popup, "ToolsAndSystem")
+    botConfig.set("DisplayScale", ui_DisplayScale_Popup, "ToolsAndSystem")
     botConfig.set("RowGap", ui_RowGap_Popup, "ToolsAndSystem")
     botConfig.set("folderPath", ui_folderPath_Popup, "ToolsAndSystem")
     botConfig.set("ocrLanguage", ui_ocrLanguage_Popup, "ToolsAndSystem")
@@ -1441,14 +1471,18 @@ BalanceXMLs:
         if !FileExist(saveDir)
             FileCreateDir, %saveDir%
         
-        tmpDir := A_ScriptDir "\Accounts\Saved\tmp"
-        if !FileExist(tmpDir)
-            FileCreateDir, %tmpDir%
+        tmpRoot := A_ScriptDir "\Accounts\Saved\tmp"
+        if !FileExist(tmpRoot)
+            FileCreateDir, %tmpRoot%
+
+        FormatTime, balanceRunId,, yyyyMMddHHmmss
+        tmpDir := tmpRoot . "\balance_" . balanceRunId . "_" . A_TickCount
+        FileCreateDir, %tmpDir%
         
         Tooltip, Moving Files and Folders to tmp
         Loop, Files, %saveDir%*, D 
         {
-            if (A_LoopFilePath == tmpDir)
+            if (A_LoopFilePath == tmpRoot)
                 continue
             dest := tmpDir . "\" . A_LoopFileName
             
@@ -1528,6 +1562,9 @@ BalanceXMLs:
             if (instance > botConfig.get("Instances"))
                 instance := 1
         }
+
+        ToolTip, Restoring preserved files
+        RestorePreservedSavedReadmes(tmpDir, saveDir)
         
         instanceOneDir := saveDir . "1"
         counter := 0
@@ -1545,6 +1582,24 @@ BalanceXMLs:
         MsgBox, 0x40000, XML Balance, % "Done balancing XMLs between " botConfig.get("Instances") " instances`n" counter " XMLs past 24 hours per instance"
     }
 return
+
+RestorePreservedSavedReadmes(tmpDir, saveDir) {
+    Loop, Files, %tmpDir%\*, FR
+    {
+        if (A_LoopFileName != "readme.md")
+            continue
+
+        relativePath := SubStr(A_LoopFileFullPath, StrLen(tmpDir) + 2)
+        if (!RegExMatch(relativePath, "i)^(\d+)\\readme\.md$", readmeMatch))
+            continue
+
+        restorePath := saveDir . readmeMatch1 . "\readme.md"
+        SplitPath, restorePath,, restoreDir
+        if !FileExist(restoreDir)
+            FileCreateDir, %restoreDir%
+        FileMove, %A_LoopFileFullPath%, %restorePath%, 1
+    }
+}
 
 ; =================== Logic - Launch All Mumu Button Action ===================
 LaunchAllMumu:
@@ -1575,9 +1630,10 @@ ArrangeWindows:
 
     SaveAllSettings()
 
-    scaleParam := 283
+    windowMetrics := GetMumuWindowMetrics()
+    scaleParam := windowMetrics.scaleParam
     windowsPositioned := 0
-    titleHeight := 40
+    titleHeight := windowMetrics.titleHeight
 
     if(botConfig.get("SelectedMonitorIndex") = "")
         botConfig.set("SelectedMonitorIndex", "1:", "ToolsAndSystem")
@@ -1595,7 +1651,7 @@ ArrangeWindows:
 
                 instanceIndex := A_Index
                 borderWidth := 4 - 1
-                rowHeight := titleHeight + 492
+                rowHeight := windowMetrics.rowHeight
                 currentRow := Floor((instanceIndex - 1) / botConfig.get("Columns"))
                 y := MonitorTop + (currentRow * rowHeight) + (currentRow * botConfig.get("rowGap"))
                 x := MonitorLeft + (Mod((instanceIndex - 1), botConfig.get("Columns")) * (scaleParam - borderWidth * 2))
@@ -1626,7 +1682,7 @@ ArrangeWindows:
                     instanceIndex := (botConfig.get("Mains") - 1) + A_Index + 1
 
                 borderWidth := 4 - 1
-                rowHeight := titleHeight + 492
+                rowHeight := windowMetrics.rowHeight
                 currentRow := Floor((instanceIndex - 1) / botConfig.get("Columns"))
                 y := MonitorTop + (currentRow * rowHeight) + (currentRow * botConfig.get("rowGap"))
                 x := MonitorLeft + (Mod((instanceIndex - 1), botConfig.get("Columns")) * (scaleParam - borderWidth * 2))
@@ -1725,10 +1781,6 @@ SaveAllSettings() {
     botConfig.set("stopPreferenceMain", botConfig.get("stopPreferenceMain"), "Extra")
 
     botConfig.saveConfigToSettings("ALL")
-    
-    if (botConfig.get("debugMode")) {
-        FileAppend, % A_Now . " - Settings saved. DeleteMethod: " . botConfig.get("deleteMethod") . "`n", %A_ScriptDir%\debug_settings.log
-    }
 }
 
 ; =================== Logic - Reset account lists ===================
@@ -1945,7 +1997,7 @@ StartBot() {
                 discMessage .= selectMsg
                 
                 if(botConfig.get("groupRerollEnabled") || (!botConfig.get("groupRerollEnabled") && botConfig.get("heartBeatOwnerWebHookURL") = ""))
-                    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatWebhookURL"))
+                    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatWebhookURL"),, false)
                 
                 if(botConfig.get("heartBeatOwnerWebHookURL")){
                     FormatTime, currentTime, , yyyy-MM-dd HH:mm:ss
@@ -1978,7 +2030,7 @@ StartBot() {
 
                     discMessage .= "\n--------------------------------------------------"
 
-                    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatOwnerWebHookURL"))
+                    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatOwnerWebHookURL"),, false)
                 }
 
                 if (botConfig.get("debugMode")) {
@@ -2024,7 +2076,7 @@ SendAllInstancesOfflineStatus() {
     discMessage .= selectMsg
     discMessage .= "\n\n All instances marked as OFFLINE"
     
-    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatWebhookURL"))
+    LogToDiscord(discMessage,, false,,, botConfig.get("heartBeatWebhookURL"),, false)
 }
 
 ReceiveData(wParam, lParam) {

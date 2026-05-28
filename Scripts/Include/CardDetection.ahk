@@ -29,7 +29,7 @@ DetectSixCardPack() {
     Path = %imagePath%6cardpackindicator.png
     if (FileExist(Path)) {
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 228, 324, 248, 351, searchVariation)
+        vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [228, 324, 248, 351], [228, 324, 248, 351], searchVariation)
         if (vRet = 1) {
             ; Found the check image, so this is a 5-card pack
             Gdip_DisposeImage(pBitmap)
@@ -53,31 +53,70 @@ DetectFourCardPack() {
     return false
 }
 
+GetCardLoadingBorderCoords(totalCardsInPack) {
+    return (GetConfiguredDisplayScale() = 125)
+        ? GetCardLoadingBorderCoords125(totalCardsInPack)
+        : GetCardLoadingBorderCoords100(totalCardsInPack)
+}
+
+GetCardLoadingBorderCoords100(totalCardsInPack) {
+    if (totalCardsInPack = 4) {
+        return [[96, 279, 116, 281]
+            ,[181, 279, 201, 281]
+            ,[96, 394, 116, 396]
+            ,[181, 394, 201, 396]]
+    }
+
+    if (totalCardsInPack = 6) {
+        return [[56, 279, 76, 281]
+            ,[139, 279, 159, 281]
+            ,[222, 279, 242, 281]
+            ,[56, 394, 76, 396]
+            ,[139, 394, 159, 396]
+            ,[222, 394, 242, 396]]
+    }
+
+    return [[56, 279, 76, 281]
+        ,[139, 279, 159, 281]
+        ,[222, 279, 242, 281]
+        ,[96, 394, 116, 396]
+        ,[181, 394, 201, 396]]
+}
+
+GetCardLoadingBorderCoords125(totalCardsInPack) {
+    if (totalCardsInPack = 4) {
+        return [[96, 284, 116, 286]
+            ,[181, 284, 201, 286]
+            ,[96, 399, 116, 401]
+            ,[181, 399, 201, 401]]
+    }
+
+    if (totalCardsInPack = 6) {
+        return [[56, 284, 76, 286]
+            ,[139, 284, 159, 286]
+            ,[222, 284, 242, 286]
+            ,[56, 399, 76, 401]
+            ,[139, 399, 159, 401]
+            ,[222, 399, 242, 401]]
+    }
+
+    return [[56, 284, 76, 286]
+        ,[139, 284, 159, 286]
+        ,[222, 284, 242, 286]
+        ,[96, 399, 116, 401]
+        ,[181, 399, 201, 401]]
+}
+
+GetLoadingBoxBorderCoords() {
+    return GetScaleProfileValue([[121, 269, 154, 272], [121, 297, 154, 300]]
+                               , [[121, 274, 154, 277], [121, 302, 154, 305]])
+}
+
 CheckCardLoading(totalCardsInPack){
     global session
 
     count := 0
-    if (totalCardsInPack = 4) {
-        borderCoords := [[96, 279, 116, 281]  ; Card 1
-            ,[181, 279, 201, 281] ; Card 2
-            ,[96, 394, 116, 396] ; Card 3
-            ,[181, 394, 201, 396]] ; Card 4
-    } else if (totalCardsInPack = 6) {
-        totalCardsInPack := 6
-        borderCoords := [[56, 279, 76, 281]   ; Top row card 1
-            ,[139, 279, 159, 281] ; Top row card 2
-            ,[222, 279, 242, 281] ; Top row card 3
-            ,[56, 394, 76, 396]   ; Bottom row card 1
-            ,[139, 394, 159, 396] ; Bottom row card 2
-            ,[222, 394, 242, 396]] ; Bottom row card 3
-    } else {
-        ; 5-card pack
-        borderCoords := [[56, 279, 76, 281] ; Card 1
-            ,[139, 279, 159, 281] ; Card 2
-            ,[222, 279, 242, 281] ; Card 3
-            ,[96, 394, 116, 396] ; Card 4
-            ,[181, 394, 201, 396]] ; Card 5
-    }
+    borderCoords := GetCardLoadingBorderCoords(totalCardsInPack)
 
     pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
     for index, value in borderCoords {
@@ -105,7 +144,7 @@ AnalysisBorder(totalCardsInPack) {
     global session, isDevelopment, rarityCheckers
 
     currentPackInfo := {"isVerified": false, "CardSlot": [], "TypeCount": {}}
-    loadingBorderCoords := [[121, 269, 154, 272], [121, 297, 154, 300]]
+    loadingBorderCoords := GetLoadingBoxBorderCoords()
     pBitmap := 0
     Loop, {
         pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
@@ -314,6 +353,11 @@ GodPackFound(validity) {
     IniWrite, 0, % session.get("scriptIniFile"), UserSettings, DeadCheck
 
     if(validity = "Valid") {
+        ; A valid GP must keep friend requests even if a previous stuck recovery flag survived.
+        DeadCheck := 0
+        ClearFriendCleanupPending()
+        session.set("friended", false)
+        LogToFile("Valid God Pack found; friend cleanup state cleared before notification | account=" . session.get("accountFileName"))
         Praise := ["Congrats!", "Congratulations!", "GG!", "Whoa!", "Praise Helix!", "Way to go!", "You did it!", "Awesome!", "Nice!", "Cool!", "You deserve it!", "Keep going!", "This one has to be live!", "No duds, no duds, no duds!", "Fantastic!", "Bravo!", "Excellent work!", "Impressive!", "You're amazing!", "Well done!", "You're crushing it!", "Keep up the great work!", "You're unstoppable!", "Exceptional!", "You nailed it!", "Hats off to you!", "Sweet!", "Kudos!", "Phenomenal!", "Boom! Nailed it!", "Marvelous!", "Outstanding!", "Legendary!", "Youre a rock star!", "Unbelievable!", "Keep shining!", "Way to crush it!", "You're on fire!", "Killing it!", "Top-notch!", "Superb!", "Epic!", "Cheers to you!", "Thats the spirit!", "Magnificent!", "Youre a natural!", "Gold star for you!", "You crushed it!", "Incredible!", "Shazam!", "You're a genius!", "Top-tier effort!", "This is your moment!", "Powerful stuff!", "Wicked awesome!", "Props to you!", "Big win!", "Yesss!", "Champion vibes!", "Spectacular!"]
         invalid := ""
     } else {

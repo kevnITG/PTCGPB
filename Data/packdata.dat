@@ -1,5 +1,5 @@
-﻿# Pack list in Home screen
-Home:Left|Mewtwo,Middle|PulsingAura,Right|MegaShine
+# Pack list in Home screen
+Home:Left|MegaShine,Middle|ParadoxDrive,Right|PulsingAura
 
 # Pack data(Structure)
 # PackID, Series Type, Number of packs in the set, Location of extension window, y Pos, Scroll Type
@@ -22,14 +22,15 @@ Pack:Springs|A|1|Col-Second|298|0
 Pack:Deluxe|A|1|Col-First|298|0
 
 # B Series
-Pack:MegaGyarados|B|3|Col-Second-Left|405|1
-Pack:MegaBlaziken|B|3|Col-Second-Middle|405|1
-Pack:MegaAltaria|B|3|Col-Second-Right|405|1
-Pack:CrimsonBlaze|B|1|Col-First|434|2
-Pack:Parade|B|1|Col-Second|434|0
-Pack:PaldeanWonders|B|1|Col-First|434|0
-Pack:MegaShine|B|1|Col-Second|298|0
-Pack:PulsingAura|B|1|Col-First|298|0
+Pack:MegaGyarados|B|3|Col-First-Left|405|1
+Pack:MegaBlaziken|B|3|Col-First-Middle|405|1
+Pack:MegaAltaria|B|3|Col-First-Right|405|1
+Pack:CrimsonBlaze|B|1|Col-Second|434|2
+Pack:Parade|B|1|Col-First|434|2
+Pack:PaldeanWonders|B|1|Col-Second|434|0
+Pack:MegaShine|B|1|Col-First|434|0
+Pack:PulsingAura|B|1|Col-Second|298|0
+Pack:ParadoxDrive|B|1|Col-First|298|0
 
 # DO NOT Delete End
 ---END---

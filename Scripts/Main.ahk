@@ -1,4 +1,4 @@
-﻿#SingleInstance on
+﻿#SingleInstance, Force
 SetMouseDelay, -1
 SetDefaultMouseSpeed, 0
 SetBatchLines, -1
@@ -30,9 +30,7 @@ CoordMode, Pixel, Screen
 #Include Utils.ahk
 #Include Crinity_UnofficialPatch.ahk
 
-; Allocate and hide the console window to reduce flashing
-DllCall("AllocConsole")
-WinHide % "ahk_id " DllCall("GetConsoleWindow", "ptr")
+InitializeHiddenConsole()
 
 pToken := Gdip_Startup()
 
@@ -70,14 +68,14 @@ session.set("isDead", isDeadValue)
 if (!botConfig.get("groupRerollEnabled")) {
     session.set("autoUseGPTest", 0)
     session.set("TestTime", 3600)
-    session.set("hasUnopenedPack", 0)
 }
 
 session.set("vipListTrimMode", (!botConfig.get("vipListTrimMode")) ? "bottom" : botConfig.get("vipListTrimMode"))
 session.set("vipListTrimCount", (!botConfig.get("vipListTrimCount")) ? 60 : botConfig.get("vipListTrimCount"))
 (session.get("vipListTrimCount") = "" || session.get("vipListTrimCount") < 1) ? session.set("vipListTrimCount", 60)
 
-DirectlyPositionWindow()
+windowCoverHwnd := GetMuMuCoverWindowForMaintenance(session.get("winTitle"))
+DirectlyPositionWindow(windowCoverHwnd)
 Sleep, 1000
 
 setADBBaseInfo()
@@ -88,7 +86,7 @@ Sleep, 1000
 CreateStatusMessage("Disabling background services...")
 DisableBackgroundServices()
 
-resetWindows()
+resetWindows(windowCoverHwnd)
 MaxRetries := 10
 RetryCount := 0
 Loop {
@@ -112,6 +110,7 @@ Loop {
         DllCall("SetWindowPos", "Ptr", WinExist(), "Ptr", 1  ; HWND_BOTTOM
                 , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)  ; SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE
         Gui, ToolBar:Show, NoActivate x%x4% y%y4%  w275 h30
+        RestoreMuMuCoverWindow(windowCoverHwnd, session.get("winTitle"))
         break
     }
     catch {
@@ -203,32 +202,13 @@ Loop {
                 Delay(1)
                 clickButton := FindOrLoseImage("Common_ColorChangeButton", 0, failSafeTime, 80)
                 requestAlreadyClosed := FindOrLoseImage("Friend_RequestAlreadyClosedInApproveSubmenu", 0, failSafeTime)
-                if(FindOrLoseImage("Friend_FriendList99", 0, failSafeTime)) {
+                if(FindOrLoseImage("FriendLimit", 0, failSafeTime)) {
+                    if (botConfig.get("blockedFriendRequestHotfix")) {
+                        if (HandleBlockedFriendRequest(failSafeTime))
+                            Break, 2
+                    }
                     done := true
                     break
-                }
-                else if(FindOrLoseImage("Friend_AcceptButtonInApproveSubmenu", 0, failSafeTime)) {
-                    if (session.get("GPTest"))
-                        break
-                    Loop{
-                        if FindOrLoseImage("Friend_StuckMessageBackground", 0, failSafeTime){
-                            Delay(2)
-                        }else{
-                            adbClick(237, 202)
-                            Delay(1)
-                            if FindOrLoseImage("Friend_StuckMessageBackground", 0, failSafeTime){
-                                Loop{
-                                    if FindOrLoseImage("Friend_StuckMessageBackground", 1, failSafeTime){
-                                        break
-                                    }else{
-                                        Delay(1)
-                                    }
-                                }
-                                FindImageAndClick("Friend_StuckMessageBackground", 202, 202, , 1000)
-                            }
-                            break
-                        }
-                    }
                 }
                 else if(FindOrLoseImage("Common_Error", 0, failSafeTime)) {
                     ; Handle communication error
@@ -239,7 +219,7 @@ Loop {
                     Sleep, 1000
                     adbClick(139, 386) ; Click OK/confirm
                     Sleep, 1000
-                    SafeReload()
+                    SafeReload("Main communication error")
                 } else if(FindOrLoseImage("StartupErrorX", 0, failSafeTime)) {
                     ; Handle startup error with X button
                     CreateStatusMessage("Start-up error detected. Clearing and reloading...",,,, false)
@@ -247,7 +227,7 @@ Loop {
                     Sleep, 2000
                     adbClick(139, 440)  ; Click X to close error
                     Sleep, 4000
-                    SafeReload()
+                    SafeReload("Main startup error")
                 } else if(requestAlreadyClosed || clickButton) {
                     okClickSpacing := botConfig.get("Delay") * 2
                     if (okClickSpacing < 700)
@@ -293,11 +273,61 @@ Loop {
 }
 return
 
+HandleBlockedFriendRequest(ByRef failSafeTime) {
+    global session
+
+    CreateStatusMessage("Blocked friend request detected. Denying...",,,, false)
+    LogToFile("Blocked friend request detected in Main " . session.get("scriptName") . ". Denying top request...")
+
+    WaitForFriendLimitNoticeToClear(failSafeTime)
+
+    if (FindOrLoseImage("Friend_DenyButtonInApproveSubmenu", 0, failSafeTime, 20, 1)) {
+        adbClick(202, 210)
+        if (WaitForFriendLimitNotice(failSafeTime))
+            WaitForFriendLimitNoticeToClear(failSafeTime)
+        return true
+    }
+
+    LogToFile("Blocked friend request handling skipped in Main " . session.get("scriptName") . ": deny button not found.")
+    return false
+}
+
+WaitForFriendLimitNotice(ByRef failSafeTime, maxSeconds := 3) {
+    global session
+
+    startTime := A_TickCount
+    Loop {
+        if (FindOrLoseImage("FriendLimit", 0, failSafeTime, 20, 1))
+            return true
+        if ((A_TickCount - startTime) >= maxSeconds * 1000)
+            return false
+        Delay(0.25)
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+    }
+}
+
+WaitForFriendLimitNoticeToClear(ByRef failSafeTime, maxSeconds := 10) {
+    global session
+
+    startTime := A_TickCount
+    Loop {
+        if (!FindOrLoseImage("FriendLimit", 0, failSafeTime, 20, 1))
+            return true
+        if ((A_TickCount - startTime) >= maxSeconds * 1000)
+            return false
+        Delay(0.5)
+        failSafeTime := (A_TickCount - session.get("failSafe")) // 1000
+    }
+}
+
 FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation := 20, notShowFinding := 0) {
     global session, needlesDict
     static lastStatusTime := 0
 
-    needleObj := needlesDict.Get(needleName)
+    needleObj := GetSearchNeedleObj(needleName, "FindOrLoseImage")
+    if (!IsObject(needleObj))
+        return false
+
     imageName := needleObj.imageName
 
     imagePath := A_ScriptDir . "\Needles\"
@@ -319,7 +349,7 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
     ;bboxAndPause(X1, Y1, X2, Y2)
 
     ; ImageSearch within the region
-    vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, X1, Y1, X2, Y2, searchVariation)
+    vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, X1, Y1, X2, Y2, searchVariation)
     ErrorCheckInScreen(pBitmap)
     Gdip_DisposeImage(pBitmap)
     if(EL = 0)
@@ -348,7 +378,10 @@ FindOrLoseImage(needleName := "DEFAULT", EL := 1, safeTime := 0, searchVariation
 FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVariation := 20, sleepTime := "", skip := false, safeTime := 0) {
     global botConfig, session, needlesDict
 
-    needleObj := needlesDict.Get(needleName)
+    needleObj := GetSearchNeedleObj(needleName, "FindImageAndClick")
+    if (!IsObject(needleObj))
+        return false
+
     imageName := needleObj.imageName
 
     if (sleepTime = "") {
@@ -394,7 +427,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
         Y2 := needleObj.coords.endY
         ;bboxAndPause(X1, Y1, X2, Y2)
         ; ImageSearch within the region
-        vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, X1, Y1, X2, Y2, searchVariation)
+        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, X1, Y1, X2, Y2, searchVariation)
         ErrorCheckInScreen(pBitmap)
         Gdip_DisposeImage(pBitmap)
         if (!confirmed && vRet = 1) {
@@ -416,7 +449,7 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
         Path = %imagePath%Error1.png
         pNeedle := GetNeedle(Path)
         ; ImageSearch within the region
-        vRet := Gdip_ImageSearch(pBitmap, pNeedle, vPosXY, 15, 155, 270, 420, searchVariation)
+        vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [15, 155, 270, 420], [15, 155, 270, 420], searchVariation)
         Gdip_DisposeImage(pBitmap)
         if (vRet = 1) {
             CreateStatusMessage("Error message in " . session.get("scriptName") . ". Clicking retry...")
@@ -443,10 +476,11 @@ FindImageAndClick(needleName := "DEFAULT", clickx := 0, clicky := 0, searchVaria
     return confirmed
 }
 
-resetWindows(){
-    global botConfig
+resetWindows(coverHwnd := ""){
+    global botConfig, session
 
-    scaleParam := 283
+    windowMetrics := GetMumuWindowMetrics()
+    scaleParam := windowMetrics.scaleParam
     CreateStatusMessage("Arranging window positions and sizes")
     RetryCount := 0
     MaxRetries := 10
@@ -455,13 +489,15 @@ resetWindows(){
             SelectedMonitorIndex := RegExReplace(botConfig.get("SelectedMonitorIndex"), ":.*$")
             SysGet, Monitor, Monitor, %SelectedMonitorIndex%
             Title := session.get("winTitle")
+            if (!coverHwnd)
+                coverHwnd := GetMuMuCoverWindowForMaintenance(Title)
 
             instanceIndex := StrReplace(Title, "Main", "")
             if (instanceIndex = "")
                 instanceIndex := 1
 
             borderWidth := 4 - 1
-            rowHeight := 40 + 492
+            rowHeight := windowMetrics.rowHeight
             currentRow := Floor((instanceIndex - 1) / botConfig.get("Columns"))
 
             y := MonitorTop + (currentRow * rowHeight) + (currentRow * botConfig.get("rowGap"))
@@ -471,6 +507,7 @@ resetWindows(){
             WinMove, %Title%, , %x%, %y%, %scaleParam%, %rowHeight%
             WinSet, Style, +0xC00000, %Title%
             WinSet, Redraw, , %Title%
+            RestoreMuMuCoverWindow(coverHwnd, Title)
             break
         }
         catch {
@@ -487,6 +524,9 @@ resetWindows(){
 
 restartGameInstance(reason, RL := true){
     global botConfig, session
+
+    if (InStr(reason, "Stuck at "))
+        SaveStuckScreenshot(reason)
 
     if(botConfig.get("heartBeatOwnerWebHookURL") != "")
         LogToDiscord(A_ScriptName . " instance has begin restart. Please verify that GodPack has not disappeared upon entering the main screen.\nReasion: " . reason,, true,,, botConfig.get("heartBeatOwnerWebHookURL"))
@@ -506,7 +546,31 @@ restartGameInstance(reason, RL := true){
         LogToFile("Restarted game. Reason: " reason)
         session.set("isDead", true)
         IniWrite, 1, % session.get("scriptIniFile"), Metrics, isDead
-        SafeReload()
+        SafeReload("Main restart game: " . reason)
+    }
+}
+
+SaveStuckScreenshot(reason) {
+    global session
+
+    fileDir := A_ScriptDir . "\..\Screenshots\Stuck"
+    if !FileExist(fileDir)
+        FileCreateDir, %fileDir%
+
+    safeReason := RegExReplace(reason, "[\\/:*?""<>|]", "_")
+    safeReason := RegExReplace(safeReason, "\s+", "_")
+    safeReason := SubStr(safeReason, 1, 80)
+    filePath := fileDir . "\" . A_Now . "_inst" . session.get("scriptName") . "_" . safeReason . ".png"
+
+    hWnd := getMuMuHwnd(session.get("winTitle"))
+    if (!hWnd)
+        return
+
+    pBitmap := from_window(hWnd)
+    if (pBitmap) {
+        Gdip_SaveBitmapToFile(pBitmap, filePath)
+        Gdip_DisposeImage(pBitmap)
+        LogToFile("Saved stuck screenshot: " . filePath)
     }
 }
 
@@ -553,7 +617,8 @@ Screenshot(fileType := "Valid", subDir := "", ByRef fileName := "") {
         fileName := "packstats_temp.png"
     filePath := fileDir "\" . fileName
 
-    yBias := 40 - 45
+    windowMetrics := GetMumuWindowMetrics()
+    yBias := windowMetrics.titleHeight - 45
     pBitmapW := from_window(getMuMuHwnd(session.get("winTitle")))
     pBitmap := Gdip_CloneBitmapArea(pBitmapW, 18, 71+yBias, 240, 165)
 
@@ -708,7 +773,7 @@ VipTrimGuiEscape:
 return
 
 ReloadScript:
-    SafeReload()
+    SafeReload("Main toolbar reload")
 return
 
 TestScript:
@@ -738,7 +803,7 @@ ToggleTestScript() {
     }
 }
 
-~+F5::SafeReload()
+~+F5::SafeReload("Main Shift+F5")
 ~+F6::Pause
 ~+F10::
     Gosub, StopScript
@@ -775,12 +840,19 @@ bboxAndPause(X1, Y1, X2, Y2, doPause := False) {
 
 GetNeedle(Path) {
     static NeedleBitmaps := Object()
+    Path := ResolveNeedlePath(Path)
+
     if (NeedleBitmaps.HasKey(Path)) {
         return NeedleBitmaps[Path]
     } else {
         pNeedle := Gdip_CreateBitmapFromFile(Path)
-        NeedleBitmaps[Path] := pNeedle
-        return pNeedle
+        needleObj := Object()
+        needleObj.Path := Path
+        pathsplit := StrSplit(Path , "\")
+        needleObj.Name := pathsplit[pathsplit.MaxIndex()]
+        needleObj.needle := pNeedle
+        NeedleBitmaps[Path] := needleObj
+        return needleObj
     }
 }
 
@@ -842,9 +914,11 @@ CheckFriendOpsRateLimit() {
             session.set("friendOpsCount", 0)
             session.set("friendOpsWindowStart", A_TickCount)
         } else if (session.get("A_gptest")) {
+            LogToFile("FriendOps rate limit reached | script=" . session.get("scriptName") . " | mode=auto | count=" . session.get("friendOpsCount") . " | remainingMs=" . remaining, "GroupReroll.txt")
             return false
         } else {
             ; Manual mode: show countdown dialog with two cancel options
+            LogToFile("FriendOps rate limit reached | script=" . session.get("scriptName") . " | mode=manual | count=" . session.get("friendOpsCount") . " | remainingMs=" . remaining, "GroupReroll.txt")
             session.set("rateLimitAction", "")
             Gui, RateLimit:Destroy
             Gui, RateLimit:New, +AlwaysOnTop, GP Test - Rate Limit
@@ -872,6 +946,7 @@ CheckFriendOpsRateLimit() {
             ; Timer expired ? reset and continue
             session.set("friendOpsCount", 0)
             session.set("friendOpsWindowStart", A_TickCount)
+            LogToFile("FriendOps rate limit wait complete | script=" . session.get("scriptName"), "GroupReroll.txt")
         }
     }
     session.set("friendOpsCount", session.get("friendOpsCount") + 1)
@@ -1067,11 +1142,14 @@ FavoriteVipFriends() {
                     }
                     rateLimitHit := false
                     FindImageAndClick("Friend_RemoveConfirmButtonInFriendDetails", 145, 407, , 500)
+                    removeWaitStart := A_TickCount
+                    interceptProc := true
                     Loop {
+                        removeWaitTime := (A_TickCount - removeWaitStart) // 1000
                         adbClick_wbb(200, 372)
-                        if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0))
+                        if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0, removeWaitTime))
                             break
-                        if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0)) {
+                        if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0, removeWaitTime)) {
                             CreateStatusMessage("Rate limit hit. Recovering...",,,, false)
                             interceptProc := true
                             Loop, 5 {
@@ -1105,6 +1183,7 @@ FavoriteVipFriends() {
                         }
                         Delay(1)
                     }
+                    interceptProc := false
                     if (rateLimitHit)
                         continue 2
                     Delay(1)
@@ -1202,7 +1281,7 @@ FavoriteVipFriends() {
 ; Removes non-favourited friends starting from the bottom of the list.
 ; Stops when a favourited (VIP) friend is encountered.
 RemoveNonVipFriends() {
-    global session
+    global session, interceptProc
 
     ; Navigate to Social screen
     session.set("failSafe", A_TickCount)
@@ -1365,11 +1444,14 @@ RemoveNonVipFriends() {
             }
             rateLimitHit := false
             FindImageAndClick("Friend_RemoveConfirmButtonInFriendDetails", 145, 407, , 500)
+            removeWaitStart := A_TickCount
+            interceptProc := true
             Loop {
+                removeWaitTime := (A_TickCount - removeWaitStart) // 1000
                 adbClick_wbb(200, 372)
-                if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0))
+                if (FindOrLoseImage("Friend_ReqeustButtonInFriendDetails", 0, removeWaitTime))
                     break
-                if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0)) {
+                if (session.get("hasUnopenedPack") && FindOrLoseImage("Common_Error", 0, removeWaitTime)) {
                     CreateStatusMessage("Rate limit hit. Recovering...",,,, false)
                     Loop, 5 {
                         adbClick_wbb(139, 371)
@@ -1404,6 +1486,7 @@ RemoveNonVipFriends() {
                 }
                 Delay(1)
             }
+            interceptProc := false
             if (rateLimitHit)
                 continue
             FindImageAndClick("Friend_AddButtonInFriendList", 143, 507, , 1500)
@@ -1416,11 +1499,18 @@ RemoveNonVipFriends() {
             session.set("A_gptest", 0)
             session.set("autotest", A_TickCount)
             ToggleTestScript()
+        } else {
+            session.set("triggerTestNeeded", false)
+            CreateStatusMessage("GP Test cleanup done. Waiting.",,,, false)
+            return
         }
         CreateStatusMessage("Ready to test.",,,, false)
     } else if (session.get("A_gptest") && session.get("autoUseGPTest")) {
         session.set("A_gptest", 0)
         ToggleTestScript()
+    } else {
+        session.set("triggerTestNeeded", false)
+        CreateStatusMessage("GP Test cleanup done. Waiting.",,,, false)
     }
 }
 
@@ -1948,17 +2038,31 @@ Gdip_ImageSearch_wbb(pBitmapHaystack,pNeedle,ByRef OutputList=""
     ; Returns: Result from Gdip_ImageSearch
     ; ------------------------------------------------------------------------------
     global session
-    yBias := 40 - 45
+    windowMetrics := GetMumuWindowMetrics()
+    yBias := windowMetrics.imageSearchYBias
     vret := Gdip_ImageSearch(pBitmapHaystack,pNeedle.needle,OutputList,OuterX1,OuterY1+yBias,OuterX2,OuterY2+yBias,Variation,Trans,SearchDirection,Instances,LineDelim,CoordDelim)
     if(session.get("dbg_bbox"))
         bboxAndPause_immage(OuterX1, OuterY1+yBias, OuterX2, OuterY2+yBias, pNeedle, vret, session.get("dbg_bboxNpause"))
     return vret
 }
 
-DirectlyPositionWindow() {
+Gdip_ImageSearchProfile_wbb(pBitmapHaystack, pNeedle, ByRef OutputList=""
+    , coords100="", coords125="", Variation=0, Trans=""
+    , SearchDirection=1, Instances=1, LineDelim="`n", CoordDelim=",") {
+    if (!IsObject(coords125))
+        coords125 := coords100
+
+    coords := GetScaleProfileValue(coords100, coords125)
+    return Gdip_ImageSearch_wbb(pBitmapHaystack, pNeedle, OutputList
+        , coords[1], coords[2], coords[3], coords[4], Variation, Trans
+        , SearchDirection, Instances, LineDelim, CoordDelim)
+}
+
+DirectlyPositionWindow(coverHwnd := "") {
     global botConfig, session
     
-    scaleParam := 283
+    windowMetrics := GetMumuWindowMetrics()
+    scaleParam := windowMetrics.scaleParam
     rowGap := botConfig.get("RowGap")
 
     ; Get monitor information
@@ -1967,15 +2071,17 @@ DirectlyPositionWindow() {
 
     ; Calculate position based on instance number
     Title := session.get("winTitle")
+    if (!coverHwnd)
+        coverHwnd := GetMuMuCoverWindowForMaintenance(Title)
 
     instanceIndex := StrReplace(Title, "Main", "")
     if (instanceIndex = "")
         instanceIndex := 1
 
-    titleHeight := 40
+    titleHeight := windowMetrics.titleHeight
 
     borderWidth := 4 - 1
-    rowHeight := titleHeight + 492
+    rowHeight := windowMetrics.rowHeight
     currentRow := Floor((instanceIndex - 1) / botConfig.get("Columns"))
 
     y := MonitorTop + (currentRow * rowHeight) + (currentRow * rowGap)
@@ -1987,6 +2093,7 @@ DirectlyPositionWindow() {
     WinSet, Redraw, , %Title%
 
     CreateStatusMessage("Positioned window at x:" . x . " y:" . y,,,, false)
+    RestoreMuMuCoverWindow(coverHwnd, Title)
 
     return true
 }

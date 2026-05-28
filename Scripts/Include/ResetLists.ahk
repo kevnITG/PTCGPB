@@ -15,10 +15,76 @@ if (!FileExist(logsDir)) {
 ; Custom logging function for ResetLists (self-contained)
 LogToResetListFile(message) {
     global resetListLogFile
+    RotateResetListLogIfNeeded(resetListLogFile)
     timestamp := A_Now
     FormatTime, formattedTime, %timestamp%, yyyy-MM-dd HH:mm:ss
     logEntry := formattedTime . " - " . message . "`n"
     FileAppend, %logEntry%, %resetListLogFile%
+}
+
+RotateResetListLogIfNeeded(logFile) {
+    maxBytes := 5 * 1024 * 1024
+
+    if (logFile = "" || !FileExist(logFile))
+        return
+
+    FileGetSize, fileSize, %logFile%
+    if (ErrorLevel || fileSize < maxBytes)
+        return
+
+    SplitPath, logFile, fileName, logDir, ext, nameNoExt
+    if (logDir = "" || nameNoExt = "")
+        return
+    if (ext = "")
+        ext := "log"
+
+    archiveDir := logDir . "\Archive"
+    if !FileExist(archiveDir)
+        FileCreateDir, %archiveDir%
+
+    FormatTime, stamp, %A_Now%, yyyyMMdd_HHmmss
+    pid := DllCall("GetCurrentProcessId")
+    archivePath := archiveDir . "\" . nameNoExt . "_" . stamp . "_" . pid . "_" . A_TickCount . "." . ext
+    FileMove, %logFile%, %archivePath%, 0
+    if ErrorLevel
+        return
+
+    PruneResetListLogArchives(archiveDir, nameNoExt, ext)
+}
+
+PruneResetListLogArchives(archiveDir, nameNoExt, ext) {
+    keepArchives := 3
+    archiveList := ""
+    archivePattern := archiveDir . "\" . nameNoExt . "_*." . ext
+
+    Loop, Files, %archivePattern%, F
+    {
+        FileGetTime, fileTime, %A_LoopFileFullPath%, M
+        if !ErrorLevel
+            archiveList .= fileTime . A_Tab . A_LoopFileFullPath . "`n"
+    }
+
+    if (archiveList = "")
+        return
+
+    Sort, archiveList, R
+    archiveCount := 0
+    Loop, Parse, archiveList, `n, `r
+    {
+        if (A_LoopField = "")
+            continue
+
+        archiveCount++
+        if (archiveCount <= keepArchives)
+            continue
+
+        tabPos := InStr(A_LoopField, A_Tab)
+        if (!tabPos)
+            continue
+
+        oldArchive := SubStr(A_LoopField, tabPos + 1)
+        FileDelete, %oldArchive%
+    }
 }
 
 ; Log script start

@@ -317,16 +317,100 @@ CompareIndicesByPacksDesc(packs, a, b) {
 ;-------------------------------------------------------------------------------
 ; SafeReload - Restart the script without race conditions
 ;-------------------------------------------------------------------------------
-; Launches a new instance then immediately kills the current process.
-; Unlike Reload (which keeps the old process alive and relies on the NEW
-; instance to close it via WM_CLOSE), this has the OLD process kill itself.
-; ExitApp terminates in microseconds; the new AHK process takes hundreds of
-; milliseconds to load and reach #SingleInstance - so the old process is
-; long dead before any conflict can occur.
-SafeReload() {
-    ;Run, "%A_AhkPath%" "%A_ScriptFullPath%"
-    ;ExitApp
+; Use AutoHotkey's built-in Reload path. Keep a small diagnostic trail, but do
+; not spawn a separate replacement process from this common reload helper.
+SafeReload(reason := "") {
+    static reloadInProgress := false
+
+    if (reloadInProgress) {
+        LogReloadMessage("SafeReload re-entered; exiting current process | reason=" . reason)
+        ExitApp
+    }
+
+    reloadInProgress := true
+    currentPID := DllCall("GetCurrentProcessId", "UInt")
+    LogReloadMessage("SafeReload requested | script=" . A_ScriptName . " | pid=" . currentPID . " | reason=" . reason)
+
+    if(IsFunc("CleanupBeforeExit")) {
+        OnExit("CleanupBeforeExit", 0)
+        cleanupFn := Func("CleanupBeforeExit")
+        cleanupFn.Call()
+    }
+
     Reload
+    Sleep, 1000
+    if (ErrorLevel) {
+        LogReloadMessage("Built-in Reload returned ErrorLevel=" . ErrorLevel . " | reason=" . reason)
+        reloadInProgress := false
+    }
+}
+
+LogReloadMessage(message) {
+    if (IsFunc("LogToFile")) {
+        logFn := Func("LogToFile")
+        logFn.Call(message, "Reload.txt")
+        return
+    }
+
+    logDir := A_ScriptDir . "\..\Logs"
+    if (!FileExist(logDir) && FileExist(A_ScriptDir . "\..\..\Logs"))
+        logDir := A_ScriptDir . "\..\..\Logs"
+    if (!FileExist(logDir))
+        FileCreateDir, %logDir%
+
+    logFile := logDir . "\Reload.txt"
+    FormatTime, now,, yyyy-MM-dd HH:mm:ss
+    FileAppend, % "[" . now . "] " . message . "`n", %logFile%
+}
+
+LogUtilityMessage(message) {
+    if (IsFunc("LogToFile")) {
+        logFn := Func("LogToFile")
+        logFn.Call(message)
+        return
+    }
+
+    logDir := A_ScriptDir . "\..\Logs"
+    if (!FileExist(logDir) && FileExist(A_ScriptDir . "\..\..\Logs"))
+        logDir := A_ScriptDir . "\..\..\Logs"
+    if (!FileExist(logDir))
+        FileCreateDir, %logDir%
+
+    logFile := logDir . "\Utility.txt"
+    FormatTime, now,, yyyy-MM-dd HH:mm:ss
+    FileAppend, % "[" . now . "] " . message . "`n", %logFile%
+}
+
+GetSearchNeedleObj(needleName, caller := "") {
+    global needlesDict, session
+    static loggedNeedles := {}
+
+    scriptName := A_ScriptName
+    if (IsObject(session)) {
+        sessionScriptName := session.get("scriptName")
+        if (sessionScriptName != "")
+            scriptName := sessionScriptName
+    }
+
+    logKey := scriptName . "|" . caller . "|" . needleName
+    if (!IsObject(needlesDict) || !needlesDict.needles.HasKey(needleName)) {
+        if (!loggedNeedles.HasKey(logKey)) {
+            LogUtilityMessage("Missing needle definition: " . needleName . " in " . caller)
+            loggedNeedles[logKey] := true
+        }
+        return ""
+    }
+
+    needleObj := needlesDict.Get(needleName)
+    if (!IsObject(needleObj) || needleObj.imageName = "" || !IsObject(needleObj.coords) || !needleObj.coords.isValid) {
+        if (!loggedNeedles.HasKey(logKey)) {
+            LogUtilityMessage("Invalid needle definition: " . needleName . " in " . caller)
+            loggedNeedles[logKey] := true
+        }
+        return ""
+    }
+
+    return needleObj
 }
 
 ;-------------------------------------------------------------------------------
@@ -399,6 +483,171 @@ ShellRun(prms*) {
     }
 }
 
+InitializeHiddenConsole() {
+    previousHwnd := DllCall("GetForegroundWindow", "Ptr")
+
+    if (!DllCall("GetConsoleWindow", "Ptr"))
+        DllCall("AllocConsole")
+
+    DllCall("SetConsoleTitle", "Str", A_ScriptFullPath)
+    HideAllocatedConsole()
+    SetTimer, HideAllocatedConsole, -1000
+
+    RestorePreviousForegroundWindow(previousHwnd)
+}
+
+RestorePreviousForegroundWindow(previousHwnd) {
+    if (!previousHwnd || !DllCall("IsWindow", "Ptr", previousHwnd) || !DllCall("IsWindowVisible", "Ptr", previousHwnd))
+        return false
+
+    if (DllCall("IsIconic", "Ptr", previousHwnd))
+        return false
+
+    return DllCall("SetForegroundWindow", "Ptr", previousHwnd)
+}
+
+HideAllocatedConsole() {
+    consoleHwnd := DllCall("GetConsoleWindow", "Ptr")
+    if (consoleHwnd) {
+        DllCall("ShowWindow", "Ptr", consoleHwnd, "Int", 0)
+        WinHide, ahk_id %consoleHwnd%
+    }
+}
+
+GetScriptIniPathByName(scriptName) {
+    scriptName := StrReplace(scriptName, ".ahk")
+    if (RegExMatch(A_ScriptDir, "i)\\Include$"))
+        return A_ScriptDir . "\..\" . scriptName . ".ini"
+    return A_ScriptDir . "\" . scriptName . ".ini"
+}
+
+GetWindowRect(hwnd) {
+    if (!hwnd || !DllCall("IsWindow", "Ptr", hwnd))
+        return ""
+
+    VarSetCapacity(rect, 16, 0)
+    if (!DllCall("GetWindowRect", "Ptr", hwnd, "Ptr", &rect))
+        return ""
+
+    return {left: NumGet(rect, 0, "Int")
+        , top: NumGet(rect, 4, "Int")
+        , right: NumGet(rect, 8, "Int")
+        , bottom: NumGet(rect, 12, "Int")}
+}
+
+RectsOverlap(rectA, rectB, minArea := 1024) {
+    if (!IsObject(rectA) || !IsObject(rectB))
+        return false
+
+    left := (rectA.left > rectB.left) ? rectA.left : rectB.left
+    top := (rectA.top > rectB.top) ? rectA.top : rectB.top
+    right := (rectA.right < rectB.right) ? rectA.right : rectB.right
+    bottom := (rectA.bottom < rectB.bottom) ? rectA.bottom : rectB.bottom
+
+    overlapW := right - left
+    overlapH := bottom - top
+    return (overlapW > 0 && overlapH > 0 && (overlapW * overlapH) >= minArea)
+}
+
+IsIgnoredCoverWindow(hwnd, targetHwnd) {
+    if (!hwnd || hwnd = targetHwnd)
+        return true
+
+    if (!DllCall("IsWindow", "Ptr", hwnd) || !DllCall("IsWindowVisible", "Ptr", hwnd))
+        return true
+
+    if (DllCall("IsIconic", "Ptr", hwnd))
+        return true
+
+    WinGetClass, winClass, ahk_id %hwnd%
+    if (winClass = "Qt5156QWindowIcon" || winClass = "AutoHotkey" || winClass = "AutoHotkeyGUI" || winClass = "#32770")
+        return true
+
+    if (winClass = "Progman" || winClass = "WorkerW" || winClass = "Shell_TrayWnd" || winClass = "Button")
+        return true
+
+    WinGet, style, Style, ahk_id %hwnd%
+    if (!(style & 0x10000000))
+        return true
+
+    WinGet, exStyle, ExStyle, ahk_id %hwnd%
+    if (exStyle & 0x80)
+        return true
+
+    return false
+}
+
+CaptureMuMuCoverWindow(winTitle) {
+    targetHwnd := WinExist(winTitle . " ahk_class Qt5156QWindowIcon")
+    if (!targetHwnd)
+        return ""
+
+    targetRect := GetWindowRect(targetHwnd)
+    if (!IsObject(targetRect))
+        return ""
+
+    WinGet, IDList, List
+    Loop %IDList%
+    {
+        hwnd := IDList%A_Index%
+        if (hwnd = targetHwnd)
+            break
+
+        if (IsIgnoredCoverWindow(hwnd, targetHwnd))
+            continue
+
+        coverRect := GetWindowRect(hwnd)
+        if (RectsOverlap(targetRect, coverRect))
+            return hwnd
+    }
+
+    return ""
+}
+
+StoreMuMuCoverWindow(winTitle, coverHwnd := "") {
+    iniFile := GetScriptIniPathByName(winTitle)
+    if (coverHwnd && DllCall("IsWindow", "Ptr", coverHwnd))
+        IniWrite, %coverHwnd%, %iniFile%, WindowState, coverHwnd
+    else
+        IniDelete, %iniFile%, WindowState, coverHwnd
+}
+
+GetStoredMuMuCoverWindow(winTitle) {
+    iniFile := GetScriptIniPathByName(winTitle)
+    IniRead, coverHwnd, %iniFile%, WindowState, coverHwnd,
+    if (coverHwnd && DllCall("IsWindow", "Ptr", coverHwnd))
+        return coverHwnd
+    return ""
+}
+
+ClearStoredMuMuCoverWindow(winTitle) {
+    iniFile := GetScriptIniPathByName(winTitle)
+    IniDelete, %iniFile%, WindowState, coverHwnd
+}
+
+GetMuMuCoverWindowForMaintenance(winTitle) {
+    coverHwnd := GetStoredMuMuCoverWindow(winTitle)
+    if (coverHwnd)
+        return coverHwnd
+
+    return CaptureMuMuCoverWindow(winTitle)
+}
+
+RestoreMuMuCoverWindow(coverHwnd, winTitle := "") {
+    if (winTitle != "")
+        ClearStoredMuMuCoverWindow(winTitle)
+
+    if (!coverHwnd || !DllCall("IsWindow", "Ptr", coverHwnd) || !DllCall("IsWindowVisible", "Ptr", coverHwnd))
+        return false
+
+    if (DllCall("IsIconic", "Ptr", coverHwnd))
+        return false
+
+    ; Raise the previous covering window back above MuMu without stealing focus.
+    return DllCall("SetWindowPos", "Ptr", coverHwnd, "Ptr", 0
+        , "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x53)
+}
+
 CmdRet(sCmd, callBackFuncObj := "", encoding := "") {
     static HANDLE_FLAG_INHERIT := 0x00000001, flags := HANDLE_FLAG_INHERIT
         , STARTF_USESTDHANDLES := 0x100, CREATE_NO_WINDOW := 0x08000000
@@ -456,6 +705,8 @@ SerializeArray(arr) {
 restartInstance(){
     global session
 
+    coverHwnd := CaptureMuMuCoverWindow(session.get("scriptName"))
+    StoreMuMuCoverWindow(session.get("scriptName"), coverHwnd)
     killInstance(session.get("scriptName"))
     Sleep, 2000
     launchInstance(session.get("scriptName"))
@@ -691,12 +942,13 @@ getScreenHandle(ParentTitle){
 }
 
 FixInstanceScreen(instanceNo){
+    windowMetrics := GetMumuWindowMetrics()
     instanceTitle := instanceNo . " ahk_class Qt5156QWindowIcon"
     SendMessage, 0x0005, 1, 0,, %instanceTitle%
     Sleep, 50
     SendMessage, 0x0005, 0, 0,, %instanceTitle%
     Sleep, 500
-    WinMove, %instanceTitle%, , , , 283, 532
+    WinMove, %instanceTitle%, , , , % windowMetrics.scaleParam, % windowMetrics.rowHeight
 }
 
 getMuMuHwnd(winTitle) {
@@ -746,6 +998,10 @@ AppendGPlog(message) {
     SplitPath, logPath,, logDir
     if !FileExist(logDir)
         FileCreateDir, %logDir%
+    if (IsFunc("RotateLogFileIfNeeded")) {
+        rotateFn := Func("RotateLogFileIfNeeded")
+        rotateFn.Call(logPath)
+    }
     FormatTime, readableTime, %A_Now%, MMMM dd, yyyy HH:mm:ss
     Loop, {
         FileAppend, % "[" readableTime "] " message "`n", %logPath%
@@ -1007,8 +1263,158 @@ findAdbPath(targetDir) {
     return ""
 }
 
+GetConfiguredDisplayScale() {
+    global botConfig
+
+    displayScale := ""
+    try {
+        displayScale := botConfig.get("DisplayScale")
+    } catch {
+    }
+
+    if (displayScale = "" || displayScale = "Auto") {
+        selectedMonitorIndex := "1"
+        try {
+            selectedMonitorIndex := RegExReplace(botConfig.get("SelectedMonitorIndex"), ":.*$")
+        } catch {
+        }
+
+        monitorScales := GetAllMonitorScales()
+        if (monitorScales.HasKey(selectedMonitorIndex))
+            return monitorScales[selectedMonitorIndex]
+
+        return 100
+    }
+
+    if (InStr(displayScale, "125"))
+        return 125
+
+    return 100
+}
+
+GetMumuWindowMetrics() {
+    displayScale := GetConfiguredDisplayScale()
+    metrics := {}
+
+    if (displayScale = 125) {
+        if (IsMuMuv5()) {
+            metrics.scaleParam := 283
+            metrics.titleHeight := 50
+        } else {
+            metrics.scaleParam := 277
+            metrics.titleHeight := 45
+        }
+    } else {
+        metrics.scaleParam := 283
+        metrics.titleHeight := 40
+    }
+
+    metrics.rowHeight := metrics.titleHeight + 492
+    metrics.imageSearchYBias := (displayScale = 125) ? metrics.titleHeight - 45 : 0
+    return metrics
+}
+
+GetAdbClickMetrics() {
+    metrics := {}
+
+    if (GetConfiguredDisplayScale() = 125) {
+        ; Keep the working Scale 125 tap mapping from v9.5.9. This coordinate
+        ; space is independent from the window chrome/image-search yBias.
+        metrics.convX := 540/277
+        metrics.convY := 960/489
+        metrics.offset := -44
+    } else {
+        metrics.convX := 540/283
+        metrics.convY := 960/488
+        metrics.offset := -40
+    }
+
+    return metrics
+}
+
+IsMuMuv5() {
+    static cachedIsMuMuv5 := ""
+
+    if (cachedIsMuMuv5 != "")
+        return cachedIsMuMuv5
+
+    mumuFolder := getMuMuFolder()
+    cachedIsMuMuv5 := (mumuFolder != "" && FileExist(mumuFolder . "\nx_main")) ? 1 : 0
+    return cachedIsMuMuv5
+}
+
+ResolveNeedlePath(path) {
+    if (GetConfiguredDisplayScale() != 125)
+        return path
+
+    if (!IsScale125NeedleFallbackAllowed(path))
+        return path
+
+    scale125Path := StrReplace(path, "\Needles\", "\Scale125\")
+    if (scale125Path != path && FileExist(scale125Path))
+        return scale125Path
+
+    return path
+}
+
+IsScale125NeedleFallbackAllowed(path) {
+    SplitPath, path, fileName
+
+    if (fileName = "")
+        return false
+
+    if (IsScale125RarityNeedle(fileName))
+        return true
+
+    static allowedUiNeedles := ""
+    if (!IsObject(allowedUiNeedles)) {
+        allowedUiNeedles := {}
+        ; Shared Needles are the default. These are legacy pixel-sensitive
+        ; Scale 125 UI fallbacks that differ from the shared asset set.
+        for _, allowedName in ["Account.png"
+            , "CloseAlertWindow.png"
+            , "Error.png"
+            , "Friend2.png"
+            , "FriendSearchButton.png"
+            , "GoToTitle.png"
+            , "HardwareReqs.png"
+            , "Hourglass1.png"
+            , "InSubMenu.png"
+            , "Mission_dino2.png"
+            , "noWPenergy.png"
+            , "OK2.png"
+            , "One.png"
+            , "Settings.png"
+            , "speedmodMenu.png"
+            , "SwipeUp.png"
+            , "Three.png"
+            , "Two.png"
+            , "WonderPickRaminItems.png"] {
+            allowedUiNeedles[allowedName] := true
+        }
+    }
+
+    return allowedUiNeedles.HasKey(fileName)
+}
+
+IsScale125RarityNeedle(fileName) {
+    return RegExMatch(fileName, "i)^(1star|3diamond|crown|gimmighoul|immersive|normal|rainbow|shiny1star|ShinyEx_ex_|trainer)\d+\.png$")
+}
+
+GetScaleProfileValue(scale100Value, scale125Value) {
+    return (GetConfiguredDisplayScale() = 125) ? scale125Value : scale100Value
+}
+
 GetAllMonitorScales() {
     scales := {}
+    oldDpiContext := 0
+    try {
+        ; GetDpiForMonitor returns system DPI for every monitor unless the
+        ; calling thread is per-monitor DPI aware while querying.
+        oldDpiContext := DllCall("User32\SetThreadDpiAwarenessContext", "Ptr", -3, "Ptr")
+    } catch {
+        oldDpiContext := 0
+    }
     
     SysGet, monitorCount, MonitorCount
     
@@ -1027,6 +1433,13 @@ GetAllMonitorScales() {
         if (hr == 0) {
             scalePercent := Round((dpiX / 96) * 100)
             scales[A_Index] := scalePercent
+        }
+    }
+
+    if (oldDpiContext) {
+        try {
+            DllCall("User32\SetThreadDpiAwarenessContext", "Ptr", oldDpiContext, "Ptr")
+        } catch {
         }
     }
     

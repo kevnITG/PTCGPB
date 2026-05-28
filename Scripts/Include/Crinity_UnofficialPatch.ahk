@@ -106,21 +106,43 @@ startPreProcess(methodType){
     pBitmap := 0
     session.set("isSkipSelectExpansion", 0)
     isSkip := false
-
     session.set("failSafe", A_TickCount)
     failSafeTime := 0
     Loop, {
+        skipGenericButtonFallback := false
+
+        if(methodType = "Inject Wonderpick 96P+" && DismissFriendFlowBlockingPopup("Entering Social"))
+            continue
+
         if(FindOrLoseImage(needleName, 0, failSafeTime, , true))
             break
 
         adbClick_wbb(clickX, clickY)
         Delay(0.5)
 
+        if(methodType = "Inject Wonderpick 96P+"){
+            if(FindOrLoseImage(needleName, 0, , , true))
+                break
+
+            if(FindOrLoseImage("Common_ActivatedHomeInMainMenu", 0, , , true)
+                || FindOrLoseImage("Friend_BottomDarkHomeIcon", 0, , , true)
+                || FindOrLoseImage("Common_ShopButtonInMain", 0, , , true)
+                || FindOrLoseImage("WonderPick_WonderPickButtonInHome", 0, , , true)
+                || FindOrLoseImage("Pack_PackPointButton", 0, , , true)
+                || FindOrLoseImage("Pack_BackButtonInSelectPackScreen", 0, , , true)
+                || FindOrLoseImage("Pack_ReadyForOpenPack", 0, , , true)
+                || FindOrLoseImage("Pack_HourglassImageAfterOpenPackClick", 0, , , true)
+                || FindOrLoseImage("Pack_HourglassAndPokeGoldImageAfterOpenPackClick", 0, , , true)
+                || FindOrLoseImage("Pack_PokeGoldImageAfterOpenPackClick", 0, , , true)){
+                skipGenericButtonFallback := true
+            }
+        }
+
         pBitmap := from_window(getMuMuHwnd(session.get("winTitle")))
 
         Path = %imagePath%CrashWhilePackOpen.png
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 20, 180, 35, 182, searchVariation)
+        vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [20, 180, 35, 182], [20, 180, 35, 182], searchVariation)
         if(vRet = 1){
             CreateStatusMessage("Clearing problem opening pack pop-up",,,, false)
             adbClick_wbb(145, 370)
@@ -164,7 +186,7 @@ startPreProcess(methodType){
 
         Path = %imagePath%DataDownload.png
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 41, 378, 92, 393, searchVariation)
+        vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [41, 378, 92, 393], [41, 378, 92, 393], searchVariation)
         if(vRet = 1){
             CreateStatusMessage("Downloading data",,,, false)
             Sleep, 1000
@@ -177,13 +199,16 @@ startPreProcess(methodType){
 
         Path = %imagePath%Button.png
         pNeedle := GetNeedle(Path)
-        vRet := Gdip_ImageSearch_wbb(pBitmap, pNeedle, vPosXY, 95, 350, 195, 530, 80)
-        if(vRet = 1){
-            if (InStr(vPosXY, ",")) {
-                StringSplit, pos, vPosXY, `,
-                adbClick_wbb(pos1, pos2)
-            } else
-                adbClick(137, 365)
+        if(!skipGenericButtonFallback){
+            vRet := Gdip_ImageSearchProfile_wbb(pBitmap, pNeedle, vPosXY, [95, 350, 195, 530], [100, 367, 190, 480], 80)
+            if(vRet = 1){
+                if (InStr(vPosXY, ",")) {
+                    StringSplit, pos, vPosXY, `,
+                    adbClick_wbb(pos1, pos2)
+                } else {
+                    adbClick(137, 365)
+                }
+            }
         }
 
         DelayH(20)
